@@ -1,0 +1,1206 @@
+/* Reminders Page Styles */
+.container {
+  height: 100vh;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  max-width: 64rem;
+  margin: 0 auto 1rem;
+  flex-shrink: 0;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.title h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.title p {
+  color: #6b7280;
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.offlineNotice {
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  max-width: 32rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.offlineNoticeContent {
+  display: flex;
+  align-items: center;
+}
+
+.offlineNoticeContent a {
+  text-decoration: underline;
+  margin-left: 0.25rem;
+}
+
+/* Date Navigation */
+.dateNavigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 0.75rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.navButton {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: none;
+  background: #E9ECEF;
+  color: #6C757D;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-size: 1rem;
+}
+
+.navButton:hover {
+  background: #dee2e6;
+  transform: none;
+}
+
+.navButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.currentDate {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  min-width: 8rem;
+  text-align: center;
+}
+
+/* Filter Controls */
+.filterControls {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.filterButton {
+  padding: 0.5rem 1rem;
+  border: 2px solid #d1d5db;
+  background: white;
+  color: #374151;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.filterButton:hover {
+  background: #f3f4f6;
+}
+
+.filterButtonActive {
+  background: #6366f1;
+  color: white;
+  border-color: #6366f1;
+}
+
+.filterButtonActive:hover {
+  background: #4f46e5;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.button {
+  font-weight: 500;
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  box-shadow: none;
+}
+
+.button:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.buttonPrimary {
+  background-color: #5B6B50;
+  color: white;
+}
+
+.buttonPrimary:hover {
+  background-color: #4a5a3f;
+}
+
+.buttonSecondary {
+  background-color: #E9ECEF;
+  color: #6C757D;
+}
+
+.buttonSecondary:hover {
+  background-color: #dee2e6;
+}
+
+.buttonSecondary i {
+  margin-right: 0.5rem;
+}
+
+.buttonDanger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.buttonDanger:hover {
+  background-color: #c82333;
+}
+
+/* Sticky Notes Container - Cork Board Style */
+.notesContainer {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  max-width: 72rem;
+  margin: 0 auto;
+  background: #deb887;
+  border: 8px solid #2c2c2c;
+  border-radius: 0.5rem;
+  box-shadow: 
+    0 0 0 2px #1a1a1a,
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.gridBackground {
+  position: absolute;
+  inset: 0;
+  opacity: 0.05;
+}
+
+.gridPattern {
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(circle at 1px 1px, rgba(139, 69, 19, 0.3) 1px, transparent 0),
+    radial-gradient(circle at 1px 1px, rgba(160, 82, 45, 0.2) 1px, transparent 0);
+  background-size: 8px 8px, 12px 12px;
+  background-position: 0 0, 4px 4px;
+}
+
+.emptyState {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyStateContent {
+  text-align: center;
+  color: #6b7280;
+}
+
+.emptyStateIcon {
+  font-size: 3.75rem;
+  margin-bottom: 1rem;
+}
+
+.emptyStateTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.dragIndicator {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.footer {
+  text-align: center;
+  margin-top: 2rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Sticky Note Styles */
+.stickyNote {
+  position: absolute;
+  user-select: none;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.stickyNoteDragging {
+  z-index: 50;
+  transform: scale(1.05);
+}
+
+.note {
+  width: 14rem;
+  height: 14rem;
+  border: 2px solid;
+  border-radius: 0.125rem;
+  box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  cursor: move;
+  transition: box-shadow 0.2s;
+}
+
+.note:hover {
+  box-shadow: 0 12px 20px -4px rgba(0, 0, 0, 0.15);
+}
+
+.noteOverdue {
+  box-shadow: 0 0 0 2px #f87171;
+}
+
+.noteDueToday {
+  box-shadow: 0 0 0 2px #fbbf24;
+}
+
+/* Note Colors */
+.noteYellow {
+  background-color: #fef3c7;
+  border-color: #fcd34d;
+  box-shadow: 0 10px 15px -3px rgba(251, 191, 36, 0.5);
+}
+
+.notePink {
+  background-color: #fce7f3;
+  border-color: #f9a8d4;
+  box-shadow: 0 10px 15px -3px rgba(244, 114, 182, 0.5);
+}
+
+.noteBlue {
+  background-color: #dbeafe;
+  border-color: #93c5fd;
+  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.5);
+}
+
+.noteGreen {
+  background-color: #dcfce7;
+  border-color: #86efac;
+  box-shadow: 0 10px 15px -3px rgba(34, 197, 94, 0.5);
+}
+
+.notePurple {
+  background-color: #e9d5ff;
+  border-color: #c4b5fd;
+  box-shadow: 0 10px 15px -3px rgba(147, 51, 234, 0.5);
+}
+
+.noteOrange {
+  background-color: #fed7aa;
+  border-color: #fdba74;
+  box-shadow: 0 10px 15px -3px rgba(249, 115, 22, 0.5);
+}
+
+.noteTopStrip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1.5rem;
+  border-bottom: 1px solid;
+  opacity: 0.3;
+}
+
+.noteControls {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.note:hover .noteControls {
+  opacity: 1;
+}
+
+.controlButton {
+  width: 1.25rem;
+  height: 1.25rem;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 0.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.controlButton:hover {
+  background: white;
+}
+
+.controlButtonDelete:hover {
+  background: #fecaca;
+}
+
+.colorPicker {
+  position: absolute;
+  top: 2rem;
+  right: 0.25rem;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  padding: 0.5rem;
+  z-index: 20;
+  border: 2px solid #d1d5db;
+}
+
+.colorGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.25rem;
+}
+
+.colorButton {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.125rem;
+  border: 2px solid #d1d5db;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.colorButton:hover {
+  transform: scale(1.1);
+}
+
+.colorButtonSelected {
+  border-color: #374151;
+  box-shadow: 0 0 0 2px #9ca3af;
+}
+
+.noteContent {
+  padding: 1rem;
+  padding-top: 2rem;
+  height: 100%;
+}
+
+.noteContentEditing {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.noteInput {
+  width: 100%;
+  background: transparent;
+  outline: none;
+  border: none;
+  color: #1f2937;
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.noteDateInput {
+  width: 100%;
+  background: transparent;
+  outline: none;
+  border: none;
+  color: #6b7280;
+  font-size: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.noteTextarea {
+  width: 100%;
+  flex: 1;
+  background: transparent;
+  resize: none;
+  outline: none;
+  border: none;
+  color: #1f2937;
+  font-size: 0.875rem;
+  line-height: 1.625;
+  font-family: 'Comic Sans MS', cursive, sans-serif;
+  min-height: 80px;
+}
+
+.noteDisplay {
+  width: 100%;
+  height: 100%;
+  cursor: text;
+}
+
+.noteTitle {
+  color: #1f2937;
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.noteDate {
+  color: #6b7280;
+  font-size: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.noteDateOverdue {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.noteDateToday {
+  color: #d97706;
+  font-weight: 700;
+}
+
+.noteBody {
+  color: #1f2937;
+  font-size: 0.875rem;
+  line-height: 1.625;
+  white-space: pre-wrap;
+  overflow: hidden;
+  font-family: 'Comic Sans MS', cursive, sans-serif;
+}
+
+.noteCorner {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 1rem;
+  height: 1rem;
+}
+
+.noteCornerEffect {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 1rem;
+  height: 1rem;
+  transform: rotate(45deg) translate(0.5rem, 0.5rem);
+  opacity: 0.2;
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.modal {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 28rem;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalHeader {
+  padding: 1.5rem;
+}
+
+.modalTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.modalTitle h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+}
+
+.modalTitle i {
+  margin-right: 0.5rem;
+  color: #fbbf24;
+}
+
+.modalClose {
+  color: #9ca3af;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.modalClose:hover {
+  color: #6b7280;
+}
+
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.errorMessage {
+  background-color: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+}
+
+.errorContent {
+  display: flex;
+  align-items: center;
+}
+
+.errorContent i {
+  margin-right: 0.5rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.formLabel {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.formInput {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid #d1d5db;
+  border-radius: 0.5rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.formInput:focus {
+  border-color: transparent;
+  box-shadow: 0 0 0 2px #fbbf24;
+}
+
+.formTextarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid #d1d5db;
+  border-radius: 0.5rem;
+  outline: none;
+  transition: all 0.2s;
+  resize: none;
+}
+
+.formTextarea:focus {
+  border-color: transparent;
+  box-shadow: 0 0 0 2px #fbbf24;
+}
+
+.colorSelection {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.5rem;
+}
+
+.colorOption {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  border: 2px solid #d1d5db;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.colorOption:hover {
+  transform: scale(1.1);
+}
+
+.colorOptionSelected {
+  border-color: #374151;
+  box-shadow: 0 0 0 2px #9ca3af;
+}
+
+.preview {
+  margin-top: 1rem;
+}
+
+.previewLabel {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.previewNote {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 2px solid;
+}
+
+.previewTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+}
+
+.previewDate {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.previewDate i {
+  margin-right: 0.25rem;
+}
+
+.previewBody {
+  font-size: 0.875rem;
+  color: #1f2937;
+  white-space: pre-wrap;
+}
+
+.modalActions {
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 1rem;
+}
+
+.modalButton {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.modalButtonCancel {
+  color: #6b7280;
+  background-color: #f3f4f6;
+}
+
+.modalButtonCancel:hover {
+  background-color: #e5e7eb;
+}
+
+.modalButtonSubmit {
+  background-color: #fbbf24;
+  color: white;
+}
+
+.modalButtonSubmit:hover {
+  background-color: #f59e0b;
+}
+
+.modalButtonDanger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.modalButtonDanger:hover {
+  background-color: #c82333;
+}
+
+/* Loading and Error States */
+.loading {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #dbeafe 0%, #ffffff 50%, #f3e8ff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loadingContent {
+  text-align: center;
+}
+
+.loadingIcon {
+  font-size: 2.25rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.loadingText {
+  color: #6b7280;
+}
+
+.error {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #dbeafe 0%, #ffffff 50%, #f3e8ff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.errorContent {
+  text-align: center;
+}
+
+.errorIcon {
+  font-size: 2.25rem;
+  color: #dc2626;
+  margin-bottom: 1rem;
+}
+
+.errorText {
+  color: #dc2626;
+  margin-bottom: 1rem;
+}
+
+.errorButton {
+  background-color: #3b82f6;
+  color: white;
+  font-weight: 600;
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.errorButton:hover {
+  background-color: #2563eb;
+  transform: scale(1.05);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Confirmation Dialog */
+.confirmationDialog {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+  padding: 1rem;
+}
+
+.confirmationContent {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 28rem;
+  width: 100%;
+  padding: 1.5rem;
+}
+
+.confirmationHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.confirmationIcon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: #fef2f2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  font-size: 1.5rem;
+}
+
+.confirmationTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.confirmationMessage {
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.confirmationActions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.confirmationButton {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.confirmationButtonCancel {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.confirmationButtonCancel:hover {
+  background: #e5e7eb;
+}
+
+.confirmationButtonConfirm {
+  background: #dc2626;
+  color: white;
+}
+
+.confirmationButtonConfirm:hover {
+  background: #b91c1c;
+}
+
+/* Calendar Modal */
+.calendarModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.calendar {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  max-width: 400px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.calendarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.calendarCloseButton {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: none;
+  background: #dc3545;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  font-size: 0.875rem;
+}
+
+.calendarCloseButton:hover {
+  background: #c82333;
+}
+
+.calendarTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.calendarNavButton {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: none;
+  background: #E9ECEF;
+  color: #6C757D;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.calendarNavButton:hover {
+  background: #dee2e6;
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+}
+
+.calendarDayHeader {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  padding: 0.5rem 0;
+}
+
+.calendarDay {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #374151;
+  position: relative;
+  padding: 0.25rem;
+}
+
+.calendarDay:hover {
+  background: #f3f4f6;
+}
+
+.calendarDayOtherMonth {
+  color: #9ca3af;
+}
+
+.calendarDayToday {
+  background: #6366f1;
+  color: white;
+  font-weight: 600;
+}
+
+.calendarDayToday:hover {
+  background: #4f46e5;
+}
+
+.calendarDaySelected {
+  background: #3b82f6;
+  color: white;
+  font-weight: 600;
+}
+
+.calendarDaySelected:hover {
+  background: #2563eb;
+}
+
+.calendarDayWithReminders {
+  background: #fef3c7;
+  color: #92400e;
+  font-weight: 600;
+}
+
+.calendarDayWithReminders:hover {
+  background: #fde68a;
+}
+
+.calendarDayWithRemindersToday {
+  background: #f59e0b;
+  color: white;
+}
+
+.calendarDayWithRemindersToday:hover {
+  background: #d97706;
+}
+
+.calendarDayWithRemindersSelected {
+  background: #d97706;
+  color: white;
+}
+
+.calendarDayWithRemindersSelected:hover {
+  background: #b45309;
+}
+
+.reminderIndicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 4px;
+  height: 4px;
+  background: #ef4444;
+  border-radius: 50%;
+}
+
+.calendarDayNumber {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.calendarReminderCount {
+  position: absolute;
+  top: 0.125rem;
+  right: 0.125rem;
+  font-size: 0.5rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.375rem;
+  background: #ef4444;
+  color: white;
+  min-width: 1rem;
+  text-align: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.calendarDayWithReminders .calendarReminderCount {
+  background: #f59e0b;
+  color: white;
+}
+
+.calendarDayWithRemindersToday .calendarReminderCount {
+  background: #dc2626;
+  color: white;
+}
+
+.calendarDayWithRemindersSelected .calendarReminderCount {
+  background: #dc2626;
+  color: white;
+}
+
+.calendarDayToday .calendarReminderCount {
+  background: #dc2626;
+  color: white;
+}
+
+.calendarDaySelected .calendarReminderCount {
+  background: #dc2626;
+  color: white;
+}
+
+/* Lily Mascot */
+.lilyMascot {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.lilySpeechBubble {
+  background: #ffffff;
+  border: 2px solid #7d8d86;
+  border-radius: 16px;
+  padding: 12px 16px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  max-width: 250px;
+  font-size: 14px;
+  color: #3e3f29;
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.lilySpeechBubble p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.lilySpeechTail {
+  position: absolute;
+  bottom: -8px;
+  right: 20px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #7d8d86;
+}
+
+.lilyImage {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #7d8d86;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.lilyImage:hover {
+  transform: scale(1.05);
+}
+
+.lilyImage img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+}
