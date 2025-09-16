@@ -70,8 +70,8 @@ const Navigation = () => {
             borderRadius: '4px',
             transition: 'background 0.2s ease'
           }}
-          onMouseEnter={(e) => e.target.style.background = '#333333'}
-          onMouseLeave={(e) => e.target.style.background = 'transparent'}
+          onMouseEnter={(e) => (e.target as HTMLElement).style.setProperty('background-color', '#333333')}
+          onMouseLeave={(e) => (e.target as HTMLElement).style.setProperty('background-color', 'transparent')}
         >
           <div style={{
             width: '16px',
@@ -106,7 +106,7 @@ const Navigation = () => {
 
       {/* Navigation Items */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-        {navItems.map((item, index) => (
+        {navItems.map((item) => (
           <Link
             key={item.path}
             to={item.path}
@@ -124,14 +124,14 @@ const Navigation = () => {
             }}
             onMouseEnter={(e) => {
               if (location.pathname !== item.path) {
-                e.target.style.background = '#333333'
-                e.target.style.color = '#ffffff'
+                (e.target as HTMLElement).style.setProperty('background-color', '#333333')
+                (e.target as HTMLElement).style.setProperty('color', '#ffffff')
               }
             }}
             onMouseLeave={(e) => {
               if (location.pathname !== item.path) {
-                e.target.style.background = 'transparent'
-                e.target.style.color = '#cccccc'
+                (e.target as HTMLElement).style.setProperty('background-color', 'transparent')
+                (e.target as HTMLElement).style.setProperty('color', '#cccccc')
               }
             }}
           >
@@ -171,8 +171,8 @@ const Navigation = () => {
           transition: 'background 0.2s ease',
           width: isCollapsed ? '44px' : 'auto'
         }}
-        onMouseEnter={(e) => e.target.style.background = '#444444'}
-        onMouseLeave={(e) => e.target.style.background = '#333333'}
+        onMouseEnter={(e) => (e.target as HTMLElement).style.setProperty('background-color', '#444444')}
+        onMouseLeave={(e) => (e.target as HTMLElement).style.setProperty('background-color', '#333333')}
         >
           <div style={{
             width: '32px',

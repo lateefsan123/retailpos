@@ -57,7 +57,7 @@ const SalesChart = () => {
   }
 
   const handleMouseEnter = (e: React.MouseEvent, item: WeeklySalesData | HourlySalesData) => {
-    const rect = e.currentTarget.getBoundingClientRect()
+    // const rect = e.currentTarget.getBoundingClientRect()
     setTooltip({
       visible: true,
       x: e.clientX,

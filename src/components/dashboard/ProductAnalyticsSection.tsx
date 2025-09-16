@@ -257,8 +257,8 @@ const ProductAnalyticsSection = () => {
                       objectFit: 'cover'
                     }}
                     onError={(e) => {
-                      e.currentTarget.style.display = 'none'
-                      e.currentTarget.nextElementSibling!.style.display = 'flex'
+                      (e.currentTarget as HTMLImageElement).style.setProperty('display', 'none')
+                      (e.currentTarget.nextElementSibling as HTMLElement)!.style.setProperty('display', 'flex')
                     }}
                   />
                 ) : null}

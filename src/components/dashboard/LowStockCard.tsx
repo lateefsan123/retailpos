@@ -108,8 +108,8 @@ const LowStockCard = ({ product, onRestock, onQuickRestock }: LowStockCardProps)
               }}
               onError={(e) => {
                 // Fallback to icon if image fails to load
-                e.currentTarget.style.display = 'none'
-                e.currentTarget.nextElementSibling!.style.display = 'flex'
+                (e.currentTarget as HTMLImageElement).style.setProperty('display', 'none')
+                (e.currentTarget.nextElementSibling as HTMLElement)!.style.setProperty('display', 'flex')
               }}
             />
           ) : null}
