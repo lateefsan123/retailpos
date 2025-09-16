@@ -105,7 +105,6 @@ const Products = () => {
   const [showCategorySuggestions, setShowCategorySuggestions] = useState(false)
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [uploadingImage, setUploadingImage] = useState(false)
   const [showImageModal, setShowImageModal] = useState(false)
   const [fullSizeImage, setFullSizeImage] = useState<string | null>(null)
   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
@@ -560,15 +559,12 @@ const Products = () => {
   const handleImageUpload = async (productId: string) => {
     if (!selectedImage) return null
     
-    setUploadingImage(true)
     try {
       const imageUrl = await uploadProductImage(selectedImage, productId)
       return imageUrl
     } catch (error) {
       console.error('Image upload failed:', error)
       return null
-    } finally {
-      setUploadingImage(false)
     }
   }
 
@@ -1185,8 +1181,8 @@ const Products = () => {
                               fontSize: '12px',
                               transition: 'background 0.2s ease'
                             }}
-                            onMouseEnter={(e) => e.target.style.background = '#dc2626'}
-                            onMouseLeave={(e) => e.target.style.background = '#ef4444'}
+                            onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = '#dc2626'}
+                            onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = '#ef4444'}
                           >
                             <i className="fa-solid fa-trash-can" style={{ marginRight: '4px' }}></i>
                             Delete
@@ -1529,8 +1525,8 @@ const Products = () => {
                               borderBottom: index < getCategorySuggestions(newProduct.category).length - 1 ? '1px solid #f3f4f6' : 'none',
                               transition: 'background 0.2s ease'
                             }}
-                            onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                            onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                            onMouseEnter={(e) => (e.target as HTMLElement).style.background = '#f8f9fa'}
+                            onMouseLeave={(e) => (e.target as HTMLElement).style.background = 'transparent'}
                           >
                             <i className="fa-solid fa-tag" style={{ marginRight: '8px', color: '#7d8d86', fontSize: '12px' }}></i>
                             {suggestion}
@@ -1797,7 +1793,10 @@ const Products = () => {
                       <img
                         src={imagePreview || editingProduct?.image_url}
                         alt="Preview"
-                        onClick={() => openFullSizeImage(imagePreview || editingProduct?.image_url)}
+                        onClick={() => {
+                          const imageUrl = imagePreview || editingProduct?.image_url
+                          if (imageUrl) openFullSizeImage(imageUrl)
+                        }}
                         style={{
                           width: '80px',
                           height: '80px',
@@ -2100,8 +2099,8 @@ const Products = () => {
                               borderBottom: index < getCategorySuggestions(newProduct.category).length - 1 ? '1px solid #f3f4f6' : 'none',
                               transition: 'background 0.2s ease'
                             }}
-                            onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                            onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                            onMouseEnter={(e) => (e.target as HTMLElement).style.background = '#f8f9fa'}
+                            onMouseLeave={(e) => (e.target as HTMLElement).style.background = 'transparent'}
                           >
                             <i className="fa-solid fa-tag" style={{ marginRight: '8px', color: '#7d8d86', fontSize: '12px' }}></i>
                             {suggestion}
@@ -2347,7 +2346,10 @@ const Products = () => {
                       <img
                         src={imagePreview || editingProduct?.image_url}
                         alt="Preview"
-                        onClick={() => openFullSizeImage(imagePreview || editingProduct?.image_url)}
+                        onClick={() => {
+                          const imageUrl = imagePreview || editingProduct?.image_url
+                          if (imageUrl) openFullSizeImage(imageUrl)
+                        }}
                         style={{
                           width: '80px',
                           height: '80px',
@@ -2545,8 +2547,8 @@ const Products = () => {
                 justifyContent: 'center',
                 transition: 'background 0.2s ease'
               }}
-              onMouseEnter={(e) => e.target.style.background = 'rgba(255, 255, 255, 1)'}
-              onMouseLeave={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.9)'}
+              onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = 'rgba(255, 255, 255, 1)'}
+              onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = 'rgba(255, 255, 255, 0.9)'}
             >
               <i className="fa-solid fa-times"></i>
             </button>
@@ -2619,8 +2621,8 @@ const Products = () => {
                   cursor: 'pointer',
                   transition: 'background 0.2s ease'
                 }}
-                onMouseEnter={(e) => e.target.style.background = '#4b5563'}
-                onMouseLeave={(e) => e.target.style.background = '#6b7280'}
+                onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = '#4b5563'}
+                onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = '#6b7280'}
               >
                 Cancel
               </button>
@@ -2637,8 +2639,8 @@ const Products = () => {
                   cursor: 'pointer',
                   transition: 'background 0.2s ease'
                 }}
-                onMouseEnter={(e) => e.target.style.background = '#dc2626'}
-                onMouseLeave={(e) => e.target.style.background = '#ef4444'}
+                onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = '#dc2626'}
+                onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = '#ef4444'}
               >
                 Delete Product
               </button>
