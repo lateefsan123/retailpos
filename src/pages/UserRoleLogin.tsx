@@ -56,7 +56,7 @@ const UserRoleLogin = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundImage: 'url(/images/backgrounds/minimal.jpg)',
+          backgroundImage: 'url(/retailpos/images/backgrounds/minimal.jpg)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat'
@@ -95,7 +95,7 @@ const UserRoleLogin = () => {
               {/* Logo */}
               <div style={{ marginBottom: '20px' }}>
                 <img 
-                  src="/images/backgrounds/logo1.png" 
+                  src="/retailpos/images/backgrounds/logo1.png" 
                   alt="Company Logo" 
                   style={{
                     width: '200px',

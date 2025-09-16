@@ -44,7 +44,7 @@ const Navigation = () => {
       left: 0,
       top: 0,
       zIndex: 50,
-      padding: isCollapsed ? '20px 8px' : '20px 12px',
+      padding: isCollapsed ? '20px 8px 20px 8px' : '20px 12px 20px 12px',
       boxShadow: '2px 0 8px rgba(0, 0, 0, 0.3)',
       transition: 'width 0.3s ease, padding 0.3s ease'
     }}>
@@ -105,7 +105,7 @@ const Navigation = () => {
       </div>
 
       {/* Navigation Items */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, overflowY: 'auto' }}>
         {navItems.map((item) => (
           <Link
             key={item.path}
@@ -151,11 +151,11 @@ const Navigation = () => {
 
       {/* User section */}
       <div style={{
-        padding: '16px 0',
+        padding: '8px 0',
         borderTop: '1px solid #333333',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
+        gap: '8px',
         alignItems: isCollapsed ? 'center' : 'stretch'
       }}>
         {/* User info */}

@@ -40,16 +40,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Add emergency logout function to window for debugging
-    (window as any).emergencyLogout = () => {
-      setLoading(false)
-      setUser(null)
-      setSupabaseUser(null)
-      localStorage.clear()
-      sessionStorage.clear()
-      window.location.reload()
-    }
-
     // Add a timeout to prevent infinite loading (30 seconds)
     const loadingTimeout = setTimeout(() => {
       if (loading) {
@@ -117,18 +107,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .single()
 
       if (userError) {
-        // console.error('Error loading user:', userError)
-        // Create a temporary user for testing
-        // console.log('Creating temporary user for testing...')
-        const tempUser: User = {
-          user_id: 999999,
-          username: 'temp_user',
-          role: 'owner',
-          active: true,
-          icon: 'lily'
-        }
-        setUser(tempUser)
-        localStorage.setItem('pos_user', JSON.stringify(tempUser))
+        console.error('Error loading user:', userError)
+        setUser(null)
         return
       }
 
@@ -137,18 +117,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       localStorage.setItem('pos_user', JSON.stringify(userData))
       
     } catch (error) {
-      // console.error('Error in loadUserProfile:', error)
-      // Create a temporary user for testing
-      // console.log('Creating temporary user for testing due to error...')
-      const tempUser: User = {
-        user_id: 999999,
-        username: 'temp_user',
-        role: 'owner',
-        active: true,
-        icon: 'lily'
-      }
-      setUser(tempUser)
-      localStorage.setItem('pos_user', JSON.stringify(tempUser))
+      console.error('Error in loadUserProfile:', error)
+      setUser(null)
     }
   }
 
@@ -203,6 +173,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       localStorage.setItem('pos_user', JSON.stringify(userData))
       localStorage.setItem('lastLogin', new Date().toLocaleString())
       localStorage.setItem('lastPassword', password)
+      
+      // Redirect to dashboard after successful login
+      window.location.href = '/'
+      
       return true
     } catch (error) {
       // console.error('Legacy login error:', error)

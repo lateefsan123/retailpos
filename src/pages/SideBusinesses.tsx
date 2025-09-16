@@ -4,6 +4,75 @@ import { useAuth } from '../contexts/AuthContext'
 import SearchContainer from '../components/SearchContainer'
 import styles from './SideBusinesses.module.css'
 
+async function uploadSideBusinessImage(file: File, businessId: string, userId: number) {
+  console.log("🔄 Starting image upload for side business:", businessId)
+  console.log("📁 File details:", {
+    name: file.name,
+    size: file.size,
+    type: file.type
+  })
+  console.log("👤 User ID:", userId)
+  
+  try {
+    // User authentication is handled by the calling component
+    if (!userId) {
+      console.error("❌ No user ID provided")
+      return null
+    }
+    console.log("✅ User ID provided:", userId)
+    
+    // Check available buckets
+    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets()
+    if (bucketsError) {
+      console.error("❌ Error listing buckets:", bucketsError)
+    } else {
+      console.log("📦 Available buckets:", buckets?.map(b => b.name))
+    }
+    
+    // Upload original file directly to Supabase Storage
+    const fileName = `sidebusiness-images/${businessId}.${file.name.split('.').pop()}`
+    console.log("📤 Uploading to Supabase Storage:", fileName)
+
+    const { error: uploadError } = await supabase.storage
+      .from('products') // Using 'products' bucket
+      .upload(fileName, file, {
+        contentType: file.type,
+        upsert: true
+      })
+
+    if (uploadError) {
+      console.error("❌ Upload failed:", uploadError)
+      return null
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('products')
+      .getPublicUrl(fileName)
+
+    console.log("✅ Image uploaded successfully:", publicUrl)
+
+    // Update database with public URL
+    console.log("💾 Updating database with public URL...")
+    const { error: dbError } = await supabase
+      .from('side_businesses')
+      .update({ image_url: publicUrl })
+      .eq('business_id', businessId)
+
+    if (dbError) {
+      console.error("❌ DB update failed:", dbError)
+      return null
+    } else {
+      console.log("✅ Database updated with public URL")
+    }
+
+    return publicUrl
+  } catch (error) {
+    console.error("💥 Unexpected error during upload:", error)
+    return null
+  }
+}
+
 interface SideBusiness {
   business_id: number
   owner_id: number
@@ -11,6 +80,7 @@ interface SideBusiness {
   description: string | null
   business_type: string | null
   icon: string | null
+  image_url: string | null
   created_at: string
 }
 
@@ -60,6 +130,40 @@ const SideBusinesses = () => {
   // Modal states
   const [showAddBusiness, setShowAddBusiness] = useState(false)
   const [showAddItem, setShowAddItem] = useState(false)
+  
+  // Image upload states
+  const [uploadingImages, setUploadingImages] = useState<Set<number>>(new Set())
+  
+  // Handle image upload for side business
+  const handleImageUpload = async (businessId: number, file: File) => {
+    if (!user?.user_id) {
+      setError('User not authenticated. Please log in again.')
+      return
+    }
+    
+    setUploadingImages(prev => new Set(prev).add(businessId))
+    
+    try {
+      const imageUrl = await uploadSideBusinessImage(file, businessId.toString(), user.user_id)
+      
+      if (imageUrl) {
+        // Update the business in the state
+        setBusinesses(prev => prev.map(business => 
+          business.business_id === businessId 
+            ? { ...business, image_url: imageUrl }
+            : business
+        ))
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error)
+    } finally {
+      setUploadingImages(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(businessId)
+        return newSet
+      })
+    }
+  }
   const [showAddSale, setShowAddSale] = useState(false)
   const [selectedBusiness, setSelectedBusiness] = useState<SideBusiness | null>(null)
   const [showBusinessDetail, setShowBusinessDetail] = useState(false)
@@ -90,6 +194,8 @@ const SideBusinesses = () => {
     business_type: 'service',
     icon: 'fa-solid fa-briefcase'
   })
+  const [newBusinessImage, setNewBusinessImage] = useState<File | null>(null)
+  const [uploadingNewBusinessImage, setUploadingNewBusinessImage] = useState(false)
 
   const [newItem, setNewItem] = useState({
     business_id: '',
@@ -200,8 +306,24 @@ const SideBusinesses = () => {
         throw new Error('No data returned from insert')
       }
 
+      const newBusinessId = data[0].business_id
+
+      // Upload image if provided
+      if (newBusinessImage) {
+        setUploadingNewBusinessImage(true)
+        try {
+          await uploadSideBusinessImage(newBusinessImage, newBusinessId.toString(), user.user_id)
+        } catch (imageError) {
+          console.error('Error uploading image:', imageError)
+          // Don't fail the entire operation if image upload fails
+        } finally {
+          setUploadingNewBusinessImage(false)
+        }
+      }
+
       // Reset form and close modal
       setNewBusiness({ name: '', description: '', business_type: 'service', icon: 'fa-solid fa-briefcase' })
+      setNewBusinessImage(null)
       setShowAddBusiness(false)
       
       // Refresh data
@@ -260,37 +382,67 @@ const SideBusinesses = () => {
 
   const handleDeleteBusiness = async (businessId: number) => {
     try {
+      console.log("🗑️ Starting delete for business:", businessId)
+      
       // First delete all sales for items in this business
-      const { data: items } = await supabase
+      const { data: items, error: itemsError } = await supabase
         .from('side_business_items')
         .select('item_id')
         .eq('business_id', businessId)
 
+      if (itemsError) {
+        console.error("❌ Error fetching items:", itemsError)
+        throw itemsError
+      }
+
+      console.log("📦 Found items to delete:", items?.length || 0)
+
       if (items && items.length > 0) {
         const itemIds = items.map(item => item.item_id)
-        await supabase
+        console.log("🛒 Deleting sales for items:", itemIds)
+        
+        const { error: salesError } = await supabase
           .from('side_business_sales')
           .delete()
           .in('item_id', itemIds)
+
+        if (salesError) {
+          console.error("❌ Error deleting sales:", salesError)
+          throw salesError
+        }
+        console.log("✅ Sales deleted successfully")
       }
 
       // Delete all items in this business
-      await supabase
+      console.log("📦 Deleting items for business:", businessId)
+      const { error: itemsDeleteError } = await supabase
         .from('side_business_items')
         .delete()
         .eq('business_id', businessId)
 
+      if (itemsDeleteError) {
+        console.error("❌ Error deleting items:", itemsDeleteError)
+        throw itemsDeleteError
+      }
+      console.log("✅ Items deleted successfully")
+
       // Finally delete the business
+      console.log("🏢 Deleting business:", businessId)
       const { error } = await supabase
         .from('side_businesses')
         .delete()
         .eq('business_id', businessId)
 
-      if (error) throw error
+      if (error) {
+        console.error("❌ Error deleting business:", error)
+        throw error
+      }
+      console.log("✅ Business deleted successfully")
 
       setBusinessToDelete(null)
       fetchData()
     } catch (err) {
+      console.error("💥 Delete failed:", err)
       setError(err instanceof Error ? err.message : 'Failed to delete business')
     }
   }
@@ -719,12 +871,23 @@ const SideBusinesses = () => {
             ) : (
               <div className={`${styles.listContainer} ${styles.listContainerDivided}`}>
                 {filteredBusinesses.map((business) => (
-                  <div key={business.business_id} className={styles.listItemCard}>
+                  <div key={business.business_id} className={styles.listItemCard} onClick={() => handleBusinessClick(business)}>
                     <div className={styles.listItemCardContent}>
                       <div className={styles.listItemCardIcon}>
-                        <i className={business.icon || 'fa-solid fa-briefcase'}></i>
+                        {business.image_url && (
+                          <img 
+                            src={business.image_url} 
+                            alt={business.name}
+                            style={{
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '8px',
+                              objectFit: 'cover'
+                            }}
+                          />
+                        )}
                       </div>
-                      <div className={styles.listItemCardMain} onClick={() => handleBusinessClick(business)}>
+                      <div className={styles.listItemCardMain}>
                         <h3 className={styles.listItemCardTitle}>{business.name}</h3>
                         {business.description && (
                           <p className={styles.listItemCardSubtitle}>{business.description}</p>
@@ -740,15 +903,10 @@ const SideBusinesses = () => {
                       </div>
                       <div className={styles.listItemCardActions}>
                         <button
-                          onClick={() => handleBusinessClick(business)}
-                          className={styles.actionButton}
-                          title="View Details"
-                        >
-                          <i className={`fas fa-eye ${styles.actionButtonIcon}`}></i>
-                          View
-                        </button>
-                        <button
-                          onClick={() => setBusinessToDelete(business)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setBusinessToDelete(business)
+                          }}
                           className={`${styles.actionButton} ${styles.actionButtonDanger}`}
                           title="Delete Business"
                         >
@@ -957,12 +1115,35 @@ const SideBusinesses = () => {
                 </small>
               </div>
               
+              <div className={styles.formFieldGroup}>
+                <label className={styles.formFieldLabel}>Business Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    setNewBusinessImage(file || null)
+                  }}
+                  className={styles.formFieldInput}
+                />
+                <small className={styles.formFieldHelp}>
+                  Optional: Upload an image for your business (max 5MB, will be compressed)
+                </small>
+                {newBusinessImage && (
+                  <div style={{ marginTop: '8px', padding: '8px', background: '#f0f0f0', borderRadius: '4px' }}>
+                    <i className="fas fa-image" style={{ marginRight: '8px', color: '#7d8d86' }}></i>
+                    Selected: {newBusinessImage.name}
+                  </div>
+                )}
+              </div>
+              
               
               <div className={styles.modalDialogActions}>
                 <button
                   type="button"
                   onClick={() => {
                     setNewBusiness({ name: '', description: '', business_type: 'service', icon: 'fa-solid fa-briefcase' })
+                    setNewBusinessImage(null)
                     setShowAddBusiness(false)
                     setError(null)
                   }}
@@ -972,11 +1153,20 @@ const SideBusinesses = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={!newBusiness.name.trim() || !newBusiness.business_type}
+                  disabled={!newBusiness.name.trim() || !newBusiness.business_type || uploadingNewBusinessImage}
                   className={`${styles.standardButton} ${styles.standardButtonPrimary}`}
                 >
-                  <i className="fas fa-plus" style={{ marginRight: '8px' }}></i>
-                  Create Business
+                  {uploadingNewBusinessImage ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-plus" style={{ marginRight: '8px' }}></i>
+                      Create Business
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -1095,7 +1285,7 @@ const SideBusinesses = () => {
 
       {/* Add Sale Modal */}
       {showAddSale && (
-        <div className={styles.modalOverlay}>
+        <div className={styles.modalOverlay} style={{ zIndex: 2000 }}>
           <div className={styles.modalDialog}>
             <h2 className={styles.modalDialogTitle}>Record Sale</h2>
             <form onSubmit={handleAddSale} className={styles.modalDialogForm}>
@@ -1192,7 +1382,20 @@ const SideBusinesses = () => {
             
             <div className={styles.businessDetailModalHeader}>
               <div className={styles.businessDetailModalIcon}>
-                <i className={selectedBusiness.icon || 'fa-solid fa-briefcase'}></i>
+                {selectedBusiness.image_url ? (
+                  <img 
+                    src={selectedBusiness.image_url} 
+                    alt={selectedBusiness.name}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '16px',
+                      objectFit: 'cover'
+                    }}
+                  />
+                ) : (
+                  <i className={selectedBusiness.icon || 'fa-solid fa-briefcase'}></i>
+                )}
               </div>
               <div className={styles.businessDetailModalInfo}>
                 <h3 className={styles.businessDetailModalName}>{selectedBusiness.name}</h3>
@@ -1434,7 +1637,7 @@ const SideBusinesses = () => {
 
        {/* Restock Modal */}
        {showRestockModal && restockItem.item_id && (
-         <div className={styles.modalOverlay}>
+         <div className={styles.modalOverlay} style={{ zIndex: 2000 }}>
            <div className={styles.modalDialog}>
              <h2 className={styles.modalDialogTitle}>Restock Item</h2>
              <div className={styles.restockInfo}>
@@ -1489,7 +1692,7 @@ const SideBusinesses = () => {
 
        {/* Edit Item Modal */}
        {showEditItemModal && editingItem && (
-         <div className={styles.modalOverlay}>
+         <div className={styles.modalOverlay} style={{ zIndex: 2000 }}>
            <div className={styles.modalDialog}>
              <h2 className={styles.modalDialogTitle}>Edit Item</h2>
              

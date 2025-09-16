@@ -104,7 +104,7 @@ export const generateReceiptHTML = (
     <body>
       <div class="receipt">
         <div class="header">
-          <img src="/images/backgrounds/logo1.png" alt="LandM Store" style="max-width: 80px; height: auto; display: block; margin: 0 auto 10px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+          <img src="/retailpos/images/backgrounds/logo1.png" alt="LandM Store" style="max-width: 80px; height: auto; display: block; margin: 0 auto 10px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
           <div class="logo-fallback" style="display: none; font-size: 24px; font-weight: bold; margin-bottom: 8px; color: #3e3f29;">LandM Store</div>
           <div class="business-info">
             <div>Unit 2 Glenmore Park</div>

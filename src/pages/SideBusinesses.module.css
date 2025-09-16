@@ -204,6 +204,7 @@
 .listItemCard:hover {
   border-color: #7d8d86;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
 }
 
 .listItemCardContent {
@@ -232,7 +233,6 @@
 
 .listItemCardMain {
   flex: 1;
-  cursor: pointer;
 }
 
 .listItemCardTitle {

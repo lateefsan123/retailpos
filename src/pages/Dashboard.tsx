@@ -114,7 +114,7 @@ const Dashboard = () => {
           sale_items (quantity)
         `)
         .order('datetime', { ascending: false })
-        .limit(3)
+        .limit(5)
 
       if (error) {
         console.error('Error fetching recent transactions:', error)
@@ -281,9 +281,9 @@ const Dashboard = () => {
       title: "Today's Sales",
       value: `€${(stats.todayRevenue + stats.todaySideBusinessRevenue).toFixed(2)}`,
       change: `Products: €${stats.todayRevenue.toFixed(2)} | Side Business: €${stats.todaySideBusinessRevenue.toFixed(2)}`,
-      changeColor: '#7d8d86',
+      changeColor: '#1a1a1a',
       icon: 'fa-solid fa-euro-sign',
-      bgColor: '#7d8d86',
+      bgColor: '#1a1a1a',
       iconColor: '#f1f0e4'
     },
     {
@@ -293,7 +293,7 @@ const Dashboard = () => {
       changeColor: '#bca88d',
       icon: 'fa-solid fa-shopping-cart',
       bgColor: '#bca88d',
-      iconColor: '#3e3f29'
+      iconColor: '#1a1a1a'
     }
   ]
 
@@ -307,7 +307,7 @@ const Dashboard = () => {
       }}>
         <div style={{ 
           fontSize: '20px', 
-          color: '#7d8d86',
+          color: '#1a1a1a',
           display: 'flex',
           alignItems: 'center',
           gap: '12px'
@@ -335,14 +335,14 @@ const Dashboard = () => {
           <h1 style={{
             fontSize: '32px',
             fontWeight: 'bold',
-            color: '#3e3f29',
+            color: '#1a1a1a',
             margin: '0 0 8px 0'
           }}>
             Dashboard
           </h1>
           <p style={{
             fontSize: '16px',
-            color: '#7d8d86',
+            color: '#1a1a1a',
             margin: 0
           }}>
             Welcome back! Here's an overview of your business.
@@ -353,8 +353,8 @@ const Dashboard = () => {
         <div 
           onClick={() => setShowCalendar(true)}
           style={{
-            background: '#3e3f29',
-            border: '1px solid #7d8d86',
+            background: '#1a1a1a',
+            border: '1px solid #1a1a1a',
             borderRadius: '8px',
             padding: '12px 16px',
             display: 'flex',
@@ -363,14 +363,6 @@ const Dashboard = () => {
             cursor: 'pointer',
             transition: 'all 0.2s ease',
             minWidth: '200px'
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.borderColor = '#bca88d'
-            e.target.style.boxShadow = '0 2px 8px rgba(62, 63, 41, 0.2)'
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.borderColor = '#7d8d86'
-            e.target.style.boxShadow = 'none'
           }}
         >
           <div style={{
@@ -404,7 +396,7 @@ const Dashboard = () => {
         gridTemplateColumns: 'repeat(3, 1fr)',
         gap: '24px',
         marginBottom: '32px',
-        minHeight: '200px'
+        minHeight: '140px'
       }}>
         {statCards.map((card, index) => (
           <div
@@ -412,29 +404,20 @@ const Dashboard = () => {
             style={{
               background: '#ffffff',
               borderRadius: '16px',
-              padding: '32px',
+              padding: '20px',
               boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-              border: '1px solid rgba(125, 141, 134, 0.2)',
               transition: 'all 0.3s ease',
               cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              minHeight: '180px'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.transform = 'translateY(-4px)'
-              e.target.style.boxShadow = '0 8px 24px rgba(62, 63, 41, 0.15)'
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'translateY(0)'
-              e.target.style.boxShadow = '0 4px 12px rgba(62, 63, 41, 0.1)'
+              minHeight: '120px'
             }}
           >
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>
                 <p style={{ 
-                  color: '#7d8d86', 
+                  color: '#1a1a1a', 
                   fontSize: '16px', 
                   fontWeight: '500', 
                   margin: '0 0 12px 0' 
@@ -444,7 +427,7 @@ const Dashboard = () => {
                 <p style={{ 
                   fontSize: '36px', 
                   fontWeight: 'bold', 
-                  color: '#3e3f29', 
+                  color: '#1a1a1a', 
                   margin: '0 0 8px 0',
                   lineHeight: '1.1'
                 }}>
@@ -483,22 +466,13 @@ const Dashboard = () => {
         <div style={{
           background: '#ffffff',
           borderRadius: '16px',
-          padding: '32px',
+          padding: '20px',
           boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-          border: '1px solid rgba(125, 141, 134, 0.2)',
           transition: 'all 0.3s ease',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          minHeight: '180px'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-4px)'
-          e.currentTarget.style.boxShadow = '0 8px 24px rgba(62, 63, 41, 0.15)'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)'
-          e.currentTarget.style.boxShadow = '0 4px 12px rgba(62, 63, 41, 0.1)'
+          minHeight: '120px'
         }}
         >
           <LowStockSection />
@@ -517,15 +491,14 @@ const Dashboard = () => {
           background: '#ffffff',
           borderRadius: '16px',
           padding: '24px',
-          boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-          border: '1px solid rgba(125, 141, 134, 0.2)'
+          boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
             <div style={{
               width: '40px',
               height: '40px',
               borderRadius: '10px',
-              background: '#7d8d86',
+              background: '#1a1a1a',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
@@ -535,7 +508,7 @@ const Dashboard = () => {
             <h3 style={{ 
               fontSize: '20px', 
               fontWeight: '600', 
-              color: '#3e3f29', 
+              color: '#1a1a1a', 
               margin: 0 
             }}>
               Recent Transactions
@@ -555,17 +528,8 @@ const Dashboard = () => {
                     padding: '12px',
                     background: 'white',
                     borderRadius: '8px',
-                    border: '1px solid rgba(125, 141, 134, 0.1)',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.boxShadow = '0 2px 8px rgba(62, 63, 41, 0.1)'
-                    e.target.style.transform = 'translateY(-1px)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.boxShadow = 'none'
-                    e.target.style.transform = 'translateY(0)'
                   }}
                 >
                   <div style={{
@@ -584,14 +548,14 @@ const Dashboard = () => {
                     <p style={{ 
                       fontSize: '14px', 
                       fontWeight: '600', 
-                      color: '#3e3f29', 
+                      color: '#1a1a1a', 
                       margin: '0 0 2px 0' 
                     }}>
                       #TXN-{transaction.sale_id.toString().padStart(6, '0')}
                     </p>
                     <p style={{ 
                       fontSize: '12px', 
-                      color: '#7d8d86', 
+                      color: '#1a1a1a', 
                       margin: 0 
                     }}>
                       {transaction.items_count} item{transaction.items_count !== 1 ? 's' : ''} • {transaction.payment_method}
@@ -601,7 +565,7 @@ const Dashboard = () => {
                     <p style={{ 
                       fontSize: '14px', 
                       fontWeight: '600', 
-                      color: '#3e3f29', 
+                      color: '#1a1a1a', 
                       margin: 0 
                     }}>
                       €{transaction.total_amount.toFixed(2)}
@@ -613,7 +577,7 @@ const Dashboard = () => {
               <div style={{ 
                 textAlign: 'center', 
                 padding: '20px', 
-                color: '#7d8d86',
+                color: '#1a1a1a',
                 fontSize: '14px'
               }}>
                 No recent transactions
@@ -667,7 +631,7 @@ const Dashboard = () => {
               <h2 style={{
                 fontSize: '24px',
                 fontWeight: '600',
-                color: '#3e3f29',
+                color: '#1a1a1a',
                 margin: 0
               }}>
                 {selectedDay} Transactions
@@ -678,19 +642,11 @@ const Dashboard = () => {
                   background: 'none',
                   border: 'none',
                   fontSize: '24px',
-                  color: '#7d8d86',
+                  color: '#1a1a1a',
                   cursor: 'pointer',
                   padding: '4px',
                   borderRadius: '4px',
                   transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.background = '#7d8d86'
-                  e.target.style.color = '#f1f0e4'
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = 'none'
-                  e.target.style.color = '#7d8d86'
                 }}
               >
                 ×
@@ -707,7 +663,7 @@ const Dashboard = () => {
               }}>
                 <div style={{
                   fontSize: '16px',
-                  color: '#7d8d86',
+                  color: '#1a1a1a',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '12px'
@@ -726,7 +682,6 @@ const Dashboard = () => {
                     background: 'white',
                     borderRadius: '12px',
                     padding: '16px',
-                    border: '1px solid rgba(125, 141, 134, 0.1)',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
@@ -734,23 +689,13 @@ const Dashboard = () => {
                     cursor: 'pointer'
                   }}
                   onClick={() => handleTransactionClick(transaction.transaction_id)}
-                  onMouseEnter={(e) => {
-                    e.target.style.boxShadow = '0 4px 12px rgba(62, 63, 41, 0.1)'
-                    e.target.style.transform = 'translateY(-2px)'
-                    e.target.style.borderColor = '#7d8d86'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.boxShadow = 'none'
-                    e.target.style.transform = 'translateY(0)'
-                    e.target.style.borderColor = 'rgba(125, 141, 134, 0.1)'
-                  }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{
                         width: '40px',
                         height: '40px',
                         borderRadius: '50%',
-                        background: '#7d8d86',
+                        background: '#1a1a1a',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -763,14 +708,14 @@ const Dashboard = () => {
                         <p style={{
                           fontSize: '14px',
                           fontWeight: '600',
-                          color: '#3e3f29',
+                          color: '#1a1a1a',
                           margin: '0 0 4px 0'
                         }}>
                           {transaction.transaction_id}
                         </p>
                         <p style={{
                           fontSize: '12px',
-                          color: '#7d8d86',
+                          color: '#1a1a1a',
                           margin: 0
                         }}>
                           {new Date(transaction.datetime).toLocaleTimeString()} • {transaction.items_count} items • {transaction.payment_method}
@@ -780,7 +725,7 @@ const Dashboard = () => {
                     <div style={{
                       fontSize: '16px',
                       fontWeight: '600',
-                      color: '#3e3f29'
+                      color: '#1a1a1a'
                     }}>
                       €{transaction.total_amount.toFixed(2)}
                     </div>
@@ -791,7 +736,7 @@ const Dashboard = () => {
               <div style={{
                 textAlign: 'center',
                 padding: '40px',
-                color: '#7d8d86'
+                color: '#1a1a1a'
               }}>
                 <i className="fa-solid fa-receipt" style={{
                   fontSize: '48px',
@@ -841,7 +786,7 @@ const Dashboard = () => {
               <h2 style={{
                 fontSize: '20px',
                 fontWeight: '600',
-                color: '#3e3f29',
+                color: '#1a1a1a',
                 margin: 0
               }}>
                 {calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
@@ -853,19 +798,11 @@ const Dashboard = () => {
                     background: 'none',
                     border: 'none',
                     fontSize: '16px',
-                    color: '#7d8d86',
+                    color: '#1a1a1a',
                     cursor: 'pointer',
                     padding: '4px 8px',
                     borderRadius: '4px',
                     transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.background = '#7d8d86'
-                    e.target.style.color = '#f1f0e4'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.background = 'none'
-                    e.target.style.color = '#7d8d86'
                   }}
                 >
                   <i className="fa-solid fa-chevron-left"></i>
@@ -876,19 +813,11 @@ const Dashboard = () => {
                     background: 'none',
                     border: 'none',
                     fontSize: '16px',
-                    color: '#7d8d86',
+                    color: '#1a1a1a',
                     cursor: 'pointer',
                     padding: '4px 8px',
                     borderRadius: '4px',
                     transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.background = '#7d8d86'
-                    e.target.style.color = '#f1f0e4'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.background = 'none'
-                    e.target.style.color = '#7d8d86'
                   }}
                 >
                   <i className="fa-solid fa-chevron-right"></i>
@@ -899,19 +828,11 @@ const Dashboard = () => {
                     background: 'none',
                     border: 'none',
                     fontSize: '20px',
-                    color: '#7d8d86',
+                    color: '#1a1a1a',
                     cursor: 'pointer',
                     padding: '4px',
                     borderRadius: '4px',
                     transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.background = '#7d8d86'
-                    e.target.style.color = '#f1f0e4'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.background = 'none'
-                    e.target.style.color = '#7d8d86'
                   }}
                 >
                   ×
@@ -932,7 +853,7 @@ const Dashboard = () => {
                   textAlign: 'center',
                   fontSize: '12px',
                   fontWeight: '600',
-                  color: '#7d8d86',
+                  color: '#1a1a1a',
                   padding: '8px 4px'
                 }}>
                   {day}
@@ -950,9 +871,9 @@ const Dashboard = () => {
                     key={index}
                     onClick={() => handleDateSelect(day)}
                     style={{
-                      background: isSelected ? '#7d8d86' : 'transparent',
-                      color: isSelected ? '#f1f0e4' : isCurrentMonth ? '#3e3f29' : '#bca88d',
-                      border: isToday ? '2px solid #7d8d86' : '1px solid transparent',
+                      background: isSelected ? '#1a1a1a' : 'transparent',
+                      color: isSelected ? '#f1f0e4' : isCurrentMonth ? '#1a1a1a' : '#bca88d',
+                      border: isToday ? '2px solid #1a1a1a' : '1px solid transparent',
                       borderRadius: '8px',
                       padding: '8px',
                       fontSize: '14px',
@@ -960,18 +881,6 @@ const Dashboard = () => {
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                       opacity: isCurrentMonth ? 1 : 0.5
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) {
-                        e.target.style.background = '#bca88d'
-                        e.target.style.color = '#3e3f29'
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        e.target.style.background = 'transparent'
-                        e.target.style.color = isCurrentMonth ? '#3e3f29' : '#bca88d'
-                      }
                     }}
                   >
                     {day.getDate()}
@@ -985,7 +894,7 @@ const Dashboard = () => {
               <button
                 onClick={() => handleDateSelect(new Date())}
                 style={{
-                  background: '#7d8d86',
+                  background: '#1a1a1a',
                   color: '#f1f0e4',
                   border: 'none',
                   padding: '8px 16px',
@@ -994,12 +903,6 @@ const Dashboard = () => {
                   fontWeight: '500',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.background = '#bca88d'
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = '#7d8d86'
                 }}
               >
                 Today

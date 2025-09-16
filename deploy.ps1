@@ -30,9 +30,9 @@ git add .
 # Commit changes
 git commit -m "Deploy: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 
-# Push to gh-pages branch
+# Push to gh-pages branch (force push to overwrite remote)
 Write-Host "Pushing to GitHub Pages..."
-git push origin gh-pages
+git push origin gh-pages --force
 
 # Clean up
 Set-Location ..

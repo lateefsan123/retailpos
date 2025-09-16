@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { useAuth } from '../contexts/AuthContext'
-import { hashPassword, generateUserId } from '../utils/auth'
+import { hashPassword } from '../utils/auth'
 import VaultModal from '../components/VaultModal'
 
 interface User {
@@ -21,7 +20,6 @@ interface NewUser {
 }
 
 const Admin = () => {
-  const { user: currentUser } = useAuth()
   const [users, setUsers] = useState<User[]>([])
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -83,19 +81,18 @@ const Admin = () => {
     setError('')
 
     try {
-      const userId = generateUserId()
       const passwordHash = hashPassword(newUser.password)
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('users')
         .insert([{
-          user_id: userId,
           username: newUser.username,
           password_hash: passwordHash,
           role: newUser.role,
           active: true,
           icon: newUser.icon
         }])
+        .select()
 
       if (error) {
         console.error('Error adding user:', error)
@@ -113,7 +110,7 @@ const Admin = () => {
       fetchUsers() // Refresh the list
     } catch (error) {
       console.error('Error adding user:', error)
-      setError(`Failed to add user: ${error.message || 'Unknown error'}`)
+      setError(`Failed to add user: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsSubmitting(false)
     }
@@ -136,7 +133,7 @@ const Admin = () => {
       fetchUsers() // Refresh the list
     } catch (error) {
       console.error('Error deleting user:', error)
-      setError(`Failed to delete user: ${error.message || 'Unknown error'}`)
+      setError(`Failed to delete user: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
@@ -155,7 +152,7 @@ const Admin = () => {
       fetchUsers() // Refresh the list
     } catch (error) {
       console.error('Error updating user status:', error)
-      setError(`Failed to update user: ${error.message || 'Unknown error'}`)
+      setError(`Failed to update user: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
@@ -211,7 +208,7 @@ const Admin = () => {
       fetchUsers() // Refresh the list
     } catch (error) {
       console.error('Error updating user:', error)
-      setError(`Failed to update user: ${error.message || 'Unknown error'}`)
+      setError(`Failed to update user: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsSubmitting(false)
     }
@@ -222,7 +219,7 @@ const Admin = () => {
       case 'Admin': return '#ef4444' // Red
       case 'Manager': return '#f59e0b' // Orange
       case 'Cashier': return '#3b82f6' // Blue
-      default: return '#6b7280' // Gray
+      default: return '#1a1a1a' // Gray
     }
   }
 
@@ -234,7 +231,7 @@ const Admin = () => {
         alignItems: 'center', 
         height: '400px',
         fontSize: '18px',
-        color: '#6b7280'
+        color: '#1a1a1a'
       }}>
         <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '12px' }}></i>
         Loading users...
@@ -256,14 +253,14 @@ const Admin = () => {
           <h1 style={{ 
             fontSize: '32px', 
             fontWeight: '600', 
-            color: '#1f2937',
+            color: '#1a1a1a',
             margin: '0 0 8px 0'
           }}>
             <i className="fa-solid fa-users-cog" style={{ marginRight: '12px', color: '#7d8d86' }}></i>
             User Management
           </h1>
           <p style={{ 
-            color: '#6b7280', 
+            color: '#1a1a1a', 
             margin: '0',
             fontSize: '18px'
           }}>
@@ -286,12 +283,6 @@ const Admin = () => {
             alignItems: 'center',
             gap: '8px',
             transition: 'all 0.2s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.opacity = '0.9'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = '1'
           }}
         >
           <i className="fa-solid fa-plus"></i>
@@ -333,7 +324,7 @@ const Admin = () => {
             margin: '0', 
             fontSize: '20px', 
             fontWeight: '600',
-            color: '#1f2937'
+            color: '#1a1a1a'
           }}>
             <i className="fa-solid fa-list" style={{ marginRight: '8px', color: '#7d8d86' }}></i>
             All Users ({users.length})
@@ -344,7 +335,7 @@ const Admin = () => {
           <div style={{
             padding: '48px 24px',
             textAlign: 'center',
-            color: '#6b7280'
+            color: '#1a1a1a'
           }}>
             <i className="fa-solid fa-users" style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}></i>
             <p style={{ fontSize: '20px', margin: '0 0 8px 0' }}>No users found</p>
@@ -359,7 +350,7 @@ const Admin = () => {
                     padding: '16px 24px', 
                     textAlign: 'left', 
                     fontWeight: '600',
-                    color: '#374151',
+                    color: '#1a1a1a',
                     borderBottom: '2px solid #d1d5db',
                     fontSize: '16px'
                   }}>
@@ -369,7 +360,7 @@ const Admin = () => {
                     padding: '16px 24px', 
                     textAlign: 'center', 
                     fontWeight: '600',
-                    color: '#374151',
+                    color: '#1a1a1a',
                     borderBottom: '2px solid #d1d5db',
                     fontSize: '16px'
                   }}>
@@ -379,7 +370,7 @@ const Admin = () => {
                     padding: '16px 24px', 
                     textAlign: 'left', 
                     fontWeight: '600',
-                    color: '#374151',
+                    color: '#1a1a1a',
                     borderBottom: '2px solid #d1d5db',
                     fontSize: '16px'
                   }}>
@@ -389,7 +380,7 @@ const Admin = () => {
                     padding: '16px 24px', 
                     textAlign: 'left', 
                     fontWeight: '600',
-                    color: '#374151',
+                    color: '#1a1a1a',
                     borderBottom: '2px solid #d1d5db',
                     fontSize: '16px'
                   }}>
@@ -399,7 +390,7 @@ const Admin = () => {
                      padding: '16px 24px', 
                      textAlign: 'left', 
                      fontWeight: '600',
-                     color: '#374151',
+                     color: '#1a1a1a',
                      borderBottom: '2px solid #d1d5db',
                      fontSize: '16px'
                    }}>
@@ -409,7 +400,7 @@ const Admin = () => {
                     padding: '16px 24px', 
                     textAlign: 'center', 
                     fontWeight: '600',
-                    color: '#374151',
+                    color: '#1a1a1a',
                     borderBottom: '2px solid #d1d5db',
                     fontSize: '16px'
                   }}>
@@ -426,7 +417,7 @@ const Admin = () => {
                        <div>
                          <div style={{ 
                            fontWeight: '500', 
-                           color: '#1f2937',
+                           color: '#1a1a1a',
                            marginBottom: '4px',
                            fontSize: '16px'
                          }}>
@@ -434,7 +425,7 @@ const Admin = () => {
                          </div>
                          <div style={{ 
                            fontSize: '15px', 
-                           color: '#6b7280' 
+                           color: '#1a1a1a' 
                          }}>
                            ID: {user.user_id}
                          </div>
@@ -497,7 +488,7 @@ const Admin = () => {
                          {user.active ? 'Active' : 'Inactive'}
                        </span>
                      </td>
-                     <td style={{ padding: '16px 24px', color: '#6b7280', fontSize: '15px' }}>
+                     <td style={{ padding: '16px 24px', color: '#1a1a1a', fontSize: '15px' }}>
                        User #{user.user_id}
                      </td>
                     <td style={{ padding: '16px 24px', textAlign: 'center' }}>
@@ -605,7 +596,7 @@ const Admin = () => {
                 margin: '0', 
                 fontSize: '26px', 
                 fontWeight: '600',
-                color: '#1f2937'
+                color: '#1a1a1a'
               }}>
                 <i className="fa-solid fa-user-plus" style={{ marginRight: '8px', color: '#7d8d86' }}></i>
                 Add New User
@@ -616,7 +607,7 @@ const Admin = () => {
                   background: 'none',
                   border: 'none',
                   fontSize: '20px',
-                  color: '#6b7280',
+                  color: '#1a1a1a',
                   cursor: 'pointer',
                   padding: '4px'
                 }}
@@ -631,7 +622,7 @@ const Admin = () => {
                    display: 'block',
                    marginBottom: '8px',
                    fontWeight: '500',
-                   color: '#374151'
+                   color: '#1a1a1a'
                  }}>
                    Username *
                  </label>
@@ -657,7 +648,7 @@ const Admin = () => {
                   display: 'block',
                   marginBottom: '8px',
                   fontWeight: '500',
-                  color: '#374151'
+                  color: '#1a1a1a'
                 }}>
                   Password *
                 </label>
@@ -683,7 +674,7 @@ const Admin = () => {
                   display: 'block',
                   marginBottom: '8px',
                   fontWeight: '500',
-                  color: '#374151'
+                  color: '#1a1a1a'
                 }}>
                   Role *
                 </label>
@@ -712,7 +703,7 @@ const Admin = () => {
                   display: 'block',
                   marginBottom: '16px',
                   fontWeight: '600',
-                  color: '#1f2937',
+                  color: '#1a1a1a',
                   fontSize: '16px'
                 }}>
                   Character Icon *
@@ -750,18 +741,6 @@ const Admin = () => {
                           : '0 2px 8px rgba(0, 0, 0, 0.1)',
                         position: 'relative',
                         overflow: 'hidden'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (newUser.icon !== icon.name) {
-                          e.currentTarget.style.transform = 'scale(1.02)'
-                          e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.15)'
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (newUser.icon !== icon.name) {
-                          e.currentTarget.style.transform = 'scale(1)'
-                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)'
-                        }
                       }}
                     >
                       <div style={{
@@ -821,7 +800,7 @@ const Admin = () => {
                   onClick={() => setShowAddModal(false)}
                   style={{
                     background: '#f3f4f6',
-                    color: '#374151',
+                    color: '#1a1a1a',
                     border: 'none',
                     borderRadius: '8px',
                     padding: '12px 24px',
@@ -901,7 +880,7 @@ const Admin = () => {
                  margin: '0', 
                  fontSize: '24px', 
                  fontWeight: '600',
-                 color: '#1f2937'
+                 color: '#1a1a1a'
                }}>
                  <i className="fa-solid fa-user-pen" style={{ marginRight: '8px', color: '#7d8d86' }}></i>
                  Edit User
@@ -915,7 +894,7 @@ const Admin = () => {
                    background: 'none',
                    border: 'none',
                    fontSize: '20px',
-                   color: '#6b7280',
+                   color: '#1a1a1a',
                    cursor: 'pointer',
                    padding: '4px'
                  }}
@@ -930,7 +909,7 @@ const Admin = () => {
                    display: 'block',
                    marginBottom: '8px',
                    fontWeight: '500',
-                   color: '#374151'
+                   color: '#1a1a1a'
                  }}>
                    Username *
                  </label>
@@ -956,7 +935,7 @@ const Admin = () => {
                    display: 'block',
                    marginBottom: '8px',
                    fontWeight: '500',
-                   color: '#374151'
+                   color: '#1a1a1a'
                  }}>
                    New Password (leave blank to keep current)
                  </label>
@@ -981,7 +960,7 @@ const Admin = () => {
                    display: 'block',
                    marginBottom: '8px',
                    fontWeight: '500',
-                   color: '#374151'
+                   color: '#1a1a1a'
                  }}>
                    Role *
                  </label>
@@ -1010,7 +989,7 @@ const Admin = () => {
                    display: 'block',
                    marginBottom: '16px',
                    fontWeight: '600',
-                   color: '#1f2937',
+                   color: '#1a1a1a',
                    fontSize: '16px'
                  }}>
                    Character Icon *
@@ -1048,18 +1027,6 @@ const Admin = () => {
                            : '0 2px 8px rgba(0, 0, 0, 0.1)',
                          position: 'relative',
                          overflow: 'hidden'
-                       }}
-                       onMouseEnter={(e) => {
-                         if (newUser.icon !== icon.name) {
-                           e.currentTarget.style.transform = 'scale(1.02)'
-                           e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.15)'
-                         }
-                       }}
-                       onMouseLeave={(e) => {
-                         if (newUser.icon !== icon.name) {
-                           e.currentTarget.style.transform = 'scale(1)'
-                           e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)'
-                         }
                        }}
                      >
                        <div style={{
@@ -1122,7 +1089,7 @@ const Admin = () => {
                    }}
                    style={{
                      background: '#f3f4f6',
-                     color: '#374151',
+                     color: '#1a1a1a',
                      border: 'none',
                      borderRadius: '8px',
                      padding: '12px 24px',
@@ -1187,14 +1154,6 @@ const Admin = () => {
            boxShadow: '0 8px 24px rgba(125, 141, 134, 0.4)',
            cursor: 'pointer',
            transition: 'all 0.2s ease'
-         }}
-         onMouseEnter={(e) => {
-           e.currentTarget.style.transform = 'translateY(-2px)'
-           e.currentTarget.style.boxShadow = '0 6px 16px rgba(125, 141, 134, 0.4)'
-         }}
-         onMouseLeave={(e) => {
-           e.currentTarget.style.transform = 'translateY(0)'
-           e.currentTarget.style.boxShadow = '0 4px 12px rgba(125, 141, 134, 0.3)'
          }}
        >
          <i className="fa-solid fa-vault" style={{ 

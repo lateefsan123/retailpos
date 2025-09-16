@@ -190,7 +190,7 @@ export default function Reminders() {
           }}
         >
           <img 
-            src={user?.icon ? `/images/icons/${user.icon}.png` : "/images/backgrounds/lily.png"} 
+            src={user?.icon ? `/retailpos/images/icons/${user.icon}.png` : "/retailpos/images/backgrounds/lily.png"} 
             alt={user?.icon || "Lily"} 
           />
         </div>

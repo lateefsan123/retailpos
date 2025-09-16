@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
+import { ttsService, TTSSettings } from '../lib/ttsService'
 
 // Helper function to get local time in database format
 const getLocalDateTime = () => {
@@ -13,6 +14,104 @@ const getLocalDateTime = () => {
   const minutes = String(now.getMinutes()).padStart(2, '0')
   const seconds = String(now.getSeconds()).padStart(2, '0')
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
+
+// TTS functionality now handled by ttsService
+
+// TTS Helper functions - Onyx voice with Nigerian food-themed endings
+const orderEndMessages = [
+  "Order confirmed! Your jollof rice dreams are one step closer.",
+  "Thanks for shopping! Even suya is jealous of your taste.",
+  "Your order is secured tighter than plantain at a party.",
+  "Order complete! Somewhere, egusi soup just smiled at you.",
+  "Confirmed! Your basket was blessed by the spirit of fufu.",
+  "You did it! May your order arrive faster than puff-puff disappears.",
+  "Order locked! Your kitchen is about to smell like victory.",
+  "Thanks for shopping! Even aunties will approve of this order.",
+  "Your order is in! We'll protect it like Nigerians protect their jollof recipe.",
+  "Success! Your food is coming with more flavor than a pepper soup challenge.",
+  "Confirmed — your taste is hotter than shito pepper.",
+  "Order complete! Don't worry, we didn't forget the Maggi cubes.",
+  "Transaction approved! Time to prepare for a feast fit for ancestors.",
+  "Done! May your meals be as sweet as ripe plantain.",
+  "Your order is confirmed — better hide it before the neighbors smell it!"
+]
+
+const speakOrderItems = async (items: OrderItem[]) => {
+  if (items.length === 0) {
+    await ttsService.speak("No items in order yet.")
+    return
+  }
+
+  let speechText = `Order contains ${items.length} item${items.length === 1 ? '' : 's'}. `
+  let runningTotal = 0
+  
+  items.forEach((item, index) => {
+    const itemName = item.product?.name || item.sideBusinessItem?.name || 'Unknown Item'
+    const quantity = item.quantity
+    
+    // Better price calculation for both products and side business items
+    let price = 0
+    if (item.customPrice) {
+      price = item.customPrice
+    } else if (item.calculatedPrice) {
+      price = item.calculatedPrice / quantity // Convert total back to per-item price
+    } else if (item.product?.price) {
+      price = item.product.price
+    } else if (item.sideBusinessItem?.price) {
+      price = item.sideBusinessItem.price
+    }
+    
+    let itemTotal = 0
+    if (item.weight && item.calculatedPrice) {
+      // Weighted item (products only)
+      itemTotal = item.calculatedPrice
+      speechText += `Item ${index + 1}: ${itemName}, ${item.weight} units at €${item.product?.price_per_unit?.toFixed(2) || '0.00'} per unit, `
+    } else {
+      // Regular item (products or side business items)
+      itemTotal = price * quantity
+      speechText += `Item ${index + 1}: ${itemName}, quantity ${quantity}, €${price.toFixed(2)} each, `
+    }
+    
+    runningTotal += itemTotal
+    
+    // Randomly vary the phrasing to sound more natural, but always say the total
+    const phrases = [
+      `making this €${runningTotal.toFixed(2)}. `,
+      `total so far €${runningTotal.toFixed(2)}. `,
+      `€${runningTotal.toFixed(2)} total. `,
+      `running total €${runningTotal.toFixed(2)}. `,
+      `€${runningTotal.toFixed(2)}. `,
+      `now at €${runningTotal.toFixed(2)}. `
+    ]
+    
+    // Always say the total, but with varied phrasing
+    const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)]
+    speechText += randomPhrase
+  })
+
+  await ttsService.speak(speechText)
+  
+  // Wait a moment, then add the Nigerian food-themed ending message
+  setTimeout(async () => {
+    const randomMessage = orderEndMessages[Math.floor(Math.random() * orderEndMessages.length)]
+    await ttsService.speak(randomMessage)
+  }, 500)
+}
+
+const speakOrderTotal = async (total: number) => {
+  const totalMessages = [
+    `Your total is €${total.toFixed(2)}. Time to feast!`,
+    `Total: €${total.toFixed(2)}. Your taste buds are about to dance!`,
+    `€${total.toFixed(2)} total. May your meals be blessed!`,
+    `Order total: €${total.toFixed(2)}. Even jollof rice approves!`
+  ]
+  const randomTotalMessage = totalMessages[Math.floor(Math.random() * totalMessages.length)]
+  await ttsService.speak(randomTotalMessage)
+}
+
+const speakItemAdded = async (itemName: string, price: number) => {
+  await ttsService.speak(`${itemName} added to order for €${price.toFixed(2)}.`)
 }
 
 interface Product {
@@ -101,6 +200,16 @@ const Sales = () => {
   const [weightInput, setWeightInput] = useState('')
   const [pendingItemId, setPendingItemId] = useState<string | null>(null)
   
+  // Quick Service states
+  const [showQuickServiceModal, setShowQuickServiceModal] = useState(false)
+  const [quickServiceName, setQuickServiceName] = useState('')
+  const [quickServicePrice, setQuickServicePrice] = useState('')
+  const [quickServiceBusiness, setQuickServiceBusiness] = useState('')
+  const [serviceBusinesses, setServiceBusinesses] = useState<{business_id: number, name: string}[]>([])
+  
+  // TTS states - using the new TTS service
+  const [, setTtsSettings] = useState<TTSSettings>(ttsService.getSettings())
+  
   // Partial payment state
   const [allowPartialPayment, setAllowPartialPayment] = useState(false)
   const [partialAmount, setPartialAmount] = useState('')
@@ -116,6 +225,9 @@ const Sales = () => {
     // Load initial products - only top products by default
     fetchProducts(1, productsPerPage) // Load first page with default pagination
     
+    // Fetch service businesses for quick service creation
+    fetchServiceBusinesses()
+    
     // Check if we're adding to an existing transaction
     const transactionParam = searchParams.get('transaction')
     if (transactionParam) {
@@ -124,6 +236,9 @@ const Sales = () => {
       fetchExistingTransaction(transactionParam)
     }
   }, [searchParams])
+
+  // Note: TTS will only be triggered manually by the cashier when they want to announce the order
+  // This ensures TTS is only used when the cashier has finished adding items
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -337,6 +452,22 @@ const Sales = () => {
       // Error fetching top products - handled silently per user preference
       // Fallback to first 5 products
       setTopProducts(allProducts.slice(0, 5))
+    }
+  }
+
+  const fetchServiceBusinesses = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('side_businesses')
+        .select('business_id, name')
+        .eq('business_type', 'service')
+        .order('name')
+
+      if (error) throw error
+      setServiceBusinesses(data || [])
+    } catch (error) {
+      console.error('Error fetching service businesses:', error)
+      setServiceBusinesses([])
     }
   }
 
@@ -610,6 +741,9 @@ const Sales = () => {
         }
       }
     })
+    
+    // Announce item added
+    speakItemAdded(product.name, product.price)
   }
 
   const addWeightedProductToOrder = (product: Product, weight: number) => {
@@ -676,6 +810,11 @@ const Sales = () => {
           }
         }
       })
+      
+      // Announce item added
+      const itemName = sideBusinessItem.name
+      const price = sideBusinessItem.price || 0
+      speakItemAdded(itemName, price)
     }
   }
 
@@ -714,6 +853,53 @@ const Sales = () => {
     setShowCustomPriceModal(false)
     setPendingSideBusinessItem(null)
     setCustomPriceInput('')
+  }
+
+  const createQuickService = async () => {
+    if (!quickServiceName.trim() || !quickServicePrice || !quickServiceBusiness) {
+      alert('Please fill in all fields')
+      return
+    }
+
+    const price = parseFloat(quickServicePrice)
+    if (isNaN(price) || price < 0) {
+      alert('Please enter a valid price')
+      return
+    }
+
+    try {
+      // Create a temporary side business item for the order
+      const tempServiceItem: SideBusinessItem = {
+        item_id: Date.now(), // Temporary ID
+        business_id: parseInt(quickServiceBusiness),
+        name: quickServiceName.trim(),
+        price: price,
+        stock_qty: null, // Services don't have stock
+        side_businesses: {
+          name: serviceBusinesses.find(b => b.business_id.toString() === quickServiceBusiness)?.name || 'Service',
+          business_type: 'service'
+        }
+      }
+
+      // Add to order
+      setOrder(prev => ({
+        ...prev,
+        items: [...prev.items, { sideBusinessItem: tempServiceItem, quantity: 1, customPrice: price }]
+      }))
+
+      // Announce service created
+      speakItemAdded(quickServiceName.trim(), price)
+
+      // Reset form and close modal
+      setQuickServiceName('')
+      setQuickServicePrice('')
+      setQuickServiceBusiness('')
+      setShowQuickServiceModal(false)
+
+    } catch (error) {
+      console.error('Error creating quick service:', error)
+      alert('Failed to create service. Please try again.')
+    }
   }
 
   const updateQuantity = (itemId: string, newQuantity: number) => {
@@ -910,8 +1096,8 @@ const Sales = () => {
       <body>
         <div class="receipt">
           <div class="header">
-            <img src="/images/backgrounds/logo1.png" alt="LandM Store" style="max-width: 80px; height: auto; display: block; margin: 0 auto 10px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-            <div class="logo-fallback" style="display: none; font-size: 24px; font-weight: bold; margin-bottom: 8px; color: #3e3f29;">LandM Store</div>
+            <img src="/retailpos/images/backgrounds/logo1.png" alt="LandM Store" style="max-width: 80px; height: auto; display: block; margin: 0 auto 10px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <div class="logo-fallback" style="display: none; font-size: 24px; font-weight: bold; margin-bottom: 8px; color: #1a1a1a;">LandM Store</div>
             <div class="business-info">
               <div>Unit 2 Glenmore Park</div>
               <div>Dundalk, Co. Louth</div>
@@ -1192,6 +1378,44 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
 
           if (itemsError) throw itemsError
         }
+
+        // Handle side business items for existing transactions
+        const sideBusinessItems = order.items.filter(item => item.sideBusinessItem)
+        
+        for (const item of sideBusinessItems) {
+          let itemId = item.sideBusinessItem!.item_id
+          
+          // If this is a temporary service item (created via Quick Service), create it in the database first
+          if (itemId > 1000000000) { // Temporary IDs are timestamps, so they'll be large numbers
+            const { data: newItem, error: createItemError } = await supabase
+              .from('side_business_items')
+              .insert({
+                business_id: item.sideBusinessItem!.business_id,
+                name: item.sideBusinessItem!.name,
+                price: item.customPrice || item.sideBusinessItem!.price,
+                stock_qty: null, // Services don't have stock
+                notes: 'Created via Quick Service'
+              })
+              .select()
+              .single()
+
+            if (createItemError) throw createItemError
+            itemId = newItem.item_id
+          }
+
+          // Record the sale
+          const { error: sideBusinessError } = await supabase
+            .from('side_business_sales')
+            .insert({
+              item_id: itemId,
+              quantity: item.quantity,
+              total_amount: (item.customPrice || item.sideBusinessItem!.price || 0) * item.quantity,
+              payment_method: paymentMethod,
+              date_time: getLocalDateTime()
+            })
+
+          if (sideBusinessError) throw sideBusinessError
+        }
       } else {
         // New transaction - add all items
         const saleItems = order.items
@@ -1205,15 +1429,43 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             calculated_price: item.calculatedPrice || null
           }))
 
-        const sideBusinessSales = order.items
-          .filter(item => item.sideBusinessItem)
-          .map(item => ({
-            item_id: item.sideBusinessItem!.item_id,
-            quantity: item.quantity,
-            total_amount: (item.customPrice || item.sideBusinessItem!.price || 0) * item.quantity,
-            payment_method: paymentMethod,
-            date_time: getLocalDateTime()
-          }))
+        // Handle side business items (including temporary quick services)
+        const sideBusinessItems = order.items.filter(item => item.sideBusinessItem)
+        
+        for (const item of sideBusinessItems) {
+          let itemId = item.sideBusinessItem!.item_id
+          
+          // If this is a temporary service item (created via Quick Service), create it in the database first
+          if (itemId > 1000000000) { // Temporary IDs are timestamps, so they'll be large numbers
+            const { data: newItem, error: createItemError } = await supabase
+              .from('side_business_items')
+              .insert({
+                business_id: item.sideBusinessItem!.business_id,
+                name: item.sideBusinessItem!.name,
+                price: item.customPrice || item.sideBusinessItem!.price,
+                stock_qty: null, // Services don't have stock
+                notes: 'Created via Quick Service'
+              })
+              .select()
+              .single()
+
+            if (createItemError) throw createItemError
+            itemId = newItem.item_id
+          }
+
+          // Record the sale
+          const { error: sideBusinessError } = await supabase
+            .from('side_business_sales')
+            .insert({
+              item_id: itemId,
+              quantity: item.quantity,
+              total_amount: (item.customPrice || item.sideBusinessItem!.price || 0) * item.quantity,
+              payment_method: paymentMethod,
+              date_time: getLocalDateTime()
+            })
+
+          if (sideBusinessError) throw sideBusinessError
+        }
 
         // Insert regular product sales
         if (saleItems.length > 0) {
@@ -1222,15 +1474,6 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             .insert(saleItems)
 
           if (itemsError) throw itemsError
-        }
-
-        // Insert side business sales
-        if (sideBusinessSales.length > 0) {
-          const { error: sideBusinessError } = await supabase
-            .from('side_business_sales')
-            .insert(sideBusinessSales)
-
-          if (sideBusinessError) throw sideBusinessError
         }
       }
 
@@ -1337,6 +1580,9 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
         document.body.removeChild(successMsg)
       }, 3000)
 
+      // Announce order total
+      speakOrderTotal(order.total)
+
       // Close the sales summary modal
       setShowSalesSummary(false)
       
@@ -1380,7 +1626,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
       const remindDate = tomorrow.toISOString().split('T')[0]
       
       // Create the reminder
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('reminders')
         .insert([{
           title: reminderTitle,
@@ -1400,8 +1646,6 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
           owner_id: ownerId
         })
         // Don't throw error - reminder creation failure shouldn't break the sale
-      } else {
-        console.log('Partial payment reminder created successfully:', data)
       }
     } catch (error) {
       console.error('Error creating partial payment reminder:', error)
@@ -1550,8 +1794,6 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                           gap: '12px',
                           transition: 'background-color 0.2s ease'
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                       >
                         <div style={{
                           width: '32px',
@@ -1615,6 +1857,25 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             }}>
               <i className="fa-solid fa-search"></i>
               Search
+            </button>
+            <button 
+              onClick={() => setShowQuickServiceModal(true)}
+              style={{
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '12px 24px',
+                fontSize: '16px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <i className="fa-solid fa-plus-circle"></i>
+              Quick Service
             </button>
           </div>
         </div>
@@ -2403,6 +2664,57 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             marginBottom: '12px'
           }}>
             Add Voucher
+          </button>
+
+          {/* TTS Announce Order Button */}
+          <button
+            onClick={async () => {
+              console.log('Announce Order clicked!')
+              console.log('Order items:', order.items)
+              
+              // Temporarily enable TTS
+              ttsService.updateSettings({ enabled: true })
+              setTtsSettings(ttsService.getSettings())
+              
+              console.log('TTS Settings after enabling:', ttsService.getSettings())
+              
+              try {
+                await speakOrderItems(order.items)
+                
+                // Wait for the Nigerian food message to finish, then disable TTS
+                setTimeout(() => {
+                  ttsService.updateSettings({ enabled: false })
+                  setTtsSettings(ttsService.getSettings())
+                }, 3000) // Wait 3 seconds for the delayed message
+                
+              } catch (error) {
+                console.error('TTS Error:', error)
+                // Disable TTS immediately on error
+                ttsService.updateSettings({ enabled: false })
+                setTtsSettings(ttsService.getSettings())
+              }
+            }}
+            title="Announce all items in current order"
+            style={{
+              background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '12px 24px',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: order.items.length === 0 ? 'not-allowed' : 'pointer',
+              width: '100%',
+              marginBottom: '12px',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}
+          >
+            <i className="fa-solid fa-volume-high" style={{ fontSize: '14px' }}></i>
+            Announce Order
           </button>
 
           <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
@@ -3430,6 +3742,197 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
           </div>
         </div>
       )}
+
+      {/* Quick Service Modal */}
+      {showQuickServiceModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '12px',
+            padding: '32px',
+            maxWidth: '500px',
+            width: '90%',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          }}>
+            <h3 style={{
+              margin: '0 0 20px 0',
+              fontSize: '24px',
+              fontWeight: '600',
+              color: '#1f2937',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <i className="fa-solid fa-plus-circle" style={{ color: '#10b981' }}></i>
+              Create Quick Service
+            </h3>
+            
+            <p style={{
+              margin: '0 0 24px 0',
+              fontSize: '14px',
+              color: '#6b7280'
+            }}>
+              Create a service on-the-fly with custom name and price. No need to predefine items!
+            </p>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151'
+              }}>
+                Service Business
+              </label>
+              <select
+                value={quickServiceBusiness}
+                onChange={(e) => setQuickServiceBusiness(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '2px solid #6b7280',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  outline: 'none',
+                  transition: 'border-color 0.2s ease'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#7d8d86'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+              >
+                <option value="">Select a service business</option>
+                {serviceBusinesses.map(business => (
+                  <option key={business.business_id} value={business.business_id}>
+                    {business.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151'
+              }}>
+                Service Name
+              </label>
+              <input
+                type="text"
+                value={quickServiceName}
+                onChange={(e) => setQuickServiceName(e.target.value)}
+                placeholder="e.g., Haircut, Consultation, Repair..."
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '2px solid #6b7280',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  outline: 'none',
+                  transition: 'border-color 0.2s ease'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#7d8d86'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                autoFocus
+              />
+            </div>
+            
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151'
+              }}>
+                Price (€)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={quickServicePrice}
+                onChange={(e) => setQuickServicePrice(e.target.value)}
+                placeholder="0.00"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '2px solid #6b7280',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  outline: 'none',
+                  transition: 'border-color 0.2s ease'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#7d8d86'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+              />
+            </div>
+            
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                onClick={() => {
+                  setShowQuickServiceModal(false)
+                  setQuickServiceName('')
+                  setQuickServicePrice('')
+                  setQuickServiceBusiness('')
+                }}
+                style={{
+                  padding: '12px 24px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  background: '#ffffff',
+                  color: '#374151',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={createQuickService}
+                disabled={!quickServiceName.trim() || !quickServicePrice || !quickServiceBusiness}
+                style={{
+                  padding: '12px 24px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  background: (!quickServiceName.trim() || !quickServicePrice || !quickServiceBusiness) ? '#d1d5db' : 'linear-gradient(135deg, #10b981, #059669)',
+                  color: (!quickServiceName.trim() || !quickServicePrice || !quickServiceBusiness) ? '#9ca3af' : '#ffffff',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: (!quickServiceName.trim() || !quickServicePrice || !quickServiceBusiness) ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <i className="fa-solid fa-plus"></i>
+                Add to Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

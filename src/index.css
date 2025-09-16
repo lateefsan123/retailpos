@@ -37,3 +37,41 @@ code {
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+/* Remove default borders and box styling that might cause "boxes within boxes" effect */
+* {
+  box-sizing: border-box;
+}
+
+/* Remove any default borders from common elements, but allow transaction cards and specific components to keep their borders */
+div:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]), 
+section:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]), 
+article:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]), 
+aside:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]), 
+header:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]), 
+footer:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]), 
+main:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]), 
+nav:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]) {
+  border: none !important;
+}
+
+/* Ensure dashboard cards don't have nested borders, but allow transaction cards and specific components */
+.card:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]), 
+.stats-card:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]), 
+[class*="card"]:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]) {
+  border: none !important;
+}
+
+/* Remove any default fieldset borders */
+fieldset {
+  border: none !important;
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure transaction cards keep their borders */
+[class*="TransactionCard"], 
+[class*="transaction-card"],
+div[style*="border"] {
+  border: inherit !important;
+}

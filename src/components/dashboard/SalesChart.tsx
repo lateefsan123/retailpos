@@ -191,9 +191,9 @@ const SalesChart = () => {
             justifyContent: 'center',
             overflow: 'hidden'
           }}>
-          {(businessInfo?.logo_url || '/images/backgrounds/logo1.png') ? (
+          {(businessInfo?.logo_url || '/retailpos/images/backgrounds/logo1.png') ? (
             <img 
-              src={businessInfo?.logo_url || '/images/backgrounds/logo1.png'} 
+              src={businessInfo?.logo_url || '/retailpos/images/backgrounds/logo1.png'} 
               alt={businessInfo?.name || 'LandM Store Logo'} 
               style={{
                 width: '100%',
@@ -273,7 +273,8 @@ const SalesChart = () => {
         border: '1px solid rgba(125, 141, 134, 0.2)',
         boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
         width: '100%',
-        margin: '0',
+        maxWidth: '1000px',
+        margin: '0 auto',
         fontFamily: 'inherit',
         fontSize: 'inherit',
         lineHeight: 'inherit'
@@ -290,9 +291,9 @@ const SalesChart = () => {
           justifyContent: 'center',
           overflow: 'hidden'
         }}>
-          {(businessInfo?.logo_url || '/images/backgrounds/logo1.png') ? (
+          {(businessInfo?.logo_url || '/retailpos/images/backgrounds/logo1.png') ? (
             <img 
-              src={businessInfo?.logo_url || '/images/backgrounds/logo1.png'} 
+              src={businessInfo?.logo_url || '/retailpos/images/backgrounds/logo1.png'} 
               alt={businessInfo?.name || 'LandM Store Logo'} 
               style={{
                 width: '100%',

@@ -36,6 +36,10 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
   const [visiblePasswords, setVisiblePasswords] = useState<Set<number>>(new Set())
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null)
   const [showReports, setShowReports] = useState(false)
+  const [showPinManagement, setShowPinManagement] = useState(false)
+  const [newPin, setNewPin] = useState('')
+  const [confirmPin, setConfirmPin] = useState('')
+  const [isUpdatingPin, setIsUpdatingPin] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -52,6 +56,10 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
       setVisiblePasswords(new Set())
       setShowDeleteConfirm(null)
       setShowReports(false)
+      setShowPinManagement(false)
+      setNewPin('')
+      setConfirmPin('')
+      setIsUpdatingPin(false)
       setNewEntry({
         title: '',
         username: '',
@@ -79,14 +87,17 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
     if (!user) return
 
     try {
-      // Hash the PIN with bcrypt (you'll need to implement this)
-      const hashedPin = pinValue // TODO: Implement bcrypt hashing
+      // Hash the PIN using SHA-256 (same as system PIN)
+      const hashedPin = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pinValue))
+      const hashedPinHex = Array.from(new Uint8Array(hashedPin))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
       
       const { data, error } = await supabase
         .from('vault')
         .insert([{
           owner_id: user.user_id,
-          pin_hash: hashedPin
+          pin_hash: hashedPinHex
         }])
         .select()
 
@@ -126,8 +137,13 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
         throw vaultError
       }
 
-      // Verify PIN (TODO: Implement bcrypt.compare)
-      if (vaultData.pin_hash === pinValue) {
+      // Verify PIN by hashing the entered PIN and comparing
+      const enteredPinHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pinValue))
+      const enteredPinHashHex = Array.from(new Uint8Array(enteredPinHash))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+      
+      if (vaultData.pin_hash === enteredPinHashHex) {
         setVaultId(vaultData.vault_id)
         setStatusMessage('✓ Access Granted! Vault Unlocked')
         setStatusType('success')
@@ -289,6 +305,57 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
   const submitPin = () => {
     if (pin.length !== 4) return
     verifyPin(pin)
+  }
+
+  const updateVaultPin = async () => {
+    if (newPin.length < 4) {
+      setStatusMessage('✗ PIN must be at least 4 digits')
+      setStatusType('error')
+      return
+    }
+
+    if (newPin !== confirmPin) {
+      setStatusMessage('✗ PINs do not match')
+      setStatusType('error')
+      return
+    }
+
+    if (!vaultId) {
+      setStatusMessage('✗ No vault found')
+      setStatusType('error')
+      return
+    }
+
+    setIsUpdatingPin(true)
+    setStatusMessage('Updating vault PIN...')
+    setStatusType('success')
+
+    try {
+      // Hash the new PIN
+      const hashedPin = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(newPin))
+      const hashedPinHex = Array.from(new Uint8Array(hashedPin))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+
+      const { error } = await supabase
+        .from('vault')
+        .update({ pin_hash: hashedPinHex })
+        .eq('vault_id', vaultId)
+
+      if (error) throw error
+
+      setStatusMessage('✓ Vault PIN updated successfully!')
+      setStatusType('success')
+      setNewPin('')
+      setConfirmPin('')
+      setShowPinManagement(false)
+    } catch (error) {
+      console.error('Error updating vault PIN:', error)
+      setStatusMessage('✗ Failed to update vault PIN')
+      setStatusType('error')
+    } finally {
+      setIsUpdatingPin(false)
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -575,6 +642,34 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                 Password Vault
               </h2>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <button
+                  onClick={() => setShowPinManagement(true)}
+                  style={{
+                    background: '#dc3545',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '20px',
+                    padding: '8px 16px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#c82333'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#dc3545'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}
+                >
+                  <i className="fa-solid fa-key"></i>
+                  Manage PIN
+                </button>
                 <button
                   onClick={() => setShowReports(true)}
                   style={{
@@ -1146,6 +1241,214 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                   }}
                 >
                   Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PIN Management Modal */}
+        {showPinManagement && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000
+          }}>
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '20px',
+              padding: '30px',
+              border: '1px solid rgba(125, 141, 134, 0.2)',
+              boxShadow: '0 20px 40px rgba(62, 63, 41, 0.15)',
+              maxWidth: '500px',
+              width: '90%',
+              textAlign: 'center',
+              color: '#3e3f29'
+            }}>
+              <h3 style={{
+                color: '#3e3f29',
+                fontSize: '24px',
+                fontWeight: '600',
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '10px'
+              }}>
+                <i className="fa-solid fa-key" style={{ color: '#dc3545' }}></i>
+                Manage System PIN
+              </h3>
+              
+              <p style={{
+                color: '#7d8d86',
+                fontSize: '16px',
+                marginBottom: '30px',
+                lineHeight: '1.5'
+              }}>
+                Change the system access PIN. This PIN is required to access the POS system.
+              </p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '30px' }}>
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#3e3f29',
+                    marginBottom: '8px',
+                    textAlign: 'left'
+                  }}>
+                    New PIN (minimum 4 digits)
+                  </label>
+                  <input
+                    type="password"
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value)}
+                    placeholder="Enter new PIN"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '2px solid rgba(125, 141, 134, 0.3)',
+                      borderRadius: '10px',
+                      background: '#ffffff',
+                      color: '#3e3f29',
+                      fontSize: '16px',
+                      outline: 'none',
+                      transition: 'all 0.3s ease',
+                      fontFamily: 'monospace',
+                      letterSpacing: '2px'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#dc3545'
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = 'rgba(125, 141, 134, 0.3)'
+                    }}
+                    maxLength={10}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#3e3f29',
+                    marginBottom: '8px',
+                    textAlign: 'left'
+                  }}>
+                    Confirm PIN
+                  </label>
+                  <input
+                    type="password"
+                    value={confirmPin}
+                    onChange={(e) => setConfirmPin(e.target.value)}
+                    placeholder="Confirm new PIN"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '2px solid rgba(125, 141, 134, 0.3)',
+                      borderRadius: '10px',
+                      background: '#ffffff',
+                      color: '#3e3f29',
+                      fontSize: '16px',
+                      outline: 'none',
+                      transition: 'all 0.3s ease',
+                      fontFamily: 'monospace',
+                      letterSpacing: '2px'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#dc3545'
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = 'rgba(125, 141, 134, 0.3)'
+                    }}
+                    maxLength={10}
+                  />
+                </div>
+              </div>
+              
+              <div style={{
+                display: 'flex',
+                gap: '15px',
+                justifyContent: 'center'
+              }}>
+                <button
+                  onClick={() => setShowPinManagement(false)}
+                  style={{
+                    padding: '12px 24px',
+                    border: '2px solid rgba(125, 141, 134, 0.3)',
+                    borderRadius: '25px',
+                    background: 'transparent',
+                    color: '#7d8d86',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(125, 141, 134, 0.1)'
+                    e.currentTarget.style.borderColor = '#7d8d86'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.borderColor = 'rgba(125, 141, 134, 0.3)'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={updateVaultPin}
+                  disabled={isUpdatingPin || newPin.length < 4 || newPin !== confirmPin}
+                  style={{
+                    padding: '12px 24px',
+                    border: 'none',
+                    borderRadius: '25px',
+                    background: (isUpdatingPin || newPin.length < 4 || newPin !== confirmPin) 
+                      ? 'rgba(220, 53, 69, 0.3)' 
+                      : '#dc3545',
+                    color: '#ffffff',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: (isUpdatingPin || newPin.length < 4 || newPin !== confirmPin) 
+                      ? 'not-allowed' 
+                      : 'pointer',
+                    transition: 'all 0.3s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isUpdatingPin && newPin.length >= 4 && newPin === confirmPin) {
+                      e.currentTarget.style.background = '#c82333'
+                      e.currentTarget.style.transform = 'translateY(-2px)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = (isUpdatingPin || newPin.length < 4 || newPin !== confirmPin) 
+                      ? 'rgba(220, 53, 69, 0.3)' 
+                      : '#dc3545'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}
+                >
+                  {isUpdatingPin ? (
+                    <>
+                      <i className="fa-solid fa-spinner fa-spin"></i>
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-save"></i>
+                      Update PIN
+                    </>
+                  )}
                 </button>
               </div>
             </div>

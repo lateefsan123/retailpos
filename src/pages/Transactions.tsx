@@ -234,7 +234,7 @@ const Transactions: React.FC = () => {
         }}>
           <div style={{ 
             fontSize: '20px', 
-            color: '#7d8d86',
+            color: '#1a1a1a',
             display: 'flex',
             alignItems: 'center',
             gap: '12px'
@@ -294,7 +294,7 @@ const Transactions: React.FC = () => {
             onClick={() => setShowCalendar(true)}
             style={{
               background: '#3e3f29',
-              border: '1px solid #7d8d86',
+              border: '1px solid #1a1a1a',
               borderRadius: '8px',
               padding: '12px 16px',
               cursor: 'pointer',
@@ -305,16 +305,6 @@ const Transactions: React.FC = () => {
               color: '#f1f0e4',
               fontSize: '14px',
               fontWeight: '500'
-            }}
-            onMouseEnter={(e) => {
-              const target = e.currentTarget as HTMLElement
-              target.style.borderColor = '#bca88d'
-              target.style.boxShadow = '0 2px 8px rgba(62, 63, 41, 0.2)'
-            }}
-            onMouseLeave={(e) => {
-              const target = e.currentTarget as HTMLElement
-              target.style.borderColor = '#7d8d86'
-              target.style.boxShadow = 'none'
             }}
           >
             <i className="fa-solid fa-calendar" style={{ fontSize: '16px', color: '#bca88d' }}></i>
@@ -332,7 +322,7 @@ const Transactions: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
-            color: '#7d8d86',
+            color: '#1a1a1a',
             fontSize: '14px',
             flexWrap: 'wrap'
           }}>

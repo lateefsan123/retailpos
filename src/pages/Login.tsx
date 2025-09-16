@@ -33,14 +33,22 @@ const Login = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundImage: 'url(/images/backgrounds/minimal.jpg)',
+          backgroundImage: 'url(/images/backgrounds/appbg3.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat'
         }}
       >
-        {/* Optional overlay for better text readability */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.2)' }}></div>
+        {/* Dark overlay to reduce brightness */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.05)',
+          zIndex: 0
+        }}></div>
       </div>
 
       {/* Login Form */}
@@ -197,7 +205,7 @@ const Login = () => {
                               width: '100%',
                               padding: '16px 24px',
                               background: 'white',
-                              color: '#374151',
+                              color: '#1a1a1a',
                               border: 'none',
                               borderRadius: '12px',
                               fontSize: '16px',
@@ -211,26 +219,10 @@ const Login = () => {
                               justifyContent: 'center',
                               gap: '8px'
                             }}
-                            onMouseEnter={(e) => {
-                              if (!loading) {
-                                const target = e.currentTarget as HTMLElement
-                                target.style.background = '#f9fafb'
-                                target.style.transform = 'translateY(-1px)'
-                                target.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.2)'
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!loading) {
-                                const target = e.currentTarget as HTMLElement
-                                target.style.background = 'white'
-                                target.style.transform = 'translateY(0)'
-                                target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
-                              }
-                            }}
                           >
                   {loading ? (
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <i className="fa-solid fa-spinner" style={{ color: '#374151', fontSize: '18px', marginRight: '8px', animation: 'spin 1s linear infinite' }}></i>
+                      <i className="fa-solid fa-spinner" style={{ color: '#1a1a1a', fontSize: '18px', marginRight: '8px', animation: 'spin 1s linear infinite' }}></i>
                       Signing in...
                     </div>
                   ) : (

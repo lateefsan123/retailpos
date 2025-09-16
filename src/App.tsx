@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { NavProvider, useNav } from './contexts/NavContext'
 import { RoleProvider } from './contexts/RoleContext'
+import { PinProvider } from './contexts/PinContext'
 import { useNavCollapse } from './hooks/useNavCollapse'
 import ProtectedRoute from './components/ProtectedRoute'
 import RoleProtectedRoute from './components/RoleProtectedRoute'
@@ -17,12 +18,32 @@ import Reminders from './pages/Reminders'
 
 const AppContent = () => {
   const { isCollapsed } = useNav()
-  
   // Use the custom hook to handle global click events
   useNavCollapse()
-  
+
   return (
-    <div style={{ height: '100vh', background: '#f8f9fa', color: '#3e3f29', display: 'flex', overflow: 'hidden' }}>
+    <div style={{ 
+      height: '100vh', 
+      background: '#f8f9fa', 
+      color: '#1a1a1a', 
+      display: 'flex', 
+      overflow: 'hidden',
+      backgroundImage: 'url(/images/backgrounds/appbg3.png)',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      position: 'relative'
+    }}>
+      {/* Dark overlay to reduce brightness - covers entire app */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.05)',
+        zIndex: 0
+      }}></div>
       <Navigation />
       <main style={{
         flex: 1,
@@ -31,11 +52,8 @@ const AppContent = () => {
         height: '100vh',
         overflow: 'auto',
         transition: 'margin-left 0.3s ease',
-        backgroundImage: 'url(/images/backgrounds/appbg3.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        position: 'relative'
+        position: 'relative',
+        zIndex: 1
       }}>
         <div style={{
           position: 'fixed',
@@ -96,11 +114,13 @@ function App() {
     <AuthProvider>
       <RoleProvider>
         <NavProvider>
-          <Router>
-            <ProtectedRoute>
-              <AppContent />
-            </ProtectedRoute>
-          </Router>
+          <PinProvider>
+            <Router>
+              <ProtectedRoute>
+                <AppContent />
+              </ProtectedRoute>
+            </Router>
+          </PinProvider>
         </NavProvider>
       </RoleProvider>
     </AuthProvider>

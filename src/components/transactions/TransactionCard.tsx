@@ -47,18 +47,21 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
 
   return (
     <div 
+      className="transaction-card"
       onClick={() => onTransactionClick(transaction.sale_id)}
       style={{
         display: 'flex',
         alignItems: 'center',
         gap: '16px',
         padding: '16px',
-        background: transaction.partial_payment ? '#fef3c7' : '#ffffff',
+        background: transaction.partial_payment ? '#f1f0e4' : '#ffffff',
         borderRadius: '8px',
-        border: transaction.partial_payment ? '1px solid #f59e0b' : '1px solid #e5e7eb',
+        border: '3px solid #7d8d86',
         cursor: 'pointer',
         transition: 'all 0.2s ease',
-        position: 'relative'
+        position: 'relative',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+        marginBottom: '12px'
       }}
       onMouseEnter={(e) => {
         const target = e.currentTarget as HTMLElement
@@ -70,7 +73,7 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
         const target = e.currentTarget as HTMLElement
         target.style.boxShadow = 'none'
         target.style.transform = 'translateY(0)'
-        target.style.borderColor = '#e5e7eb'
+        target.style.borderColor = '#7d8d86'
       }}
     >
       {/* Transaction ID */}
@@ -93,8 +96,8 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
           <div style={{
             fontSize: '10px',
             fontWeight: '600',
-            color: '#92400e',
-            background: '#f59e0b',
+            color: '#f1f0e4',
+            background: '#7d8d86',
             padding: '2px 6px',
             borderRadius: '3px',
             marginTop: '4px',
@@ -155,14 +158,14 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
         textAlign: 'right',
         fontSize: '16px',
         fontWeight: '600',
-        color: transaction.partial_payment ? '#f59e0b' : '#059669'
+        color: transaction.partial_payment ? '#7d8d86' : '#059669'
       }}>
         {transaction.partial_payment ? (
           <div>
-            <div style={{ fontSize: '14px', color: '#92400e' }}>
+            <div style={{ fontSize: '14px', color: '#7d8d86' }}>
               Paid: {formatCurrency(transaction.partial_amount || 0)}
             </div>
-            <div style={{ fontSize: '12px', color: '#dc2626' }}>
+            <div style={{ fontSize: '12px', color: '#3e3f29' }}>
               Owed: {formatCurrency(transaction.remaining_amount || 0)}
             </div>
           </div>
@@ -179,16 +182,11 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
       }}>
         {transaction.partial_payment && onResolvePartialPayment && (
           <Button
-            variant="success"
+            variant="primary"
             size="sm"
             onClick={(e) => {
               e.stopPropagation()
               onResolvePartialPayment(transaction.sale_id)
-            }}
-            style={{
-              background: '#10b981',
-              border: '1px solid #10b981',
-              color: 'white'
             }}
           >
             <i className="fa-solid fa-check" style={{ fontSize: '10px' }}></i>

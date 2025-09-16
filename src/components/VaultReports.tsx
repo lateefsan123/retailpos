@@ -51,6 +51,17 @@ interface ReportData {
     hours: number;
     accuracy: number;
   }>;
+  sideBusinesses: Array<{
+    name: string;
+    revenue: number;
+    transactions: number;
+    avgTransaction: number;
+    topItems: Array<{
+      name: string;
+      units: number;
+      revenue: number;
+    }>;
+  }>;
 }
 
 export default function VaultReports({ isOpen, onClose, vaultEntries }: VaultReportsProps) {
@@ -248,6 +259,63 @@ export default function VaultReports({ isOpen, onClose, vaultEntries }: VaultRep
         accuracy: 99.0 // Default - would need accuracy tracking system
       }));
 
+      // Fetch side business data
+      const { data: sideBusinessSales, error: sideBusinessError } = await supabase
+        .from('side_business_sales')
+        .select(`
+          total_amount,
+          quantity,
+          side_business_items!inner(
+            name,
+            side_businesses!inner(name)
+          )
+        `)
+        .gte('date_time', startDate.toISOString())
+        .lte('date_time', endDate.toISOString());
+
+      if (sideBusinessError) {
+        console.error('Error fetching side business data:', sideBusinessError);
+      }
+
+      // Process side business data
+      const sideBusinessMap = new Map();
+      if (sideBusinessSales) {
+        sideBusinessSales.forEach(sale => {
+          const businessName = sale.side_business_items.side_businesses.name;
+          const itemName = sale.side_business_items.name;
+          
+          if (!sideBusinessMap.has(businessName)) {
+            sideBusinessMap.set(businessName, {
+              name: businessName,
+              revenue: 0,
+              transactions: 0,
+              items: new Map()
+            });
+          }
+          
+          const business = sideBusinessMap.get(businessName);
+          business.revenue += sale.total_amount;
+          business.transactions += 1;
+          
+          if (!business.items.has(itemName)) {
+            business.items.set(itemName, { name: itemName, units: 0, revenue: 0 });
+          }
+          const item = business.items.get(itemName);
+          item.units += sale.quantity;
+          item.revenue += sale.total_amount;
+        });
+      }
+
+      const sideBusinesses = Array.from(sideBusinessMap.values()).map(business => ({
+        name: business.name,
+        revenue: business.revenue,
+        transactions: business.transactions,
+        avgTransaction: business.transactions > 0 ? business.revenue / business.transactions : 0,
+        topItems: Array.from(business.items.values())
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 3)
+      }));
+
       setReportData({
         kpis: {
           totalSales,
@@ -260,7 +328,8 @@ export default function VaultReports({ isOpen, onClose, vaultEntries }: VaultRep
         leastSoldProducts,
         lowStock,
         outOfStock,
-        staff
+        staff,
+        sideBusinesses
       });
 
     } catch (error) {
@@ -1309,7 +1378,149 @@ export default function VaultReports({ isOpen, onClose, vaultEntries }: VaultRep
             </div>
           </section>
           
-          {/* 5. Report Footer */}
+          {/* 5. Side Business Performance */}
+          <section style={{ marginBottom: '40px' }}>
+            <h2 style={{
+              color: '#3e3f29',
+              fontSize: '20px',
+              fontWeight: '600',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <i className="fa-solid fa-store" style={{ marginRight: '10px' }}></i>5. Side Business Performance
+            </h2>
+            
+            {reportData.sideBusinesses.length > 0 ? (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  border: '1px solid rgba(125, 141, 134, 0.3)'
+                }}>
+                  <thead>
+                    <tr style={{ background: 'rgba(125, 141, 134, 0.1)' }}>
+                      <th style={{
+                        border: '1px solid rgba(125, 141, 134, 0.3)',
+                        padding: '12px',
+                        textAlign: 'left',
+                        color: '#3e3f29',
+                        fontWeight: '600'
+                      }}>
+                        Business Name
+                      </th>
+                      <th style={{
+                        border: '1px solid rgba(125, 141, 134, 0.3)',
+                        padding: '12px',
+                        textAlign: 'right',
+                        color: '#3e3f29',
+                        fontWeight: '600'
+                      }}>
+                        Revenue
+                      </th>
+                      <th style={{
+                        border: '1px solid rgba(125, 141, 134, 0.3)',
+                        padding: '12px',
+                        textAlign: 'right',
+                        color: '#3e3f29',
+                        fontWeight: '600'
+                      }}>
+                        Transactions
+                      </th>
+                      <th style={{
+                        border: '1px solid rgba(125, 141, 134, 0.3)',
+                        padding: '12px',
+                        textAlign: 'right',
+                        color: '#3e3f29',
+                        fontWeight: '600'
+                      }}>
+                        Avg Transaction
+                      </th>
+                      <th style={{
+                        border: '1px solid rgba(125, 141, 134, 0.3)',
+                        padding: '12px',
+                        textAlign: 'left',
+                        color: '#3e3f29',
+                        fontWeight: '600'
+                      }}>
+                        Top Items
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.sideBusinesses.map((business, index) => (
+                      <tr key={index} style={{ 
+                        background: index % 2 === 0 ? 'rgba(125, 141, 134, 0.05)' : 'transparent' 
+                      }}>
+                        <td style={{
+                          border: '1px solid rgba(125, 141, 134, 0.3)',
+                          padding: '12px',
+                          color: '#3e3f29',
+                          fontWeight: '600'
+                        }}>
+                          {business.name}
+                        </td>
+                        <td style={{
+                          border: '1px solid rgba(125, 141, 134, 0.3)',
+                          padding: '12px',
+                          textAlign: 'right',
+                          color: '#3e3f29'
+                        }}>
+                          {formatCurrency(business.revenue)}
+                        </td>
+                        <td style={{
+                          border: '1px solid rgba(125, 141, 134, 0.3)',
+                          padding: '12px',
+                          textAlign: 'right',
+                          color: '#3e3f29'
+                        }}>
+                          {business.transactions}
+                        </td>
+                        <td style={{
+                          border: '1px solid rgba(125, 141, 134, 0.3)',
+                          padding: '12px',
+                          textAlign: 'right',
+                          color: '#3e3f29'
+                        }}>
+                          {formatCurrency(business.avgTransaction)}
+                        </td>
+                        <td style={{
+                          border: '1px solid rgba(125, 141, 134, 0.3)',
+                          padding: '12px',
+                          color: '#3e3f29'
+                        }}>
+                          {business.topItems.map((item, itemIndex) => (
+                            <div key={itemIndex} style={{ 
+                              fontSize: '12px',
+                              marginBottom: '2px',
+                              color: '#7d8d86'
+                            }}>
+                              {item.name}: {item.units} units ({formatCurrency(item.revenue)})
+                            </div>
+                          ))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={{
+                padding: '20px',
+                textAlign: 'center',
+                color: '#7d8d86',
+                background: 'rgba(125, 141, 134, 0.05)',
+                borderRadius: '8px',
+                border: '1px solid rgba(125, 141, 134, 0.2)'
+              }}>
+                <i className="fa-solid fa-store" style={{ fontSize: '24px', marginBottom: '10px', display: 'block' }}></i>
+                No side business sales data found for this period.
+              </div>
+            )}
+          </section>
+          
+          {/* 6. Report Footer */}
           <section style={{
             borderTop: '2px solid rgba(125, 141, 134, 0.3)',
             paddingTop: '20px',
@@ -1321,7 +1532,7 @@ export default function VaultReports({ isOpen, onClose, vaultEntries }: VaultRep
               fontWeight: '600',
               marginBottom: '20px'
             }}>
-              <i className="fa-solid fa-file-text" style={{ marginRight: '10px' }}></i>5. Report Footer
+              <i className="fa-solid fa-file-text" style={{ marginRight: '10px' }}></i>6. Report Footer
             </h2>
             
             <div style={{

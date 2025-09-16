@@ -12,37 +12,44 @@ async function uploadProductImage(file: File, productId: string) {
   })
   
   try {
-    // For now, let's use a simpler approach - convert image to base64 and store in database
-    // This avoids RLS issues with storage buckets
-    console.log("🔄 Converting image to base64...")
+    // Upload original file directly to Supabase Storage
+    const fileName = `product-images/${productId}.${file.name.split('.').pop()}`
+    console.log("📤 Uploading to Supabase Storage:", fileName)
     
-    const base64 = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => {
-        const result = reader.result as string
-        resolve(result)
-      }
-      reader.onerror = reject
-      reader.readAsDataURL(file)
-    })
+    const { error: uploadError } = await supabase.storage
+      .from('products')
+      .upload(fileName, file, {
+        contentType: file.type,
+        upsert: true
+      })
     
-    console.log("✅ Image converted to base64, length:", base64.length)
+    if (uploadError) {
+      console.error("❌ Upload failed:", uploadError)
+      return null
+    }
     
-    // Save base64 image to products table
-    console.log("💾 Updating database with base64 image...")
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('products')
+      .getPublicUrl(fileName)
+    
+    console.log("✅ Image uploaded successfully:", publicUrl)
+    
+    // Update database with public URL
+    console.log("💾 Updating database with public URL...")
     const { error: dbError } = await supabase
       .from('products')
-      .update({ image_url: base64 })
+      .update({ image_url: publicUrl })
       .eq('product_id', productId)
 
     if (dbError) {
       console.error("❌ DB update failed:", dbError)
       return null
     } else {
-      console.log("✅ Database updated with base64 image")
+      console.log("✅ Database updated with public URL")
     }
 
-    return base64
+    return publicUrl
   } catch (error) {
     console.error("💥 Unexpected error during upload:", error)
     return null
@@ -60,9 +67,11 @@ interface Product {
   tax_rate: number
   image_url?: string
   last_updated: string
-  weight_unit?: string // e.g., 'kg', 'g', 'lb', 'oz'
-  price_per_unit?: number // price per weight unit (e.g., 3.00 for €3 per kg)
+  weight_unit?: string | null // e.g., 'kg', 'g', 'lb', 'oz'
+  price_per_unit?: number | null // price per weight unit (e.g., 3.00 for €3 per kg)
   is_weighted?: boolean // true if item is sold by weight
+  description?: string
+  sku?: string
 }
 
 const Products = () => {
@@ -99,21 +108,83 @@ const Products = () => {
   const [uploadingImage, setUploadingImage] = useState(false)
   const [showImageModal, setShowImageModal] = useState(false)
   const [fullSizeImage, setFullSizeImage] = useState<string | null>(null)
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null)
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [totalProducts, setTotalProducts] = useState(0)
 
   useEffect(() => {
     fetchProducts()
   }, [])
 
-  const fetchProducts = async () => {
+  // Search handlers
+  const handleSearchSubmit = () => {
+    setCurrentPage(1) // Reset to first page
+    fetchProducts(1, itemsPerPage, searchTerm, selectedCategory)
+  }
+
+  const handleSearchKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearchSubmit()
+    }
+  }
+
+  const handleClearSearch = () => {
+    setSearchTerm('')
+    setCurrentPage(1)
+    fetchProducts(1, itemsPerPage, '', selectedCategory)
+  }
+
+  // Only fetch when category changes (not on every search keystroke)
+  useEffect(() => {
+    setCurrentPage(1) // Reset to first page
+    fetchProducts(1, itemsPerPage, searchTerm, selectedCategory)
+  }, [selectedCategory])
+
+  const fetchProducts = async (page: number = currentPage, perPage: number = itemsPerPage, search: string = searchTerm, category: string = selectedCategory) => {
     try {
       setLoading(true)
       setError(null)
       
-      const { data, error: fetchError } = await supabase
+      // Build the query with filters
+      let countQuery = supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+
+      let dataQuery = supabase
         .from('products')
         .select('*')
         .order('product_id', { ascending: true })
-        .limit(1000)
+
+      // Apply search filter
+      if (search && search.trim()) {
+        const searchFilter = `name.ilike.%${search.trim()}%,category.ilike.%${search.trim()}%`
+        countQuery = countQuery.or(searchFilter)
+        dataQuery = dataQuery.or(searchFilter)
+      }
+
+      // Apply category filter
+      if (category && category !== 'all') {
+        countQuery = countQuery.eq('category', category)
+        dataQuery = dataQuery.eq('category', category)
+      }
+
+      // Get total count with filters
+      const { count, error: countError } = await countQuery
+
+      if (countError) {
+        throw countError
+      }
+
+      setTotalProducts(count || 0)
+
+      // Calculate offset for pagination
+      const offset = (page - 1) * perPage
+      
+      // Fetch products with pagination and filters
+      const { data, error: fetchError } = await dataQuery.range(offset, offset + perPage - 1)
 
       if (fetchError) {
         throw fetchError
@@ -131,13 +202,15 @@ const Products = () => {
     }
   }
 
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.category.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory
-    return matchesSearch && matchesCategory
-  })
+  // Since we're now doing server-side filtering, we use products directly
+  const filteredProducts = products
 
+  // Calculate pagination values
+  const totalPages = Math.ceil(totalProducts / itemsPerPage)
+  const startItem = totalProducts > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0
+  const endItem = Math.min(currentPage * itemsPerPage, totalProducts)
+
+  // Get categories from all products (we'll need to fetch this separately for better performance)
   const categories = ['all', ...Array.from(new Set(products.map(p => p.category)))]
 
   const getCategorySuggestions = (input: string) => {
@@ -156,18 +229,73 @@ const Products = () => {
     return suggestions.slice(0, 5) // Limit to 5 suggestions
   }
 
+  // Pagination handlers
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage)
+      fetchProducts(newPage, itemsPerPage, searchTerm, selectedCategory)
+    }
+  }
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage)
+    setCurrentPage(1) // Reset to first page
+    fetchProducts(1, newItemsPerPage, searchTerm, selectedCategory)
+  }
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1)
+    }
+  }
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1)
+    }
+  }
+
+
   const generateUniqueId = async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('product_id')
-        .order('product_id', { ascending: false })
-        .limit(1)
+      // Use a more robust approach with retry logic
+      let attempts = 0
+      const maxAttempts = 5
+      
+      while (attempts < maxAttempts) {
+        // Get the current max ID
+        const { data, error } = await supabase
+          .from('products')
+          .select('product_id')
+          .order('product_id', { ascending: false })
+          .limit(1)
 
-      if (error) throw error
+        if (error) throw error
 
-      const lastId = data && data.length > 0 ? parseInt(data[0].product_id) : 0
-      return (lastId + 1).toString()
+        const lastId = data && data.length > 0 ? parseInt(data[0].product_id) : 0
+        const newId = (lastId + 1).toString()
+        
+        // Check if this ID already exists (race condition protection)
+        const { data: existingData, error: checkError } = await supabase
+          .from('products')
+          .select('product_id')
+          .eq('product_id', newId)
+          .limit(1)
+
+        if (checkError) throw checkError
+
+        // If ID doesn't exist, we can use it
+        if (!existingData || existingData.length === 0) {
+          return newId
+        }
+        
+        attempts++
+        // Small delay before retry
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+      
+      // If we've exhausted retries, use timestamp-based fallback
+      return Date.now().toString()
     } catch (error) {
       console.error('Error generating unique ID:', error)
       return Date.now().toString() // Fallback to timestamp
@@ -199,13 +327,40 @@ const Products = () => {
       }
 
       console.log('Inserting product data:', productData)
-      const { error } = await supabase
-        .from('products')
-        .insert([productData])
+      
+      // Try to insert with retry logic for race conditions
+      let insertAttempts = 0
+      const maxInsertAttempts = 3
+      let insertError = null
+      
+      while (insertAttempts < maxInsertAttempts) {
+        const { error } = await supabase
+          .from('products')
+          .insert([productData])
 
-      if (error) {
-        console.error('Supabase error:', error)
-        throw error
+        if (!error) {
+          insertError = null
+          break
+        }
+        
+        // If it's a duplicate key error, regenerate ID and retry
+        if (error.message && error.message.includes('duplicate key value violates unique constraint')) {
+          console.log(`Duplicate key error on attempt ${insertAttempts + 1}, regenerating ID...`)
+          productData.product_id = await generateUniqueId()
+          insertError = error
+          insertAttempts++
+          
+          // Small delay before retry
+          await new Promise(resolve => setTimeout(resolve, 200))
+        } else {
+          insertError = error
+          break
+        }
+      }
+
+      if (insertError) {
+        console.error('Supabase error after retries:', insertError)
+        throw insertError
       }
       
       console.log('Product added successfully!')
@@ -243,7 +398,22 @@ const Products = () => {
       setShowAddModal(false)
     } catch (error) {
       console.error('Error adding product:', error)
-      setError(`Failed to add product: ${error.message || 'Unknown error'}`)
+      
+      // Handle specific error types
+      let errorMessage = 'Failed to add product'
+      if (error instanceof Error && error.message) {
+        if (error.message.includes('duplicate key value violates unique constraint')) {
+          errorMessage = 'A product with this ID already exists. Please try again.'
+        } else if (error.message.includes('violates check constraint')) {
+          errorMessage = 'Invalid data provided. Please check your input values.'
+        } else if (error.message.includes('not-null constraint')) {
+          errorMessage = 'Required fields are missing. Please fill in all required fields.'
+        } else {
+          errorMessage = `Failed to add product: ${error.message}`
+        }
+      }
+      
+      setError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -307,6 +477,31 @@ const Products = () => {
     }
   }
 
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      console.log("🗑️ Starting delete for product:", productId)
+      
+      // Delete the product from the database
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('product_id', productId)
+
+      if (error) {
+        console.error("❌ Error deleting product:", error)
+        throw error
+      }
+      console.log("✅ Product deleted successfully")
+
+      // Remove from local state
+      setProducts(products.filter(p => p.product_id !== productId))
+      setProductToDelete(null)
+    } catch (err) {
+      console.error("💥 Delete failed:", err)
+      setError(err instanceof Error ? err.message : 'Failed to delete product')
+    }
+  }
+
   const resetForm = () => {
     setNewProduct({
       product_name: '',
@@ -317,7 +512,10 @@ const Products = () => {
       supplier_info: '',
       tax_rate: '',
       description: '',
-      sku: ''
+      sku: '',
+      is_weighted: false,
+      weight_unit: '',
+      price_per_unit: ''
     })
     setSelectedImage(null)
     setImagePreview(null)
@@ -402,7 +600,7 @@ const Products = () => {
     const words = text.split(' ')
     return words.map((word, index) => {
       const lowerWord = word.toLowerCase()
-      let color = '#3e3f29' // Default color
+      let color = '#1a1a1a' // Default color
       
       if (lowerWord === 'small') color = '#3b82f6' // Blue
       else if (lowerWord === 'large') color = '#ef4444' // Red
@@ -560,12 +758,12 @@ const Products = () => {
               fontWeight: '500'
             }}
             onMouseEnter={(e) => {
-              e.target.style.background = '#bca88d'
+              (e.target as HTMLButtonElement).style.background = '#bca88d'
               setLilyMessage("Click this button to add a new product to your inventory! You'll need to fill in details like name, price, stock quantity, and reorder level.")
               setShowLilyMessage(true)
             }}
             onMouseLeave={(e) => {
-              e.target.style.background = '#7d8d86'
+              (e.target as HTMLButtonElement).style.background = '#7d8d86'
               setShowLilyMessage(false)
             }}
           >
@@ -587,7 +785,6 @@ const Products = () => {
           borderRadius: '12px',
           padding: '20px',
           boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
-          border: '1px solid rgba(125, 141, 134, 0.2)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
@@ -615,7 +812,6 @@ const Products = () => {
           borderRadius: '12px',
           padding: '20px',
           boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
-          border: '1px solid rgba(125, 141, 134, 0.2)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
@@ -643,7 +839,6 @@ const Products = () => {
           borderRadius: '12px',
           padding: '20px',
           boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
-          border: '1px solid rgba(125, 141, 134, 0.2)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
@@ -671,7 +866,6 @@ const Products = () => {
           borderRadius: '12px',
           padding: '20px',
           boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
-          border: '1px solid rgba(125, 141, 134, 0.2)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
@@ -706,32 +900,82 @@ const Products = () => {
       }}>
         <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ flex: '1', minWidth: '250px', maxWidth: '400px' }}>
-            <div style={{ position: 'relative' }}>
-              <i className="fa-solid fa-search" style={{
-                position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#7d8d86',
-                fontSize: '14px',
-                zIndex: 1
-              }}></i>
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px 10px 36px',
-                  border: '1px solid #bca88d',
-                  borderRadius: '8px',
+            <div style={{ position: 'relative', display: 'flex', gap: '8px' }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <i className="fa-solid fa-search" style={{
+                  position: 'absolute',
+                  left: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#7d8d86',
                   fontSize: '14px',
-                  background: 'white',
-                  color: '#3e3f29',
-                  boxSizing: 'border-box'
+                  zIndex: 1
+                }}></i>
+                <input
+                  type="text"
+                  placeholder="Search products... (Press Enter to search)"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyPress={handleSearchKeyPress}
+                  onBlur={handleSearchSubmit}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px 10px 36px',
+                    border: '1px solid #bca88d',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    background: 'white',
+                    color: '#3e3f29',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                {searchTerm && (
+                  <button
+                    onClick={handleClearSearch}
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      color: '#7d8d86',
+                      cursor: 'pointer',
+                      padding: '4px',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      transition: 'color 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => (e.target as HTMLButtonElement).style.color = '#ef4444'}
+                    onMouseLeave={(e) => (e.target as HTMLButtonElement).style.color = '#7d8d86'}
+                  >
+                    <i className="fa-solid fa-times"></i>
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={handleSearchSubmit}
+                style={{
+                  padding: '10px 16px',
+                  background: '#7d8d86',
+                  color: '#f1f0e4',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  transition: 'background 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  whiteSpace: 'nowrap'
                 }}
-              />
+                onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = '#bca88d'}
+                onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = '#7d8d86'}
+              >
+                <i className="fa-solid fa-search" style={{ fontSize: '12px' }}></i>
+                Search
+              </button>
             </div>
           </div>
           
@@ -809,8 +1053,8 @@ const Products = () => {
                       borderBottom: '1px solid rgba(125, 141, 134, 0.1)',
                       transition: 'background 0.2s ease'
                     }}
-                    onMouseEnter={(e) => e.target.style.background = 'rgba(125, 141, 134, 0.05)'}
-                    onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                    onMouseEnter={(e) => (e.target as HTMLTableRowElement).style.background = 'rgba(125, 141, 134, 0.05)'}
+                    onMouseLeave={(e) => (e.target as HTMLTableRowElement).style.background = 'transparent'}
                     >
                       <td style={{ padding: '16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -818,7 +1062,7 @@ const Products = () => {
                             <img
                               src={product.image_url}
                               alt={product.name}
-                              onClick={() => openFullSizeImage(product.image_url)}
+                              onClick={() => product.image_url && openFullSizeImage(product.image_url)}
                               style={{
                                 width: '48px',
                                 height: '48px',
@@ -829,14 +1073,14 @@ const Products = () => {
                                 transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                               }}
                               onMouseEnter={(e) => {
-                                e.target.style.transform = 'scale(1.05)'
-                                e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
+                                (e.target as HTMLImageElement).style.transform = 'scale(1.05)'
+                                (e.target as HTMLImageElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
                                 setLilyMessage("Click on the image to see it in full size! This helps you get a better look at the product.")
                                 setShowLilyMessage(true)
                               }}
                               onMouseLeave={(e) => {
-                                e.target.style.transform = 'scale(1)'
-                                e.target.style.boxShadow = 'none'
+                                (e.target as HTMLImageElement).style.transform = 'scale(1)'
+                                (e.target as HTMLImageElement).style.boxShadow = 'none'
                                 setShowLilyMessage(false)
                               }}
                             />
@@ -930,6 +1174,7 @@ const Products = () => {
                             </button>
                           )}
                           <button
+                            onClick={() => setProductToDelete(product)}
                             style={{
                               background: '#ef4444',
                               color: 'white',
@@ -957,14 +1202,173 @@ const Products = () => {
         </div>
       </div>
 
-      {filteredProducts.length > 0 && (
-        <div style={{ 
-          marginTop: '16px', 
-          fontSize: '14px', 
-          color: '#7d8d86',
-          textAlign: 'center'
+      {/* Pagination Info */}
+      <div style={{ 
+        marginTop: '16px', 
+        fontSize: '14px', 
+        color: '#7d8d86',
+        textAlign: 'center',
+        marginBottom: '16px'
+      }}>
+        {totalProducts > 0 ? (
+          <>
+            Showing {startItem}-{endItem} of {totalProducts} products
+            {totalPages > 1 && (
+              <span style={{ marginLeft: '16px' }}>
+                (Page {currentPage} of {totalPages})
+              </span>
+            )}
+          </>
+        ) : (
+          'No products found'
+        )}
+      </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '24px',
+          padding: '16px',
+          background: '#ffffff',
+          borderRadius: '12px',
+          boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
+          border: '1px solid rgba(125, 141, 134, 0.2)'
         }}>
-          Showing {filteredProducts.length} of {products.length} products
+          {/* Items per page selector */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label style={{ fontSize: '14px', color: '#3e3f29', fontWeight: '500' }}>
+              Show:
+            </label>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value))}
+              style={{
+                padding: '6px 12px',
+                border: '1px solid #bca88d',
+                borderRadius: '6px',
+                fontSize: '14px',
+                background: 'white',
+                color: '#3e3f29',
+                cursor: 'pointer'
+              }}
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <span style={{ fontSize: '14px', color: '#7d8d86' }}>per page</span>
+          </div>
+
+          {/* Page navigation */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+              style={{
+                padding: '8px 12px',
+                border: '1px solid #bca88d',
+                borderRadius: '6px',
+                background: currentPage === 1 ? '#f3f4f6' : 'white',
+                color: currentPage === 1 ? '#9ca3af' : '#3e3f29',
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                if (currentPage !== 1) {
+                  (e.target as HTMLButtonElement).style.background = '#f8f9fa'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (currentPage !== 1) {
+                  (e.target as HTMLButtonElement).style.background = 'white'
+                }
+              }}
+            >
+              <i className="fa-solid fa-chevron-left" style={{ marginRight: '4px' }}></i>
+              Previous
+            </button>
+
+            {/* Page numbers */}
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum
+                if (totalPages <= 5) {
+                  pageNum = i + 1
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i
+                } else {
+                  pageNum = currentPage - 2 + i
+                }
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => handlePageChange(pageNum)}
+                    style={{
+                      padding: '8px 12px',
+                      border: '1px solid #bca88d',
+                      borderRadius: '6px',
+                      background: currentPage === pageNum ? '#7d8d86' : 'white',
+                      color: currentPage === pageNum ? '#f1f0e4' : '#3e3f29',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: currentPage === pageNum ? '600' : '400',
+                      transition: 'all 0.2s ease',
+                      minWidth: '40px'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (currentPage !== pageNum) {
+                        (e.target as HTMLButtonElement).style.background = '#f8f9fa'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (currentPage !== pageNum) {
+                        (e.target as HTMLButtonElement).style.background = 'white'
+                      }
+                    }}
+                  >
+                    {pageNum}
+                  </button>
+                )
+              })}
+            </div>
+
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              style={{
+                padding: '8px 12px',
+                border: '1px solid #bca88d',
+                borderRadius: '6px',
+                background: currentPage === totalPages ? '#f3f4f6' : 'white',
+                color: currentPage === totalPages ? '#9ca3af' : '#3e3f29',
+                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                if (currentPage !== totalPages) {
+                  (e.target as HTMLButtonElement).style.background = '#f8f9fa'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (currentPage !== totalPages) {
+                  (e.target as HTMLButtonElement).style.background = 'white'
+                }
+              }}
+            >
+              Next
+              <i className="fa-solid fa-chevron-right" style={{ marginLeft: '4px' }}></i>
+            </button>
+          </div>
         </div>
       )}
 
@@ -2146,6 +2550,99 @@ const Products = () => {
             >
               <i className="fa-solid fa-times"></i>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {productToDelete && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            padding: '32px',
+            maxWidth: '500px',
+            width: '90%',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
+          }}>
+            <h2 style={{
+              fontSize: '24px',
+              fontWeight: '600',
+              color: '#1a1a1a',
+              marginBottom: '16px',
+              textAlign: 'center'
+            }}>
+              Delete Product
+            </h2>
+            <p style={{
+              fontSize: '16px',
+              color: '#1a1a1a',
+              marginBottom: '8px',
+              textAlign: 'center'
+            }}>
+              Are you sure you want to delete <strong>{productToDelete.name}</strong>?
+            </p>
+            <p style={{
+              fontSize: '14px',
+              color: '#ef4444',
+              marginBottom: '24px',
+              textAlign: 'center'
+            }}>
+              This action cannot be undone.
+            </p>
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'center'
+            }}>
+              <button
+                onClick={() => setProductToDelete(null)}
+                style={{
+                  background: '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'background 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.target.style.background = '#4b5563'}
+                onMouseLeave={(e) => e.target.style.background = '#6b7280'}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteProduct(productToDelete.product_id)}
+                style={{
+                  background: '#ef4444',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'background 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.target.style.background = '#dc2626'}
+                onMouseLeave={(e) => e.target.style.background = '#ef4444'}
+              >
+                Delete Product
+              </button>
+            </div>
           </div>
         </div>
       )}
