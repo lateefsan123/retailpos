@@ -1,15 +1,25 @@
-import { useState } from 'react'
-import { useSalesAnalytics, WeeklySalesData, HourlySalesData } from '../../hooks/useSalesAnalytics'
+import { useEffect, useState } from 'react'
+import { useSalesAnalytics, WeeklySalesData, HourlySalesData, MonthlySalesData } from '../../hooks/useSalesAnalytics'
 import { useBusinessInfo } from '../../hooks/useBusinessInfo'
+import { formatCurrency as formatCurrencyUtil, formatCurrencyCompact } from '../../utils/currency'
 
-type ChartView = 'weekly' | 'hourly'
+type ChartView = 'weekly' | 'hourly' | 'monthly'
+type TimePeriod = 'today' | 'week' | 'month'
 
-const SalesChart = () => {
-  const { weeklyData, hourlyData, loading, error, refreshHourlyData, refreshWeeklyData } = useSalesAnalytics()
+interface SalesChartProps {
+  // When provided, the chart syncs to this date (from Dashboard calendar)
+  selectedDate?: Date
+  // Optional global range selector from Dashboard
+  activePeriod?: TimePeriod
+}
+
+const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesChartProps) => {
+  const { weeklyData, hourlyData, monthlyData, loading, error, refreshHourlyData, refreshWeeklyData, refreshMonthlyData } = useSalesAnalytics()
   const { businessInfo } = useBusinessInfo()
   const [view, setView] = useState<ChartView>('weekly')
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [weekOffset, setWeekOffset] = useState(0) // 0 = current week, -1 = previous week, 1 = next week
+  const [monthOffset, setMonthOffset] = useState(0)
   const [tooltip, setTooltip] = useState<{
     visible: boolean
     x: number
@@ -22,6 +32,48 @@ const SalesChart = () => {
     setSelectedDate(date)
     await refreshHourlyData(date)
   }
+
+  // Sync with external selected date (from Dashboard calendar)
+  useEffect(() => {
+    if (!externalSelectedDate) return
+
+    // 1) Update hourly chart to the selected date
+    const toYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+    const dateStr = toYMD(externalSelectedDate)
+    setSelectedDate(dateStr)
+    refreshHourlyData(dateStr)
+
+    // 2) Compute week offset so weekly chart aligns with selected date's week
+    const startOfWeek = (d: Date) => {
+      const x = new Date(d)
+      x.setHours(0, 0, 0, 0)
+      x.setDate(x.getDate() - x.getDay()) // Sunday as week start
+      return x
+    }
+
+    const selectedWeekStart = startOfWeek(externalSelectedDate)
+    const todayRef = new Date()
+    todayRef.setHours(0, 0, 0, 0)
+    const currentWeekStart = startOfWeek(todayRef)
+    const diffMs = selectedWeekStart.getTime() - currentWeekStart.getTime()
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
+    const newOffset = Math.round(diffDays / 7)
+
+    setWeekOffset(newOffset)
+    refreshWeeklyData(newOffset)
+
+    // 3) Compute month offset relative to current month
+    const today = new Date()
+    const newMonthOffset = (externalSelectedDate.getFullYear() - today.getFullYear()) * 12 + (externalSelectedDate.getMonth() - today.getMonth())
+    setMonthOffset(newMonthOffset)
+    refreshMonthlyData(newMonthOffset)
+  }, [externalSelectedDate])
+
+  // Sync view with global active period
+  useEffect(() => {
+    if (!activePeriod) return
+    setView(activePeriod === 'today' ? 'hourly' : activePeriod === 'week' ? 'weekly' : 'monthly')
+  }, [activePeriod])
 
   const handlePreviousWeek = async () => {
     const newOffset = weekOffset - 1
@@ -70,7 +122,7 @@ const SalesChart = () => {
     setTooltip({ visible: false, x: 0, y: 0, data: null })
   }
 
-  const getMaxValue = (data: WeeklySalesData[] | HourlySalesData[]) => {
+  const getMaxValue = (data: WeeklySalesData[] | HourlySalesData[] | MonthlySalesData[]) => {
     const maxSales = Math.max(...data.map(item => item.totalSales))
     return maxSales === 0 ? 1 : Math.ceil(maxSales * 1.1) // Add 10% padding, minimum 1 to avoid division by zero
   }
@@ -155,8 +207,9 @@ const SalesChart = () => {
     )
   }
 
-  const currentData = view === 'weekly' ? weeklyData : hourlyData
+  const currentData = view === 'weekly' ? weeklyData : view === 'monthly' ? monthlyData : hourlyData
   const maxValue = currentData.length > 0 ? getMaxValue(currentData) : 100
+  const labelStep = view === 'monthly' ? Math.ceil(currentData.length / 12) : 1
   
   // Show empty state if no data
   if (currentData.length === 0 && !loading && !error) {
@@ -415,9 +468,43 @@ const SalesChart = () => {
           <i className="fa-solid fa-clock" style={{ fontSize: '12px' }}></i>
           Hourly
         </button>
+        <button
+          onClick={() => setView('monthly')}
+          style={{
+            flex: 1,
+            padding: '8px 16px',
+            borderRadius: '6px',
+            border: 'none',
+            background: view === 'monthly' ? '#7d8d86' : 'transparent',
+            color: view === 'monthly' ? '#f1f0e4' : '#7d8d86',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px'
+          }}
+          onMouseEnter={(e) => {
+            if (view !== 'monthly') {
+              e.currentTarget.style.background = '#e5e7eb'
+              e.currentTarget.style.color = '#3e3f29'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (view !== 'monthly') {
+              e.currentTarget.style.background = 'transparent'
+              e.currentTarget.style.color = '#7d8d86'
+            }
+          }}
+        >
+          <i className="fa-solid fa-calendar" style={{ fontSize: '12px' }}></i>
+          Monthly
+        </button>
       </div>
 
-      {/* Week Navigation for Weekly View */}
+      {/* Week/Month Navigation */}
       {view === 'weekly' && (
         <div style={{
           display: 'flex',
@@ -519,6 +606,50 @@ const SalesChart = () => {
           </button>
         </div>
       )}
+      {view === 'monthly' && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '24px',
+          padding: '12px 16px',
+          background: '#f9fafb',
+          borderRadius: '8px',
+          border: '1px solid #e5e7eb'
+        }}>
+          <button
+            onClick={async () => { const o = monthOffset - 1; setMonthOffset(o); await refreshMonthlyData(o) }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '6px',
+              border: '1px solid #d1d5db', background: '#ffffff', color: '#7d8d86', fontSize: '14px', fontWeight: 500, cursor: 'pointer'
+            }}
+          >
+            <i className="fa-solid fa-chevron-left" style={{ fontSize: '12px' }}></i>
+            Previous Month
+          </button>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '16px', fontWeight: 600, color: '#3e3f29', marginBottom: '2px' }}>
+              {new Date(new Date().getFullYear(), new Date().getMonth() + monthOffset, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+            </div>
+            <button
+              onClick={async () => { setMonthOffset(0); await refreshMonthlyData(0) }}
+              style={{ fontSize: '12px', color: '#7d8d86', background: 'transparent', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              {monthOffset === 0 ? 'Current Month' : 'Go to Current Month'}
+            </button>
+          </div>
+          <button
+            onClick={async () => { const o = monthOffset + 1; setMonthOffset(o); await refreshMonthlyData(o) }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '6px',
+              border: '1px solid #d1d5db', background: '#ffffff', color: '#7d8d86', fontSize: '14px', fontWeight: 500, cursor: 'pointer'
+            }}
+          >
+            Next Month
+            <i className="fa-solid fa-chevron-right" style={{ fontSize: '12px' }}></i>
+          </button>
+        </div>
+      )}
 
       {/* Date Picker for Hourly View */}
       {view === 'hourly' && (
@@ -565,53 +696,34 @@ const SalesChart = () => {
         display: 'flex',
         flexDirection: 'column'
       }}>
-        {/* Grid Lines */}
-        <svg 
-          style={{
-            position: 'absolute',
-            top: '0',
-            left: '0',
-            width: '100%',
-            height: '100%',
-            pointerEvents: 'none',
-            zIndex: 0
-          }}
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-        >
-          {/* Horizontal grid lines */}
-          {[0, 25, 50, 75, 100].map((value, index) => (
-            <line
-              key={index}
-              x1="0"
-              y1={value}
-              x2="100"
-              y2={value}
-              stroke="#e5e7eb"
-              strokeWidth="0.5"
-              opacity="0.6"
-            />
-          ))}
-        </svg>
+        {/* Grid Lines removed - clean background */}
         
         {/* Y-axis labels */}
         <div style={{
           position: 'absolute',
           left: '15px',
-          top: '0',
-          bottom: '0',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
+          top: '40px',
+          bottom: '30px',
           fontSize: '11px',
           color: '#9ca3af',
           fontWeight: '500',
           zIndex: 1,
-          padding: '10px 0'
+          padding: '10px 0',
+          height: '260px' // Match the chart height
         }}>
-          {[100, 75, 50, 25, 0].map((value) => (
-            <span key={value} style={{ textAlign: 'right', minWidth: '20px' }}>
-              {formatCurrency((maxValue * value) / 100)}
+          {[100, 75, 50, 25, 0].map((value, index) => (
+            <span 
+              key={value} 
+              style={{ 
+                position: 'absolute',
+                textAlign: 'right', 
+                minWidth: '20px',
+                // Position each label at the correct height to align with grid lines
+                top: `${(index * 25)}%`,
+                transform: 'translateY(-50%)'
+              }}
+            >
+              {formatCurrencyCompact((maxValue * value) / 100)}
             </span>
           ))}
         </div>
@@ -622,7 +734,7 @@ const SalesChart = () => {
           alignItems: 'flex-end',
           justifyContent: 'space-between',
           flex: 1,
-          gap: view === 'weekly' ? '20px' : '12px',
+          gap: view === 'weekly' ? '20px' : view === 'monthly' ? '6px' : '12px',
           marginBottom: '30px',
           padding: '0 40px 0 70px',
           position: 'relative',
@@ -634,7 +746,7 @@ const SalesChart = () => {
         }}>
           {currentData.map((item, index) => {
             const barHeight = getBarHeight(item.totalSales, maxValue)
-            const barColor = getBarColor(index, view === 'weekly')
+            const barColor = getBarColor(index, view !== 'hourly')
             
             return (
               <div key={index} style={{ 
@@ -643,14 +755,14 @@ const SalesChart = () => {
                 alignItems: 'center', 
                 justifyContent: 'flex-end',
                 flex: 1, 
-                maxWidth: view === 'weekly' ? '100px' : '80px',
+                maxWidth: view === 'weekly' ? '100px' : view === 'monthly' ? '24px' : '80px',
                 overflow: 'visible',
                 boxSizing: 'border-box',
                 height: '100%'
               }}>
                 <div style={{
                   width: '100%',
-                  maxWidth: view === 'weekly' ? '80px' : '60px',
+                  maxWidth: view === 'weekly' ? '80px' : view === 'monthly' ? '16px' : '60px',
                   height: `${barHeight}px`,
                   background: barColor,
                   borderRadius: '8px 8px 0 0',
@@ -682,7 +794,11 @@ const SalesChart = () => {
                   margin: '0',
                   padding: '0'
                 }}>
-                  {view === 'weekly' ? (item as WeeklySalesData).day : (item as HourlySalesData).hourLabel}
+                  {view === 'weekly' 
+                    ? (item as WeeklySalesData).day 
+                    : view === 'monthly' 
+                      ? (index % labelStep === 0 ? (item as MonthlySalesData).day : '') 
+                      : (item as HourlySalesData).hourLabel}
                 </span>
               </div>
             )
@@ -740,37 +856,35 @@ const SalesChart = () => {
             fontSize: '14px',
             color: '#60a5fa'
           }}>
-            {formatCurrency(tooltip.data.totalSales)}
+            {formatCurrencyUtil(tooltip.data.totalSales)}
           </div>
         </div>
       )}
       
-      {/* Chart Legend */}
+      {/* Legend moved below the card to avoid affecting chart layout */}
+    </div>
+
+    {/* Chart Legend in its own container under the chart card */}
+    <div style={{ width: '100%', maxWidth: '1000px', margin: '12px auto 0 auto' }}>
       <div style={{
         display: 'flex',
         justifyContent: 'center',
         gap: '16px',
-        marginTop: '16px',
         flexWrap: 'wrap',
         background: '#3e3f29',
         borderRadius: '8px',
-        padding: '12px 16px'
+        padding: '8px 12px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <div style={{
-            width: '12px',
-            height: '12px',
-            borderRadius: '2px',
-            background: '#7d8d86'
-          }}></div>
-          <span style={{ fontSize: '11px', color: '#f1f0e4', fontWeight: '500' }}>
-            {view === 'weekly' ? 'Daily Sales' : 'Hourly Sales'}
+          <div style={{ width: '12px', height: '12px', borderRadius: '2px', background: '#7d8d86' }}></div>
+          <span style={{ fontSize: '11px', color: '#f1f0e4', fontWeight: 500 }}>
+            {view === 'weekly' ? 'Daily Sales' : view === 'monthly' ? 'Daily Sales (Month)' : 'Hourly Sales'}
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <i className="fa-solid fa-chart-bar" style={{ fontSize: '12px', color: '#f1f0e4' }}></i>
-          <span style={{ fontSize: '11px', color: '#f1f0e4', fontWeight: '500' }}>
-            Max: {formatCurrency(maxValue)}
+          <span style={{ fontSize: '11px', color: '#f1f0e4', fontWeight: 500 }}>
+            Max: {formatCurrencyUtil(maxValue)}
           </span>
         </div>
       </div>

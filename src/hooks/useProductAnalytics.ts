@@ -9,7 +9,7 @@ export interface ProductAnalytics {
   image_url?: string
 }
 
-export const useProductAnalytics = () => {
+export const useProductAnalytics = (customDate?: Date) => {
   const [todayProducts, setTodayProducts] = useState<ProductAnalytics[]>([])
   const [weekProducts, setWeekProducts] = useState<ProductAnalytics[]>([])
   const [monthProducts, setMonthProducts] = useState<ProductAnalytics[]>([])
@@ -17,7 +17,7 @@ export const useProductAnalytics = () => {
   const [error, setError] = useState<string | null>(null)
 
   const getDateRange = (period: 'today' | 'week' | 'month') => {
-    const now = new Date()
+    const now = customDate || new Date()
     
     switch (period) {
       case 'today':
@@ -143,7 +143,7 @@ export const useProductAnalytics = () => {
 
   useEffect(() => {
     fetchAllAnalytics()
-  }, [])
+  }, [customDate])
 
   return {
     todayProducts,

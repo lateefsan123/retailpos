@@ -16,11 +16,27 @@ export interface HourlySalesData {
   transactionCount: number
 }
 
+export interface MonthlySalesData {
+  day: string
+  date: string
+  totalSales: number
+  transactionCount: number
+  averageTransaction: number
+}
+
 export const useSalesAnalytics = () => {
   const [weeklyData, setWeeklyData] = useState<WeeklySalesData[]>([])
   const [hourlyData, setHourlyData] = useState<HourlySalesData[]>([])
+  const [monthlyData, setMonthlyData] = useState<MonthlySalesData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const ymdLocal = (d: Date) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${dd}`
+  }
 
   const getWeekDates = (weekOffset: number = 0) => {
     const today = new Date()
@@ -40,7 +56,7 @@ export const useSalesAnalytics = () => {
       
       weekDates.push({
         day: dayNames[i],
-        date: date.toISOString().split('T')[0],
+        date: ymdLocal(date),
         fullDate: date
       })
     }
@@ -186,7 +202,8 @@ export const useSalesAnalytics = () => {
 
       await Promise.all([
         fetchWeeklySales(),
-        fetchHourlySales(new Date().toISOString().split('T')[0]) // Today's hourly data
+        fetchHourlySales(ymdLocal(new Date())),
+        fetchMonthlySales()
       ])
     } catch (err) {
       console.error('Error fetching sales analytics:', err)
@@ -214,6 +231,65 @@ export const useSalesAnalytics = () => {
     }
   }
 
+  const fetchMonthlySales = async (monthOffset: number = 0) => {
+    try {
+      const base = new Date()
+      const start = new Date(base.getFullYear(), base.getMonth() + monthOffset, 1)
+      const next = new Date(start.getFullYear(), start.getMonth() + 1, 1)
+      const startStr = `${ymdLocal(start)}T00:00:00`
+      const nextStr = `${ymdLocal(next)}T00:00:00`
+
+      const [salesRes, sideRes] = await Promise.all([
+        supabase.from('sales').select('total_amount, datetime').gte('datetime', startStr).lt('datetime', nextStr),
+        supabase.from('side_business_sales').select('total_amount, date_time').gte('date_time', startStr).lt('date_time', nextStr)
+      ])
+
+      const daysInMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate()
+      const totals: { [key: number]: { total: number; count: number } } = {}
+      for (let d = 1; d <= daysInMonth; d++) totals[d] = { total: 0, count: 0 }
+
+      const add = (dt: string, amount: number) => {
+        const d = new Date(dt)
+        const day = d.getDate()
+        if (!totals[day]) totals[day] = { total: 0, count: 0 }
+        totals[day].total += amount || 0
+        totals[day].count += 1
+      }
+
+      ;(salesRes.data || []).forEach((row: any) => add(row.datetime, row.total_amount || 0))
+      ;(sideRes.data || []).forEach((row: any) => add(row.date_time, row.total_amount || 0))
+
+      const monthly: MonthlySalesData[] = []
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dt = new Date(start.getFullYear(), start.getMonth(), d)
+        const key = totals[d] || { total: 0, count: 0 }
+        const total = key.total
+        const count = key.count
+        monthly.push({
+          day: String(d),
+          date: ymdLocal(dt),
+          totalSales: total,
+          transactionCount: count,
+          averageTransaction: count > 0 ? total / count : 0
+        })
+      }
+
+      setMonthlyData(monthly)
+    } catch (err) {
+      console.error('Error fetching monthly sales:', err)
+      throw err
+    }
+  }
+
+  const refreshMonthlyData = async (monthOffset: number = 0) => {
+    try {
+      await fetchMonthlySales(monthOffset)
+    } catch (err) {
+      console.error('Error refreshing monthly data:', err)
+      setError(err instanceof Error ? err.message : 'Failed to refresh monthly data')
+    }
+  }
+
   useEffect(() => {
     fetchAllData()
   }, [])
@@ -221,10 +297,12 @@ export const useSalesAnalytics = () => {
   return {
     weeklyData,
     hourlyData,
+    monthlyData,
     loading,
     error,
     refreshHourlyData,
     refreshWeeklyData,
+    refreshMonthlyData,
     refetch: fetchAllData
   }
 }

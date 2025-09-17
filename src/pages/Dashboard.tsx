@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { formatCurrency } from '../utils/currency'
 import LowStockSection from '../components/dashboard/LowStockSection'
 import ProductAnalyticsSection from '../components/dashboard/ProductAnalyticsSection'
 import SalesChart from '../components/dashboard/SalesChart'
@@ -35,18 +36,32 @@ const Dashboard = () => {
     lowStockItems: 0
   })
   const [loading, setLoading] = useState(true)
-  const [selectedDay, setSelectedDay] = useState<string | null>(null)
+  const [transactionsModalDate, setTransactionsModalDate] = useState<Date | null>(null)
   const [dayTransactions, setDayTransactions] = useState<Transaction[]>([])
   const [transactionsLoading, setTransactionsLoading] = useState(false)
   const [showCalendar, setShowCalendar] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [calendarDate, setCalendarDate] = useState<Date>(new Date())
   const [recentTransactions, setRecentTransactions] = useState<RecentTransaction[]>([])
+  const [activePeriod, setActivePeriod] = useState<'today' | 'week' | 'month'>('today')
+  const [sideBusinessBreakdown, setSideBusinessBreakdown] = useState<Array<{
+    business_id: number
+    name: string
+    image_url: string | null
+    total_amount: number
+  }>>([])
+  const [previousDayTransactions, setPreviousDayTransactions] = useState<number>(0)
+  const [sideBusinessTransactionCount, setSideBusinessTransactionCount] = useState<number>(0)
 
   useEffect(() => {
     fetchDashboardStats()
     fetchRecentTransactions()
   }, [])
+
+  useEffect(() => {
+    fetchDashboardStatsForPeriod(activePeriod, selectedDate)
+    fetchRecentTransactionsForPeriod(activePeriod, selectedDate)
+  }, [activePeriod, selectedDate])
 
   const fetchDashboardStats = async () => {
     try {
@@ -60,7 +75,8 @@ const Dashboard = () => {
       ])
 
       // Fetch today's revenue and transaction count
-      const today = new Date().toISOString().split('T')[0]
+      const ymdLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+      const today = ymdLocal(new Date())
       const { data: todaySales, count: todayTransactionsCount } = await supabase
         .from('sales')
         .select('total_amount', { count: 'exact' })
@@ -69,14 +85,59 @@ const Dashboard = () => {
 
       const todayRevenue = todaySales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
 
-      // Fetch today's side business revenue
-      const { data: todaySideBusinessSales } = await supabase
+      // Fetch previous day's transaction count for percentage calculation
+      const yesterday = new Date()
+      yesterday.setDate(yesterday.getDate() - 1)
+      const yesterdayStr = ymdLocal(yesterday)
+      const { count: yesterdayTransactionsCount } = await supabase
+        .from('sales')
+        .select('sale_id', { count: 'exact', head: true })
+        .gte('datetime', `${yesterdayStr}T00:00:00`)
+        .lt('datetime', `${yesterdayStr}T23:59:59`)
+
+      setPreviousDayTransactions(yesterdayTransactionsCount || 0)
+
+      // Fetch today's side business revenue with breakdown
+      const { data: todaySideBusinessSales, count: todaySideBusinessTransactionCount } = await supabase
         .from('side_business_sales')
-        .select('total_amount')
+        .select(`
+          total_amount,
+          side_business_items!inner(
+            side_businesses!inner(
+              business_id,
+              name,
+              image_url
+            )
+          )
+        `, { count: 'exact' })
         .gte('date_time', `${today}T00:00:00`)
         .lt('date_time', `${today}T23:59:59`)
 
       const todaySideBusinessRevenue = todaySideBusinessSales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
+      setSideBusinessTransactionCount(todaySideBusinessTransactionCount || 0)
+
+      // Process side business breakdown for today
+      const businessMap = new Map<number, { business_id: number; name: string; image_url: string | null; total_amount: number }>()
+      if (todaySideBusinessSales) {
+        todaySideBusinessSales.forEach(sale => {
+          const business = (sale.side_business_items as any)?.side_businesses
+          if (business) {
+            const businessId = business.business_id
+            const existing = businessMap.get(businessId)
+            if (existing) {
+              existing.total_amount += sale.total_amount || 0
+            } else {
+              businessMap.set(businessId, {
+                business_id: businessId,
+                name: business.name,
+                image_url: business.image_url,
+                total_amount: sale.total_amount || 0
+              })
+            }
+          }
+        })
+      }
+      setSideBusinessBreakdown(Array.from(businessMap.values()))
 
       // Fetch low stock items (less than 10 in stock)
       const { count: lowStockCount } = await supabase
@@ -96,14 +157,19 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Error fetching dashboard stats:', error)
       // Show error to user
-      alert(`Dashboard loading error: ${error.message || 'Unknown error'}. Please check your database permissions.`)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Dashboard loading error: ${errorMessage}. Please check your database permissions.`)
     } finally {
       setLoading(false)
     }
   }
 
-  const fetchRecentTransactions = async () => {
+  const fetchRecentTransactions = async (date?: Date) => {
     try {
+      const targetDate = date || selectedDate
+      const ymdLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+      const dateString = ymdLocal(targetDate)
+
       const { data: transactions, error } = await supabase
         .from('sales')
         .select(`
@@ -113,6 +179,8 @@ const Dashboard = () => {
           payment_method,
           sale_items (quantity)
         `)
+        .gte('datetime', `${dateString}T00:00:00`)
+        .lt('datetime', `${dateString}T23:59:59`)
         .order('datetime', { ascending: false })
         .limit(5)
 
@@ -136,32 +204,144 @@ const Dashboard = () => {
     }
   }
 
-
-  const fetchDayTransactions = async (dayName: string) => {
+  const fetchDashboardStatsForPeriod = async (period: 'today' | 'week' | 'month', baseDate: Date) => {
     try {
-      setTransactionsLoading(true)
-      setSelectedDay(dayName)
+      setLoading(true)
+      const { start, end } = getDateRangeForPeriod(period, baseDate)
 
-      // Calculate the date for the selected day (this week)
-      const today = new Date()
-      const currentDay = today.getDay() // 0 = Sunday, 1 = Monday, etc.
-      const dayMap = { 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6, 'Sun': 0 }
-      const targetDay = dayMap[dayName as keyof typeof dayMap]
-      
-      // Calculate days to subtract to get to the target day
-      const daysToSubtract = (currentDay - targetDay + 7) % 7
-      const targetDate = new Date(today)
-      targetDate.setDate(today.getDate() - daysToSubtract)
-      
-      const startDate = targetDate.toISOString().split('T')[0]
-      const endDate = new Date(targetDate.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      // Fetch sales data for the period
+      const { data: periodSales, count: periodTransactionsCount } = await supabase
+        .from('sales')
+        .select('total_amount', { count: 'exact' })
+        .gte('datetime', start)
+        .lt('datetime', end)
 
-      // Fetch transactions for that day
+      const periodRevenue = periodSales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
+
+      // Fetch side business data for the period
+      const { data: periodSideBusinessSales, count: periodSideBusinessTransactionCount } = await supabase
+        .from('side_business_sales')
+        .select(`
+          total_amount,
+          side_business_items!inner(
+            side_businesses!inner(
+              business_id,
+              name,
+              image_url
+            )
+          )
+        `, { count: 'exact' })
+        .gte('date_time', start)
+        .lt('date_time', end)
+
+      const periodSideBusinessRevenue = periodSideBusinessSales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
+      setSideBusinessTransactionCount(periodSideBusinessTransactionCount || 0)
+
+      // Process side business breakdown for the period
+      const businessMap = new Map<number, { business_id: number; name: string; image_url: string | null; total_amount: number }>()
+      if (periodSideBusinessSales) {
+        periodSideBusinessSales.forEach(sale => {
+          const business = (sale.side_business_items as any)?.side_businesses
+          if (business) {
+            const businessId = business.business_id
+            const existing = businessMap.get(businessId)
+            if (existing) {
+              existing.total_amount += sale.total_amount || 0
+            } else {
+              businessMap.set(businessId, {
+                business_id: businessId,
+                name: business.name,
+                image_url: business.image_url,
+                total_amount: sale.total_amount || 0
+              })
+            }
+          }
+        })
+      }
+      setSideBusinessBreakdown(Array.from(businessMap.values()))
+
+      // Fetch low stock items (always current)
+      const { count: lowStockCount } = await supabase
+        .from('products')
+        .select('product_id', { count: 'exact', head: true })
+        .lt('stock_quantity', 10)
+
+      setStats({
+        totalProducts: 0, // Not period-specific
+        totalSales: 0, // Not period-specific
+        totalCustomers: 0, // Not period-specific
+        todayRevenue: periodRevenue,
+        todaySideBusinessRevenue: periodSideBusinessRevenue,
+        todayTransactions: periodTransactionsCount || 0,
+        lowStockItems: lowStockCount || 0
+      })
+    } catch (error) {
+      console.error('Error fetching dashboard stats for period:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchRecentTransactionsForPeriod = async (period: 'today' | 'week' | 'month', baseDate: Date) => {
+    try {
+      const { start, end } = getDateRangeForPeriod(period, baseDate)
+
       const { data: transactions, error } = await supabase
         .from('sales')
-        .select('sale_id, datetime, total_amount, payment_method')
-        .gte('datetime', `${startDate}T00:00:00`)
-        .lt('datetime', `${endDate}T00:00:00`)
+        .select(`
+          sale_id,
+          datetime,
+          total_amount,
+          payment_method,
+          sale_items (quantity)
+        `)
+        .gte('datetime', start)
+        .lt('datetime', end)
+        .order('datetime', { ascending: false })
+        .limit(5)
+
+      if (error) {
+        console.error('Error fetching recent transactions for period:', error)
+        return
+      }
+
+      const formattedTransactions: RecentTransaction[] = (transactions || []).map(transaction => ({
+        sale_id: transaction.sale_id,
+        datetime: transaction.datetime,
+        total_amount: transaction.total_amount,
+        payment_method: transaction.payment_method,
+        items_count: transaction.sale_items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
+        status: 'completed' as const
+      }))
+
+      setRecentTransactions(formattedTransactions)
+    } catch (error) {
+      console.error('Error in fetchRecentTransactionsForPeriod:', error)
+    }
+  }
+
+
+  const openTransactionsModalForDate = async (date: Date) => {
+    try {
+      setTransactionsLoading(true)
+      const targetDate = new Date(date)
+      setTransactionsModalDate(targetDate)
+      setDayTransactions([])
+
+      const ymdLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+      const dateString = ymdLocal(targetDate)
+
+      const { data: transactions, error } = await supabase
+        .from('sales')
+        .select(`
+          sale_id,
+          datetime,
+          total_amount,
+          payment_method,
+          sale_items (quantity)
+        `)
+        .gte('datetime', `${dateString}T00:00:00`)
+        .lt('datetime', `${dateString}T23:59:59`)
         .order('datetime', { ascending: false })
 
       if (error) {
@@ -169,25 +349,24 @@ const Dashboard = () => {
         return
       }
 
-      // Transform data to match our interface
       const transformedTransactions: Transaction[] = (transactions || []).map(transaction => ({
         transaction_id: `TXN-${transaction.sale_id.toString().padStart(6, '0')}`,
         datetime: transaction.datetime,
         total_amount: transaction.total_amount,
         payment_method: transaction.payment_method,
-        items_count: Math.floor(Math.random() * 5) + 1 // Mock item count
+        items_count: transaction.sale_items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0
       }))
 
       setDayTransactions(transformedTransactions)
     } catch (error) {
-      console.error('Error fetching day transactions:', error)
+      console.error('Error fetching transactions:', error)
     } finally {
       setTransactionsLoading(false)
     }
   }
 
   const closeModal = () => {
-    setSelectedDay(null)
+    setTransactionsModalDate(null)
     setDayTransactions([])
   }
 
@@ -201,13 +380,16 @@ const Dashboard = () => {
     setShowCalendar(false)
     // Refresh dashboard data for selected date
     fetchDashboardStatsForDate(date)
+    // Also refresh recent transactions for the selected date
+    fetchRecentTransactions(date)
   }
 
   const fetchDashboardStatsForDate = async (date: Date) => {
     try {
       setLoading(true)
       
-      const dateString = date.toISOString().split('T')[0]
+      const ymdLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+      const dateString = ymdLocal(date)
       
       // Fetch counts from each table for the selected date
       const [productsResult, salesResult, customersResult] = await Promise.all([
@@ -227,14 +409,59 @@ const Dashboard = () => {
 
       const dayRevenue = daySales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
 
-      // Fetch side business revenue for selected date
-      const { data: daySideBusinessSales } = await supabase
+      // Fetch previous day's transaction count for percentage calculation
+      const previousDay = new Date(date)
+      previousDay.setDate(previousDay.getDate() - 1)
+      const previousDayStr = ymdLocal(previousDay)
+      const { count: previousDayTransactionsCount } = await supabase
+        .from('sales')
+        .select('sale_id', { count: 'exact', head: true })
+        .gte('datetime', `${previousDayStr}T00:00:00`)
+        .lt('datetime', `${previousDayStr}T23:59:59`)
+
+      setPreviousDayTransactions(previousDayTransactionsCount || 0)
+
+      // Fetch side business revenue for selected date with breakdown
+      const { data: daySideBusinessSales, count: daySideBusinessTransactionCount } = await supabase
         .from('side_business_sales')
-        .select('total_amount')
+        .select(`
+          total_amount,
+          side_business_items!inner(
+            side_businesses!inner(
+              business_id,
+              name,
+              image_url
+            )
+          )
+        `, { count: 'exact' })
         .gte('date_time', `${dateString}T00:00:00`)
         .lt('date_time', `${dateString}T23:59:59`)
 
       const daySideBusinessRevenue = daySideBusinessSales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
+      setSideBusinessTransactionCount(daySideBusinessTransactionCount || 0)
+
+      // Process side business breakdown
+      const businessMap = new Map<number, { business_id: number; name: string; image_url: string | null; total_amount: number }>()
+      if (daySideBusinessSales) {
+        daySideBusinessSales.forEach(sale => {
+          const business = (sale.side_business_items as any)?.side_businesses
+          if (business) {
+            const businessId = business.business_id
+            const existing = businessMap.get(businessId)
+            if (existing) {
+              existing.total_amount += sale.total_amount || 0
+            } else {
+              businessMap.set(businessId, {
+                business_id: businessId,
+                name: business.name,
+                image_url: business.image_url,
+                total_amount: sale.total_amount || 0
+              })
+            }
+          }
+        })
+      }
+      setSideBusinessBreakdown(Array.from(businessMap.values()))
 
       // Fetch low stock items (less than 10 in stock)
       const { count: lowStockCount } = await supabase
@@ -260,7 +487,6 @@ const Dashboard = () => {
 
   const generateCalendarDays = (year: number, month: number) => {
     const firstDay = new Date(year, month, 1)
-    const lastDay = new Date(year, month + 1, 0)
     const startDate = new Date(firstDay)
     startDate.setDate(startDate.getDate() - firstDay.getDay())
     
@@ -276,48 +502,220 @@ const Dashboard = () => {
   }
 
 
+  const getSalesCardTitle = () => {
+    switch (activePeriod) {
+      case 'today':
+        const today = new Date()
+        const isToday = selectedDate.toDateString() === today.toDateString()
+        return isToday ? "Today's Sales" : `${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} Sales`
+      case 'week':
+        return 'This Week Sales'
+      case 'month':
+        return 'This Month Sales'
+      default:
+        return "Today's Sales"
+    }
+  }
+
+  const getTransactionsCardTitle = () => {
+    switch (activePeriod) {
+      case 'today':
+        const today = new Date()
+        const isToday = selectedDate.toDateString() === today.toDateString()
+        return isToday ? 'Today\'s Transactions' : `${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} Transactions`
+      case 'week':
+        return 'This Week Transactions'
+      case 'month':
+        return 'This Month Transactions'
+      default:
+        return 'Today\'s Transactions'
+    }
+  }
+
+  const getTransactionPercentageChange = () => {
+    if (previousDayTransactions === 0) {
+      return stats.todayTransactions > 0 ? "+100%" : "0%"
+    }
+    
+    const change = ((stats.todayTransactions - previousDayTransactions) / previousDayTransactions) * 100
+    const sign = change >= 0 ? "+" : ""
+    return `${sign}${change.toFixed(0)}%`
+  }
+
+  const getProductTransactionCount = () => {
+    return stats.todayTransactions - sideBusinessTransactionCount
+  }
+
+  const getTransactionBreakdown = () => {
+    const productTransactions = getProductTransactionCount()
+    const percentageChange = getTransactionPercentageChange()
+    return {
+      text: `Products: ${productTransactions} | Side Business: ${sideBusinessTransactionCount} (${percentageChange} from yesterday)`,
+      icon: 'fa-solid fa-chart-pie'
+    }
+  }
+
+  const getDateRangeForPeriod = (period: 'today' | 'week' | 'month', baseDate: Date) => {
+    const ymdLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+    
+    switch (period) {
+      case 'today':
+        const todayStr = ymdLocal(baseDate)
+        return {
+          start: `${todayStr}T00:00:00`,
+          end: `${todayStr}T23:59:59`
+        }
+      
+      case 'week':
+        const startOfWeek = new Date(baseDate)
+        startOfWeek.setDate(baseDate.getDate() - baseDate.getDay()) // Sunday as week start
+        startOfWeek.setHours(0, 0, 0, 0)
+        
+        const endOfWeek = new Date(startOfWeek)
+        endOfWeek.setDate(startOfWeek.getDate() + 6)
+        endOfWeek.setHours(23, 59, 59, 999)
+        
+        return {
+          start: startOfWeek.toISOString(),
+          end: endOfWeek.toISOString()
+        }
+      
+      case 'month':
+        const startOfMonth = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1)
+        startOfMonth.setHours(0, 0, 0, 0)
+        
+        const endOfMonth = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0)
+        endOfMonth.setHours(23, 59, 59, 999)
+        
+        return {
+          start: startOfMonth.toISOString(),
+          end: endOfMonth.toISOString()
+        }
+      
+      default:
+        return { start: '', end: '' }
+    }
+  }
+
+  const getTransactionsModalTitle = (date: Date) => {
+    const today = new Date()
+    const isToday = date.toDateString() === today.toDateString()
+    const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    return isToday ? "Today's Transactions" : `${formattedDate} Transactions`
+  }
+
+  const getTransactionsModalEmptyState = (date: Date) => {
+    const today = new Date()
+    const isToday = date.toDateString() === today.toDateString()
+    const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    return isToday ? 'No transactions found for today' : `No transactions found for ${formattedDate}`
+  }
+
+  const createPieChart = (productCount: number, sideBusinessCount: number, size: number = 60) => {
+    const total = productCount + sideBusinessCount
+    if (total === 0) return null
+
+    const productPercentage = (productCount / total) * 100
+
+    // Calculate angles for SVG path
+    const productAngle = (productPercentage / 100) * 360
+
+    // SVG path for pie slices
+    const createArcPath = (startAngle: number, endAngle: number, radius: number) => {
+      const start = polarToCartesian(size/2, size/2, radius, endAngle)
+      const end = polarToCartesian(size/2, size/2, radius, startAngle)
+      const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1"
+      return `M ${size/2} ${size/2} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y} Z`
+    }
+
+    const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
+      const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0
+      return {
+        x: centerX + (radius * Math.cos(angleInRadians)),
+        y: centerY + (radius * Math.sin(angleInRadians))
+      }
+    }
+
+    const radius = size * 0.4
+
+    return (
+      <svg width={size} height={size} style={{ marginRight: '12px' }}>
+        {productCount > 0 && (
+          <path
+            d={createArcPath(0, productAngle, radius)}
+            fill="#a5b4fc"
+            stroke="#ffffff"
+            strokeWidth="2"
+          />
+        )}
+        {sideBusinessCount > 0 && (
+          <path
+            d={createArcPath(productAngle, 360, radius)}
+            fill="#86efac"
+            stroke="#ffffff"
+            strokeWidth="2"
+          />
+        )}
+      </svg>
+    )
+  }
+
   const statCards = [
     {
-      title: "Today's Sales",
-      value: `€${(stats.todayRevenue + stats.todaySideBusinessRevenue).toFixed(2)}`,
-      change: `Products: €${stats.todayRevenue.toFixed(2)} | Side Business: €${stats.todaySideBusinessRevenue.toFixed(2)}`,
+      title: getSalesCardTitle(),
+      value: formatCurrency(stats.todayRevenue + stats.todaySideBusinessRevenue),
+      change: `Products: ${formatCurrency(stats.todayRevenue)} | Side Business: ${formatCurrency(stats.todaySideBusinessRevenue)}`,
       changeColor: '#1a1a1a',
       icon: 'fa-solid fa-euro-sign',
       bgColor: '#1a1a1a',
       iconColor: '#f1f0e4'
     },
     {
-      title: 'Transactions',
+      title: getTransactionsCardTitle(),
       value: stats.todayTransactions,
-      change: "+8% from yesterday",
+      change: getTransactionBreakdown().text,
+      changeIcon: getTransactionBreakdown().icon,
       changeColor: '#bca88d',
       icon: 'fa-solid fa-shopping-cart',
       bgColor: '#bca88d',
-      iconColor: '#1a1a1a'
+      iconColor: '#1a1a1a',
+      pieChart: {
+        productCount: getProductTransactionCount(),
+        sideBusinessCount: sideBusinessTransactionCount
+      }
     }
   ]
 
+  // Display cards with consistent currency formatting
+  const displayCards = statCards
+
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '400px' 
-      }}>
-        <div style={{ 
-          fontSize: '20px', 
-          color: '#1a1a1a',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px'
+      <div style={{ padding: '0' }}>
+        <style>{`
+          @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+          .skeleton { background-image: linear-gradient(90deg, #e5e7eb 0px, #f3f4f6 40px, #e5e7eb 80px); background-size: 600px 100%; animation: shimmer 1.2s infinite linear; }
+        `}</style>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '24px',
+          marginBottom: '32px'
         }}>
-          <i className="fa-solid fa-spinner" style={{ 
-            animation: 'spin 1s linear infinite',
-            fontSize: '24px'
-          }}></i>
-          Loading dashboard...
+          <div className="skeleton" style={{ height: '140px', borderRadius: '16px' }}></div>
+          <div className="skeleton" style={{ height: '140px', borderRadius: '16px' }}></div>
+          <div className="skeleton" style={{ height: '140px', borderRadius: '16px' }}></div>
         </div>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '24px',
+          marginBottom: '32px'
+        }}>
+          <div className="skeleton" style={{ height: '300px', borderRadius: '16px' }}></div>
+          <div className="skeleton" style={{ height: '300px', borderRadius: '16px' }}></div>
+        </div>
+        <div className="skeleton" style={{ height: '420px', borderRadius: '16px' }}></div>
       </div>
     )
   }
@@ -389,6 +787,64 @@ const Dashboard = () => {
           }}></i>
         </div>
       </div>
+
+      {/* Global Range Filter */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '8px 0 24px 0' }}>
+        <div style={{
+          display: 'flex',
+          gap: '8px',
+          background: '#f9fafb',
+          border: '1px solid #e5e7eb',
+          borderRadius: '8px',
+          padding: '4px'
+        }}>
+          <button
+            onClick={() => setActivePeriod('today')}
+            style={{
+              padding: '6px 10px',
+              borderRadius: '6px',
+              border: 'none',
+              background: activePeriod === 'today' ? '#7d8d86' : 'transparent',
+              color: activePeriod === 'today' ? '#f1f0e4' : '#7d8d86',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            Today
+          </button>
+          <button
+            onClick={() => setActivePeriod('week')}
+            style={{
+              padding: '6px 10px',
+              borderRadius: '6px',
+              border: 'none',
+              background: activePeriod === 'week' ? '#7d8d86' : 'transparent',
+              color: activePeriod === 'week' ? '#f1f0e4' : '#7d8d86',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            This Week
+          </button>
+          <button
+            onClick={() => setActivePeriod('month')}
+            style={{
+              padding: '6px 10px',
+              borderRadius: '6px',
+              border: 'none',
+              background: activePeriod === 'month' ? '#7d8d86' : 'transparent',
+              color: activePeriod === 'month' ? '#f1f0e4' : '#7d8d86',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            This Month
+          </button>
+        </div>
+      </div>
       
       {/* Stats Cards */}
       <div style={{
@@ -398,7 +854,7 @@ const Dashboard = () => {
         marginBottom: '32px',
         minHeight: '140px'
       }}>
-        {statCards.map((card, index) => (
+        {displayCards.map((card, index) => (
           <div
             key={index}
             style={{
@@ -433,14 +889,109 @@ const Dashboard = () => {
                 }}>
                   {card.value}
                 </p>
-                <p style={{ 
+                <div style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
                   fontSize: '14px', 
                   fontWeight: '500', 
                   color: card.changeColor, 
                   margin: 0 
                 }}>
-                  {card.change}
-                </p>
+                  {(card as any).pieChart ? (
+                    <>
+                      {createPieChart((card as any).pieChart.productCount, (card as any).pieChart.sideBusinessCount)}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#a5b4fc' }}></div>
+                          <span style={{ fontSize: '13px', fontWeight: '500' }}>Products: {(card as any).pieChart.productCount}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#86efac' }}></div>
+                          <span style={{ fontSize: '13px', fontWeight: '500' }}>Side Business: {(card as any).pieChart.sideBusinessCount}</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {(card as any).changeIcon && (
+                        <i className={(card as any).changeIcon} style={{ fontSize: '12px' }}></i>
+                      )}
+                      <span>{card.change}</span>
+                    </>
+                  )}
+                </div>
+                
+                {/* Side Business Breakdown - Only on Sales card (index 0) */}
+                {index === 0 && sideBusinessBreakdown.length > 0 && (
+                  <div style={{ 
+                    marginTop: '12px',
+                    paddingTop: '12px',
+                    borderTop: '1px solid rgba(125, 141, 134, 0.2)'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}>
+                      {sideBusinessBreakdown.map((business) => (
+                        <div key={business.business_id} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}>
+                          <div style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '6px',
+                            overflow: 'hidden',
+                            background: '#f3f4f6',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            {business.image_url ? (
+                              <img 
+                                src={business.image_url} 
+                                alt={business.name}
+                                style={{
+                                  width: '100%',
+                                  height: '100%',
+                                  objectFit: 'cover'
+                                }}
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement
+                                  target.style.display = 'none'
+                                  const parent = target.parentElement
+                                  if (parent) {
+                                    parent.innerHTML = '<i class="fa-solid fa-store" style="font-size: 12px; color: #7d8d86;"></i>'
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <i className="fa-solid fa-store" style={{ fontSize: '12px', color: '#7d8d86' }}></i>
+                            )}
+                          </div>
+                          <span style={{
+                            fontSize: '12px',
+                            color: '#7d8d86',
+                            fontWeight: '500',
+                            flex: 1
+                          }}>
+                            {business.name}
+                          </span>
+                          <span style={{
+                            fontSize: '12px',
+                            color: '#1a1a1a',
+                            fontWeight: '600'
+                          }}>
+                            {formatCurrency(business.total_amount)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <div style={{
                 width: '56px',
@@ -493,31 +1044,62 @@ const Dashboard = () => {
           padding: '24px',
           boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              background: '#1a1a1a',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <i className="fa-solid fa-clock" style={{ fontSize: '18px', color: '#f1f0e4' }}></i>
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                background: '#1a1a1a',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <i className="fa-solid fa-clock" style={{ fontSize: '18px', color: '#f1f0e4' }}></i>
+              </div>
             <h3 style={{ 
               fontSize: '20px', 
               fontWeight: '600', 
               color: '#1a1a1a', 
               margin: 0 
             }}>
-              Recent Transactions
+              {(() => {
+                switch (activePeriod) {
+                  case 'today':
+                    const today = new Date()
+                    const isToday = selectedDate.toDateString() === today.toDateString()
+                    return isToday ? 'Recent Transactions' : `${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} Transactions`
+                  case 'week':
+                    return 'This Week Transactions'
+                  case 'month':
+                    return 'This Month Transactions'
+                  default:
+                    return 'Recent Transactions'
+                }
+              })()}
             </h3>
+            </div>
+            <button
+              onClick={() => openTransactionsModalForDate(selectedDate)}
+              style={{
+                background: '#1a1a1a',
+                color: '#f1f0e4',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              View All
+            </button>
           </div>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {recentTransactions.length > 0 ? (
-              recentTransactions.map((transaction, index) => (
+              recentTransactions.map((transaction) => (
                 <div 
                   key={transaction.sale_id}
                   onClick={() => navigate(`/transaction/TXN-${transaction.sale_id.toString().padStart(6, '0')}`)}
@@ -558,7 +1140,7 @@ const Dashboard = () => {
                       color: '#1a1a1a', 
                       margin: 0 
                     }}>
-                      {transaction.items_count} item{transaction.items_count !== 1 ? 's' : ''} • {transaction.payment_method}
+                      {transaction.items_count} item{transaction.items_count !== 1 ? 's' : ''} | {transaction.payment_method}
                     </p>
                   </div>
                   <div style={{ textAlign: 'right' }}>
@@ -568,7 +1150,7 @@ const Dashboard = () => {
                       color: '#1a1a1a', 
                       margin: 0 
                     }}>
-                      €{transaction.total_amount.toFixed(2)}
+                      {formatCurrency(transaction.total_amount)}
                     </p>
                   </div>
                 </div>
@@ -580,21 +1162,33 @@ const Dashboard = () => {
                 color: '#1a1a1a',
                 fontSize: '14px'
               }}>
-                No recent transactions
+                {(() => {
+                  switch (activePeriod) {
+                    case 'today':
+                      const today = new Date()
+                      const isToday = selectedDate.toDateString() === today.toDateString()
+                      return isToday ? 'No recent transactions' : `No transactions on ${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                    case 'week':
+                      return 'No transactions this week'
+                    case 'month':
+                      return 'No transactions this month'
+                    default:
+                      return 'No recent transactions'
+                  }
+                })()}
               </div>
             )}
           </div>
         </div>
-
         {/* Product Analytics */}
-        <ProductAnalyticsSection />
+        <ProductAnalyticsSection activePeriod={activePeriod} selectedDate={selectedDate} />
       </div>
 
       {/* Sales Chart */}
-      <SalesChart />
+      <SalesChart selectedDate={selectedDate} activePeriod={activePeriod} />
 
       {/* Transactions Modal */}
-      {selectedDay && (
+      {transactionsModalDate && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -634,7 +1228,7 @@ const Dashboard = () => {
                 color: '#1a1a1a',
                 margin: 0
               }}>
-                {selectedDay} Transactions
+                {getTransactionsModalTitle(transactionsModalDate)}
               </h2>
               <button
                 onClick={closeModal}
@@ -649,7 +1243,7 @@ const Dashboard = () => {
                   transition: 'all 0.2s ease'
                 }}
               >
-                ×
+                &times;
               </button>
             </div>
 
@@ -718,7 +1312,7 @@ const Dashboard = () => {
                           color: '#1a1a1a',
                           margin: 0
                         }}>
-                          {new Date(transaction.datetime).toLocaleTimeString()} • {transaction.items_count} items • {transaction.payment_method}
+                          {new Date(transaction.datetime).toLocaleTimeString()} | {transaction.items_count} items | {transaction.payment_method}
                         </p>
                       </div>
                     </div>
@@ -727,7 +1321,7 @@ const Dashboard = () => {
                       fontWeight: '600',
                       color: '#1a1a1a'
                     }}>
-                      €{transaction.total_amount.toFixed(2)}
+                      {formatCurrency(transaction.total_amount)}
                     </div>
                   </div>
                 ))}
@@ -744,7 +1338,7 @@ const Dashboard = () => {
                   opacity: 0.5
                 }}></i>
                 <p style={{ fontSize: '16px', margin: 0 }}>
-                  No transactions found for {selectedDay}
+                  {getTransactionsModalEmptyState(transactionsModalDate)}
                 </p>
               </div>
             )}
