@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import * as XLSX from 'xlsx';
 
 interface VaultReportsProps {
   isOpen: boolean;
@@ -69,20 +70,30 @@ export default function VaultReports({ isOpen, onClose, vaultEntries }: VaultRep
   const [selectedWeek, setSelectedWeek] = useState('2025-W37');
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showCustomDateRange, setShowCustomDateRange] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [exportLoading, setExportLoading] = useState(false);
 
   const formatCurrency = (amount: number) => `€${amount.toFixed(2)}`;
 
   // Fetch report data from database
-  const fetchReportData = async () => {
+  const fetchReportData = async (customStart?: string, customEnd?: string) => {
     try {
       setLoading(true);
       
       // Calculate date range based on report type
-      const now = new Date();
       let startDate: Date, endDate: Date;
       
-      if (reportType === 'weekly') {
+      if (showCustomDateRange && customStart && customEnd) {
+        // Use custom date range
+        startDate = new Date(customStart);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(customEnd);
+        endDate.setHours(23, 59, 59, 999);
+      } else if (reportType === 'weekly') {
         // Get start of current week (Monday)
+        const now = new Date();
         const dayOfWeek = now.getDay();
         const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
         startDate = new Date(now.setDate(diff));
@@ -92,6 +103,7 @@ export default function VaultReports({ isOpen, onClose, vaultEntries }: VaultRep
         endDate.setHours(23, 59, 59, 999);
       } else {
         // Monthly
+        const now = new Date();
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
       }
@@ -375,6 +387,218 @@ export default function VaultReports({ isOpen, onClose, vaultEntries }: VaultRep
     `);
   };
 
+  // Export to Excel function - Accountant Focused
+  const exportToExcel = async () => {
+    try {
+      setExportLoading(true);
+      
+      // Fetch fresh data for the selected date range
+      const startDate = showCustomDateRange ? customStartDate : null;
+      const endDate = showCustomDateRange ? customEndDate : null;
+      
+      // Calculate date range for filename
+      let dateRangeStr = '';
+      if (showCustomDateRange && startDate && endDate) {
+        const start = new Date(startDate).toLocaleDateString('en-IE');
+        const end = new Date(endDate).toLocaleDateString('en-IE');
+        dateRangeStr = `${start}_to_${end}`;
+      } else if (reportType === 'weekly') {
+        dateRangeStr = `Week_${selectedWeek}`;
+      } else {
+        const now = new Date();
+        dateRangeStr = `${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}`;
+      }
+      
+      // Create workbook
+      const workbook = XLSX.utils.book_new();
+      
+      // 1. Financial Summary Sheet (Primary - for Accountant)
+      const financialSummaryData = [
+        ['LANDM STORE - FINANCIAL REPORT FOR ACCOUNTANT'],
+        [''],
+        ['BUSINESS INFORMATION'],
+        ['Company Name:', 'LandM Store'],
+        ['Address:', 'Unit 2 Glenmore Park, Dundalk, Co. Louth'],
+        ['Phone:', '087 797 0412'],
+        ['VAT Number:', 'IE1234567A'],
+        ['Business Type:', 'Retail Store'],
+        [''],
+        ['REPORTING PERIOD'],
+        ['Period:', showCustomDateRange ? `${customStartDate} to ${customEndDate}` : 
+          reportType === 'weekly' ? `Week ${selectedWeek}` : 
+          new Date().toLocaleDateString('en-IE', { year: 'numeric', month: 'long' })],
+        ['Report Generated:', new Date().toLocaleDateString('en-IE', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })],
+        [''],
+        ['REVENUE SUMMARY (EXCLUDING VAT)'],
+        ['Gross Sales Revenue', reportData?.kpis.totalSales ? reportData.kpis.totalSales : 0],
+        ['Less: Customer Discounts', reportData?.kpis.discounts ? reportData.kpis.discounts : 0],
+        ['Net Sales Revenue (Before VAT)', reportData?.kpis.totalSales && reportData?.kpis.discounts ? 
+          (reportData.kpis.totalSales - reportData.kpis.discounts) : 
+          reportData?.kpis.totalSales ? reportData.kpis.totalSales : 0],
+        [''],
+        ['TRANSACTION ANALYSIS'],
+        ['Total Number of Transactions', reportData?.kpis.transactions || 0],
+        ['Average Transaction Value', reportData?.kpis.avgTransaction ? reportData.kpis.avgTransaction : 0],
+        ['Total Items Sold', reportData?.categories.reduce((sum, cat) => sum + cat.units, 0) || 0],
+        [''],
+        ['CATEGORY PERFORMANCE'],
+        ['Category', 'Revenue', 'Percentage of Sales', 'Units Sold', 'Average Price per Unit'],
+        ...(reportData?.categories.map(cat => [
+          cat.name,
+          cat.revenue,
+          `${cat.percentage}%`,
+          cat.units,
+          cat.units > 0 ? (cat.revenue / cat.units) : 0
+        ]) || []),
+        [''],
+        ['TOP PERFORMING PRODUCTS'],
+        ['Product Name', 'Units Sold', 'Revenue Generated', 'Average Price per Unit'],
+        ...(reportData?.topProducts.slice(0, 15).map(product => [
+          product.name,
+          product.units,
+          product.revenue,
+          product.units > 0 ? (product.revenue / product.units) : 0
+        ]) || []),
+        [''],
+        ['ACCOUNTING NOTES'],
+        ['1. All amounts are in Euro (€)'],
+        ['2. Revenue figures are exclusive of VAT unless otherwise stated'],
+        ['3. Customer discounts are deducted from gross revenue'],
+        ['4. This report is generated automatically from POS system data'],
+        ['5. For VAT calculations, standard rate should be applied to net sales'],
+        ['6. Inventory movements and cost of goods sold are not included in this report'],
+        ['7. Report covers retail sales only - side business operations excluded'],
+        [''],
+        ['VERIFICATION REQUIRED'],
+        ['- Cross-reference with bank deposits'],
+        ['- Verify VAT calculations and rates'],
+        ['- Confirm discount policies and approvals'],
+        ['- Reconcile with physical inventory counts']
+      ];
+      
+      const financialSheet = XLSX.utils.aoa_to_sheet(financialSummaryData);
+      XLSX.utils.book_append_sheet(workbook, financialSheet, 'Financial Summary');
+      
+      // 2. Detailed Sales Data Sheet
+      const salesDetailsData = [
+        ['DETAILED SALES BREAKDOWN'],
+        [''],
+        ['Product Name', 'Category', 'Units Sold', 'Revenue Generated', 'Average Price per Unit'],
+        ...(reportData?.topProducts.map(product => [
+          product.name,
+          reportData.categories.find(cat => 
+            reportData.topProducts.filter(p => 
+              reportData.categories.some(c => c.name === 'Category' && p.name === product.name)
+            ).length > 0
+          )?.name || 'Other',
+          product.units,
+          product.revenue,
+          product.units > 0 ? (product.revenue / product.units) : 0
+        ]) || []),
+        [''],
+        ['CATEGORY TOTALS'],
+        ['Category', 'Total Revenue', 'Total Units', 'Average Price per Unit', 'Percentage of Total Sales'],
+        ...(reportData?.categories.map(cat => [
+          cat.name,
+          cat.revenue,
+          cat.units,
+          cat.units > 0 ? (cat.revenue / cat.units) : 0,
+          `${cat.percentage}%`
+        ]) || [])
+      ];
+      
+      const salesSheet = XLSX.utils.aoa_to_sheet(salesDetailsData);
+      XLSX.utils.book_append_sheet(workbook, salesSheet, 'Sales Details');
+      
+      // 3. Transaction Analysis Sheet
+      const transactionAnalysisData = [
+        ['TRANSACTION ANALYSIS'],
+        [''],
+        ['Metric', 'Value', 'Notes'],
+        ['Total Transactions', reportData?.kpis.transactions || 0, 'Number of completed sales'],
+        ['Average Transaction Value', reportData?.kpis.avgTransaction ? reportData.kpis.avgTransaction : 0, 'Revenue per transaction'],
+        ['Total Items Sold', reportData?.categories.reduce((sum, cat) => sum + cat.units, 0) || 0, 'Sum of all units sold'],
+        ['Average Items per Transaction', reportData?.kpis.transactions > 0 ? 
+          (reportData.categories.reduce((sum, cat) => sum + cat.units, 0) / reportData.kpis.transactions) : 0, 
+          'Items sold divided by transactions'],
+        ['Discount Rate', reportData?.kpis.totalSales > 0 ? 
+          ((reportData.kpis.discounts / reportData.kpis.totalSales) * 100).toFixed(2) + '%' : '0%', 
+          'Percentage of revenue given as discounts'],
+        [''],
+        ['DAILY BREAKDOWN (ESTIMATED)'],
+        ['Note: Daily breakdown requires individual transaction data'],
+        ['Average Daily Revenue', reportData?.kpis.totalSales && reportData?.kpis.transactions > 0 ? 
+          (reportData.kpis.totalSales / Math.max(1, reportData.kpis.transactions / 10)) : 0, 'Estimated based on transaction volume'],
+        ['Average Daily Transactions', reportData?.kpis.transactions > 0 ? 
+          (reportData.kpis.transactions / Math.max(1, reportData.kpis.transactions / 10)) : 0, 'Estimated daily transaction count']
+      ];
+      
+      const transactionSheet = XLSX.utils.aoa_to_sheet(transactionAnalysisData);
+      XLSX.utils.book_append_sheet(workbook, transactionSheet, 'Transaction Analysis');
+      
+      // 4. VAT Calculation Sheet
+      const vatCalculationData = [
+        ['VAT CALCULATION WORKSHEET'],
+        [''],
+        ['IMPORTANT: This is a template - verify VAT rates and calculations'],
+        [''],
+        ['Net Sales Revenue (Before VAT)', reportData?.kpis.totalSales && reportData?.kpis.discounts ? 
+          (reportData.kpis.totalSales - reportData.kpis.discounts) : 
+          reportData?.kpis.totalSales ? reportData.kpis.totalSales : 0],
+        [''],
+        ['VAT CALCULATIONS (Standard Rate 23%)'],
+        ['VAT on Net Sales', reportData?.kpis.totalSales && reportData?.kpis.discounts ? 
+          ((reportData.kpis.totalSales - reportData.kpis.discounts) * 0.23) : 
+          reportData?.kpis.totalSales ? (reportData.kpis.totalSales * 0.23) : 0],
+        ['Total Revenue Including VAT', reportData?.kpis.totalSales && reportData?.kpis.discounts ? 
+          ((reportData.kpis.totalSales - reportData.kpis.discounts) * 1.23) : 
+          reportData?.kpis.totalSales ? (reportData.kpis.totalSales * 1.23) : 0],
+        [''],
+        ['VAT CALCULATIONS (Reduced Rate 13.5% - if applicable)'],
+        ['Note: Verify which products qualify for reduced rate'],
+        ['VAT on Reduced Rate Items', 0, 'To be calculated based on product categorization'],
+        [''],
+        ['VAT SUMMARY'],
+        ['Standard Rate VAT (23%)', reportData?.kpis.totalSales && reportData?.kpis.discounts ? 
+          ((reportData.kpis.totalSales - reportData.kpis.discounts) * 0.23) : 
+          reportData?.kpis.totalSales ? (reportData.kpis.totalSales * 0.23) : 0],
+        ['Reduced Rate VAT (13.5%)', 0, 'Calculate based on qualifying products'],
+        ['Total VAT Collected', reportData?.kpis.totalSales && reportData?.kpis.discounts ? 
+          ((reportData.kpis.totalSales - reportData.kpis.discounts) * 0.23) : 
+          reportData?.kpis.totalSales ? (reportData.kpis.totalSales * 0.23) : 0],
+        [''],
+        ['VERIFICATION CHECKLIST'],
+        ['☐ Verify current VAT rates'],
+        ['☐ Confirm product VAT categorization'],
+        ['☐ Cross-check with VAT returns'],
+        ['☐ Validate calculation methods'],
+        ['☐ Check for any exempt or zero-rated items']
+      ];
+      
+      const vatSheet = XLSX.utils.aoa_to_sheet(vatCalculationData);
+      XLSX.utils.book_append_sheet(workbook, vatSheet, 'VAT Calculation');
+      
+      // Generate filename
+      const filename = `LandM_Store_Accountant_Report_${dateRangeStr}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      
+      // Write and download file
+      XLSX.writeFile(workbook, filename);
+      
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      alert('Failed to export to Excel. Please try again.');
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   // Don't render if modal is not open
   if (!isOpen) return null;
 
@@ -513,26 +737,65 @@ export default function VaultReports({ isOpen, onClose, vaultEntries }: VaultRep
           >
             <option value="weekly">Weekly Report</option>
             <option value="monthly">Monthly Report</option>
+            <option value="custom">Custom Date Range</option>
           </select>
           
-          <input 
-            type="week" 
-            style={{
-              padding: '10px 15px',
-              border: '2px solid rgba(125, 141, 134, 0.3)',
-              borderRadius: '10px',
-              background: '#ffffff',
-              color: '#3e3f29',
-              fontSize: '14px',
-              outline: 'none'
-            }}
-            value={selectedWeek}
-            onChange={(e) => setSelectedWeek(e.target.value)}
-          />
+          {reportType === 'weekly' && (
+            <input 
+              type="week" 
+              style={{
+                padding: '10px 15px',
+                border: '2px solid rgba(125, 141, 134, 0.3)',
+                borderRadius: '10px',
+                background: '#ffffff',
+                color: '#3e3f29',
+                fontSize: '14px',
+                outline: 'none'
+              }}
+              value={selectedWeek}
+              onChange={(e) => setSelectedWeek(e.target.value)}
+            />
+          )}
+          
+          {reportType === 'custom' && (
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input 
+                type="date" 
+                style={{
+                  padding: '10px 15px',
+                  border: '2px solid rgba(125, 141, 134, 0.3)',
+                  borderRadius: '10px',
+                  background: '#ffffff',
+                  color: '#3e3f29',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                placeholder="Start Date"
+              />
+              <span style={{ color: '#7d8d86', fontSize: '14px' }}>to</span>
+              <input 
+                type="date" 
+                style={{
+                  padding: '10px 15px',
+                  border: '2px solid rgba(125, 141, 134, 0.3)',
+                  borderRadius: '10px',
+                  background: '#ffffff',
+                  color: '#3e3f29',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                placeholder="End Date"
+              />
+            </div>
+          )}
           
           <button 
-            onClick={fetchReportData}
-            disabled={loading}
+            onClick={() => fetchReportData(customStartDate, customEndDate)}
+            disabled={loading || (reportType === 'custom' && (!customStartDate || !customEndDate))}
             style={{
               background: loading ? '#cccccc' : '#7d8d86',
               color: '#ffffff',
@@ -591,6 +854,40 @@ export default function VaultReports({ isOpen, onClose, vaultEntries }: VaultRep
           >
             <i className="fa-solid fa-print"></i>
             Print Report
+          </button>
+          
+          <button 
+            onClick={exportToExcel}
+            disabled={exportLoading || !reportData || (reportType === 'custom' && (!customStartDate || !customEndDate))}
+            style={{
+              background: exportLoading ? '#cccccc' : '#10b981',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '10px',
+              padding: '10px 20px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: exportLoading ? 'not-allowed' : 'pointer',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+            onMouseEnter={(e) => {
+              if (!exportLoading) {
+                e.currentTarget.style.background = '#059669'
+                e.currentTarget.style.transform = 'translateY(-2px)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!exportLoading) {
+                e.currentTarget.style.background = '#10b981'
+                e.currentTarget.style.transform = 'translateY(0)'
+              }
+            }}
+          >
+            <i className={`fa-solid ${exportLoading ? 'fa-spinner fa-spin' : 'fa-file-excel'}`}></i>
+            {exportLoading ? 'Exporting...' : 'Export to Excel'}
           </button>
         </div>
         

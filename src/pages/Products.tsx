@@ -72,6 +72,9 @@ interface Product {
   is_weighted?: boolean // true if item is sold by weight
   description?: string
   sku?: string
+  sales_count?: number // number of times this product has been sold
+  total_revenue?: number // total revenue generated from this product
+  last_sold_date?: string // when this product was last sold
 }
 
 const Products = () => {
@@ -80,8 +83,28 @@ const Products = () => {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Summary statistics for all products (not just current page)
+  const [summaryStats, setSummaryStats] = useState({
+    totalProducts: 0,
+    inStock: 0,
+    lowStock: 0,
+    outOfStock: 0
+  })
+  
+  // Track which summary filter is active
+  const [activeSummaryFilter, setActiveSummaryFilter] = useState<string | null>(null)
+  
+  // Product insights modal state
+  const [showInsightsModal, setShowInsightsModal] = useState(false)
+  const [selectedProductForInsights, setSelectedProductForInsights] = useState<Product | null>(null)
+  const [productInsights, setProductInsights] = useState<any>(null)
+  const [insightsLoading, setInsightsLoading] = useState(false)
+  const [activeChart, setActiveChart] = useState<'daily' | 'weekly' | 'monthly'>('daily')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false)
+  const [searchSuggestions, setSearchSuggestions] = useState<Array<{type: 'product', product: Product} | {type: 'category', name: string}>>([])
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -90,7 +113,7 @@ const Products = () => {
     category: '',
     price: '',
     stock_quantity: '',
-    reorder_level: '',
+    reorder_level: '10',
     supplier_info: '',
     tax_rate: '',
     description: '',
@@ -113,10 +136,66 @@ const Products = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [totalProducts, setTotalProducts] = useState(0)
+  
+  // Categories state
+  const [distinctCategories, setDistinctCategories] = useState<string[]>([])
+  const [allProducts, setAllProducts] = useState<Product[]>([])
+
+  // Fetch all products for search suggestions (not paginated)
+  const fetchAllProductsForSuggestions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('name', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching all products for suggestions:', error)
+        return
+      }
+
+      setAllProducts(data || [])
+    } catch (error) {
+      console.error('Error fetching all products for suggestions:', error)
+    }
+  }
+
+  // Fetch distinct categories from database
+  const fetchDistinctCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('category')
+        .not('category', 'is', null)
+        .not('category', 'eq', '')
+
+      if (error) {
+        console.error('Error fetching categories:', error)
+        return
+      }
+
+      // Extract unique categories and sort them
+      const uniqueCategories = Array.from(new Set(data.map(item => item.category)))
+        .filter(category => category && category.trim() !== '')
+        .sort()
+
+      setDistinctCategories(uniqueCategories)
+    } catch (error) {
+      console.error('Error fetching distinct categories:', error)
+    }
+  }
 
   useEffect(() => {
     fetchProducts()
+    fetchDistinctCategories()
+    fetchAllProductsForSuggestions()
+    fetchSummaryStats()
   }, [])
+
+  // Debug modal state
+  useEffect(() => {
+    console.log('Modal state changed:', { showEditModal, editingProduct: editingProduct?.name })
+  }, [showEditModal, editingProduct])
 
   // Search handlers
   const handleSearchSubmit = () => {
@@ -127,11 +206,39 @@ const Products = () => {
   const handleSearchKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearchSubmit()
+      setShowSearchSuggestions(false)
     }
+  }
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchTerm(value)
+    
+    // Show suggestions if input is long enough
+    if (value.length >= 2) {
+      const suggestions = getSearchSuggestions(value)
+      setSearchSuggestions(suggestions)
+      setShowSearchSuggestions(suggestions.length > 0)
+    } else {
+      setShowSearchSuggestions(false)
+      setSearchSuggestions([])
+    }
+  }
+
+  const handleSuggestionSelect = (suggestion: any) => {
+    const searchValue = suggestion.type === 'product' ? suggestion.product.name : suggestion.name
+    setSearchTerm(searchValue)
+    setShowSearchSuggestions(false)
+    setSearchSuggestions([])
+    // Automatically search when suggestion is selected
+    setCurrentPage(1)
+    fetchProducts(1, itemsPerPage, searchValue, selectedCategory)
   }
 
   const handleClearSearch = () => {
     setSearchTerm('')
+    setShowSearchSuggestions(false)
+    setSearchSuggestions([])
     setCurrentPage(1)
     fetchProducts(1, itemsPerPage, '', selectedCategory)
   }
@@ -142,54 +249,103 @@ const Products = () => {
     fetchProducts(1, itemsPerPage, searchTerm, selectedCategory)
   }, [selectedCategory])
 
-  const fetchProducts = async (page: number = currentPage, perPage: number = itemsPerPage, search: string = searchTerm, category: string = selectedCategory) => {
+  const fetchProducts = async (page: number = currentPage, perPage: number = itemsPerPage, search: string = searchTerm, category: string = selectedCategory, summaryFilter: string | null = null) => {
     try {
       setLoading(true)
       setError(null)
       
-      // Build the query with filters
-      let countQuery = supabase
-        .from('products')
-        .select('*', { count: 'exact', head: true })
+      // If summary filter is active, fetch all products and do client-side pagination
+      if (summaryFilter && summaryFilter !== 'totalProducts') {
+        // Fetch all products first
+        let allDataQuery = supabase
+          .from('products')
+          .select('*')
+          .order('product_id', { ascending: true })
 
-      let dataQuery = supabase
-        .from('products')
-        .select('*')
-        .order('product_id', { ascending: true })
+        // Apply search filter
+        if (search && search.trim()) {
+          const searchFilter = `name.ilike.%${search.trim()}%,category.ilike.%${search.trim()}%`
+          allDataQuery = allDataQuery.or(searchFilter)
+        }
 
-      // Apply search filter
-      if (search && search.trim()) {
-        const searchFilter = `name.ilike.%${search.trim()}%,category.ilike.%${search.trim()}%`
-        countQuery = countQuery.or(searchFilter)
-        dataQuery = dataQuery.or(searchFilter)
+        // Apply category filter
+        if (category && category !== 'all') {
+          allDataQuery = allDataQuery.eq('category', category)
+        }
+
+        // Apply summary filter (stock status)
+        if (summaryFilter === 'outOfStock') {
+          allDataQuery = allDataQuery.eq('stock_quantity', 0)
+        }
+
+        const { data: allData, error: fetchError } = await allDataQuery
+
+        if (fetchError) {
+          throw fetchError
+        }
+
+        let filteredData = allData || []
+
+        // Apply client-side filtering for inStock and lowStock
+        if (summaryFilter === 'inStock') {
+          filteredData = filteredData.filter(p => p.stock_quantity > p.reorder_level)
+        } else if (summaryFilter === 'lowStock') {
+          filteredData = filteredData.filter(p => p.stock_quantity <= p.reorder_level && p.stock_quantity > 0)
+        }
+
+        // Set total count based on filtered results
+        setTotalProducts(filteredData.length)
+
+        // Apply client-side pagination
+        const offset = (page - 1) * perPage
+        const paginatedData = filteredData.slice(offset, offset + perPage)
+        
+        setProducts(paginatedData)
+      } else {
+        // Normal server-side pagination for no summary filter or totalProducts filter
+        let countQuery = supabase
+          .from('products')
+          .select('*', { count: 'exact', head: true })
+
+        let dataQuery = supabase
+          .from('products')
+          .select('*')
+          .order('product_id', { ascending: true })
+
+        // Apply search filter
+        if (search && search.trim()) {
+          const searchFilter = `name.ilike.%${search.trim()}%,category.ilike.%${search.trim()}%`
+          countQuery = countQuery.or(searchFilter)
+          dataQuery = dataQuery.or(searchFilter)
+        }
+
+        // Apply category filter
+        if (category && category !== 'all') {
+          countQuery = countQuery.eq('category', category)
+          dataQuery = dataQuery.eq('category', category)
+        }
+
+        // Get total count with filters
+        const { count, error: countError } = await countQuery
+
+        if (countError) {
+          throw countError
+        }
+
+        setTotalProducts(count || 0)
+
+        // Calculate offset for pagination
+        const offset = (page - 1) * perPage
+        
+        // Fetch products with pagination and filters
+        const { data, error: fetchError } = await dataQuery.range(offset, offset + perPage - 1)
+
+        if (fetchError) {
+          throw fetchError
+        }
+
+        setProducts(data || [])
       }
-
-      // Apply category filter
-      if (category && category !== 'all') {
-        countQuery = countQuery.eq('category', category)
-        dataQuery = dataQuery.eq('category', category)
-      }
-
-      // Get total count with filters
-      const { count, error: countError } = await countQuery
-
-      if (countError) {
-        throw countError
-      }
-
-      setTotalProducts(count || 0)
-
-      // Calculate offset for pagination
-      const offset = (page - 1) * perPage
-      
-      // Fetch products with pagination and filters
-      const { data, error: fetchError } = await dataQuery.range(offset, offset + perPage - 1)
-
-      if (fetchError) {
-        throw fetchError
-      }
-
-      setProducts(data || [])
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch products'
       setError(errorMessage)
@@ -201,6 +357,272 @@ const Products = () => {
     }
   }
 
+  // Fetch summary statistics for all products (not filtered by search/category)
+  const fetchSummaryStats = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('stock_quantity, reorder_level')
+
+      if (error) {
+        throw error
+      }
+
+      if (data) {
+        const totalProducts = data.length
+        const inStock = data.filter(p => p.stock_quantity > p.reorder_level).length
+        const lowStock = data.filter(p => p.stock_quantity <= p.reorder_level && p.stock_quantity > 0).length
+        const outOfStock = data.filter(p => p.stock_quantity === 0).length
+
+        setSummaryStats({
+          totalProducts,
+          inStock,
+          lowStock,
+          outOfStock
+        })
+      }
+    } catch (err) {
+      console.error('Error fetching summary stats:', err)
+    }
+  }
+
+  // Handle summary card clicks to filter the table
+  const handleSummaryCardClick = (filterType: string) => {
+    if (activeSummaryFilter === filterType) {
+      // If clicking the same filter, clear it
+      setActiveSummaryFilter(null)
+      setSearchTerm('')
+      setSelectedCategory('all')
+      setCurrentPage(1)
+      fetchProducts(1, itemsPerPage, '', 'all')
+    } else {
+      // Set the new filter
+      setActiveSummaryFilter(filterType)
+      setSearchTerm('')
+      setSelectedCategory('all')
+      setCurrentPage(1)
+      fetchProducts(1, itemsPerPage, '', 'all', filterType)
+    }
+  }
+
+  // Process sales data for charts
+  const processChartData = (salesData: any[]) => {
+    const now = new Date()
+    const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+    const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+
+    // Filter sales from last 30 days
+    const recentSales = salesData.filter(item => 
+      item.sales && new Date(item.sales.datetime) >= last30Days
+    )
+
+    // Daily data for last 30 days
+    const dailyData = []
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
+      const dateStr = date.toISOString().split('T')[0]
+      
+      const daySales = recentSales.filter(item => 
+        item.sales && item.sales.datetime.startsWith(dateStr)
+      )
+      
+      const totalSales = daySales.length
+      const totalRevenue = daySales.reduce((sum, item) => 
+        sum + (item.calculated_price || (item.price_each * item.quantity)), 0
+      )
+      
+      dailyData.push({
+        date: dateStr,
+        day: date.getDate(),
+        month: date.getMonth() + 1,
+        sales: totalSales,
+        revenue: totalRevenue
+      })
+    }
+
+    // Weekly data for last 4 weeks
+    const weeklyData = []
+    for (let i = 3; i >= 0; i--) {
+      const weekStart = new Date(now.getTime() - (i + 1) * 7 * 24 * 60 * 60 * 1000)
+      const weekEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000)
+      
+      const weekSales = recentSales.filter(item => {
+        if (!item.sales) return false
+        const saleDate = new Date(item.sales.datetime)
+        return saleDate >= weekStart && saleDate < weekEnd
+      })
+      
+      const totalSales = weekSales.length
+      const totalRevenue = weekSales.reduce((sum, item) => 
+        sum + (item.calculated_price || (item.price_each * item.quantity)), 0
+      )
+      
+      weeklyData.push({
+        week: `Week ${4 - i}`,
+        startDate: weekStart.toISOString().split('T')[0],
+        endDate: weekEnd.toISOString().split('T')[0],
+        sales: totalSales,
+        revenue: totalRevenue
+      })
+    }
+
+    // Monthly data for last 6 months
+    const monthlyData = []
+    for (let i = 5; i >= 0; i--) {
+      const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0)
+      
+      const monthSales = salesData.filter(item => {
+        if (!item.sales) return false
+        const saleDate = new Date(item.sales.datetime)
+        return saleDate >= monthStart && saleDate <= monthEnd
+      })
+      
+      const totalSales = monthSales.length
+      const totalRevenue = monthSales.reduce((sum, item) => 
+        sum + (item.calculated_price || (item.price_each * item.quantity)), 0
+      )
+      
+      monthlyData.push({
+        month: monthStart.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        sales: totalSales,
+        revenue: totalRevenue
+      })
+    }
+
+    return {
+      daily: dailyData,
+      weekly: weeklyData,
+      monthly: monthlyData
+    }
+  }
+
+  // Fetch product insights/sales analytics
+  const fetchProductInsights = async (product: Product) => {
+    try {
+      setInsightsLoading(true)
+      setError(null)
+
+      console.log('Fetching insights for product:', product.product_id, product.name)
+
+      // Use the sales data directly from the product record
+      const totalSales = product.sales_count || 0
+      const totalRevenue = product.total_revenue || 0
+      const lastSoldDate = product.last_sold_date
+
+      // Calculate average sales per day (simple calculation)
+      const averageSalesPerDay = totalSales > 0 ? (totalSales / 30).toFixed(1) : 0
+
+      // Calculate profit margin (assuming cost is 60% of price for demo)
+      const estimatedCost = totalRevenue * 0.6
+      const estimatedProfit = totalRevenue - estimatedCost
+      const profitMargin = totalRevenue > 0 ? (estimatedProfit / totalRevenue) * 100 : 0
+
+      // Fetch all sales data for this product for charts
+      const { data: allSalesData, error: allSalesError } = await supabase
+        .from('sale_items')
+        .select(`
+          *,
+          sales (
+            sale_id,
+            datetime,
+            total_amount,
+            payment_method,
+            customers (name),
+            users (username)
+          )
+        `)
+        .eq('product_id', product.product_id)
+        .order('sales.datetime', { ascending: false })
+
+      console.log('All sales query result:', { data: allSalesData, error: allSalesError })
+
+      // Get recent sales (last 10) for the table
+      const recentSalesData = allSalesData?.slice(0, 10) || []
+
+      // Get recent sales list
+      const recentSalesList = recentSalesData?.map(item => ({
+        date: item.sales ? new Date(item.sales.datetime).toLocaleDateString() : 'Unknown',
+        time: item.sales ? new Date(item.sales.datetime).toLocaleTimeString() : 'Unknown',
+        quantity: item.weight || item.quantity,
+        unit: item.weight ? (product.weight_unit || 'kg') : 'units',
+        price: item.calculated_price || (item.price_each * item.quantity),
+        customer: item.sales?.customers?.name || 'Walk-in Customer',
+        cashier: item.sales?.users?.username || 'Unknown'
+      })) || []
+
+      // Calculate total quantity sold from recent sales data
+      const totalQuantitySold = recentSalesData?.reduce((sum, item) => {
+        return sum + (item.weight || item.quantity)
+      }, 0) || 0
+
+      // Get top selling days (last 30 days)
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      
+      const recentSales = recentSalesData?.filter(item => 
+        item.sales && new Date(item.sales.datetime) >= thirtyDaysAgo
+      ) || []
+
+      const salesByDay = recentSales.reduce((acc, item) => {
+        if (item.sales && item.sales.datetime) {
+          const date = new Date(item.sales.datetime).toDateString()
+          acc[date] = (acc[date] || 0) + 1
+        }
+        return acc
+      }, {} as Record<string, number>)
+
+      const topSellingDays = Object.entries(salesByDay)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 5)
+        .map(([date, count]) => ({ date, count }))
+
+      // Process data for charts
+      const chartData = processChartData(allSalesData || [])
+
+      console.log('Calculated insights:', {
+        totalSales,
+        totalRevenue,
+        totalQuantitySold,
+        averageSalesPerDay,
+        topSellingDays,
+        estimatedProfit,
+        profitMargin,
+        recentSalesList,
+        lastSoldDate,
+        chartData
+      })
+
+      setProductInsights({
+        product,
+        totalSales,
+        totalRevenue,
+        totalQuantitySold,
+        averageSalesPerDay: parseFloat(averageSalesPerDay),
+        topSellingDays,
+        estimatedProfit,
+        profitMargin,
+        recentSalesList,
+        lastSoldDate,
+        chartData,
+        salesData: allSalesData || []
+      })
+
+    } catch (err) {
+      console.error('Error fetching product insights:', err)
+      setError(err instanceof Error ? err.message : 'Failed to fetch product insights')
+    } finally {
+      setInsightsLoading(false)
+    }
+  }
+
+  // Handle product row click to show insights
+  const handleProductClick = (product: Product) => {
+    setSelectedProductForInsights(product)
+    setShowInsightsModal(true)
+    fetchProductInsights(product)
+  }
+
   // Since we're now doing server-side filtering, we use products directly
   const filteredProducts = products
 
@@ -209,14 +631,13 @@ const Products = () => {
   const startItem = totalProducts > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0
   const endItem = Math.min(currentPage * itemsPerPage, totalProducts)
 
-  // Get categories from all products (we'll need to fetch this separately for better performance)
-  const categories = ['all', ...Array.from(new Set(products.map(p => p.category)))]
+  // Use distinct categories from database instead of current page products
+  const categories = ['all', ...distinctCategories]
 
   const getCategorySuggestions = (input: string) => {
     if (!input || input.length < 2) return []
     
-    const existingCategories = Array.from(new Set(products.map(p => p.category)))
-    const suggestions = existingCategories.filter(category => 
+    const suggestions = distinctCategories.filter(category => 
       category.toLowerCase().includes(input.toLowerCase()) ||
       input.toLowerCase().includes(category.toLowerCase()) ||
       // Check for similar words (simple similarity check)
@@ -226,6 +647,62 @@ const Products = () => {
     )
     
     return suggestions.slice(0, 5) // Limit to 5 suggestions
+  }
+
+  // Generate search suggestions based on all products
+  const getSearchSuggestions = (input: string) => {
+    if (!input || input.length < 2) return []
+    
+    const searchLower = input.toLowerCase()
+    const productSuggestions: Array<{type: 'product', product: Product}> = []
+    const categorySuggestions: Array<{type: 'category', name: string}> = []
+    
+    // Search through ALL products (not just current page)
+    allProducts.forEach(product => {
+      // Check product name
+      if (product.name.toLowerCase().includes(searchLower)) {
+        productSuggestions.push({type: 'product', product})
+      }
+      
+      // Check category
+      if (product.category.toLowerCase().includes(searchLower)) {
+        productSuggestions.push({type: 'product', product})
+      }
+      
+      // Check description
+      if (product.description && product.description.toLowerCase().includes(searchLower)) {
+        productSuggestions.push({type: 'product', product})
+      }
+      
+      // Check SKU
+      if (product.sku && product.sku.toLowerCase().includes(searchLower)) {
+        productSuggestions.push({type: 'product', product})
+      }
+    })
+    
+    // Also include distinct categories that match
+    distinctCategories.forEach(category => {
+      if (category.toLowerCase().includes(searchLower)) {
+        categorySuggestions.push({type: 'category', name: category})
+      }
+    })
+    
+    // Remove duplicate products and limit
+    const uniqueProducts = productSuggestions
+      .filter((item, index, self) => 
+        item.type === 'product' && 
+        self.findIndex(s => s.type === 'product' && s.product.product_id === item.product.product_id) === index
+      )
+      .slice(0, 6) // Limit to 6 product suggestions
+    
+    const uniqueCategories = categorySuggestions
+      .filter((item, index, self) => 
+        item.type === 'category' && 
+        self.findIndex(s => s.type === 'category' && s.name === item.name) === index
+      )
+      .slice(0, 2) // Limit to 2 category suggestions
+    
+    return [...uniqueProducts, ...uniqueCategories]
   }
 
   // Pagination handlers
@@ -255,50 +732,63 @@ const Products = () => {
   }
 
 
-  const generateUniqueId = async () => {
-    try {
-      // Use a more robust approach with retry logic
-      let attempts = 0
-      const maxAttempts = 5
-      
-      while (attempts < maxAttempts) {
-        // Get the current max ID
-        const { data, error } = await supabase
-          .from('products')
-          .select('product_id')
-          .order('product_id', { ascending: false })
-          .limit(1)
+  const generateUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0
+      const v = c === 'x' ? r : (r & 0x3 | 0x8)
+      return v.toString(16)
+    })
+  }
 
-        if (error) throw error
-
-        const lastId = data && data.length > 0 ? parseInt(data[0].product_id) : 0
-        const newId = (lastId + 1).toString()
-        
-        // Check if this ID already exists (race condition protection)
-        const { data: existingData, error: checkError } = await supabase
-          .from('products')
-          .select('product_id')
-          .eq('product_id', newId)
-          .limit(1)
-
-        if (checkError) throw checkError
-
-        // If ID doesn't exist, we can use it
-        if (!existingData || existingData.length === 0) {
-          return newId
+  // Transform form data to product data with proper validation
+  const transformFormToProductData = (formData: any, productId?: string, isEdit: boolean = false) => {
+    // Validate numeric inputs before parsing
+    const validateNumericField = (value: string, fieldName: string, required: boolean = true) => {
+      if (!value || value.trim() === '') {
+        if (required) {
+          throw new Error(`${fieldName} is required`)
         }
-        
-        attempts++
-        // Small delay before retry
-        await new Promise(resolve => setTimeout(resolve, 100))
+        return 0
       }
-      
-      // If we've exhausted retries, use timestamp-based fallback
-      return Date.now().toString()
-    } catch (error) {
-      console.error('Error generating unique ID:', error)
-      return Date.now().toString() // Fallback to timestamp
+      const parsed = parseFloat(value)
+      if (isNaN(parsed)) {
+        throw new Error(`${fieldName} must be a valid number`)
+      }
+      return parsed
     }
+
+    const validateIntegerField = (value: string, fieldName: string, required: boolean = true) => {
+      if (!value || value.trim() === '') {
+        if (required) {
+          throw new Error(`${fieldName} is required`)
+        }
+        return 0
+      }
+      const parsed = parseInt(value)
+      if (isNaN(parsed) || !Number.isInteger(parsed)) {
+        throw new Error(`${fieldName} must be a valid whole number`)
+      }
+      return parsed
+    }
+
+    const baseData = {
+      name: formData.product_name?.trim() || (() => { throw new Error('Product name is required') })(),
+      category: formData.category?.trim() || (() => { throw new Error('Category is required') })(),
+      price: formData.is_weighted ? 0 : validateNumericField(formData.price, 'Price', !isEdit),
+      stock_quantity: validateIntegerField(formData.stock_quantity, 'Stock quantity', !isEdit),
+      supplier_info: formData.supplier_info?.trim() || '',
+      reorder_level: validateIntegerField(formData.reorder_level, 'Reorder level', !isEdit),
+      tax_rate: formData.tax_rate ? validateNumericField(formData.tax_rate, 'Tax rate', false) : 0,
+      last_updated: new Date().toISOString(),
+      is_weighted: formData.is_weighted || false,
+      weight_unit: formData.is_weighted ? formData.weight_unit : null,
+      price_per_unit: formData.is_weighted && formData.price_per_unit ? 
+        validateNumericField(formData.price_per_unit, 'Price per unit', false) : null,
+      description: formData.description?.trim() || '',
+      sku: formData.sku?.trim() || ''
+    }
+    
+    return productId ? { ...baseData, product_id: productId } : baseData
   }
 
   const handleAddProduct = async (e: React.FormEvent) => {
@@ -307,59 +797,21 @@ const Products = () => {
     setIsSubmitting(true)
 
     try {
-      const productId = await generateUniqueId()
+      const productId = generateUUID()
       console.log('Generated product ID:', productId)
       
-      const productData = {
-        product_id: productId,
-        name: newProduct.product_name,
-        category: newProduct.category,
-        price: newProduct.is_weighted ? 0 : parseFloat(newProduct.price), // Set price to 0 for weighted items
-        stock_quantity: parseInt(newProduct.stock_quantity),
-        supplier_info: newProduct.supplier_info,
-        reorder_level: parseInt(newProduct.reorder_level),
-        tax_rate: parseFloat(newProduct.tax_rate) || 0,
-        last_updated: new Date().toISOString(),
-        is_weighted: newProduct.is_weighted,
-        weight_unit: newProduct.is_weighted ? newProduct.weight_unit : null,
-        price_per_unit: newProduct.is_weighted ? parseFloat(newProduct.price_per_unit) : null
-      }
-
+      // Transform and validate form data
+      const productData = transformFormToProductData(newProduct, productId)
       console.log('Inserting product data:', productData)
       
-      // Try to insert with retry logic for race conditions
-      let insertAttempts = 0
-      const maxInsertAttempts = 3
-      let insertError = null
-      
-      while (insertAttempts < maxInsertAttempts) {
-        const { error } = await supabase
-          .from('products')
-          .insert([productData])
+      const { data, error } = await supabase
+        .from('products')
+        .insert([productData])
+        .select()
 
-        if (!error) {
-          insertError = null
-          break
-        }
-        
-        // If it's a duplicate key error, regenerate ID and retry
-        if (error.message && error.message.includes('duplicate key value violates unique constraint')) {
-          console.log(`Duplicate key error on attempt ${insertAttempts + 1}, regenerating ID...`)
-          productData.product_id = await generateUniqueId()
-          insertError = error
-          insertAttempts++
-          
-          // Small delay before retry
-          await new Promise(resolve => setTimeout(resolve, 200))
-        } else {
-          insertError = error
-          break
-        }
-      }
-
-      if (insertError) {
-        console.error('Supabase error after retries:', insertError)
-        throw insertError
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
       }
       
       console.log('Product added successfully!')
@@ -369,13 +821,16 @@ const Products = () => {
         const imageUrl = await handleImageUpload(productId)
         if (imageUrl) {
           // Update the local products list with the image URL
-          const updatedProduct = { ...productData, image_url: imageUrl }
+          const updatedProduct = { ...data[0], image_url: imageUrl }
           setProducts(prevProducts => [...prevProducts, updatedProduct])
         }
       } else {
         // If no image, just add the product to the list
-        setProducts(prevProducts => [...prevProducts, productData])
+        setProducts(prevProducts => [...prevProducts, data[0]])
       }
+      
+      // Update total products count
+      setTotalProducts(prevTotal => prevTotal + 1)
 
       // Reset form and close modal
       setNewProduct({
@@ -383,7 +838,7 @@ const Products = () => {
         category: '',
         price: '',
         stock_quantity: '',
-        reorder_level: '',
+        reorder_level: '10',
         supplier_info: '',
         tax_rate: '',
         description: '',
@@ -395,13 +850,23 @@ const Products = () => {
       setSelectedImage(null)
       setImagePreview(null)
       setShowAddModal(false)
+      
+      // Refresh categories list in case a new category was added
+      fetchDistinctCategories()
+      // Refresh all products for suggestions
+      fetchAllProductsForSuggestions()
+      // Refresh summary statistics
+      fetchSummaryStats()
     } catch (error) {
       console.error('Error adding product:', error)
       
       // Handle specific error types
       let errorMessage = 'Failed to add product'
       if (error instanceof Error && error.message) {
-        if (error.message.includes('duplicate key value violates unique constraint')) {
+        // Check for validation errors first
+        if (error.message.includes('is required') || error.message.includes('must be a valid')) {
+          errorMessage = error.message
+        } else if (error.message.includes('duplicate key value violates unique constraint')) {
           errorMessage = 'A product with this ID already exists. Please try again.'
         } else if (error.message.includes('violates check constraint')) {
           errorMessage = 'Invalid data provided. Please check your input values.'
@@ -426,19 +891,10 @@ const Products = () => {
     setError(null)
 
     try {
-      const productData = {
-        name: newProduct.product_name,
-        category: newProduct.category,
-        price: newProduct.is_weighted ? 0 : parseFloat(newProduct.price), // Set price to 0 for weighted items
-        stock_quantity: parseInt(newProduct.stock_quantity),
-        reorder_level: parseInt(newProduct.reorder_level),
-        supplier_info: newProduct.supplier_info,
-        tax_rate: parseFloat(newProduct.tax_rate) || 0,
-        last_updated: new Date().toISOString(),
-        is_weighted: newProduct.is_weighted,
-        weight_unit: newProduct.is_weighted ? newProduct.weight_unit : null,
-        price_per_unit: newProduct.is_weighted ? parseFloat(newProduct.price_per_unit) : null
-      }
+      // Transform and validate form data
+      console.log('Editing product data:', newProduct)
+      const productData = transformFormToProductData(newProduct, undefined, true)
+      console.log('Transformed product data:', productData)
 
       const { data, error } = await supabase
         .from('products')
@@ -448,6 +904,7 @@ const Products = () => {
 
       if (error) {
         console.error('Supabase error:', error)
+        console.error('Error details:', JSON.stringify(error, null, 2))
         throw error
       }
 
@@ -468,9 +925,32 @@ const Products = () => {
       resetForm()
       setShowEditModal(false)
       setEditingProduct(null)
+      
+      // Refresh categories list in case a category was changed
+      fetchDistinctCategories()
+      // Refresh all products for suggestions
+      fetchAllProductsForSuggestions()
+      // Refresh summary statistics
+      fetchSummaryStats()
     } catch (err) {
       console.error('Failed to update product:', err)
-      setError(err instanceof Error ? err.message : 'Failed to update product')
+      
+      // Handle specific error types
+      let errorMessage = 'Failed to update product'
+      if (err instanceof Error && err.message) {
+        // Check for validation errors first
+        if (err.message.includes('is required') || err.message.includes('must be a valid')) {
+          errorMessage = err.message
+        } else if (err.message.includes('violates check constraint')) {
+          errorMessage = 'Invalid data provided. Please check your input values.'
+        } else if (err.message.includes('not-null constraint')) {
+          errorMessage = 'Required fields are missing. Please fill in all required fields.'
+        } else {
+          errorMessage = `Failed to update product: ${err.message}`
+        }
+      }
+      
+      setError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -495,6 +975,14 @@ const Products = () => {
       // Remove from local state
       setProducts(products.filter(p => p.product_id !== productId))
       setProductToDelete(null)
+      
+      // Update total products count
+      setTotalProducts(prevTotal => Math.max(0, prevTotal - 1))
+      
+      // Refresh all products for suggestions
+      fetchAllProductsForSuggestions()
+      // Refresh summary statistics
+      fetchSummaryStats()
     } catch (err) {
       console.error("💥 Delete failed:", err)
       setError(err instanceof Error ? err.message : 'Failed to delete product')
@@ -507,7 +995,7 @@ const Products = () => {
       category: '',
       price: '',
       stock_quantity: '',
-      reorder_level: '',
+      reorder_level: '10',
       supplier_info: '',
       tax_rate: '',
       description: '',
@@ -524,6 +1012,7 @@ const Products = () => {
   }
 
   const startEditProduct = (product: Product) => {
+    console.log('Starting edit for product:', product)
     setEditingProduct(product)
     setNewProduct({
       product_name: product.name,
@@ -542,6 +1031,7 @@ const Products = () => {
     setImagePreview(product.image_url || null)
     setSelectedImage(null)
     setShowEditModal(true)
+    console.log('Edit modal should be open now')
   }
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -624,7 +1114,7 @@ const Products = () => {
       {/* Speech Bubble */}
       {showLilyMessage && (
         <div style={{
-          background: '#ffffff',
+          background: '#f8fafc',
           border: '2px solid #7d8d86',
           borderRadius: '16px',
           padding: '12px 16px',
@@ -658,7 +1148,7 @@ const Products = () => {
           width: '60px',
           height: '60px',
           borderRadius: '50%',
-          background: '#ffffff',
+          background: '#f8fafc',
           border: '3px solid #7d8d86',
           display: 'flex',
           alignItems: 'center',
@@ -706,13 +1196,24 @@ const Products = () => {
   }
 
   return (
-    <div style={{ padding: '0' }}>
+    <div style={{ 
+      padding: '24px',
+      background: '#f8fafc',
+      minHeight: '100vh',
+      border: '1px solid rgba(125, 141, 134, 0.1)',
+      borderRadius: '16px'
+    }}>
       {/* Header */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'flex-start',
-        marginBottom: '32px' 
+        marginBottom: '32px',
+        padding: '20px',
+        background: '#f8fafc',
+        borderRadius: '12px',
+        boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
+        border: '1px solid rgba(125, 141, 134, 0.2)'
       }}>
         <div>
           <h1 style={{
@@ -774,14 +1275,35 @@ const Products = () => {
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
         gap: '20px',
-        marginBottom: '32px'
+        marginBottom: '32px',
+        padding: '20px',
+        background: '#f8fafc',
+        borderRadius: '12px',
+        boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
+        border: '1px solid rgba(125, 141, 134, 0.2)'
       }}>
-        <div style={{
-          background: '#ffffff',
-          borderRadius: '12px',
-          padding: '20px',
-          boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
-        }}>
+        <div 
+          onClick={() => handleSummaryCardClick('totalProducts')}
+          style={{
+            background: activeSummaryFilter === 'totalProducts' ? '#f0f8f0' : '#f8fafc',
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            border: activeSummaryFilter === 'totalProducts' ? '2px solid #7d8d86' : '2px solid transparent'
+          }}
+          onMouseEnter={(e) => {
+            if (activeSummaryFilter !== 'totalProducts') {
+                (e.target as HTMLDivElement).style.background = '#f1f5f9'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (activeSummaryFilter !== 'totalProducts') {
+                (e.target as HTMLDivElement).style.background = '#f8fafc'
+            }
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
               width: '40px',
@@ -796,19 +1318,35 @@ const Products = () => {
             </div>
             <div>
               <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#3e3f29', margin: '0 0 4px 0' }}>
-                {products.length}
+                {summaryStats.totalProducts}
               </p>
               <p style={{ fontSize: '12px', color: '#7d8d86', margin: 0 }}>Total Products</p>
             </div>
           </div>
         </div>
 
-        <div style={{
-          background: '#ffffff',
-          borderRadius: '12px',
-          padding: '20px',
-          boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
-        }}>
+        <div 
+          onClick={() => handleSummaryCardClick('inStock')}
+          style={{
+            background: activeSummaryFilter === 'inStock' ? '#f0fdf4' : '#f8fafc',
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            border: activeSummaryFilter === 'inStock' ? '2px solid #10b981' : '2px solid transparent'
+          }}
+          onMouseEnter={(e) => {
+            if (activeSummaryFilter !== 'inStock') {
+                (e.target as HTMLDivElement).style.background = '#f1f5f9'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (activeSummaryFilter !== 'inStock') {
+                (e.target as HTMLDivElement).style.background = '#f8fafc'
+            }
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
               width: '40px',
@@ -823,19 +1361,35 @@ const Products = () => {
             </div>
             <div>
               <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#3e3f29', margin: '0 0 4px 0' }}>
-                {products.filter(p => p.stock_quantity > p.reorder_level).length}
+                {summaryStats.inStock}
               </p>
               <p style={{ fontSize: '12px', color: '#7d8d86', margin: 0 }}>In Stock</p>
             </div>
           </div>
         </div>
 
-        <div style={{
-          background: '#ffffff',
-          borderRadius: '12px',
-          padding: '20px',
-          boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
-        }}>
+        <div 
+          onClick={() => handleSummaryCardClick('lowStock')}
+          style={{
+            background: activeSummaryFilter === 'lowStock' ? '#fffbeb' : '#f8fafc',
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            border: activeSummaryFilter === 'lowStock' ? '2px solid #f59e0b' : '2px solid transparent'
+          }}
+          onMouseEnter={(e) => {
+            if (activeSummaryFilter !== 'lowStock') {
+                (e.target as HTMLDivElement).style.background = '#f1f5f9'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (activeSummaryFilter !== 'lowStock') {
+                (e.target as HTMLDivElement).style.background = '#f8fafc'
+            }
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
               width: '40px',
@@ -850,19 +1404,35 @@ const Products = () => {
             </div>
             <div>
               <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#3e3f29', margin: '0 0 4px 0' }}>
-                {products.filter(p => p.stock_quantity <= p.reorder_level && p.stock_quantity > 0).length}
+                {summaryStats.lowStock}
               </p>
               <p style={{ fontSize: '12px', color: '#7d8d86', margin: 0 }}>Low Stock</p>
             </div>
           </div>
         </div>
 
-        <div style={{
-          background: '#ffffff',
-          borderRadius: '12px',
-          padding: '20px',
-          boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
-        }}>
+        <div 
+          onClick={() => handleSummaryCardClick('outOfStock')}
+          style={{
+            background: activeSummaryFilter === 'outOfStock' ? '#fef2f2' : '#f8fafc',
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            border: activeSummaryFilter === 'outOfStock' ? '2px solid #ef4444' : '2px solid transparent'
+          }}
+          onMouseEnter={(e) => {
+            if (activeSummaryFilter !== 'outOfStock') {
+                (e.target as HTMLDivElement).style.background = '#f1f5f9'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (activeSummaryFilter !== 'outOfStock') {
+                (e.target as HTMLDivElement).style.background = '#f8fafc'
+            }
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
               width: '40px',
@@ -877,7 +1447,7 @@ const Products = () => {
             </div>
             <div>
               <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#3e3f29', margin: '0 0 4px 0' }}>
-                {products.filter(p => p.stock_quantity === 0).length}
+                {summaryStats.outOfStock}
               </p>
               <p style={{ fontSize: '12px', color: '#7d8d86', margin: 0 }}>Out of Stock</p>
             </div>
@@ -885,15 +1455,15 @@ const Products = () => {
         </div>
       </div>
 
-      {/* Filters */}
-      <div style={{
-        background: '#ffffff',
-        borderRadius: '12px',
-        padding: '20px',
-        marginBottom: '24px',
-        boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
-        border: '1px solid rgba(125, 141, 134, 0.2)'
-      }}>
+        {/* Filters */}
+        <div style={{
+          background: '#f8fafc',
+          borderRadius: '12px',
+          padding: '20px',
+          marginBottom: '24px',
+          boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
+          border: '2px solid rgba(125, 141, 134, 0.3)'
+        }}>
         <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ flex: '1', minWidth: '250px', maxWidth: '400px' }}>
             <div style={{ position: 'relative', display: 'flex', gap: '8px' }}>
@@ -911,16 +1481,24 @@ const Products = () => {
                   type="text"
                   placeholder="Search products... (Press Enter to search)"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={handleSearchInputChange}
                   onKeyPress={handleSearchKeyPress}
-                  onBlur={handleSearchSubmit}
+                  onBlur={() => {
+                    // Delay hiding suggestions to allow clicking on them
+                    setTimeout(() => setShowSearchSuggestions(false), 200)
+                  }}
+                  onFocus={() => {
+                    if (searchTerm.length >= 2 && searchSuggestions.length > 0) {
+                      setShowSearchSuggestions(true)
+                    }
+                  }}
                   style={{
                     width: '100%',
                     padding: '10px 12px 10px 36px',
-                    border: '1px solid #bca88d',
+                    border: '2px solid #bca88d',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    background: 'white',
+                    background: '#f8fafc',
                     color: '#3e3f29',
                     boxSizing: 'border-box'
                   }}
@@ -947,6 +1525,155 @@ const Products = () => {
                   >
                     <i className="fa-solid fa-times"></i>
                   </button>
+                )}
+                
+                {/* Search Suggestions Dropdown */}
+                {showSearchSuggestions && searchSuggestions.length > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: 'white',
+                    border: '1px solid #d1d5db',
+                    borderTop: 'none',
+                    borderRadius: '0 0 8px 8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    zIndex: 50,
+                    maxHeight: '300px',
+                    overflow: 'auto'
+                  }}>
+                    {searchSuggestions.map((suggestion, index) => (
+                      <div
+                        key={index}
+                        onClick={() => handleSuggestionSelect(suggestion)}
+                        style={{
+                          padding: '12px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          color: '#3e3f29',
+                          borderBottom: index < searchSuggestions.length - 1 ? '1px solid #f3f4f6' : 'none',
+                          transition: 'background 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px'
+                        }}
+                        onMouseEnter={(e) => (e.target as HTMLDivElement).style.background = '#f9fafb'}
+                        onMouseLeave={(e) => (e.target as HTMLDivElement).style.background = '#f8fafc'}
+                      >
+                        {suggestion.type === 'product' ? (
+                          <>
+                            {/* Product Image */}
+                            <div style={{
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '6px',
+                              overflow: 'hidden',
+                              flexShrink: 0,
+                              backgroundColor: '#f3f4f6',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              {suggestion.product.image_url ? (
+                                <img
+                                  src={suggestion.product.image_url}
+                                  alt={suggestion.product.name}
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover'
+                                  }}
+                                />
+                              ) : (
+                                <i className="fa-solid fa-box" style={{
+                                  color: '#9ca3af',
+                                  fontSize: '16px'
+                                }}></i>
+                              )}
+                            </div>
+                            
+                            {/* Product Info */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{
+                                fontWeight: '500',
+                                marginBottom: '2px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {suggestion.product.name}
+                              </div>
+                              <div style={{
+                                fontSize: '12px',
+                                color: '#6b7280',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                              }}>
+                                <span>{suggestion.product.category}</span>
+                                <span>•</span>
+                                <span style={{ fontWeight: '500', color: '#059669' }}>
+                                  {suggestion.product.is_weighted 
+                                    ? `€${suggestion.product.price_per_unit}/${suggestion.product.weight_unit}`
+                                    : `€${suggestion.product.price}`
+                                  }
+                                </span>
+                                {suggestion.product.sku && (
+                                  <>
+                                    <span>•</span>
+                                    <span>SKU: {suggestion.product.sku}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Product Icon */}
+                            <i className="fa-solid fa-box" style={{
+                              color: '#7d8d86',
+                              fontSize: '14px',
+                              flexShrink: 0
+                            }}></i>
+                          </>
+                        ) : (
+                          <>
+                            {/* Category Icon */}
+                            <i className="fa-solid fa-tags" style={{
+                              color: '#7d8d86',
+                              fontSize: '16px',
+                              width: '16px',
+                              flexShrink: 0
+                            }}></i>
+                            
+                            {/* Category Info */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{
+                                fontWeight: '500',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {suggestion.name}
+                              </div>
+                              <div style={{
+                                fontSize: '12px',
+                                color: '#6b7280'
+                              }}>
+                                Category
+                              </div>
+                            </div>
+                            
+                            {/* Category Icon */}
+                            <i className="fa-solid fa-arrow-right" style={{
+                              color: '#7d8d86',
+                              fontSize: '12px',
+                              flexShrink: 0
+                            }}></i>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
               <button
@@ -982,10 +1709,10 @@ const Products = () => {
               style={{
                 width: '100%',
                 padding: '10px 12px',
-                border: '1px solid #bca88d',
+                border: '2px solid #bca88d',
                 borderRadius: '8px',
                 fontSize: '14px',
-                background: 'white',
+                background: '#f8fafc',
                 color: '#3e3f29',
                 cursor: 'pointer'
               }}
@@ -1000,39 +1727,95 @@ const Products = () => {
         </div>
       </div>
 
-      {/* Products Table */}
-      <div style={{
-        background: '#ffffff',
-        borderRadius: '12px',
-        overflow: 'hidden',
-        boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-        border: '1px solid rgba(125, 141, 134, 0.2)'
-      }}>
+        {/* Products Table */}
+        <div style={{
+          background: '#f8fafc',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
+          border: '2px solid rgba(125, 141, 134, 0.3)'
+        }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead style={{ background: '#3e3f29' }}>
-              <tr>
-                <th style={{ padding: '16px', textAlign: 'left', color: '#f1f0e4', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>
-                  Product
-                </th>
-                <th style={{ padding: '16px', textAlign: 'left', color: '#f1f0e4', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>
-                  Category
-                </th>
-                <th style={{ padding: '16px', textAlign: 'left', color: '#f1f0e4', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>
-                  Price
-                </th>
-                <th style={{ padding: '16px', textAlign: 'left', color: '#f1f0e4', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>
-                  Stock
-                </th>
-                <th style={{ padding: '16px', textAlign: 'left', color: '#f1f0e4', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>
-                  Status
-                </th>
-                <th style={{ padding: '16px', textAlign: 'left', color: '#f1f0e4', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase' }}>
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+             <thead style={{ 
+               background: '#3e3f29',
+               borderBottom: '4px solid #7d8d86'
+             }}>
+               <tr>
+                 <th style={{ 
+                   padding: '16px', 
+                   textAlign: 'left', 
+                   color: '#f1f0e4', 
+                   fontSize: '12px', 
+                   fontWeight: '600', 
+                   textTransform: 'uppercase',
+                   borderBottom: '4px solid #7d8d86',
+                   borderRight: '2px solid #7d8d86'
+                 }}>
+                   Product
+                 </th>
+                 <th style={{ 
+                   padding: '16px', 
+                   textAlign: 'left', 
+                   color: '#f1f0e4', 
+                   fontSize: '12px', 
+                   fontWeight: '600', 
+                   textTransform: 'uppercase',
+                   borderBottom: '4px solid #7d8d86',
+                   borderRight: '2px solid #7d8d86'
+                 }}>
+                   Category
+                 </th>
+                 <th style={{ 
+                   padding: '16px', 
+                   textAlign: 'left', 
+                   color: '#f1f0e4', 
+                   fontSize: '12px', 
+                   fontWeight: '600', 
+                   textTransform: 'uppercase',
+                   borderBottom: '4px solid #7d8d86',
+                   borderRight: '2px solid #7d8d86'
+                 }}>
+                   Price
+                 </th>
+                 <th style={{ 
+                   padding: '16px', 
+                   textAlign: 'left', 
+                   color: '#f1f0e4', 
+                   fontSize: '12px', 
+                   fontWeight: '600', 
+                   textTransform: 'uppercase',
+                   borderBottom: '4px solid #7d8d86',
+                   borderRight: '2px solid #7d8d86'
+                 }}>
+                   Stock
+                 </th>
+                 <th style={{ 
+                   padding: '16px', 
+                   textAlign: 'left', 
+                   color: '#f1f0e4', 
+                   fontSize: '12px', 
+                   fontWeight: '600', 
+                   textTransform: 'uppercase',
+                   borderBottom: '4px solid #7d8d86',
+                   borderRight: '2px solid #7d8d86'
+                 }}>
+                   Status
+                 </th>
+                 <th style={{ 
+                   padding: '16px', 
+                   textAlign: 'left', 
+                   color: '#f1f0e4', 
+                   fontSize: '12px', 
+                   fontWeight: '600', 
+                   textTransform: 'uppercase',
+                   borderBottom: '4px solid #7d8d86'
+                 }}>
+                   Actions
+                 </th>
+               </tr>
+             </thead>
+            <tbody style={{ border: '1px solid rgba(125, 141, 134, 0.2)' }}>
               {filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: '#7d8d86' }}>
@@ -1046,25 +1829,33 @@ const Products = () => {
                   const stockStatus = getStockStatus(product.stock_quantity, product.reorder_level)
                   return (
                     <tr key={product.product_id} style={{ 
-                      borderBottom: '1px solid rgba(125, 141, 134, 0.1)',
-                      transition: 'background 0.2s ease'
+                      borderBottom: '2px solid rgba(125, 141, 134, 0.3)',
+                      borderLeft: '1px solid rgba(125, 141, 134, 0.2)',
+                      borderRight: '1px solid rgba(125, 141, 134, 0.2)',
+                      transition: 'background 0.2s ease',
+                      cursor: 'pointer'
                     }}
+                    onClick={() => handleProductClick(product)}
                     onMouseEnter={(e) => (e.target as HTMLTableRowElement).style.background = 'rgba(125, 141, 134, 0.05)'}
                     onMouseLeave={(e) => (e.target as HTMLTableRowElement).style.background = 'transparent'}
                     >
-                      <td style={{ padding: '16px' }}>
+                      <td style={{ padding: '16px', borderRight: '2px solid rgba(125, 141, 134, 0.25)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           {product.image_url && (
                             <img
                               src={product.image_url}
                               alt={product.name}
-                              onClick={() => product.image_url && openFullSizeImage(product.image_url)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                product.image_url && openFullSizeImage(product.image_url)
+                              }}
                               style={{
                                 width: '48px',
                                 height: '48px',
                                 objectFit: 'cover',
                                 borderRadius: '8px',
                                 border: '2px solid #bca88d',
+                                background: '#f3f4f6',
                                 cursor: 'pointer',
                                 transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                               }}
@@ -1091,7 +1882,7 @@ const Products = () => {
                           </div>
                         </div>
                       </td>
-                      <td style={{ padding: '16px' }}>
+                      <td style={{ padding: '16px', borderRight: '2px solid rgba(125, 141, 134, 0.25)' }}>
                         <span style={{
                           background: '#f3f4f6',
                           color: getCategoryColor(product.category),
@@ -1104,7 +1895,7 @@ const Products = () => {
                           {product.category}
                         </span>
                       </td>
-                      <td style={{ padding: '16px' }}>
+                      <td style={{ padding: '16px', borderRight: '2px solid rgba(125, 141, 134, 0.25)' }}>
                         <p style={{ fontSize: '14px', fontWeight: '600', color: '#3e3f29', margin: 0 }}>
                           {product.is_weighted && product.price_per_unit && product.weight_unit ? (
                             `€${product.price_per_unit.toFixed(2)}/${product.weight_unit}`
@@ -1118,7 +1909,7 @@ const Products = () => {
                           </p>
                         )}
                       </td>
-                      <td style={{ padding: '16px' }}>
+                      <td style={{ padding: '16px', borderRight: '2px solid rgba(125, 141, 134, 0.25)' }}>
                         <p style={{ fontSize: '14px', fontWeight: '600', color: '#3e3f29', margin: 0 }}>
                           {product.stock_quantity}
                         </p>
@@ -1126,7 +1917,7 @@ const Products = () => {
                           Reorder: {product.reorder_level}
                         </p>
                       </td>
-                      <td style={{ padding: '16px' }}>
+                      <td style={{ padding: '16px', borderRight: '2px solid rgba(125, 141, 134, 0.25)' }}>
                         <span style={{
                           background: stockStatus.bgColor,
                           color: stockStatus.textColor,
@@ -1144,7 +1935,11 @@ const Products = () => {
                         <div style={{ display: 'flex', gap: '8px' }}>
                           {hasPermission('canManageProducts') && (
                             <button
-                              onClick={() => startEditProduct(product)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                console.log('Edit button clicked for product:', product.name)
+                                startEditProduct(product)
+                              }}
                               style={{
                                 background: '#7d8d86',
                                 color: '#f1f0e4',
@@ -1170,7 +1965,10 @@ const Products = () => {
                             </button>
                           )}
                           <button
-                            onClick={() => setProductToDelete(product)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setProductToDelete(product)
+                            }}
                             style={{
                               background: '#ef4444',
                               color: 'white',
@@ -1204,6 +2002,10 @@ const Products = () => {
         fontSize: '14px', 
         color: '#7d8d86',
         textAlign: 'center',
+        padding: '12px',
+        background: '#f8fafc',
+        borderRadius: '8px',
+        border: '1px solid rgba(125, 141, 134, 0.2)',
         marginBottom: '16px'
       }}>
         {totalProducts > 0 ? (
@@ -1226,12 +2028,12 @@ const Products = () => {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '24px',
           padding: '16px',
-          background: '#ffffff',
+          background: '#f8fafc',
           borderRadius: '12px',
           boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
-          border: '1px solid rgba(125, 141, 134, 0.2)'
+          border: '1px solid rgba(125, 141, 134, 0.2)',
+          marginBottom: '24px'
         }}>
           {/* Items per page selector */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1243,10 +2045,10 @@ const Products = () => {
               onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value))}
               style={{
                 padding: '6px 12px',
-                border: '1px solid #bca88d',
+                border: '2px solid #bca88d',
                 borderRadius: '6px',
                 fontSize: '14px',
-                background: 'white',
+                background: '#f8fafc',
                 color: '#3e3f29',
                 cursor: 'pointer'
               }}
@@ -1267,7 +2069,7 @@ const Products = () => {
               disabled={currentPage === 1}
               style={{
                 padding: '8px 12px',
-                border: '1px solid #bca88d',
+                border: '2px solid #bca88d',
                 borderRadius: '6px',
                 background: currentPage === 1 ? '#f3f4f6' : 'white',
                 color: currentPage === 1 ? '#9ca3af' : '#3e3f29',
@@ -1282,7 +2084,7 @@ const Products = () => {
               }}
               onMouseLeave={(e) => {
                 if (currentPage !== 1) {
-                  (e.target as HTMLButtonElement).style.background = 'white'
+                  (e.target as HTMLButtonElement).style.background = '#f8fafc'
                 }
               }}
             >
@@ -1310,7 +2112,7 @@ const Products = () => {
                     onClick={() => handlePageChange(pageNum)}
                     style={{
                       padding: '8px 12px',
-                      border: '1px solid #bca88d',
+                      border: '2px solid #bca88d',
                       borderRadius: '6px',
                       background: currentPage === pageNum ? '#7d8d86' : 'white',
                       color: currentPage === pageNum ? '#f1f0e4' : '#3e3f29',
@@ -1327,7 +2129,7 @@ const Products = () => {
                     }}
                     onMouseLeave={(e) => {
                       if (currentPage !== pageNum) {
-                        (e.target as HTMLButtonElement).style.background = 'white'
+                        (e.target as HTMLButtonElement).style.background = '#f8fafc'
                       }
                     }}
                   >
@@ -1342,7 +2144,7 @@ const Products = () => {
               disabled={currentPage === totalPages}
               style={{
                 padding: '8px 12px',
-                border: '1px solid #bca88d',
+                border: '2px solid #bca88d',
                 borderRadius: '6px',
                 background: currentPage === totalPages ? '#f3f4f6' : 'white',
                 color: currentPage === totalPages ? '#9ca3af' : '#3e3f29',
@@ -1357,7 +2159,7 @@ const Products = () => {
               }}
               onMouseLeave={(e) => {
                 if (currentPage !== totalPages) {
-                  (e.target as HTMLButtonElement).style.background = 'white'
+                  (e.target as HTMLButtonElement).style.background = '#f8fafc'
                 }
               }}
             >
@@ -1383,7 +2185,7 @@ const Products = () => {
           zIndex: 9999
         }}>
           <div style={{
-            background: '#ffffff',
+            background: '#f8fafc',
             borderRadius: '16px',
             padding: '32px',
             width: '90%',
@@ -1451,10 +2253,10 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '1px solid #bca88d',
+                      border: '2px solid #bca88d',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      background: 'white',
+                      background: '#f8fafc',
                       color: '#3e3f29'
                     }}
                     placeholder="e.g., Plantain Chips, Jollof Rice Mix"
@@ -1483,10 +2285,10 @@ const Products = () => {
                       style={{
                         width: '100%',
                         padding: '10px 12px',
-                        border: '1px solid #bca88d',
+                        border: '2px solid #bca88d',
                         borderRadius: '8px',
                         fontSize: '14px',
-                        background: 'white',
+                        background: '#f8fafc',
                         color: '#3e3f29'
                       }}
                       placeholder="e.g., Grains, Spices, Beverages"
@@ -1499,8 +2301,8 @@ const Products = () => {
                         top: '100%',
                         left: 0,
                         right: 0,
-                        background: '#ffffff',
-                        border: '1px solid #bca88d',
+                        background: '#f8fafc',
+                        border: '2px solid #bca88d',
                         borderTop: 'none',
                         borderRadius: '0 0 8px 8px',
                         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
@@ -1565,10 +2367,10 @@ const Products = () => {
                         style={{
                           width: '100%',
                           padding: '10px 12px',
-                          border: '1px solid #bca88d',
+                          border: '2px solid #bca88d',
                           borderRadius: '8px',
                           fontSize: '14px',
-                          background: 'white',
+                          background: '#f8fafc',
                           color: '#3e3f29'
                         }}
                       >
@@ -1594,10 +2396,10 @@ const Products = () => {
                         style={{
                           width: '100%',
                           padding: '10px 12px',
-                          border: '1px solid #bca88d',
+                          border: '2px solid #bca88d',
                           borderRadius: '8px',
                           fontSize: '14px',
-                          background: 'white',
+                          background: '#f8fafc',
                           color: '#3e3f29'
                         }}
                         placeholder="0.00"
@@ -1625,7 +2427,7 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '1px solid #bca88d',
+                      border: '2px solid #bca88d',
                       borderRadius: '8px',
                       fontSize: '14px',
                       background: newProduct.is_weighted ? '#f9fafb' : 'white',
@@ -1649,10 +2451,10 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '1px solid #bca88d',
+                      border: '2px solid #bca88d',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      background: 'white',
+                      background: '#f8fafc',
                       color: '#3e3f29'
                     }}
                     placeholder="0"
@@ -1673,10 +2475,10 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '1px solid #bca88d',
+                      border: '2px solid #bca88d',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      background: 'white',
+                      background: '#f8fafc',
                       color: '#3e3f29'
                     }}
                     placeholder="10"
@@ -1695,10 +2497,10 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '1px solid #bca88d',
+                      border: '2px solid #bca88d',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      background: 'white',
+                      background: '#f8fafc',
                       color: '#3e3f29'
                     }}
                     placeholder="0.00"
@@ -1717,10 +2519,10 @@ const Products = () => {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    border: '1px solid #bca88d',
+                    border: '2px solid #bca88d',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    background: 'white',
+                    background: '#f8fafc',
                     color: '#3e3f29'
                   }}
                   placeholder="e.g., African Foods Ltd, +234-xxx-xxxx"
@@ -1738,10 +2540,10 @@ const Products = () => {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    border: '1px solid #bca88d',
+                    border: '2px solid #bca88d',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    background: 'white',
+                    background: '#f8fafc',
                     color: '#3e3f29'
                   }}
                   placeholder="Leave empty for auto-generation"
@@ -1803,6 +2605,7 @@ const Products = () => {
                           objectFit: 'cover',
                           borderRadius: '8px',
                           border: '2px solid #bca88d',
+                          background: '#f3f4f6',
                           cursor: 'pointer',
                           transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                         }}
@@ -1856,10 +2659,10 @@ const Products = () => {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    border: '1px solid #bca88d',
+                    border: '2px solid #bca88d',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    background: 'white',
+                    background: '#f8fafc',
                     color: '#3e3f29',
                     resize: 'vertical'
                   }}
@@ -1957,7 +2760,7 @@ const Products = () => {
           padding: '20px'
         }}>
           <div style={{
-            background: '#ffffff',
+            background: '#f8fafc',
             borderRadius: '12px',
             padding: '32px',
             width: '100%',
@@ -2025,10 +2828,10 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '1px solid #bca88d',
+                      border: '2px solid #bca88d',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      background: 'white',
+                      background: '#f8fafc',
                       color: '#3e3f29'
                     }}
                     placeholder="e.g., Plantain Chips, Jollof Rice Mix"
@@ -2057,10 +2860,10 @@ const Products = () => {
                       style={{
                         width: '100%',
                         padding: '10px 12px',
-                        border: '1px solid #bca88d',
+                        border: '2px solid #bca88d',
                         borderRadius: '8px',
                         fontSize: '14px',
-                        background: 'white',
+                        background: '#f8fafc',
                         color: '#3e3f29'
                       }}
                       placeholder="e.g., Grains, Spices, Beverages"
@@ -2073,8 +2876,8 @@ const Products = () => {
                         top: '100%',
                         left: 0,
                         right: 0,
-                        background: '#ffffff',
-                        border: '1px solid #bca88d',
+                        background: '#f8fafc',
+                        border: '2px solid #bca88d',
                         borderTop: 'none',
                         borderRadius: '0 0 8px 8px',
                         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
@@ -2139,10 +2942,10 @@ const Products = () => {
                         style={{
                           width: '100%',
                           padding: '10px 12px',
-                          border: '1px solid #bca88d',
+                          border: '2px solid #bca88d',
                           borderRadius: '8px',
                           fontSize: '14px',
-                          background: 'white',
+                          background: '#f8fafc',
                           color: '#3e3f29'
                         }}
                       >
@@ -2168,10 +2971,10 @@ const Products = () => {
                         style={{
                           width: '100%',
                           padding: '10px 12px',
-                          border: '1px solid #bca88d',
+                          border: '2px solid #bca88d',
                           borderRadius: '8px',
                           fontSize: '14px',
-                          background: 'white',
+                          background: '#f8fafc',
                           color: '#3e3f29'
                         }}
                         placeholder="0.00"
@@ -2199,7 +3002,7 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '1px solid #bca88d',
+                      border: '2px solid #bca88d',
                       borderRadius: '8px',
                       fontSize: '14px',
                       background: newProduct.is_weighted ? '#f9fafb' : 'white',
@@ -2223,10 +3026,10 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '1px solid #bca88d',
+                      border: '2px solid #bca88d',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      background: 'white',
+                      background: '#f8fafc',
                       color: '#3e3f29'
                     }}
                     placeholder="0"
@@ -2247,10 +3050,10 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '1px solid #bca88d',
+                      border: '2px solid #bca88d',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      background: 'white',
+                      background: '#f8fafc',
                       color: '#3e3f29'
                     }}
                     placeholder="10"
@@ -2269,10 +3072,10 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '1px solid #bca88d',
+                      border: '2px solid #bca88d',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      background: 'white',
+                      background: '#f8fafc',
                       color: '#3e3f29'
                     }}
                     placeholder="0.00"
@@ -2291,10 +3094,10 @@ const Products = () => {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    border: '1px solid #bca88d',
+                    border: '2px solid #bca88d',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    background: 'white',
+                    background: '#f8fafc',
                     color: '#3e3f29'
                   }}
                   placeholder="e.g., African Foods Ltd, +234-xxx-xxxx"
@@ -2356,6 +3159,7 @@ const Products = () => {
                           objectFit: 'cover',
                           borderRadius: '8px',
                           border: '2px solid #bca88d',
+                          background: '#f3f4f6',
                           cursor: 'pointer',
                           transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                         }}
@@ -2409,10 +3213,10 @@ const Products = () => {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    border: '1px solid #bca88d',
+                    border: '2px solid #bca88d',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    background: 'white',
+                    background: '#f8fafc',
                     color: '#3e3f29',
                     resize: 'vertical'
                   }}
@@ -2650,6 +3454,699 @@ const Products = () => {
       )}
       
       {/* Lily Mascot */}
+      {/* Product Insights Modal */}
+      {showInsightsModal && selectedProductForInsights && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000,
+          padding: '20px'
+        }}
+        onClick={() => setShowInsightsModal(false)}
+        >
+          <div style={{
+            background: '#f8fafc',
+            borderRadius: '16px',
+            padding: '32px',
+            maxWidth: '800px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+          }}
+          onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', paddingBottom: '20px', borderBottom: '2px solid #f1f5f9' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                {selectedProductForInsights.image_url && (
+                  <div style={{ position: 'relative' }}>
+                    <img
+                      src={selectedProductForInsights.image_url}
+                      alt={selectedProductForInsights.name}
+                      style={{
+                        width: '80px',
+                        height: '80px',
+                        borderRadius: '16px',
+                        objectFit: 'cover',
+                        border: '3px solid #e5e7eb',
+                        background: '#f3f4f6',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                      }}
+                    />
+                    <div style={{
+                      position: 'absolute',
+                      top: '-8px',
+                      right: '-8px',
+                      background: '#10b981',
+                      color: 'white',
+                      borderRadius: '50%',
+                      width: '24px',
+                      height: '24px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px',
+                      fontWeight: 'bold'
+                    }}>
+                      <i className="fas fa-chart-line"></i>
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <i className="fas fa-analytics" style={{ color: '#7d8d86', fontSize: '20px' }}></i>
+                    <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '700', color: '#1e293b', letterSpacing: '-0.025em' }}>
+                      Product Insights
+                    </h2>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+                    <i className="fas fa-box" style={{ color: '#7d8d86', fontSize: '16px' }}></i>
+                    <p style={{ margin: 0, fontSize: '18px', color: '#374151', fontWeight: '600' }}>
+                      {selectedProductForInsights.name}
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <i className="fas fa-tags" style={{ color: '#9ca3af', fontSize: '14px' }}></i>
+                    <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
+                      {selectedProductForInsights.category}
+                    </p>
+                    {selectedProductForInsights.sku && (
+                      <>
+                        <i className="fas fa-barcode" style={{ color: '#9ca3af', fontSize: '14px', marginLeft: '16px' }}></i>
+                        <span style={{ fontSize: '14px', color: '#6b7280' }}>SKU: {selectedProductForInsights.sku}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowInsightsModal(false)}
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  background: '#f8fafc',
+                  border: '2px solid #e2e8f0',
+                  color: '#6b7280',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#ef4444'
+                  e.currentTarget.style.color = 'white'
+                  e.currentTarget.style.borderColor = '#ef4444'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#f8fafc'
+                  e.currentTarget.style.color = '#6b7280'
+                  e.currentTarget.style.borderColor = '#e2e8f0'
+                }}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            {insightsLoading ? (
+              <div style={{ textAlign: 'center', padding: '60px' }}>
+                <div style={{ 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  gap: '12px', 
+                  fontSize: '18px', 
+                  color: '#7d8d86',
+                  background: '#f8fafc',
+                  padding: '20px 32px',
+                  borderRadius: '12px',
+                  border: '1px solid #e2e8f0'
+                }}>
+                  <i className="fas fa-spinner fa-spin" style={{ fontSize: '20px', color: '#3b82f6' }}></i>
+                  Loading insights...
+                </div>
+                <div style={{ fontSize: '14px', color: '#9ca3af', marginTop: '12px' }}>
+                  Analyzing sales data and trends
+                </div>
+              </div>
+            ) : productInsights ? (
+              <div>
+                {/* Key Metrics */}
+                <div style={{ marginBottom: '40px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                    <i className="fas fa-chart-bar" style={{ color: '#7d8d86', fontSize: '20px' }}></i>
+                    <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: '#1e293b' }}>
+                      Performance Overview
+                    </h3>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
+                    <div style={{ 
+                      background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)', 
+                      padding: '24px', 
+                      borderRadius: '16px', 
+                      textAlign: 'center',
+                      border: '1px solid #93c5fd',
+                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        color: '#3b82f6',
+                        fontSize: '16px'
+                      }}>
+                        <i className="fas fa-shopping-cart"></i>
+                      </div>
+                      <div style={{ fontSize: '32px', fontWeight: '700', color: '#1e40af', marginBottom: '8px' }}>
+                        {productInsights.totalSales}
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#1e40af', fontWeight: '500' }}>Total Sales</div>
+                    </div>
+                    <div style={{ 
+                      background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)', 
+                      padding: '24px', 
+                      borderRadius: '16px', 
+                      textAlign: 'center',
+                      border: '1px solid #86efac',
+                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        color: '#10b981',
+                        fontSize: '16px'
+                      }}>
+                        <i className="fas fa-euro-sign"></i>
+                      </div>
+                      <div style={{ fontSize: '32px', fontWeight: '700', color: '#166534', marginBottom: '8px' }}>
+                        €{productInsights.totalRevenue.toFixed(2)}
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#166534', fontWeight: '500' }}>Total Revenue</div>
+                    </div>
+                    <div style={{ 
+                      background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', 
+                      padding: '24px', 
+                      borderRadius: '16px', 
+                      textAlign: 'center',
+                      border: '1px solid #fbbf24',
+                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        color: '#f59e0b',
+                        fontSize: '16px'
+                      }}>
+                        <i className="fas fa-weight"></i>
+                      </div>
+                      <div style={{ fontSize: '32px', fontWeight: '700', color: '#92400e', marginBottom: '8px' }}>
+                        {productInsights.totalQuantitySold.toFixed(1)}
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#92400e', fontWeight: '500' }}>
+                        {selectedProductForInsights.is_weighted ? (selectedProductForInsights.weight_unit || 'kg') : 'Units'} Sold
+                      </div>
+                    </div>
+                    <div style={{ 
+                      background: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)', 
+                      padding: '24px', 
+                      borderRadius: '16px', 
+                      textAlign: 'center',
+                      border: '1px solid #f9a8d4',
+                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        color: '#ec4899',
+                        fontSize: '16px'
+                      }}>
+                        <i className="fas fa-percentage"></i>
+                      </div>
+                      <div style={{ fontSize: '32px', fontWeight: '700', color: '#be185d', marginBottom: '8px' }}>
+                        {productInsights.profitMargin.toFixed(1)}%
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#be185d', fontWeight: '500' }}>Est. Profit Margin</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sales Charts Section */}
+                {productInsights.chartData && (
+                  <div style={{ marginBottom: '40px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                      <i className="fas fa-chart-line" style={{ color: '#7d8d86', fontSize: '20px' }}></i>
+                      <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: '#1e293b' }}>
+                        Sales Trends & Analytics
+                      </h3>
+                    </div>
+                    
+                    {/* Chart Tabs */}
+                    <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+                      <button
+                        onClick={() => setActiveChart('daily')}
+                        style={{
+                          padding: '12px 20px',
+                          borderRadius: '12px',
+                          border: 'none',
+                          background: activeChart === 'daily' ? '#3b82f6' : '#f8fafc',
+                          color: activeChart === 'daily' ? 'white' : '#6b7280',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          transition: 'all 0.2s ease',
+                          boxShadow: activeChart === 'daily' ? '0 4px 6px rgba(59, 130, 246, 0.3)' : '0 2px 4px rgba(0, 0, 0, 0.1)'
+                        }}
+                      >
+                        <i className="fas fa-calendar-day"></i>
+                        Daily (30 days)
+                      </button>
+                      <button
+                        onClick={() => setActiveChart('weekly')}
+                        style={{
+                          padding: '12px 20px',
+                          borderRadius: '12px',
+                          border: 'none',
+                          background: activeChart === 'weekly' ? '#10b981' : '#f8fafc',
+                          color: activeChart === 'weekly' ? 'white' : '#6b7280',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          transition: 'all 0.2s ease',
+                          boxShadow: activeChart === 'weekly' ? '0 4px 6px rgba(16, 185, 129, 0.3)' : '0 2px 4px rgba(0, 0, 0, 0.1)'
+                        }}
+                      >
+                        <i className="fas fa-calendar-week"></i>
+                        Weekly (4 weeks)
+                      </button>
+                      <button
+                        onClick={() => setActiveChart('monthly')}
+                        style={{
+                          padding: '12px 20px',
+                          borderRadius: '12px',
+                          border: 'none',
+                          background: activeChart === 'monthly' ? '#f59e0b' : '#f8fafc',
+                          color: activeChart === 'monthly' ? 'white' : '#6b7280',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          transition: 'all 0.2s ease',
+                          boxShadow: activeChart === 'monthly' ? '0 4px 6px rgba(245, 158, 11, 0.3)' : '0 2px 4px rgba(0, 0, 0, 0.1)'
+                        }}
+                      >
+                        <i className="fas fa-calendar-alt"></i>
+                        Monthly (6 months)
+                      </button>
+                    </div>
+
+                    {/* Chart Display */}
+                    <div style={{ 
+                      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', 
+                      padding: '24px', 
+                      borderRadius: '16px', 
+                      minHeight: '220px',
+                      border: '1px solid #e2e8f0',
+                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)'
+                    }}>
+                      {activeChart === 'daily' && (
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                            <i className="fas fa-chart-bar" style={{ color: '#3b82f6', fontSize: '16px' }}></i>
+                            <h4 style={{ margin: 0, fontSize: '16px', color: '#1e293b', fontWeight: '600' }}>
+                              Daily Sales (Last 30 Days)
+                            </h4>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'end', gap: '4px', height: '150px' }}>
+                            {productInsights.chartData.daily.map((day, index) => {
+                              const maxSales = Math.max(...productInsights.chartData.daily.map(d => d.sales))
+                              const height = maxSales > 0 ? (day.sales / maxSales) * 120 : 0
+                              return (
+                                <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                                  <div
+                                    style={{
+                                      width: '100%',
+                                      height: `${height}px`,
+                                      background: day.sales > 0 ? '#7d8d86' : '#e5e7eb',
+                                      borderRadius: '2px 2px 0 0',
+                                      minHeight: '2px'
+                                    }}
+                                    title={`${day.date}: ${day.sales} sales, €${day.revenue.toFixed(2)}`}
+                                  />
+                                  <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '4px', textAlign: 'center' }}>
+                                    {day.day}
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {activeChart === 'weekly' && (
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                            <i className="fas fa-chart-area" style={{ color: '#10b981', fontSize: '16px' }}></i>
+                            <h4 style={{ margin: 0, fontSize: '16px', color: '#1e293b', fontWeight: '600' }}>
+                              Weekly Sales (Last 4 Weeks)
+                            </h4>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'end', gap: '8px', height: '150px' }}>
+                            {productInsights.chartData.weekly.map((week, index) => {
+                              const maxSales = Math.max(...productInsights.chartData.weekly.map(w => w.sales))
+                              const height = maxSales > 0 ? (week.sales / maxSales) * 120 : 0
+                              return (
+                                <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                                  <div
+                                    style={{
+                                      width: '100%',
+                                      height: `${height}px`,
+                                      background: week.sales > 0 ? '#10b981' : '#e5e7eb',
+                                      borderRadius: '4px 4px 0 0',
+                                      minHeight: '2px'
+                                    }}
+                                    title={`${week.week}: ${week.sales} sales, €${week.revenue.toFixed(2)}`}
+                                  />
+                                  <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '4px', textAlign: 'center' }}>
+                                    {week.week}
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {activeChart === 'monthly' && (
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                            <i className="fas fa-chart-pie" style={{ color: '#f59e0b', fontSize: '16px' }}></i>
+                            <h4 style={{ margin: 0, fontSize: '16px', color: '#1e293b', fontWeight: '600' }}>
+                              Monthly Sales (Last 6 Months)
+                            </h4>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'end', gap: '8px', height: '150px' }}>
+                            {productInsights.chartData.monthly.map((month, index) => {
+                              const maxSales = Math.max(...productInsights.chartData.monthly.map(m => m.sales))
+                              const height = maxSales > 0 ? (month.sales / maxSales) * 120 : 0
+                              return (
+                                <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                                  <div
+                                    style={{
+                                      width: '100%',
+                                      height: `${height}px`,
+                                      background: month.sales > 0 ? '#f59e0b' : '#e5e7eb',
+                                      borderRadius: '4px 4px 0 0',
+                                      minHeight: '2px'
+                                    }}
+                                    title={`${month.month}: ${month.sales} sales, €${month.revenue.toFixed(2)}`}
+                                  />
+                                  <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '4px', textAlign: 'center' }}>
+                                    {month.month.split(' ')[0]}
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Product Info Section */}
+                <div style={{ 
+                  background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', 
+                  padding: '24px', 
+                  borderRadius: '16px', 
+                  marginBottom: '32px',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                    <i className="fas fa-info-circle" style={{ color: '#7d8d86', fontSize: '20px' }}></i>
+                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#1e293b' }}>
+                      Product Information
+                    </h3>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                      <i className="fas fa-barcode" style={{ color: '#6b7280', fontSize: '16px' }}></i>
+                      <div>
+                        <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Product ID</div>
+                        <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>{selectedProductForInsights.product_id}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                      <i className="fas fa-tags" style={{ color: '#6b7280', fontSize: '16px' }}></i>
+                      <div>
+                        <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Category</div>
+                        <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>{selectedProductForInsights.category}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                      <i className="fas fa-boxes" style={{ color: '#6b7280', fontSize: '16px' }}></i>
+                      <div>
+                        <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Current Stock</div>
+                        <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>{selectedProductForInsights.stock_quantity}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                      <i className="fas fa-exclamation-triangle" style={{ color: '#6b7280', fontSize: '16px' }}></i>
+                      <div>
+                        <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Reorder Level</div>
+                        <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>{selectedProductForInsights.reorder_level}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                      <i className="fas fa-euro-sign" style={{ color: '#6b7280', fontSize: '16px' }}></i>
+                      <div>
+                        <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Price</div>
+                        <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>
+                          €{selectedProductForInsights.is_weighted 
+                            ? `${selectedProductForInsights.price_per_unit}/${selectedProductForInsights.weight_unit}`
+                            : selectedProductForInsights.price.toFixed(2)
+                          }
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                      <i className="fas fa-weight" style={{ color: '#6b7280', fontSize: '16px' }}></i>
+                      <div>
+                        <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Type</div>
+                        <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>{selectedProductForInsights.is_weighted ? 'Weighted Product' : 'Regular Product'}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Stats */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '32px' }}>
+                  <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px' }}>
+                    <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: '#3e3f29' }}>
+                      Sales Performance
+                    </h3>
+                    <div style={{ fontSize: '14px', color: '#7d8d86', lineHeight: '1.6' }}>
+                      <div style={{ marginBottom: '8px' }}>
+                        <strong>Average sales per day:</strong> {productInsights.averageSalesPerDay.toFixed(1)}
+                      </div>
+                      <div style={{ marginBottom: '8px' }}>
+                        <strong>Estimated profit:</strong> €{productInsights.estimatedProfit.toFixed(2)}
+                      </div>
+                      <div style={{ marginBottom: '8px' }}>
+                        <strong>Last sold:</strong> {productInsights.lastSoldDate 
+                          ? new Date(productInsights.lastSoldDate).toLocaleDateString()
+                          : 'Never'
+                        }
+                      </div>
+                      <div>
+                        <strong>Price per unit:</strong> €{selectedProductForInsights.is_weighted 
+                          ? `${selectedProductForInsights.price_per_unit}/${selectedProductForInsights.weight_unit}`
+                          : selectedProductForInsights.price.toFixed(2)
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px' }}>
+                    <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: '#3e3f29' }}>
+                      Top Selling Days (Last 30 Days)
+                    </h3>
+                    {productInsights.topSellingDays.length > 0 ? (
+                      <div style={{ fontSize: '14px', color: '#7d8d86' }}>
+                        {productInsights.topSellingDays.map((day, index) => (
+                          <div key={index} style={{ marginBottom: '4px' }}>
+                            {new Date(day.date).toLocaleDateString()}: {day.count} sales
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '14px', color: '#7d8d86' }}>No sales in the last 30 days</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Recent Sales */}
+                <div style={{ 
+                  background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', 
+                  padding: '24px', 
+                  borderRadius: '16px',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                    <i className="fas fa-receipt" style={{ color: '#7d8d86', fontSize: '20px' }}></i>
+                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#1e293b' }}>
+                      Recent Sales
+                    </h3>
+                  </div>
+                  {productInsights.recentSalesList.length > 0 ? (
+                    <div style={{ maxHeight: '300px', overflow: 'auto' }}>
+                      <table style={{ width: '100%', fontSize: '14px' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '2px solid #e5e7eb', background: '#f9fafb' }}>
+                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <i className="fas fa-calendar" style={{ fontSize: '12px', color: '#6b7280' }}></i>
+                              Date
+                            </th>
+                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <i className="fas fa-hashtag" style={{ fontSize: '12px', color: '#6b7280' }}></i>
+                              Quantity
+                            </th>
+                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <i className="fas fa-euro-sign" style={{ fontSize: '12px', color: '#6b7280' }}></i>
+                              Price
+                            </th>
+                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <i className="fas fa-user" style={{ fontSize: '12px', color: '#6b7280' }}></i>
+                              Customer
+                            </th>
+                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <i className="fas fa-user-tie" style={{ fontSize: '12px', color: '#6b7280' }}></i>
+                              Cashier
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {productInsights.recentSalesList.map((sale, index) => (
+                            <tr key={index} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                              <td style={{ padding: '8px 0', color: '#3e3f29' }}>
+                                {sale.date} {sale.time}
+                              </td>
+                              <td style={{ padding: '8px 0', color: '#3e3f29' }}>
+                                {sale.quantity} {sale.unit}
+                              </td>
+                              <td style={{ padding: '8px 0', color: '#3e3f29' }}>
+                                €{sale.price.toFixed(2)}
+                              </td>
+                              <td style={{ padding: '8px 0', color: '#3e3f29' }}>
+                                {sale.customer}
+                              </td>
+                              <td style={{ padding: '8px 0', color: '#3e3f29' }}>
+                                {sale.cashier}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '14px', color: '#7d8d86', textAlign: 'center', padding: '20px' }}>
+                      No sales recorded for this product
+                    </div>
+                  )}
+                </div>
+              </div>
+              ) : (
+                <div>
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '40px', 
+                    marginBottom: '32px',
+                    background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+                    borderRadius: '16px',
+                    border: '1px solid #fecaca'
+                  }}>
+                    <div style={{ 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      gap: '12px', 
+                      fontSize: '20px', 
+                      color: '#dc2626', 
+                      marginBottom: '12px', 
+                      fontWeight: '600' 
+                    }}>
+                      <i className="fas fa-chart-line" style={{ fontSize: '24px' }}></i>
+                      No Sales Data Available
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#991b1b' }}>
+                      This product hasn't been sold yet
+                    </div>
+                  </div>
+                
+                {/* Product Info Section */}
+                <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px' }}>
+                  <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: '#3e3f29' }}>
+                    Product Information
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', fontSize: '14px', color: '#7d8d86' }}>
+                    <div>
+                      <strong>Product ID:</strong> {selectedProductForInsights.product_id}
+                    </div>
+                    <div>
+                      <strong>Category:</strong> {selectedProductForInsights.category}
+                    </div>
+                    <div>
+                      <strong>Current Stock:</strong> {selectedProductForInsights.stock_quantity}
+                    </div>
+                    <div>
+                      <strong>Reorder Level:</strong> {selectedProductForInsights.reorder_level}
+                    </div>
+                    <div>
+                      <strong>Price:</strong> €{selectedProductForInsights.is_weighted 
+                        ? `${selectedProductForInsights.price_per_unit}/${selectedProductForInsights.weight_unit}`
+                        : selectedProductForInsights.price.toFixed(2)
+                      }
+                    </div>
+                    <div>
+                      <strong>Type:</strong> {selectedProductForInsights.is_weighted ? 'Weighted Product' : 'Regular Product'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <LilyMascot />
     </div>
   )

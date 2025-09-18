@@ -1377,6 +1377,22 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             .insert(saleItems)
 
           if (itemsError) throw itemsError
+
+          // Update product sales counters
+          for (const saleItem of saleItems) {
+            const itemRevenue = saleItem.calculated_price || (saleItem.price_each * saleItem.quantity)
+            
+            const { error: updateError } = await supabase
+              .rpc('increment_product_sales', {
+                product_id_param: saleItem.product_id,
+                revenue_amount: itemRevenue
+              })
+
+            if (updateError) {
+              console.error('Error updating product sales counter:', updateError)
+              // Don't throw here as the main sale was successful
+            }
+          }
         }
 
         // Handle side business items for existing transactions
@@ -1474,6 +1490,22 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             .insert(saleItems)
 
           if (itemsError) throw itemsError
+
+          // Update product sales counters
+          for (const saleItem of saleItems) {
+            const itemRevenue = saleItem.calculated_price || (saleItem.price_each * saleItem.quantity)
+            
+            const { error: updateError } = await supabase
+              .rpc('increment_product_sales', {
+                product_id_param: saleItem.product_id,
+                revenue_amount: itemRevenue
+              })
+
+            if (updateError) {
+              console.error('Error updating product sales counter:', updateError)
+              // Don't throw here as the main sale was successful
+            }
+          }
         }
       }
 

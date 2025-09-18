@@ -26,7 +26,8 @@
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.1",
     "typescript": "^5.9.2",
-    "vite": "^7.1.5"
+    "vite": "^7.1.5",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.13",
