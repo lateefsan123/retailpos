@@ -194,8 +194,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setSupabaseUser(null)
       localStorage.removeItem('pos_user')
       localStorage.removeItem('lastPassword')
+      
+      // Redirect to login page
+      window.location.href = '/retailpos/login'
     } catch (error) {
       // console.error('Logout error:', error)
+      // Even if there's an error, still redirect to login
+      window.location.href = '/retailpos/login'
     }
   }
 

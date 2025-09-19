@@ -34,7 +34,7 @@ const Navigation = () => {
 
   return (
     <nav style={{
-      width: isCollapsed ? '60px' : '160px',
+      width: isCollapsed ? '70px' : '200px',
       height: '100vh',
       background: '#1a1a1a',
       borderRight: '1px solid #333333',
@@ -44,7 +44,7 @@ const Navigation = () => {
       left: 0,
       top: 0,
       zIndex: 50,
-      padding: isCollapsed ? '20px 8px 20px 8px' : '20px 12px 20px 12px',
+      padding: isCollapsed ? '20px 10px 20px 10px' : '20px 16px 20px 16px',
       boxShadow: '2px 0 8px rgba(0, 0, 0, 0.3)',
       transition: 'width 0.3s ease, padding 0.3s ease'
     }}>
@@ -169,7 +169,7 @@ const Navigation = () => {
           background: '#333333',
           cursor: 'pointer',
           transition: 'background 0.2s ease',
-          width: isCollapsed ? '44px' : 'auto'
+          width: isCollapsed ? '50px' : 'auto'
         }}
         onMouseEnter={(e) => (e.target as HTMLElement).style.setProperty('background-color', '#444444')}
         onMouseLeave={(e) => (e.target as HTMLElement).style.setProperty('background-color', '#333333')}
@@ -221,7 +221,7 @@ const Navigation = () => {
             await logout()
           }}
           style={{
-            width: isCollapsed ? '44px' : '100%',
+            width: isCollapsed ? '50px' : '100%',
             height: '40px',
             display: 'flex',
             alignItems: 'center',

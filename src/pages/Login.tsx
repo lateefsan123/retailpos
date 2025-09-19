@@ -284,7 +284,7 @@ const Login = () => {
         <div style={{
           flex: '0 0 50%',
           background: '#f8fafc',
-          backgroundImage: 'url(/images/backgrounds/login_bg.png)',
+          backgroundImage: 'url(/retailpos/images/backgrounds/login_bg.png)',
           backgroundSize: 'contain',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',

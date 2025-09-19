@@ -1213,7 +1213,7 @@ const Products = () => {
         }}
       >
         <img 
-          src={user?.icon ? `/images/icons/${user.icon}.png` : "/images/backgrounds/lily.png"} 
+          src={user?.icon ? `/retailpos/images/icons/${user.icon}.png` : "/retailpos/images/backgrounds/lily.png"} 
           alt={user?.icon || "Lily"} 
           style={{ width: '50px', height: '50px', borderRadius: '50%' }}
         />

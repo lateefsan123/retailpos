@@ -28,7 +28,7 @@ const AppContent = () => {
       color: '#1a1a1a', 
       display: 'flex', 
       overflow: 'hidden',
-      backgroundImage: 'url(/images/backgrounds/appbg3.png)',
+      backgroundImage: 'url(/retailpos/images/backgrounds/u2541828551_An_elegant_illustration_of_a_small_African_corner_5e875dd7-e5d8-4655-af92-bb5c9c2865fd_1.png)',
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
@@ -47,7 +47,7 @@ const AppContent = () => {
       <Navigation />
       <main style={{
         flex: 1,
-        marginLeft: isCollapsed ? '60px' : '160px',
+        marginLeft: isCollapsed ? '70px' : '200px',
         padding: '24px',
         height: '100vh',
         overflow: 'auto',
@@ -99,7 +99,7 @@ function App() {
       <RoleProvider>
         <NavProvider>
           <PinProvider>
-            <Router>
+            <Router basename="/retailpos">
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/*" element={
