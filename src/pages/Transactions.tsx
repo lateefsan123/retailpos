@@ -15,7 +15,7 @@ const Transactions: React.FC = () => {
   const { user } = useAuth()
   const { transactions, loading, error, deleteTransaction, resolvePartialPayment } = useTransactions()
   
-  // Filter and search states
+  // Filter and search statesa
   const [searchTerm, setSearchTerm] = useState('')
   const [paymentFilter, setPaymentFilter] = useState('all')
   const [dateFilter, setDateFilter] = useState('all')
