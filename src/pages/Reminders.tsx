@@ -10,6 +10,7 @@ interface Reminder {
   body: string;
   remind_date: string;
   created_at: string;
+  resolved?: boolean;
   x?: number;
   y?: number;
   rotation?: number;
@@ -38,7 +39,8 @@ export default function Reminders() {
     title: '',
     body: '',
     remind_date: '',
-    color: 'yellow'
+    color: 'yellow',
+    resolved: false
   });
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -50,6 +52,7 @@ export default function Reminders() {
     const saved = localStorage.getItem('lilyEnabled');
     return saved !== null ? JSON.parse(saved) : true;
   });
+  const [showResolved, setShowResolved] = useState(true);
 
   const colors = {
     yellow: { bg: styles.noteYellow, border: styles.noteYellow, shadow: styles.noteYellow },
@@ -208,7 +211,10 @@ export default function Reminders() {
       // Reset time to start of day for accurate date comparison
       reminderDate.setHours(0, 0, 0, 0);
 
-      return reminderDate.getTime() === current.getTime();
+      const dateMatches = reminderDate.getTime() === current.getTime();
+      const resolvedFilter = showResolved || !reminder.resolved;
+
+      return dateMatches && resolvedFilter;
     });
   };
 
@@ -252,6 +258,8 @@ export default function Reminders() {
         throw error;
       }
 
+      console.log('Fetched reminders from database:', data);
+
       // Add UI properties to each reminder
       const remindersWithUI = data?.map((reminder, index) => ({
         ...reminder,
@@ -262,6 +270,7 @@ export default function Reminders() {
         color: Object.keys(colors)[index % Object.keys(colors).length]
       })) || [];
 
+      console.log('Reminders with UI properties:', remindersWithUI);
       setReminders(remindersWithUI);
     } catch (error) {
       console.error('Error fetching reminders:', error);
@@ -325,7 +334,8 @@ export default function Reminders() {
       title: '',
       body: '',
       remind_date: '',
-      color: 'yellow'
+      color: 'yellow',
+      resolved: false
     });
   };
 
@@ -339,7 +349,8 @@ export default function Reminders() {
       title: editForm.title.trim(),
       body: editForm.body.trim(),
       remind_date: editForm.remind_date,
-      color: editForm.color
+      color: editForm.color,
+      resolved: editForm.resolved
     });
 
     closeEditModal();
@@ -430,35 +441,47 @@ export default function Reminders() {
   };
 
   const updateReminder = async (id: number, updates: Partial<Reminder>) => {
-    console.log('updateReminder called with:', { id, updates });
+    console.log('updateReminder called with:', { id, updates, offlineMode });
     // Update local state first
     setReminders(reminders.map(reminder => 
       reminder.reminder_id === id ? { ...reminder, ...updates } : reminder
     ));
 
     if (offlineMode) {
+      console.log('Offline mode - skipping database update');
       return;
     }
 
     try {
-      if (updates.title || updates.body || updates.remind_date) {
+      if (updates.title || updates.body || updates.remind_date || updates.resolved !== undefined) {
+        console.log('Updating database with:', {
+          title: updates.title,
+          body: updates.body,
+          remind_date: updates.remind_date,
+          resolved: updates.resolved
+        });
+        
         const { error } = await supabase
           .from('reminders')
           .update({
             title: updates.title,
             body: updates.body,
-            remind_date: updates.remind_date
+            remind_date: updates.remind_date,
+            resolved: updates.resolved
           })
           .eq('reminder_id', id);
 
         if (error) {
           console.error('Error updating reminder in database:', error);
+        } else {
+          console.log('Successfully updated reminder in database');
         }
       }
     } catch (error) {
       console.error('Error updating reminder:', error);
     }
   };
+
 
   const startDrag = (e: React.MouseEvent, reminder: Reminder) => {
     e.preventDefault();
@@ -633,14 +656,17 @@ export default function Reminders() {
                     title: reminder.title,
                     body: reminder.body,
                     remind_date: reminder.remind_date,
-                    color: reminder.color || 'yellow'
+                    color: reminder.color || 'yellow',
+                    resolved: reminder.resolved || false
                   });
                   setShowEditModal(true);
                 }}
                 className={styles.noteDisplay}
               >
                 <div className={styles.noteTitle}>
-                  {reminder.title}
+                  <span className={reminder.resolved ? styles.noteTitleResolved : ''}>
+                    {reminder.title}
+                  </span>
                 </div>
                 <div className={`${styles.noteDate} ${isOverdue ? styles.noteDateOverdue : isDueToday ? styles.noteDateToday : ''}`}>
                   <i className="fa-solid fa-calendar" style={{ marginRight: '0.25rem' }}></i>
@@ -649,7 +675,7 @@ export default function Reminders() {
                   {isDueToday && !isOverdue && <span style={{ color: '#d97706', marginLeft: '0.5rem', fontWeight: '700' }}>TODAY</span>}
                 </div>
                 <div
-                  className={styles.noteBody}
+                  className={`${styles.noteBody} ${reminder.resolved ? styles.noteBodyResolved : ''}`}
                   style={{ fontFamily: 'Comic Sans MS, cursive, sans-serif' }}
                 >
                   {reminder.body}
@@ -902,6 +928,27 @@ export default function Reminders() {
           >
             <i className="fa-solid fa-random"></i>
             <span style={{ marginLeft: '0.5rem' }}>Shuffle</span>
+          </button>
+
+          <button
+            onClick={() => setShowResolved(!showResolved)}
+            className={`${styles.button} ${showResolved ? styles.buttonPrimary : styles.buttonSecondary}`}
+            onMouseEnter={() => {
+              if (lilyEnabled) {
+                setLilyMessage(showResolved ? "Click to hide completed reminders and focus on what's still pending!" : "Click to show all reminders including completed ones!");
+                setShowLilyMessage(true);
+              }
+            }}
+            onMouseLeave={() => {
+              if (lilyEnabled) {
+                setShowLilyMessage(false);
+              }
+            }}
+          >
+            <i className={`fa-solid ${showResolved ? 'fa-eye' : 'fa-eye-slash'}`}></i>
+            <span style={{ marginLeft: '0.5rem' }}>
+              {showResolved ? 'Show All' : 'Hide Completed'}
+            </span>
           </button>
 
           {reminders.length > 0 && (
@@ -1199,6 +1246,26 @@ export default function Reminders() {
                           title={colorName}
                         />
                       ))}
+                    </div>
+                  </div>
+
+                  {/* Resolved Checkbox */}
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>
+                      Status
+                    </label>
+                    <div className={styles.checkboxContainer}>
+                      <input
+                        type="checkbox"
+                        id="edit-resolved"
+                        checked={editForm.resolved}
+                        onChange={(e) => setEditForm({ ...editForm, resolved: e.target.checked })}
+                        className={styles.formCheckbox}
+                      />
+                      <label htmlFor="edit-resolved" className={styles.checkboxLabel}>
+                        <i className={`fa-solid ${editForm.resolved ? 'fa-check-square' : 'fa-square'}`} style={{ marginRight: '0.5rem' }}></i>
+                        Mark as completed/resolved
+                      </label>
                     </div>
                   </div>
 

@@ -303,6 +303,52 @@ const TransactionDetail = () => {
     }
   }
 
+  const handleCompletePayment = async () => {
+    if (!transaction || !transaction.partial_payment) return
+
+    const confirmed = window.confirm(
+      `Complete payment for Transaction #${transactionId}?\n\n` +
+      `This will mark the remaining balance of €${transaction.remaining_amount?.toFixed(2) || '0.00'} as paid.\n\n` +
+      `The transaction will be marked as fully paid.`
+    )
+
+    if (!confirmed) return
+
+    try {
+      const saleId = parseInt(transactionId?.replace('TXN-', '') || '0')
+      
+      // Update the transaction to mark it as fully paid
+      const { error } = await supabase
+        .from('sales')
+        .update({
+          partial_payment: false,
+          partial_amount: null,
+          remaining_amount: null,
+          partial_notes: null,
+          notes: transaction.notes ? 
+            `${transaction.notes}\n\nPayment completed on ${new Date().toLocaleString()}` : 
+            `Payment completed on ${new Date().toLocaleString()}`
+        })
+        .eq('sale_id', saleId)
+
+      if (error) {
+        console.error('Error completing payment:', error)
+        alert('Failed to complete payment. Please try again.')
+        return
+      }
+
+      // Show success message
+      alert('Payment completed successfully!')
+      
+      // Refresh transaction data
+      await fetchTransactionDetails()
+      
+    } catch (error) {
+      console.error('Error completing payment:', error)
+      alert('Failed to complete payment. Please try again.')
+    }
+  }
+
   const handleDeleteTransaction = async () => {
     if (!transaction) return
 
@@ -824,18 +870,46 @@ const TransactionDetail = () => {
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              justifyContent: 'space-between',
               marginBottom: '12px'
             }}>
-              <i className="fa-solid fa-credit-card" style={{ color: '#f59e0b', fontSize: '16px' }}></i>
-              <h3 style={{
-                fontSize: '16px',
-                fontWeight: '600',
-                color: '#92400e',
-                margin: 0
-              }}>
-                Partial Payment Transaction
-              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="fa-solid fa-credit-card" style={{ color: '#f59e0b', fontSize: '16px' }}></i>
+                <h3 style={{
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  color: '#92400e',
+                  margin: 0
+                }}>
+                  Partial Payment Transaction
+                </h3>
+              </div>
+              <button
+                onClick={handleCompletePayment}
+                style={{
+                  background: '#7d8d86',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = '#6b7280'
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = '#7d8d86'
+                }}
+              >
+                <i className="fa-solid fa-check" style={{ fontSize: '12px' }}></i>
+                Complete Payment
+              </button>
             </div>
             <div style={{
               display: 'grid',

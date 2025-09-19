@@ -152,17 +152,22 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
 
   if (loading) {
     return (
-      <div style={{
-        background: '#ffffff',
-        borderRadius: '16px',
-        padding: '32px',
-        border: '1px solid rgba(125, 141, 134, 0.2)',
-        boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '400px'
-      }}>
+      <div 
+        className="dashboardCard"
+        style={{
+          background: '#ffffff',
+          borderRadius: '16px',
+          padding: '32px',
+          border: '2px solid #d1d5db',
+          borderWidth: '2px',
+          borderStyle: 'solid',
+          borderColor: '#d1d5db',
+          boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '400px'
+        }}>
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -182,17 +187,22 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
 
   if (error) {
     return (
-      <div style={{
-        background: '#ffffff',
-        borderRadius: '16px',
-        padding: '32px',
-        border: '1px solid rgba(125, 141, 134, 0.2)',
-        boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '400px'
-      }}>
+      <div 
+        className="dashboardCard"
+        style={{
+          background: '#ffffff',
+          borderRadius: '16px',
+          padding: '32px',
+          border: '2px solid #d1d5db',
+          borderWidth: '2px',
+          borderStyle: 'solid',
+          borderColor: '#d1d5db',
+          boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '400px'
+        }}>
         <div style={{
           textAlign: 'center',
           color: '#ef4444'
@@ -218,7 +228,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
         background: '#ffffff',
         borderRadius: '16px',
         padding: '32px',
-        border: '1px solid rgba(125, 141, 134, 0.2)',
+        border: '5px solid #000000 !important',
         boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
         width: '100%',
         margin: '0',
@@ -319,19 +329,24 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           to { opacity: 1; transform: translateY(-100%) scale(1); }
         }
       `}</style>
-      <div style={{
-        background: '#ffffff',
-        borderRadius: '16px',
-        padding: '32px',
-        border: '1px solid rgba(125, 141, 134, 0.2)',
-        boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-        width: '100%',
-        maxWidth: '1000px',
-        margin: '0 auto',
-        fontFamily: 'inherit',
-        fontSize: 'inherit',
-        lineHeight: 'inherit'
-      }}>
+      <div 
+        className="dashboardCard"
+        style={{
+          background: '#ffffff',
+          borderRadius: '16px',
+          padding: '32px',
+          border: '2px solid #d1d5db',
+          borderWidth: '2px',
+          borderStyle: 'solid',
+          borderColor: '#d1d5db',
+          boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
+          width: '100%',
+          maxWidth: '1000px',
+          margin: '0 auto',
+          fontFamily: 'inherit',
+          fontSize: 'inherit',
+          lineHeight: 'inherit'
+        }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
         <div style={{
@@ -398,7 +413,8 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
         padding: '4px',
         gap: '4px',
         marginBottom: '24px',
-        maxWidth: '300px'
+        maxWidth: '300px',
+        border: '2px solid #d1d5db'
       }}>
         <button
           onClick={() => setView('weekly')}
@@ -514,7 +530,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           padding: '12px 16px',
           background: '#f9fafb',
           borderRadius: '8px',
-          border: '1px solid #e5e7eb'
+          border: '2px solid #d1d5db'
         }}>
           <button
             onClick={handlePreviousWeek}
@@ -615,7 +631,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           padding: '12px 16px',
           background: '#f9fafb',
           borderRadius: '8px',
-          border: '1px solid #e5e7eb'
+          border: '2px solid #d1d5db'
         }}>
           <button
             onClick={async () => { const o = monthOffset - 1; setMonthOffset(o); await refreshMonthlyData(o) }}
@@ -653,7 +669,13 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
 
       {/* Date Picker for Hourly View */}
       {view === 'hourly' && (
-        <div style={{ marginBottom: '24px' }}>
+        <div style={{ 
+          marginBottom: '24px',
+          padding: '12px',
+          background: '#f9fafb',
+          borderRadius: '8px',
+          border: '2px solid #d1d5db'
+        }}>
           <label style={{
             display: 'block',
             fontSize: '14px',
@@ -669,7 +691,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
             onChange={(e) => handleDateChange(e.target.value)}
             style={{
               padding: '8px 12px',
-              border: '1px solid #7d8d86',
+              border: '2px solid #d1d5db',
               borderRadius: '6px',
               fontSize: '14px',
               color: '#3e3f29',
@@ -687,7 +709,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
         background: 'white',
         borderRadius: '12px',
         padding: '40px',
-        border: '1px solid rgba(125, 141, 134, 0.1)',
+        border: '2px solid #d1d5db',
         position: 'relative',
         overflow: 'visible',
         margin: '0',
@@ -873,7 +895,8 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
         flexWrap: 'wrap',
         background: '#3e3f29',
         borderRadius: '8px',
-        padding: '8px 12px'
+        padding: '8px 12px',
+        border: '2px solid #d1d5db'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <div style={{ width: '12px', height: '12px', borderRadius: '2px', background: '#7d8d86' }}></div>

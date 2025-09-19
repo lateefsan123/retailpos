@@ -112,7 +112,7 @@ const Products = () => {
     product_name: '',
     category: '',
     price: '',
-    stock_quantity: '',
+    stock_quantity: '100',
     reorder_level: '10',
     supplier_info: '',
     tax_rate: '',
@@ -141,12 +141,34 @@ const Products = () => {
   const [distinctCategories, setDistinctCategories] = useState<string[]>([])
   const [allProducts, setAllProducts] = useState<Product[]>([])
 
+  // Cache state for optimization
+  const [suggestionsCache, setSuggestionsCache] = useState<{data: {product_id: any, name: any, category: any}[], timestamp: number} | null>(null)
+  const [summaryStatsCache, setSummaryStatsCache] = useState<{data: any, timestamp: number} | null>(null)
+  const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
   // Fetch all products for search suggestions (not paginated)
-  const fetchAllProductsForSuggestions = async () => {
+  const fetchAllProductsForSuggestions = async (forceRefresh = false) => {
+    // Check cache first
+    if (!forceRefresh && suggestionsCache && (Date.now() - suggestionsCache.timestamp) < CACHE_DURATION) {
+      // Convert cached data to full Product objects for allProducts state
+      const fullProducts = suggestionsCache.data.map(item => ({
+        ...item,
+        price: 0,
+        stock_quantity: 0,
+        supplier_info: '',
+        reorder_level: 0,
+        image_url: null,
+        created_at: '',
+        updated_at: ''
+      })) as Product[]
+      setAllProducts(fullProducts)
+      return
+    }
+
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select('product_id, name, category')
         .order('name', { ascending: true })
 
       if (error) {
@@ -154,7 +176,21 @@ const Products = () => {
         return
       }
 
-      setAllProducts(data || [])
+      const products = data || []
+      // Convert to full Product objects for allProducts state
+      const fullProducts = products.map(item => ({
+        ...item,
+        price: 0,
+        stock_quantity: 0,
+        supplier_info: '',
+        reorder_level: 0,
+        image_url: null,
+        created_at: '',
+        updated_at: ''
+      })) as Product[]
+      
+      setAllProducts(fullProducts)
+      setSuggestionsCache({ data: products, timestamp: Date.now() })
     } catch (error) {
       console.error('Error fetching all products for suggestions:', error)
     }
@@ -305,7 +341,7 @@ const Products = () => {
         // Normal server-side pagination for no summary filter or totalProducts filter
         let countQuery = supabase
           .from('products')
-          .select('*', { count: 'exact', head: true })
+          .select('product_id', { count: 'exact', head: true })
 
         let dataQuery = supabase
           .from('products')
@@ -358,7 +394,13 @@ const Products = () => {
   }
 
   // Fetch summary statistics for all products (not filtered by search/category)
-  const fetchSummaryStats = async () => {
+  const fetchSummaryStats = async (forceRefresh = false) => {
+    // Check cache first
+    if (!forceRefresh && summaryStatsCache && (Date.now() - summaryStatsCache.timestamp) < CACHE_DURATION) {
+      setSummaryStats(summaryStatsCache.data)
+      return
+    }
+
     try {
       const { data, error } = await supabase
         .from('products')
@@ -374,12 +416,15 @@ const Products = () => {
         const lowStock = data.filter(p => p.stock_quantity <= p.reorder_level && p.stock_quantity > 0).length
         const outOfStock = data.filter(p => p.stock_quantity === 0).length
 
-        setSummaryStats({
+        const stats = {
           totalProducts,
           inStock,
           lowStock,
           outOfStock
-        })
+        }
+
+        setSummaryStats(stats)
+        setSummaryStatsCache({ data: stats, timestamp: Date.now() })
       }
     } catch (err) {
       console.error('Error fetching summary stats:', err)
@@ -837,7 +882,7 @@ const Products = () => {
         product_name: '',
         category: '',
         price: '',
-        stock_quantity: '',
+        stock_quantity: '100',
         reorder_level: '10',
         supplier_info: '',
         tax_rate: '',
@@ -854,9 +899,9 @@ const Products = () => {
       // Refresh categories list in case a new category was added
       fetchDistinctCategories()
       // Refresh all products for suggestions
-      fetchAllProductsForSuggestions()
+      fetchAllProductsForSuggestions(true)
       // Refresh summary statistics
-      fetchSummaryStats()
+      fetchSummaryStats(true)
     } catch (error) {
       console.error('Error adding product:', error)
       
@@ -929,9 +974,9 @@ const Products = () => {
       // Refresh categories list in case a category was changed
       fetchDistinctCategories()
       // Refresh all products for suggestions
-      fetchAllProductsForSuggestions()
+      fetchAllProductsForSuggestions(true)
       // Refresh summary statistics
-      fetchSummaryStats()
+      fetchSummaryStats(true)
     } catch (err) {
       console.error('Failed to update product:', err)
       
@@ -980,9 +1025,9 @@ const Products = () => {
       setTotalProducts(prevTotal => Math.max(0, prevTotal - 1))
       
       // Refresh all products for suggestions
-      fetchAllProductsForSuggestions()
+      fetchAllProductsForSuggestions(true)
       // Refresh summary statistics
-      fetchSummaryStats()
+      fetchSummaryStats(true)
     } catch (err) {
       console.error("💥 Delete failed:", err)
       setError(err instanceof Error ? err.message : 'Failed to delete product')
@@ -994,7 +1039,7 @@ const Products = () => {
       product_name: '',
       category: '',
       price: '',
-      stock_quantity: '',
+      stock_quantity: '100',
       reorder_level: '10',
       supplier_info: '',
       tax_rate: '',
@@ -1158,8 +1203,14 @@ const Products = () => {
           transition: 'transform 0.2s ease'
         }}
         onClick={() => setShowLilyMessage(!showLilyMessage)}
-        onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
-        onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+        onMouseEnter={(e) => {
+          const img = e.target as HTMLImageElement;
+          img.style.transform = 'scale(1.05)';
+        }}
+        onMouseLeave={(e) => {
+          const img = e.target as HTMLImageElement;
+          img.style.transform = 'scale(1)';
+        }}
       >
         <img 
           src={user?.icon ? `/images/icons/${user.icon}.png` : "/images/backgrounds/lily.png"} 
@@ -1860,15 +1911,17 @@ const Products = () => {
                                 transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                               }}
                               onMouseEnter={(e) => {
-                                (e.target as HTMLImageElement).style.transform = 'scale(1.05)'
-                                (e.target as HTMLImageElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
-                                setLilyMessage("Click on the image to see it in full size! This helps you get a better look at the product.")
-                                setShowLilyMessage(true)
+                                const img = e.target as HTMLImageElement;
+                                img.style.transform = 'scale(1.05)';
+                                img.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                                setLilyMessage("Click on the image to see it in full size! This helps you get a better look at the product.");
+                                setShowLilyMessage(true);
                               }}
                               onMouseLeave={(e) => {
-                                (e.target as HTMLImageElement).style.transform = 'scale(1)'
-                                (e.target as HTMLImageElement).style.boxShadow = 'none'
-                                setShowLilyMessage(false)
+                                const img = e.target as HTMLImageElement;
+                                img.style.transform = 'scale(1)';
+                                img.style.boxShadow = 'none';
+                                setShowLilyMessage(false);
                               }}
                             />
                           )}
@@ -2610,12 +2663,14 @@ const Products = () => {
                           transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                         }}
                         onMouseEnter={(e) => {
-                          e.target.style.transform = 'scale(1.05)'
-                          e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
+                          const img = e.target as HTMLImageElement;
+                          img.style.transform = 'scale(1.05)';
+                          img.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
                         }}
                         onMouseLeave={(e) => {
-                          e.target.style.transform = 'scale(1)'
-                          e.target.style.boxShadow = 'none'
+                          const img = e.target as HTMLImageElement;
+                          img.style.transform = 'scale(1)';
+                          img.style.boxShadow = 'none';
                         }}
                       />
                       <button
@@ -3164,12 +3219,14 @@ const Products = () => {
                           transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                         }}
                         onMouseEnter={(e) => {
-                          e.target.style.transform = 'scale(1.05)'
-                          e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
+                          const img = e.target as HTMLImageElement;
+                          img.style.transform = 'scale(1.05)';
+                          img.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
                         }}
                         onMouseLeave={(e) => {
-                          e.target.style.transform = 'scale(1)'
-                          e.target.style.boxShadow = 'none'
+                          const img = e.target as HTMLImageElement;
+                          img.style.transform = 'scale(1)';
+                          img.style.boxShadow = 'none';
                         }}
                       />
                       <button

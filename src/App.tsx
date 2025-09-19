@@ -56,22 +56,6 @@ const AppContent = () => {
         zIndex: 1
       }}>
         <div style={{
-          position: 'fixed',
-          top: '10px',
-          right: '10px',
-          zIndex: 1000
-        }}>
-          <img 
-            src="/images/backgrounds/logo1.png" 
-            alt="Company Logo" 
-            style={{
-              height: '120px',
-              width: 'auto',
-              objectFit: 'contain'
-            }}
-          />
-        </div>
-        <div style={{
           maxWidth: '1400px',
           margin: '0 auto',
           position: 'relative',

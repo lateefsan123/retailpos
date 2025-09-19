@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,7 +8,7 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Quicksand', 'Comfortaa', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -38,40 +39,38 @@ code {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Remove default borders and box styling that might cause "boxes within boxes" effect */
-* {
-  box-sizing: border-box;
+/* Dashboard card borders - ensure they override any other styles */
+.dashboardCard {
+  border: 2px solid #d1d5db !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+  border-color: #d1d5db !important;
 }
 
-/* Remove any default borders from common elements, but allow transaction cards and specific components to keep their borders */
-div:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]), 
-section:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]), 
-article:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]), 
-aside:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]), 
-header:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]), 
-footer:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]), 
-main:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]), 
-nav:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]) {
-  border: none !important;
+/* Force borders on all dashboard cards */
+.dashboardCard[style*="border"] {
+  border: 2px solid #d1d5db !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+  border-color: #d1d5db !important;
 }
 
-/* Ensure dashboard cards don't have nested borders, but allow transaction cards and specific components */
-.card:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]), 
-.stats-card:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]), 
-[class*="card"]:not([class*="transaction"]):not([class*="Transaction"]):not([class*="contentPanel"]):not([class*="statisticsCard"]):not([class*="listItemCard"]):not([class*="modalDialog"]):not([class*="searchContainer"]) {
-  border: none !important;
+/* Playful font utilities */
+.font-playful {
+  font-family: 'Quicksand', 'Comfortaa', cursive, sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
-/* Remove any default fieldset borders */
-fieldset {
-  border: none !important;
-  margin: 0;
-  padding: 0;
+.font-playful-bold {
+  font-family: 'Quicksand', 'Comfortaa', cursive, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
-/* Ensure transaction cards keep their borders */
-[class*="TransactionCard"], 
-[class*="transaction-card"],
-div[style*="border"] {
-  border: inherit !important;
+.font-playful-light {
+  font-family: 'Quicksand', 'Comfortaa', cursive, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.03em;
 }
+

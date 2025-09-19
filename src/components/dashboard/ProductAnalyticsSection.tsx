@@ -44,12 +44,17 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
 
   if (loading) {
     return (
-      <div style={{
+    <div 
+      className="dashboardCard"
+      style={{
         background: '#ffffff',
         borderRadius: '16px',
         padding: '24px',
         boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-        border: '1px solid rgba(125, 141, 134, 0.2)'
+        border: '2px solid #d1d5db',
+        borderWidth: '2px',
+        borderStyle: 'solid',
+        borderColor: '#d1d5db'
       }}>
         <style>{`@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}} .skeleton{background-image:linear-gradient(90deg,#e5e7eb 0px,#f3f4f6 40px,#e5e7eb 80px);background-size:600px 100%;animation:shimmer 1.2s infinite linear;border-radius:8px}`}</style>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
@@ -80,17 +85,22 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
 
   if (error) {
     return (
-      <div style={{
-        background: '#ffffff',
-        borderRadius: '16px',
-        padding: '24px',
-        boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-        border: '1px solid rgba(125, 141, 134, 0.2)',
-        minHeight: '120px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
+      <div 
+        className="dashboardCard"
+        style={{
+          background: '#ffffff',
+          borderRadius: '16px',
+          padding: '24px',
+          boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
+          border: '2px solid #d1d5db',
+        borderWidth: '2px',
+        borderStyle: 'solid',
+        borderColor: '#d1d5db',
+          minHeight: '120px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
         <div style={{ textAlign: 'center', color: '#ef4444' }}>
           <i className="fa-solid fa-exclamation-triangle" style={{ fontSize: '24px', marginBottom: '8px' }}></i>
           <p style={{ margin: 0, fontSize: '14px' }}>{error}</p>
@@ -100,13 +110,18 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
   }
 
   return (
-    <div style={{
-      background: '#ffffff',
-      borderRadius: '16px',
-      padding: '24px',
-      boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-      border: '1px solid rgba(125, 141, 134, 0.2)'
-    }}>
+    <div 
+      className="dashboardCard"
+      style={{
+        background: '#ffffff',
+        borderRadius: '16px',
+        padding: '24px',
+        boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
+        border: '2px solid #d1d5db',
+        borderWidth: '2px',
+        borderStyle: 'solid',
+        borderColor: '#d1d5db'
+      }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
         <div style={{
@@ -153,7 +168,7 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {currentProducts.map((product, index) => (
+          {currentProducts.slice(0, 3).map((product, index) => (
             <div
               key={product.product_id}
               style={{

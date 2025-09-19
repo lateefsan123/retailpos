@@ -168,6 +168,7 @@ const SideBusinesses = () => {
   const [selectedBusiness, setSelectedBusiness] = useState<SideBusiness | null>(null)
   const [showBusinessDetail, setShowBusinessDetail] = useState(false)
   const [businessToDelete, setBusinessToDelete] = useState<SideBusiness | null>(null)
+  const [saleToDelete, setSaleToDelete] = useState<any>(null)
   const [businessAnalytics, setBusinessAnalytics] = useState<{
     currentStock: number
     dailySales: { count: number; revenue: number }
@@ -377,6 +378,29 @@ const SideBusinesses = () => {
       fetchData()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add sale')
+    }
+  }
+
+  const handleDeleteSale = async (saleId: number) => {
+    try {
+      console.log("🗑️ Starting delete for sale:", saleId)
+      
+      const { error } = await supabase
+        .from('side_business_sales')
+        .delete()
+        .eq('sale_id', saleId)
+
+      if (error) {
+        console.error("❌ Error deleting sale:", error)
+        throw error
+      }
+      
+      console.log("✅ Sale deleted successfully")
+      setSaleToDelete(null)
+      fetchData()
+    } catch (err) {
+      console.error("💥 Delete sale failed:", err)
+      setError(err instanceof Error ? err.message : 'Failed to delete sale')
     }
   }
 
@@ -1027,6 +1051,19 @@ const SideBusinesses = () => {
                           </span>
                         </div>
                       </div>
+                      <div className={styles.listItemCardActions}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSaleToDelete(sale)
+                          }}
+                          className={`${styles.actionButton} ${styles.actionButtonDanger}`}
+                          title="Delete Sale"
+                        >
+                          <i className={`fas fa-trash ${styles.actionButtonIcon}`}></i>
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1629,6 +1666,58 @@ const SideBusinesses = () => {
                  className={`${styles.standardButton} ${styles.standardButtonDanger}`}
                >
                  Delete Business
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
+
+       {/* Delete Sale Confirmation Modal */}
+       {saleToDelete && (
+         <div className={styles.modalOverlay}>
+           <div className={styles.modalDialog}>
+             <h2 className={styles.modalDialogTitle}>Delete Sale</h2>
+             <p className={styles.deleteConfirmationWarning}>
+               Are you sure you want to delete this sale?
+             </p>
+             <div style={{ 
+               background: '#f8f9fa', 
+               padding: '12px', 
+               borderRadius: '8px', 
+               margin: '16px 0',
+               border: '1px solid #e9ecef'
+             }}>
+               <p style={{ margin: '0 0 8px 0', fontWeight: '600' }}>
+                 {saleToDelete.side_business_items?.name || 'Unknown Item'}
+               </p>
+               <p style={{ margin: '0 0 4px 0', color: '#6c757d', fontSize: '14px' }}>
+                 {saleToDelete.side_business_items?.side_businesses?.name || 'Unknown Business'}
+               </p>
+               <p style={{ margin: '0 0 4px 0', color: '#6c757d', fontSize: '14px' }}>
+                 Quantity: {saleToDelete.quantity} • Total: €{saleToDelete.total_amount}
+               </p>
+               <p style={{ margin: '0', color: '#6c757d', fontSize: '14px' }}>
+                 {new Date(saleToDelete.date_time).toLocaleDateString()} at {new Date(saleToDelete.date_time).toLocaleTimeString()}
+               </p>
+             </div>
+             <p className={styles.deleteConfirmationWarningText}>
+               This will permanently delete the sale record. This action cannot be undone.
+             </p>
+             
+             <div className={styles.modalDialogActions}>
+               <button
+                 type="button"
+                 onClick={() => setSaleToDelete(null)}
+                 className={`${styles.standardButton} ${styles.standardButtonSecondary}`}
+               >
+                 Cancel
+               </button>
+               <button
+                 type="button"
+                 onClick={() => handleDeleteSale(saleToDelete.sale_id)}
+                 className={`${styles.standardButton} ${styles.standardButtonDanger}`}
+               >
+                 Delete Sale
                </button>
              </div>
            </div>

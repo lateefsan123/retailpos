@@ -54,9 +54,9 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
         alignItems: 'center',
         gap: '16px',
         padding: '16px',
-        background: transaction.partial_payment ? '#f1f0e4' : '#ffffff',
+        background: transaction.partial_payment ? '#fef2f2' : '#ffffff',
         borderRadius: '8px',
-        border: '3px solid #7d8d86',
+        border: transaction.partial_payment ? '2px solid #dc2626' : '2px solid #374151',
         cursor: 'pointer',
         transition: 'all 0.2s ease',
         position: 'relative',
@@ -67,13 +67,13 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
         const target = e.currentTarget as HTMLElement
         target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)'
         target.style.transform = 'translateY(-2px)'
-        target.style.borderColor = '#7d8d86'
+        target.style.border = transaction.partial_payment ? '2px solid #dc2626' : '2px solid #374151'
       }}
       onMouseLeave={(e) => {
         const target = e.currentTarget as HTMLElement
-        target.style.boxShadow = 'none'
+        target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)'
         target.style.transform = 'translateY(0)'
-        target.style.borderColor = '#7d8d86'
+        target.style.border = transaction.partial_payment ? '2px solid #dc2626' : '2px solid #374151'
       }}
     >
       {/* Transaction ID */}
@@ -96,8 +96,8 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
           <div style={{
             fontSize: '10px',
             fontWeight: '600',
-            color: '#f1f0e4',
-            background: '#7d8d86',
+            color: '#ffffff',
+            background: '#dc2626',
             padding: '2px 6px',
             borderRadius: '3px',
             marginTop: '4px',
@@ -158,14 +158,14 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
         textAlign: 'right',
         fontSize: '16px',
         fontWeight: '600',
-        color: transaction.partial_payment ? '#7d8d86' : '#059669'
+        color: transaction.partial_payment ? '#dc2626' : '#059669'
       }}>
         {transaction.partial_payment ? (
           <div>
-            <div style={{ fontSize: '14px', color: '#7d8d86' }}>
+            <div style={{ fontSize: '14px', color: '#dc2626' }}>
               Paid: {formatCurrency(transaction.partial_amount || 0)}
             </div>
-            <div style={{ fontSize: '12px', color: '#3e3f29' }}>
+            <div style={{ fontSize: '12px', color: '#dc2626' }}>
               Owed: {formatCurrency(transaction.remaining_amount || 0)}
             </div>
           </div>

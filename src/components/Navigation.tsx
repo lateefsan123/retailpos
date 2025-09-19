@@ -124,14 +124,14 @@ const Navigation = () => {
             }}
             onMouseEnter={(e) => {
               if (location.pathname !== item.path) {
-                (e.target as HTMLElement).style.setProperty('background-color', '#333333')
-                (e.target as HTMLElement).style.setProperty('color', '#ffffff')
+                (e.target as HTMLElement).style.backgroundColor = '#333333'
+                (e.target as HTMLElement).style.color = '#ffffff'
               }
             }}
             onMouseLeave={(e) => {
               if (location.pathname !== item.path) {
-                (e.target as HTMLElement).style.setProperty('background-color', 'transparent')
-                (e.target as HTMLElement).style.setProperty('color', '#cccccc')
+                (e.target as HTMLElement).style.backgroundColor = 'transparent'
+                (e.target as HTMLElement).style.color = '#cccccc'
               }
             }}
           >

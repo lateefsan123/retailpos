@@ -168,13 +168,7 @@ const Sales = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [searchSuggestions, setSearchSuggestions] = useState<(Product | SideBusinessItem)[]>([])
   const [topProducts, setTopProducts] = useState<Product[]>([])
-  const [showAllProducts, setShowAllProducts] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [productsPerPage] = useState(20) // Show 20 products per page
-  const [totalProducts, setTotalProducts] = useState(0)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const [isSwitchingMode, setIsSwitchingMode] = useState(false)
   const [isFiltering, setIsFiltering] = useState(false)
   const [order, setOrder] = useState<Order>({
     items: [],
@@ -209,6 +203,7 @@ const Sales = () => {
   
   // TTS states - using the new TTS service
   const [, setTtsSettings] = useState<TTSSettings>(ttsService.getSettings())
+  const [isTtsPlaying, setIsTtsPlaying] = useState(false)
   
   // Partial payment state
   const [allowPartialPayment, setAllowPartialPayment] = useState(false)
@@ -222,8 +217,8 @@ const Sales = () => {
   const [isAddingToTransaction, setIsAddingToTransaction] = useState(false)
 
   useEffect(() => {
-    // Load initial products - only top products by default
-    fetchProducts(1, productsPerPage) // Load first page with default pagination
+    // Load initial products
+    fetchProducts()
     
     // Fetch service businesses for quick service creation
     fetchServiceBusinesses()
@@ -258,31 +253,11 @@ const Sales = () => {
     return () => document.removeEventListener('keydown', handleKeyPress)
   }, [order.items])
 
-  // Infinite scroll effect for loading more products
-  useEffect(() => {
-    const handleScroll = () => {
-      if (showAllProducts && !isLoadingMore && (currentPage * productsPerPage) < totalProducts) {
-        const scrollTop = document.documentElement.scrollTop
-        const scrollHeight = document.documentElement.scrollHeight
-        const clientHeight = document.documentElement.clientHeight
-        
-        // Load more when user is 200px from bottom
-        if (scrollTop + clientHeight >= scrollHeight - 200) {
-          loadMoreProducts()
-        }
-      }
-    }
-
-    if (showAllProducts) {
-      window.addEventListener('scroll', handleScroll)
-      return () => window.removeEventListener('scroll', handleScroll)
-    }
-  }, [showAllProducts, isLoadingMore, currentPage, totalProducts, productsPerPage])
 
   useEffect(() => {
     // Always filter products based on current mode
     filterProducts()
-  }, [products, sideBusinessItems, selectedCategory, searchTerm, showAllProducts, topProducts])
+  }, [products, sideBusinessItems, selectedCategory, searchTerm, topProducts])
 
   // Initial setup effect
   useEffect(() => {
@@ -291,19 +266,6 @@ const Sales = () => {
     }
   }, [topProducts, filteredProducts.length])
 
-  // Separate effect for handling category/search changes in "Show All" mode with debounce
-  useEffect(() => {
-    if (showAllProducts && !isSwitchingMode) {
-      setCurrentPage(1)
-      
-      // Debounce the API call to prevent too many requests
-      const timeoutId = setTimeout(() => {
-        fetchProducts(1, productsPerPage, selectedCategory, searchTerm)
-      }, 300) // 300ms debounce
-
-      return () => clearTimeout(timeoutId)
-    }
-  }, [selectedCategory, searchTerm, showAllProducts, isSwitchingMode])
 
   useEffect(() => {
     calculateOrderTotal()
@@ -320,7 +282,8 @@ const Sales = () => {
   useEffect(() => {
     if (allowPartialPayment) {
       const partial = parseFloat(partialAmount) || 0
-      setRemainingAmount(Math.max(0, order.total - partial))
+      const remaining = Math.max(0, order.total - partial)
+      setRemainingAmount(remaining)
     } else {
       setRemainingAmount(0)
     }
@@ -335,24 +298,16 @@ const Sales = () => {
     }
   }, [order.total, allowPartialPayment, partialAmount])
 
-  const fetchProducts = async (page: number = 1, limit: number = 20, category?: string, search?: string, isLoadMore: boolean = false) => {
+  const fetchProducts = async (category?: string, search?: string) => {
     try {
-      if (!isLoadMore) {
-        if (page === 1 && showAllProducts) {
-          setIsFiltering(true)
-        } else {
-          setLoading(true)
-        }
-      } else {
-        setIsLoadingMore(true)
-      }
+      setLoading(true)
       
-      // Build query with pagination
+      // Build query to get top products (most sold)
       let query = supabase
         .from('products')
-        .select('*', { count: 'exact' })
-        .order('name')
-        .range((page - 1) * limit, page * limit - 1)
+        .select('*')
+        .order('sales_count', { ascending: false })
+        .limit(50) // Get top 50 products
 
       // Add category filter if not 'All'
       if (category && category !== 'All') {
@@ -361,10 +316,11 @@ const Sales = () => {
 
       // Add search filter if provided
       if (search && search.trim()) {
-        query = query.or(`name.ilike.%${search}%,category.ilike.%${search}%`)
+        const searchTerm = search.trim()
+        query = query.or(`name.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%`)
       }
 
-      const { data: productsData, error: productsError, count } = await query
+      const { data: productsData, error: productsError } = await query
 
       if (productsError) throw productsError
 
@@ -379,81 +335,29 @@ const Sales = () => {
 
       if (sideBusinessError) throw sideBusinessError
 
-      if (page === 1 || !isLoadMore) {
-        // First page or not loading more - replace products
-        setProducts(productsData || [])
-      } else {
-        // Subsequent pages - append products
-        setProducts(prev => [...prev, ...(productsData || [])])
-      }
-      
+      setProducts(productsData || [])
       setSideBusinessItems(sideBusinessData || [])
-      setTotalProducts(count || 0)
       
-      // Fetch top 5 most sold products only once
-      if (page === 1) {
-        await fetchTopProducts(productsData || [])
-      }
+      // Set top products to the fetched products (they're already ordered by sales_count)
+      setTopProducts(productsData || [])
       
-      // Extract unique categories for products (only on first load)
-      if (page === 1) {
-        const productCategories = productsData?.map(p => p.category).filter(Boolean) || []
-        
-        // Extract unique categories for side business items
-        const sideBusinessCategories = sideBusinessData?.map(item => item.side_businesses?.name).filter(Boolean) || []
-        
-        // Combine all categories
-        const allCategories = ['All', ...new Set([...productCategories, ...sideBusinessCategories])]
-        setCategories(allCategories)
-      }
+      // Extract unique categories for products
+      const productCategories = productsData?.map(p => p.category).filter(Boolean) || []
+      
+      // Extract unique categories for side business items
+      const sideBusinessCategories = sideBusinessData?.map(item => item.side_businesses?.name).filter(Boolean) || []
+      
+      // Combine all categories
+      const allCategories = ['All', ...new Set([...productCategories, ...sideBusinessCategories])]
+      setCategories(allCategories)
     } catch (error) {
       // Error fetching products - handled silently per user preference
     } finally {
       setLoading(false)
-      setIsLoadingMore(false)
       setIsFiltering(false)
     }
   }
 
-  const fetchTopProducts = async (allProducts: Product[]) => {
-    try {
-      // Get sales data to find most sold products
-      const { data: salesData, error: salesError } = await supabase
-        .from('sale_items')
-        .select('product_id, quantity')
-        .not('product_id', 'is', null)
-
-      if (salesError) {
-        // Error fetching sales data - handled silently per user preference
-        // If we can't get sales data, just use the first 5 products
-        setTopProducts(allProducts.slice(0, 5))
-        return
-      }
-
-      // Count total quantity sold for each product
-      const productSalesCount: { [key: string]: number } = {}
-      salesData?.forEach(sale => {
-        if (sale.product_id) {
-          productSalesCount[sale.product_id] = (productSalesCount[sale.product_id] || 0) + sale.quantity
-        }
-      })
-
-      // Sort products by sales count and get top 5
-      const sortedProducts = allProducts
-        .map(product => ({
-          ...product,
-          salesCount: productSalesCount[product.product_id] || 0
-        }))
-        .sort((a, b) => b.salesCount - a.salesCount)
-        .slice(0, 5)
-
-      setTopProducts(sortedProducts)
-    } catch (error) {
-      // Error fetching top products - handled silently per user preference
-      // Fallback to first 5 products
-      setTopProducts(allProducts.slice(0, 5))
-    }
-  }
 
   const fetchServiceBusinesses = async () => {
     try {
@@ -579,20 +483,28 @@ const Sales = () => {
       return
     }
 
-    // Search through regular products
+    const searchTerm = term.toLowerCase().trim()
+
+    // Search through regular products with improved matching
     const productSuggestions = products
-      .filter(p => 
-        p.name.toLowerCase().includes(term.toLowerCase()) ||
-        p.category?.toLowerCase().includes(term.toLowerCase())
-      )
+      .filter(p => {
+        const nameMatch = p.name.toLowerCase().includes(searchTerm)
+        const categoryMatch = p.category?.toLowerCase().includes(searchTerm)
+        const descriptionMatch = p.description?.toLowerCase().includes(searchTerm)
+        const skuMatch = p.sku?.toLowerCase().includes(searchTerm)
+        
+        return nameMatch || categoryMatch || descriptionMatch || skuMatch
+      })
       .slice(0, 3) // Limit to 3 product suggestions
 
     // Search through side business items
     const sideBusinessSuggestions = sideBusinessItems
-      .filter(item => 
-        item.name.toLowerCase().includes(term.toLowerCase()) ||
-        item.side_businesses?.name.toLowerCase().includes(term.toLowerCase())
-      )
+      .filter(item => {
+        const nameMatch = item.name.toLowerCase().includes(searchTerm)
+        const businessMatch = item.side_businesses?.name.toLowerCase().includes(searchTerm)
+        
+        return nameMatch || businessMatch
+      })
       .slice(0, 2) // Limit to 2 side business suggestions
 
     // Combine suggestions (products first, then side business items)
@@ -604,25 +516,24 @@ const Sales = () => {
   }
 
   const filterProducts = () => {
-    if (!showAllProducts) {
-      // For "Top Products" mode, filter the cached top products client-side
-      let filteredProducts = topProducts
+    // Filter the cached top products client-side
+    let filteredProducts = topProducts
 
-      if (selectedCategory !== 'All') {
-        filteredProducts = filteredProducts.filter(p => p.category === selectedCategory)
-      }
-
-      if (searchTerm) {
-        filteredProducts = filteredProducts.filter(p => 
-          p.name.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      }
-
-      setFilteredProducts(filteredProducts)
-    } else {
-      // For "Show All" mode, use the products from server-side filtering
-      setFilteredProducts(products)
+    if (selectedCategory !== 'All') {
+      filteredProducts = filteredProducts.filter(p => p.category === selectedCategory)
     }
+
+    if (searchTerm) {
+      const searchTermLower = searchTerm.toLowerCase().trim()
+      filteredProducts = filteredProducts.filter(p => 
+        p.name.toLowerCase().includes(searchTermLower) ||
+        p.category?.toLowerCase().includes(searchTermLower) ||
+        p.description?.toLowerCase().includes(searchTermLower) ||
+        p.sku?.toLowerCase().includes(searchTermLower)
+      )
+    }
+
+    setFilteredProducts(filteredProducts)
 
     // Filter side business items (client-side since there are typically fewer)
     let filteredSideBusiness = sideBusinessItems
@@ -647,23 +558,6 @@ const Sales = () => {
     generateSearchSuggestions(value)
   }
 
-  const handleShowAllToggle = () => {
-    const newShowAll = !showAllProducts
-    setIsSwitchingMode(true)
-    setShowAllProducts(newShowAll)
-    
-    if (newShowAll) {
-      // Switching to "Show All" mode - fetch first page with current filters
-      setCurrentPage(1)
-      fetchProducts(1, productsPerPage, selectedCategory, searchTerm).finally(() => {
-        setIsSwitchingMode(false)
-      })
-    } else {
-      // Switching to "Top Products" mode - show cached top products
-      setFilteredProducts(topProducts)
-      setIsSwitchingMode(false)
-    }
-  }
 
   const selectSuggestion = (item: Product | SideBusinessItem) => {
     setSearchTerm(item.name)
@@ -965,13 +859,6 @@ const Sales = () => {
     }))
   }
 
-  const loadMoreProducts = () => {
-    if (!isLoadingMore && showAllProducts && (currentPage * productsPerPage) < totalProducts) {
-      const nextPage = currentPage + 1
-      setCurrentPage(nextPage)
-      fetchProducts(nextPage, productsPerPage, selectedCategory, searchTerm, true)
-    }
-  }
 
   const resetTransaction = () => {
     if (window.confirm('Are you sure you want to reset the current transaction? This will clear all items from the order.')) {
@@ -1770,9 +1657,20 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
         }}>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center', maxWidth: '600px' }}>
             <div style={{ position: 'relative', flex: 1 }}>
+              {/* Search icon */}
+              <i className="fa-solid fa-search" style={{
+                position: 'absolute',
+                left: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: '#6b7280',
+                fontSize: '16px',
+                zIndex: 1
+              }}></i>
+              
               <input
                 type="text"
-                placeholder="Search Product"
+                placeholder="Search products by name, category, description, or SKU..."
                 value={searchTerm}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 onFocus={(e) => {
@@ -1783,9 +1681,20 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   e.target.style.borderColor = '#e5e7eb'
                   setTimeout(() => setShowSuggestions(false), 200)
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    // Trigger search on Enter key
+                    if (searchTerm.trim()) {
+                      setShowSuggestions(false)
+                    }
+                  }
+                }}
                 style={{
                   width: '100%',
                   padding: '12px 16px',
+                  paddingLeft: '40px',
+                  paddingRight: searchTerm ? '40px' : '16px',
                   border: '2px solid #6b7280',
                   borderRadius: '8px',
                   fontSize: '16px',
@@ -1793,6 +1702,35 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   transition: 'border-color 0.2s ease'
                 }}
               />
+              
+              {/* Clear search button */}
+              {searchTerm && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('')
+                    setShowSuggestions(false)
+                    setSearchSuggestions([])
+                  }}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#6b7280',
+                    fontSize: '16px',
+                    padding: '4px',
+                    borderRadius: '4px',
+                    transition: 'color 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => (e.target as HTMLButtonElement).style.color = '#dc2626'}
+                  onMouseLeave={(e) => (e.target as HTMLButtonElement).style.color = '#6b7280'}
+                >
+                  <i className="fa-solid fa-times"></i>
+                </button>
+              )}
               
               {/* Search Suggestions Dropdown */}
               {showSuggestions && searchSuggestions.length > 0 && (
@@ -1953,7 +1891,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 // Calculate count for each category
                 let count = 0
                 if (category === 'All') {
-                  count = totalProducts + sideBusinessItems.length
+                  count = products.length + sideBusinessItems.length
                 } else {
                   // For individual categories, we can't easily get the count without additional queries
                   // So we'll show the category name without count for now
@@ -1977,67 +1915,15 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
           padding: '24px 32px',
           overflowY: 'auto'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <div>
-              <h3 style={{ 
-                fontSize: '18px', 
-                fontWeight: '600', 
-                color: '#1f2937',
-                margin: '0 0 4px 0'
-              }}>
-                {showAllProducts ? 'All Products' : 'Top Products'}
-              </h3>
-              {showAllProducts && (
-                <p style={{
-                  fontSize: '14px',
-                  color: '#6b7280',
-                  margin: '0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  Showing {Math.min(currentPage * productsPerPage, totalProducts)} of {totalProducts} products
-                  {isFiltering && (
-                    <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '12px' }}></i>
-                  )}
-                </p>
-              )}
-            </div>
-            <button
-              onClick={handleShowAllToggle}
-              disabled={isSwitchingMode}
-              style={{
-                background: showAllProducts ? '#7d8d86' : '#f3f4f6',
-                color: showAllProducts ? '#ffffff' : '#374151',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                padding: '6px 12px',
-                fontSize: '12px',
-                fontWeight: '500',
-                cursor: isSwitchingMode ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s ease',
-                opacity: isSwitchingMode ? 0.6 : 1
-              }}
-              onMouseEnter={(e) => {
-                if (!isSwitchingMode) {
-                  e.currentTarget.style.background = showAllProducts ? '#6b7c75' : '#e5e7eb'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isSwitchingMode) {
-                  e.currentTarget.style.background = showAllProducts ? '#7d8d86' : '#f3f4f6'
-                }
-              }}
-            >
-              {isSwitchingMode ? (
-                <>
-                  <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '4px' }}></i>
-                  Switching...
-                </>
-              ) : (
-                showAllProducts ? 'Show Top 5' : 'Show All'
-              )}
-            </button>
+          <div style={{ marginBottom: '16px' }}>
+            <h3 style={{ 
+              fontSize: '18px', 
+              fontWeight: '600', 
+              color: '#1f2937',
+              margin: '0 0 4px 0'
+            }}>
+              Products
+            </h3>
           </div>
           {filteredProducts.length === 0 ? (
             <div style={{
@@ -2075,21 +1961,24 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               {filteredProducts.map(product => (
               <div key={product.product_id} style={{
                 background: '#ffffff',
-                border: '1px solid #6b7280',
+                border: '2px solid #6b7280',
                 borderRadius: '8px',
                 padding: '12px',
                 textAlign: 'center',
                 transition: 'all 0.2s ease',
                 cursor: 'pointer',
-                position: 'relative'
+                position: 'relative',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-1px)'
                 e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)'
+                e.currentTarget.style.border = '2px solid #6b7280'
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)'
-                e.currentTarget.style.boxShadow = 'none'
+                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)'
+                e.currentTarget.style.border = '2px solid #6b7280'
               }}
               >
                 <div style={{
@@ -2185,13 +2074,14 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             {filteredSideBusinessItems.map(item => (
             <div key={`sb-${item.item_id}`} style={{
               background: '#ffffff',
-              border: '1px solid #6b7280',
+              border: '3px solid #374151',
               borderRadius: '8px',
               padding: '12px',
               textAlign: 'center',
               transition: 'all 0.2s ease',
               cursor: 'pointer',
-              position: 'relative'
+              position: 'relative',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-1px)'
@@ -2272,50 +2162,6 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             </div>
           )}
 
-          {/* Loading indicator for more products */}
-          {showAllProducts && isLoadingMore && (
-            <div style={{
-              textAlign: 'center',
-              padding: '20px',
-              color: '#6b7280'
-            }}>
-              <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>
-              Loading more products...
-            </div>
-          )}
-
-          {/* Load More button */}
-          {showAllProducts && !isLoadingMore && (currentPage * productsPerPage) < totalProducts && (
-            <div style={{ textAlign: 'center', marginTop: '20px' }}>
-              <button
-                onClick={loadMoreProducts}
-                style={{
-                  background: '#f3f4f6',
-                  color: '#374151',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  padding: '12px 24px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  margin: '0 auto'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#e5e7eb'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#f3f4f6'
-                }}
-              >
-                <i className="fa-solid fa-plus" style={{ fontSize: '12px' }}></i>
-                Load More Products ({totalProducts - (currentPage * productsPerPage)} remaining)
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -2412,8 +2258,10 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   alignItems: 'center',
                   gap: '12px',
                   padding: '12px',
-                  background: '#f9fafb',
-                  borderRadius: '8px'
+                  background: '#ffffff',
+                  borderRadius: '8px',
+                  border: '3px solid #dc2626',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
                 }}>
                   <div style={{
                     width: '40px',
@@ -2698,11 +2546,40 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             Add Voucher
           </button>
 
-          {/* TTS Announce Order Button */}
-          <button
+          {/* TTS Announce Order Button - Audio Player Style */}
+          <div
+            style={{
+              background: '#2a2a2a',
+              border: '1px solid #404040',
+              borderRadius: '12px',
+              padding: '10px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              width: 'fit-content',
+              maxWidth: '280px',
+              marginBottom: '12px',
+              opacity: order.items.length === 0 ? 0.5 : 1,
+              cursor: order.items.length === 0 ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+            }}
             onClick={async () => {
+              if (order.items.length === 0) return
+              
+              if (isTtsPlaying) {
+                // Pause TTS
+                console.log('Pausing TTS...')
+                ttsService.pause()
+                setIsTtsPlaying(false)
+                return
+              }
+              
               console.log('Announce Order clicked!')
               console.log('Order items:', order.items)
+              
+              // Set playing state
+              setIsTtsPlaying(true)
               
               // Temporarily enable TTS
               ttsService.updateSettings({ enabled: true })
@@ -2717,6 +2594,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 setTimeout(() => {
                   ttsService.updateSettings({ enabled: false })
                   setTtsSettings(ttsService.getSettings())
+                  setIsTtsPlaying(false)
                 }, 3000) // Wait 3 seconds for the delayed message
                 
               } catch (error) {
@@ -2724,30 +2602,97 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 // Disable TTS immediately on error
                 ttsService.updateSettings({ enabled: false })
                 setTtsSettings(ttsService.getSettings())
+                setIsTtsPlaying(false)
               }
             }}
-            title="Announce all items in current order"
-            style={{
-              background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '12px 24px',
-              fontSize: '14px',
-              fontWeight: '500',
-              cursor: order.items.length === 0 ? 'not-allowed' : 'pointer',
-              width: '100%',
-              marginBottom: '12px',
-              transition: 'all 0.2s ease',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px'
+            title={isTtsPlaying ? "Pause announcement" : "Announce all items in current order"}
+            onMouseEnter={(e) => {
+              if (order.items.length > 0) {
+                e.currentTarget.style.background = '#333333'
+                e.currentTarget.style.borderColor = '#555555'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (order.items.length > 0) {
+                e.currentTarget.style.background = '#2a2a2a'
+                e.currentTarget.style.borderColor = '#404040'
+              }
             }}
           >
-            <i className="fa-solid fa-volume-high" style={{ fontSize: '14px' }}></i>
-            Announce Order
-          </button>
+            {/* Play Button */}
+            <div
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: '#8A85FF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 2px 4px rgba(138, 133, 255, 0.3)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                if (order.items.length > 0) {
+                  e.currentTarget.style.background = '#9A95FF'
+                  e.currentTarget.style.transform = 'scale(1.05)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (order.items.length > 0) {
+                  e.currentTarget.style.background = '#8A85FF'
+                  e.currentTarget.style.transform = 'scale(1)'
+                }
+              }}
+            >
+              <i 
+                className={isTtsPlaying ? "fa-solid fa-pause" : "fa-solid fa-play"} 
+                style={{ 
+                  fontSize: '12px', 
+                  color: 'white',
+                  marginLeft: isTtsPlaying ? '0px' : '2px'
+                }}
+              ></i>
+            </div>
+
+            {/* Waveform Visualization */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1px', flex: 1, maxWidth: '120px' }}>
+              {Array.from({ length: 15 }, (_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: '2px',
+                    height: isTtsPlaying ? `${Math.random() * 12 + 3}px` : '4px',
+                    background: isTtsPlaying ? '#8A85FF' : '#666666',
+                    borderRadius: '1px',
+                    transition: 'all 0.3s ease',
+                    animation: isTtsPlaying ? `waveform-${i} 1.5s ease-in-out infinite` : 'none'
+                  }}
+                ></div>
+              ))}
+            </div>
+
+            {/* Duration/Status */}
+            <div style={{ 
+              color: 'white', 
+              fontSize: '11px', 
+              fontWeight: '500',
+              minWidth: '28px',
+              textAlign: 'center'
+            }}>
+              {isTtsPlaying ? '▶' : (order.items.length > 0 ? `${order.items.length}` : '0:00')}
+            </div>
+
+            {/* Volume Icon */}
+            <div style={{ 
+              color: 'white', 
+              fontSize: '14px',
+              opacity: 0.8
+            }}>
+              <i className="fa-solid fa-volume-high"></i>
+            </div>
+          </div>
 
           <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
             <button
@@ -2982,8 +2927,11 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   onClick={() => {
                     setAllowPartialPayment(!allowPartialPayment)
                     if (!allowPartialPayment) {
+                      // Enable partial payment - set partial amount to full total initially
                       setPartialAmount(order.total.toString())
+                      setRemainingAmount(0)
                     } else {
+                      // Disable partial payment - clear amounts
                       setPartialAmount('')
                       setRemainingAmount(0)
                     }
@@ -3025,6 +2973,12 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   <div style={{ fontSize: '14px', color: '#92400e' }}>
                     <div>Amount to pay now: <strong>€{(parseFloat(partialAmount) || 0).toFixed(2)}</strong></div>
                     <div>Remaining amount: <strong>€{remainingAmount.toFixed(2)}</strong></div>
+                    {remainingAmount > 0 && (
+                      <div style={{ marginTop: '8px', padding: '8px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '4px' }}>
+                        <i className="fa-solid fa-exclamation-triangle" style={{ marginRight: '6px', color: '#dc2626' }}></i>
+                        <strong style={{ color: '#dc2626' }}>Still need to pay: €{remainingAmount.toFixed(2)}</strong>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -3046,7 +3000,13 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                     min="0"
                     max={order.total}
                     value={partialAmount}
-                    onChange={(e) => setPartialAmount(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      setPartialAmount(value)
+                      // Immediately update remaining amount
+                      const partial = parseFloat(value) || 0
+                      setRemainingAmount(Math.max(0, order.total - partial))
+                    }}
                     style={{
                       width: '100%',
                       padding: '12px 16px',
@@ -3168,7 +3128,23 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                     Change: €{change.toFixed(2)}
                   </div>
                 )}
-                {amountEntered && parseFloat(amountEntered) < order.total && (
+                {allowPartialPayment && remainingAmount > 0 && (
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '12px 16px',
+                    background: '#fef2f2',
+                    border: '2px solid #dc2626',
+                    borderRadius: '8px',
+                    color: '#dc2626',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    textAlign: 'center'
+                  }}>
+                    <i className="fa-solid fa-exclamation-triangle" style={{ marginRight: '8px' }}></i>
+                    Still need to pay: €{remainingAmount.toFixed(2)}
+                  </div>
+                )}
+                {amountEntered && parseFloat(amountEntered) < order.total && !allowPartialPayment && (
                   <div style={{
                     marginTop: '12px',
                     padding: '12px 16px',
