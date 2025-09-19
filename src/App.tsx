@@ -7,6 +7,7 @@ import { useNavCollapse } from './hooks/useNavCollapse'
 import ProtectedRoute from './components/ProtectedRoute'
 import RoleProtectedRoute from './components/RoleProtectedRoute'
 import Navigation from './components/Navigation'
+import Login from './pages/Login'  // Add this import
 import Dashboard from './pages/Dashboard'
 import Products from './pages/Products'
 import Sales from './pages/Sales'
@@ -18,7 +19,6 @@ import Reminders from './pages/Reminders'
 
 const AppContent = () => {
   const { isCollapsed } = useNav()
-  // Use the custom hook to handle global click events
   useNavCollapse()
 
   return (
@@ -61,32 +61,32 @@ const AppContent = () => {
           position: 'relative',
           zIndex: 1
         }}>
-                          <Routes>
-                            <Route path="/" element={<Dashboard />} />
-                            <Route path="/products" element={
-                              <RoleProtectedRoute>
-                                <Products />
-                              </RoleProtectedRoute>
-                            } />
-                            <Route path="/sales" element={
-                              <RoleProtectedRoute requiredPermission="canProcessSales">
-                                <Sales />
-                              </RoleProtectedRoute>
-                            } />
-                            <Route path="/side-businesses" element={
-                              <RoleProtectedRoute>
-                                <SideBusinesses />
-                              </RoleProtectedRoute>
-                            } />
-                            <Route path="/transactions" element={
-                              <RoleProtectedRoute>
-                                <Transactions />
-                              </RoleProtectedRoute>
-                            } />
-                            <Route path="/admin" element={<Admin />} />
-                            <Route path="/reminders" element={<Reminders />} />
-                            <Route path="/transaction/:transactionId" element={<TransactionDetail />} />
-                          </Routes>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/products" element={
+              <RoleProtectedRoute>
+                <Products />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/sales" element={
+              <RoleProtectedRoute requiredPermission="canProcessSales">
+                <Sales />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/side-businesses" element={
+              <RoleProtectedRoute>
+                <SideBusinesses />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/transactions" element={
+              <RoleProtectedRoute>
+                <Transactions />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/reminders" element={<Reminders />} />
+            <Route path="/transaction/:transactionId" element={<TransactionDetail />} />
+          </Routes>
         </div>
       </main>
     </div>
@@ -100,9 +100,14 @@ function App() {
         <NavProvider>
           <PinProvider>
             <Router>
-              <ProtectedRoute>
-                <AppContent />
-              </ProtectedRoute>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/*" element={
+                  <ProtectedRoute>
+                    <AppContent />
+                  </ProtectedRoute>
+                } />
+              </Routes>
             </Router>
           </PinProvider>
         </NavProvider>
