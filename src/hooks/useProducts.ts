@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { useBusinessId } from './useBusinessId'
 import { Product, SideBusinessItem } from '../types/sales'
 
 export const useProducts = () => {
+  const { businessId, businessLoading } = useBusinessId()
   const [products, setProducts] = useState<Product[]>([])
   const [sideBusinessItems, setSideBusinessItems] = useState<SideBusinessItem[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
@@ -20,7 +22,7 @@ export const useProducts = () => {
   const [isFiltering, setIsFiltering] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  const fetchProducts = async (page: number = 1, limit: number = 20, category?: string, search?: string, isLoadMore: boolean = false) => {
+  const fetchProducts = useCallback(async (page: number = 1, limit: number = 20, category?: string, search?: string, isLoadMore: boolean = false) => {
     try {
       if (!isLoadMore) {
         if (page === 1 && showAllProducts) {
@@ -31,20 +33,29 @@ export const useProducts = () => {
       } else {
         setIsLoadingMore(true)
       }
-      
-      // Build query with pagination
+
+      if (businessId == null) {
+        if (!isLoadMore) {
+          setProducts([])
+          setFilteredProducts([])
+          setSideBusinessItems([])
+          setFilteredSideBusinessItems([])
+          setTotalProducts(0)
+        }
+        return
+      }
+
       let query = supabase
         .from('products')
         .select('*', { count: 'exact' })
+        .eq('business_id', businessId)
         .order('name')
         .range((page - 1) * limit, page * limit - 1)
 
-      // Add category filter if not 'All'
       if (category && category !== 'All') {
         query = query.eq('category', category)
       }
 
-      // Add search filter if provided
       if (search && search.trim()) {
         query = query.or(`name.ilike.%${search}%,category.ilike.%${search}%`)
       }
@@ -53,33 +64,60 @@ export const useProducts = () => {
 
       if (productsError) throw productsError
 
-      // Fetch side business items (these are typically fewer, so we can load all)
       const { data: sideBusinessData, error: sideBusinessError } = await supabase
         .from('side_business_items')
         .select(`
           *,
-          side_businesses (name, business_type)
+          side_businesses (name, business_type, parent_shop_id)
         `)
+        .eq('parent_shop_id', businessId)
         .order('name')
 
       if (sideBusinessError) throw sideBusinessError
 
       if (page === 1 || !isLoadMore) {
-        // First page or not loading more - replace products
         setProducts(productsData || [])
       } else {
-        // Subsequent pages - append products
         setProducts(prev => [...prev, ...(productsData || [])])
       }
-      
+
       setSideBusinessItems(sideBusinessData || [])
       setTotalProducts(count || 0)
-      
-      // Fetch top 5 most sold products only once
+
       if (page === 1) {
-        await fetchTopProducts(productsData || [])
+        try {
+          const { data: salesData, error: salesError } = await supabase
+            .from('sale_items')
+            .select('product_id, quantity, sales!inner(business_id)')
+            .eq('sales.business_id', businessId)
+            .not('product_id', 'is', null)
+
+          if (salesError) {
+            setTopProducts((productsData || []).slice(0, 5))
+          } else {
+            const productSalesCount: Record<string, number> = {}
+            salesData?.forEach(sale => {
+              if (sale.product_id) {
+                productSalesCount[sale.product_id] = (productSalesCount[sale.product_id] || 0) + sale.quantity
+              }
+            })
+
+            const sortedProducts = (productsData || [])
+              .map(product => ({
+                product,
+                count: productSalesCount[product.product_id] || 0
+              }))
+              .sort((a, b) => b.count - a.count)
+              .slice(0, 5)
+              .map(entry => entry.product)
+
+            setTopProducts(sortedProducts)
+          }
+        } catch {
+          setTopProducts((productsData || []).slice(0, 5))
+        }
       }
-      
+
       // Extract unique categories for products (only on first load)
       if (page === 1) {
         const productCategories = productsData?.map(p => p.category).filter(Boolean) || []
@@ -97,46 +135,6 @@ export const useProducts = () => {
       setLoading(false)
       setIsLoadingMore(false)
       setIsFiltering(false)
-    }
-  }
-
-  const fetchTopProducts = async (allProducts: Product[]) => {
-    try {
-      // Get sales data to find most sold products
-      const { data: salesData, error: salesError } = await supabase
-        .from('sale_items')
-        .select('product_id, quantity')
-        .not('product_id', 'is', null)
-
-      if (salesError) {
-        // Error fetching sales data - handled silently per user preference
-        // If we can't get sales data, just use the first 5 products
-        setTopProducts(allProducts.slice(0, 5))
-        return
-      }
-
-      // Count total quantity sold for each product
-      const productSalesCount: { [key: string]: number } = {}
-      salesData?.forEach(sale => {
-        if (sale.product_id) {
-          productSalesCount[sale.product_id] = (productSalesCount[sale.product_id] || 0) + sale.quantity
-        }
-      })
-
-      // Sort products by sales count and get top 5
-      const sortedProducts = allProducts
-        .map(product => ({
-          ...product,
-          salesCount: productSalesCount[product.product_id] || 0
-        }))
-        .sort((a, b) => b.salesCount - a.salesCount)
-        .slice(0, 5)
-
-      setTopProducts(sortedProducts)
-    } catch (error) {
-      // Error fetching top products - handled silently per user preference
-      // Fallback to first 5 products
-      setTopProducts(allProducts.slice(0, 5))
     }
   }
 
@@ -207,9 +205,22 @@ export const useProducts = () => {
 
   // Effects
   useEffect(() => {
-    // Load initial products - only top products by default
+    if (businessLoading) {
+      return
+    }
+
+    if (businessId == null) {
+      setProducts([])
+      setFilteredProducts([])
+      setSideBusinessItems([])
+      setFilteredSideBusinessItems([])
+      setTotalProducts(0)
+      setTopProducts([])
+      return
+    }
+
     fetchProducts(1, productsPerPage)
-  }, [])
+  }, [businessId, businessLoading, fetchProducts, productsPerPage])
 
   useEffect(() => {
     // Always filter products based on current mode
@@ -225,17 +236,18 @@ export const useProducts = () => {
 
   // Separate effect for handling category/search changes in "Show All" mode with debounce
   useEffect(() => {
-    if (showAllProducts && !isSwitchingMode) {
-      setCurrentPage(1)
-      
-      // Debounce the API call to prevent too many requests
-      const timeoutId = setTimeout(() => {
-        fetchProducts(1, productsPerPage, selectedCategory, searchTerm)
-      }, 300) // 300ms debounce
-
-      return () => clearTimeout(timeoutId)
+    if (!showAllProducts || isSwitchingMode || businessLoading || businessId == null) {
+      return
     }
-  }, [selectedCategory, searchTerm, showAllProducts, isSwitchingMode])
+
+    setCurrentPage(1)
+
+    const timeoutId = setTimeout(() => {
+      fetchProducts(1, productsPerPage, selectedCategory, searchTerm)
+    }, 300)
+
+    return () => clearTimeout(timeoutId)
+  }, [selectedCategory, searchTerm, showAllProducts, isSwitchingMode, businessId, businessLoading, fetchProducts, productsPerPage])
 
   return {
     // State

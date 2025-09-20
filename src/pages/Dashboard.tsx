@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { formatCurrency } from '../utils/currency'
+import { useBusinessId } from '../hooks/useBusinessId'
 import LowStockSection from '../components/dashboard/LowStockSection'
 import ProductAnalyticsSection from '../components/dashboard/ProductAnalyticsSection'
 import SalesChart from '../components/dashboard/SalesChart'
@@ -30,6 +31,7 @@ interface RecentTransaction {
 
 const Dashboard = () => {
   const navigate = useNavigate()
+  const { businessId, businessLoading } = useBusinessId()
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalSales: 0,
@@ -60,22 +62,40 @@ const Dashboard = () => {
   useEffect(() => {
     fetchDashboardStats()
     fetchRecentTransactions()
-  }, [])
+  }, [businessId, businessLoading])
 
   useEffect(() => {
     fetchDashboardStatsForPeriod(activePeriod, selectedDate)
     fetchRecentTransactionsForPeriod(activePeriod, selectedDate)
-  }, [activePeriod, selectedDate])
+  }, [activePeriod, selectedDate, businessId, businessLoading])
 
   const fetchDashboardStats = async () => {
+    if (businessLoading) {
+      return
+    }
+
+    if (businessId == null) {
+      setStats({
+        totalProducts: 0,
+        totalSales: 0,
+        totalCustomers: 0,
+        todayRevenue: 0,
+        todaySideBusinessRevenue: 0,
+        todayTransactions: 0,
+        lowStockItems: 0
+      })
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
 
-      // Fetch counts from each table (temporarily bypass RLS for testing)
+      // Fetch counts from each table filtered by business_id
       const [productsResult, salesResult, customersResult] = await Promise.all([
-        supabase.from('products').select('product_id', { count: 'exact', head: true }).limit(1000),
-        supabase.from('sales').select('sale_id', { count: 'exact', head: true }).limit(1000),
-        supabase.from('customers').select('customer_id', { count: 'exact', head: true }).limit(1000)
+        supabase.from('products').select('product_id', { count: 'exact', head: true }).eq('business_id', businessId).limit(1000),
+        supabase.from('sales').select('sale_id', { count: 'exact', head: true }).eq('business_id', businessId).limit(1000),
+        supabase.from('customers').select('customer_id', { count: 'exact', head: true }).eq('business_id', businessId).limit(1000)
       ])
 
       // Fetch today's revenue and transaction count
@@ -84,6 +104,7 @@ const Dashboard = () => {
       const { data: todaySales, count: todayTransactionsCount } = await supabase
         .from('sales')
         .select('total_amount', { count: 'exact' })
+        .eq('business_id', businessId)
         .gte('datetime', `${today}T00:00:00`)
         .lt('datetime', `${today}T23:59:59`)
 
@@ -96,6 +117,7 @@ const Dashboard = () => {
       const { count: yesterdayTransactionsCount } = await supabase
         .from('sales')
         .select('sale_id', { count: 'exact', head: true })
+        .eq('business_id', businessId)
         .gte('datetime', `${yesterdayStr}T00:00:00`)
         .lt('datetime', `${yesterdayStr}T23:59:59`)
 
@@ -114,6 +136,7 @@ const Dashboard = () => {
             )
           )
         `, { count: 'exact' })
+        .eq('side_business_items.side_businesses.parent_shop_id', businessId)
         .gte('date_time', `${today}T00:00:00`)
         .lt('date_time', `${today}T23:59:59`)
 
@@ -169,6 +192,10 @@ const Dashboard = () => {
   }
 
   const fetchRecentTransactions = async (date?: Date) => {
+    if (businessLoading || businessId == null) {
+      return
+    }
+
     try {
       const targetDate = date || selectedDate
       const ymdLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
@@ -187,6 +214,7 @@ const Dashboard = () => {
           partial_notes,
           sale_items (quantity)
         `)
+        .eq('business_id', businessId)
         .gte('datetime', `${dateString}T00:00:00`)
         .lt('datetime', `${dateString}T23:59:59`)
         .order('datetime', { ascending: false })
@@ -217,6 +245,10 @@ const Dashboard = () => {
   }
 
   const fetchDashboardStatsForPeriod = async (period: 'today' | 'week' | 'month', baseDate: Date) => {
+    if (businessLoading || businessId == null) {
+      return
+    }
+
     try {
       setLoading(true)
       const { start, end } = getDateRangeForPeriod(period, baseDate)
@@ -225,6 +257,7 @@ const Dashboard = () => {
       const { data: periodSales, count: periodTransactionsCount } = await supabase
         .from('sales')
         .select('total_amount', { count: 'exact' })
+        .eq('business_id', businessId)
         .gte('datetime', start)
         .lt('datetime', end)
 
@@ -243,6 +276,7 @@ const Dashboard = () => {
             )
           )
         `, { count: 'exact' })
+        .eq('side_business_items.side_businesses.parent_shop_id', businessId)
         .gte('date_time', start)
         .lt('date_time', end)
 
@@ -276,6 +310,7 @@ const Dashboard = () => {
       const { count: lowStockCount } = await supabase
         .from('products')
         .select('product_id', { count: 'exact', head: true })
+        .eq('business_id', businessId)
         .lt('stock_quantity', 10)
 
       setStats({
@@ -295,6 +330,10 @@ const Dashboard = () => {
   }
 
   const fetchRecentTransactionsForPeriod = async (period: 'today' | 'week' | 'month', baseDate: Date) => {
+    if (businessLoading || businessId == null) {
+      return
+    }
+
     try {
       const { start, end } = getDateRangeForPeriod(period, baseDate)
 
@@ -311,6 +350,7 @@ const Dashboard = () => {
           partial_notes,
           sale_items (quantity)
         `)
+        .eq('business_id', businessId)
         .gte('datetime', start)
         .lt('datetime', end)
         .order('datetime', { ascending: false })
@@ -413,17 +453,19 @@ const Dashboard = () => {
       
       // Fetch counts from each table for the selected date
       const [productsResult, salesResult, customersResult] = await Promise.all([
-        supabase.from('products').select('product_id', { count: 'exact', head: true }),
+        supabase.from('products').select('product_id', { count: 'exact', head: true }).eq('business_id', businessId),
         supabase.from('sales').select('sale_id', { count: 'exact', head: true })
+          .eq('business_id', businessId)
           .gte('datetime', `${dateString}T00:00:00`)
           .lt('datetime', `${dateString}T23:59:59`),
-        supabase.from('customers').select('customer_id', { count: 'exact', head: true })
+        supabase.from('customers').select('customer_id', { count: 'exact', head: true }).eq('business_id', businessId)
       ])
 
       // Fetch revenue and transaction count for selected date
       const { data: daySales, count: dayTransactionsCount } = await supabase
         .from('sales')
         .select('total_amount', { count: 'exact' })
+        .eq('business_id', businessId)
         .gte('datetime', `${dateString}T00:00:00`)
         .lt('datetime', `${dateString}T23:59:59`)
 
@@ -436,6 +478,7 @@ const Dashboard = () => {
       const { count: previousDayTransactionsCount } = await supabase
         .from('sales')
         .select('sale_id', { count: 'exact', head: true })
+        .eq('business_id', businessId)
         .gte('datetime', `${previousDayStr}T00:00:00`)
         .lt('datetime', `${previousDayStr}T23:59:59`)
 

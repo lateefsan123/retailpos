@@ -9,6 +9,7 @@ interface User {
   role: string
   active: boolean
   icon?: string
+  business_id: number | null
 }
 
 interface AuthContextType {
@@ -112,9 +113,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return
       }
 
-      // console.log('User data loaded:', userData)
-      setUser(userData)
-      localStorage.setItem('pos_user', JSON.stringify(userData))
+      const userProfile: User = {
+        user_id: userData.user_id,
+        username: userData.username,
+        role: userData.role,
+        active: userData.active,
+        icon: userData.icon,
+        business_id: userData.business_id ?? null
+      }
+
+      setUser(userProfile)
+      localStorage.setItem('pos_user', JSON.stringify(userProfile))
       
     } catch (error) {
       console.error('Error in loadUserProfile:', error)
@@ -166,7 +175,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         username: data.username,
         role: data.role,
         active: data.active,
-        icon: data.icon
+        icon: data.icon,
+        business_id: data.business_id ?? null
       }
 
       setUser(userData)

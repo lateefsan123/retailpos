@@ -8,6 +8,13 @@ export interface Product {
   weight_unit?: string // e.g., 'kg', 'g', 'lb', 'oz'
   price_per_unit?: number // price per weight unit (e.g., 3.00 for €3 per kg)
   is_weighted?: boolean // true if item is sold by weight
+  business_id: number // Multi-tenant support
+  tax_rate?: number
+  description?: string
+  sku?: string
+  sales_count?: number
+  total_revenue?: number
+  last_sold_date?: string
 }
 
 export interface SideBusinessItem {

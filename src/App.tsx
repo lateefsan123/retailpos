@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { BusinessProvider } from './contexts/BusinessContext'
 import { NavProvider, useNav } from './contexts/NavContext'
 import { RoleProvider } from './contexts/RoleContext'
 import { PinProvider } from './contexts/PinContext'
@@ -96,22 +97,24 @@ const AppContent = () => {
 function App() {
   return (
     <AuthProvider>
-      <RoleProvider>
-        <NavProvider>
-          <PinProvider>
-            <Router basename="/retailpos">
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/*" element={
-                  <ProtectedRoute>
-                    <AppContent />
-                  </ProtectedRoute>
-                } />
-              </Routes>
-            </Router>
-          </PinProvider>
-        </NavProvider>
-      </RoleProvider>
+      <BusinessProvider>
+        <RoleProvider>
+          <NavProvider>
+            <PinProvider>
+              <Router basename="/retailpos">
+                <Routes>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/*" element={
+                    <ProtectedRoute>
+                      <AppContent />
+                    </ProtectedRoute>
+                  } />
+                </Routes>
+              </Router>
+            </PinProvider>
+          </NavProvider>
+        </RoleProvider>
+      </BusinessProvider>
     </AuthProvider>
   )
 }

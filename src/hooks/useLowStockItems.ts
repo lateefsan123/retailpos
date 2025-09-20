@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { useBusinessId } from './useBusinessId'
 
 export interface LowStockProduct {
   product_id: string
@@ -12,11 +13,18 @@ export interface LowStockProduct {
 }
 
 export const useLowStockItems = () => {
+  const { businessId, businessLoading, businessError } = useBusinessId()
   const [lowStockItems, setLowStockItems] = useState<LowStockProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchLowStockItems = async () => {
+  const fetchLowStockItems = useCallback(async () => {
+    if (businessId == null || businessLoading) {
+      setLowStockItems([])
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       setError(null)
@@ -24,7 +32,8 @@ export const useLowStockItems = () => {
       const { data, error: fetchError } = await supabase
         .from('products')
         .select('*')
-        .lt('stock_quantity', 10) // Less than 10 items in stock
+        .eq('business_id', businessId)
+        .lt('stock_quantity', 10)
         .order('stock_quantity', { ascending: true })
 
       if (fetchError) {
@@ -38,73 +47,72 @@ export const useLowStockItems = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [businessId, businessLoading])
 
-  const restockProduct = async (productId: string, quantity: number) => {
+  const restockProduct = useCallback(async (productId: string, quantity: number) => {
+    if (businessId == null) {
+      setError('No business selected to restock products')
+      return false
+    }
+
     try {
       setError(null)
 
-      // Update the product stock quantity
       const { error: updateError } = await supabase
         .from('products')
-        .update({ 
+        .update({
           stock_quantity: quantity,
           last_updated: new Date().toISOString()
         })
         .eq('product_id', productId)
+        .eq('business_id', businessId)
 
       if (updateError) {
         throw updateError
       }
 
-      // Log the inventory movement
       const { error: movementError } = await supabase
         .from('inventory_movements')
         .insert({
           product_id: productId,
           quantity_change: quantity,
           movement_type: 'Restock',
-          datetime: new Date().toISOString()
+          datetime: new Date().toISOString(),
+          business_id: businessId
         })
 
       if (movementError) {
         console.warn('Failed to log inventory movement:', movementError)
-        // Don't throw here as the main operation succeeded
       }
 
-      // Refresh the low stock items list
       await fetchLowStockItems()
-      
       return true
     } catch (err) {
       console.error('Error restocking product:', err)
       setError(err instanceof Error ? err.message : 'Failed to restock product')
       return false
     }
-  }
+  }, [businessId, fetchLowStockItems])
 
-  const quickRestock = async (productId: string) => {
-    // Find the product to get its reorder level
+  const quickRestock = useCallback(async (productId: string) => {
     const product = lowStockItems.find(item => item.product_id === productId)
     if (!product) {
       setError('Product not found')
       return false
     }
 
-    // Restock to 2x the reorder level (or minimum 20 if reorder level is very low)
     const restockQuantity = Math.max(product.reorder_level * 2, 20)
-    
-    return await restockProduct(productId, restockQuantity)
-  }
+    return restockProduct(productId, restockQuantity)
+  }, [lowStockItems, restockProduct])
 
   useEffect(() => {
     fetchLowStockItems()
-  }, [])
+  }, [fetchLowStockItems])
 
   return {
     lowStockItems,
-    loading,
-    error,
+    loading: businessLoading || loading,
+    error: error ?? businessError ?? null,
     fetchLowStockItems,
     restockProduct,
     quickRestock

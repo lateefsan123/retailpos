@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
+import { useBusinessId } from '../hooks/useBusinessId'
 import { ttsService, TTSSettings } from '../lib/ttsService'
 
 // Helper function to get local time in database format
@@ -157,6 +158,7 @@ interface Order {
 
 const Sales = () => {
   const { user } = useAuth()
+  const { businessId, businessLoading } = useBusinessId()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [products, setProducts] = useState<Product[]>([])
@@ -217,20 +219,33 @@ const Sales = () => {
   const [isAddingToTransaction, setIsAddingToTransaction] = useState(false)
 
   useEffect(() => {
-    // Load initial products
-    fetchProducts()
-    
-    // Fetch service businesses for quick service creation
+    if (businessLoading) {
+      return
+    }
+
+    if (businessId == null) {
+      setProducts([])
+      setSideBusinessItems([])
+      setTopProducts([])
+      setCategories(['All'])
+      setServiceBusinesses([])
+      setExistingTransaction(null)
+      setExistingTransactionId(null)
+      setIsAddingToTransaction(false)
+      return
+    }
+
+    // Load initial products and related data
+    fetchProducts(selectedCategory, searchTerm)
     fetchServiceBusinesses()
-    
-    // Check if we're adding to an existing transaction
+
     const transactionParam = searchParams.get('transaction')
     if (transactionParam) {
       setExistingTransactionId(transactionParam)
       setIsAddingToTransaction(true)
       fetchExistingTransaction(transactionParam)
     }
-  }, [searchParams])
+  }, [searchParams, businessId, businessLoading, selectedCategory, searchTerm])
 
   // Note: TTS will only be triggered manually by the cashier when they want to announce the order
   // This ensures TTS is only used when the cashier has finished adding items
@@ -299,55 +314,62 @@ const Sales = () => {
   }, [order.total, allowPartialPayment, partialAmount])
 
   const fetchProducts = async (category?: string, search?: string) => {
+    if (businessLoading) {
+      return
+    }
+
+    if (businessId == null) {
+      setProducts([])
+      setSideBusinessItems([])
+      setTopProducts([])
+      setCategories(['All'])
+      setLoading(false)
+      setIsFiltering(false)
+      return
+    }
+
     try {
       setLoading(true)
-      
-      // Build query to get top products (most sold)
+
       let query = supabase
         .from('products')
         .select('*')
+        .eq('business_id', businessId)
         .order('sales_count', { ascending: false })
-        .limit(50) // Get top 50 products
+        .limit(50)
 
-      // Add category filter if not 'All'
       if (category && category !== 'All') {
         query = query.eq('category', category)
       }
 
-      // Add search filter if provided
       if (search && search.trim()) {
         const searchTerm = search.trim()
         query = query.or(`name.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%`)
       }
 
       const { data: productsData, error: productsError } = await query
-
       if (productsError) throw productsError
 
-      // Fetch side business items (these are typically fewer, so we can load all)
       const { data: sideBusinessData, error: sideBusinessError } = await supabase
         .from('side_business_items')
         .select(`
           *,
           side_businesses (name, business_type)
         `)
+        .eq('parent_shop_id', businessId)
         .order('name')
 
       if (sideBusinessError) throw sideBusinessError
 
-      setProducts(productsData || [])
-      setSideBusinessItems(sideBusinessData || [])
-      
-      // Set top products to the fetched products (they're already ordered by sales_count)
-      setTopProducts(productsData || [])
-      
-      // Extract unique categories for products
-      const productCategories = productsData?.map(p => p.category).filter(Boolean) || []
-      
-      // Extract unique categories for side business items
-      const sideBusinessCategories = sideBusinessData?.map(item => item.side_businesses?.name).filter(Boolean) || []
-      
-      // Combine all categories
+      const safeProducts = productsData || []
+      const safeSideBusinessItems = sideBusinessData || []
+
+      setProducts(safeProducts)
+      setSideBusinessItems(safeSideBusinessItems)
+      setTopProducts(safeProducts)
+
+      const productCategories = safeProducts.map(p => p.category).filter(Boolean)
+      const sideBusinessCategories = safeSideBusinessItems.map(item => item.side_businesses?.name).filter(Boolean)
       const allCategories = ['All', ...new Set([...productCategories, ...sideBusinessCategories])]
       setCategories(allCategories)
     } catch (error) {
@@ -360,11 +382,17 @@ const Sales = () => {
 
 
   const fetchServiceBusinesses = async () => {
+    if (businessLoading || businessId == null) {
+      setServiceBusinesses([])
+      return
+    }
+
     try {
       const { data, error } = await supabase
         .from('side_businesses')
         .select('business_id, name')
         .eq('business_type', 'service')
+        .eq('parent_shop_id', businessId)
         .order('name')
 
       if (error) throw error
@@ -376,10 +404,13 @@ const Sales = () => {
   }
 
   const fetchExistingTransaction = async (transactionId: string) => {
+    if (businessLoading || businessId == null) {
+      return
+    }
+
     try {
       const saleId = parseInt(transactionId.replace('TXN-', ''))
-      
-      // Fetch transaction details
+
       const { data: transactionData, error: transactionError } = await supabase
         .from('sales')
         .select(`
@@ -388,16 +419,15 @@ const Sales = () => {
           users (username)
         `)
         .eq('sale_id', saleId)
+        .eq('business_id', businessId)
         .single()
 
-      if (transactionError) {
-        // Error fetching transaction - handled silently per user preference
+      if (transactionError || !transactionData) {
         return
       }
 
       setExistingTransaction(transactionData)
 
-      // Fetch existing items and populate the order
       const { data: itemsData, error: itemsError } = await supabase
         .from('sale_items')
         .select(`
@@ -416,11 +446,9 @@ const Sales = () => {
         .eq('sale_id', saleId)
 
       if (itemsError) {
-        // Error fetching transaction items - handled silently per user preference
         return
       }
 
-      // Transform items to match the order format
       const existingItems: OrderItem[] = (itemsData || []).map(item => {
         const product: Product = {
           product_id: item.product_id.toString(),
@@ -439,7 +467,6 @@ const Sales = () => {
           quantity: item.quantity
         }
 
-        // Handle weighted items
         if (item.products?.is_weighted && item.weight && item.calculated_price) {
           orderItem.weight = item.weight
           orderItem.calculatedPrice = item.calculated_price
@@ -448,7 +475,6 @@ const Sales = () => {
         return orderItem
       })
 
-      // Calculate totals
       const subtotal = existingItems.reduce((sum, item) => {
         if (item.weight && item.calculatedPrice) {
           return sum + item.calculatedPrice
@@ -466,7 +492,6 @@ const Sales = () => {
         total
       })
 
-      // Set customer name if available
       if (transactionData.customers?.name) {
         setCustomerName(transactionData.customers.name)
       }
@@ -750,6 +775,13 @@ const Sales = () => {
   }
 
   const createQuickService = async () => {
+    if (businessLoading) return
+
+    if (businessId == null) {
+      alert('Please select a business before creating a quick service item')
+      return
+    }
+
     if (!quickServiceName.trim() || !quickServicePrice || !quickServiceBusiness) {
       alert('Please fill in all fields')
       return
@@ -1115,7 +1147,12 @@ ${partialPaymentNotes ? `Partial Payment Notes: ${partialPaymentNotes}` : ''}` :
   }
 
   const processSale = async () => {
-    if (order.items.length === 0) return
+    if (order.items.length === 0 || businessLoading) return
+
+    if (businessId == null) {
+      alert('Please select a business before processing a sale.')
+      return
+    }
 
     try {
       let saleData
@@ -1132,6 +1169,7 @@ ${partialPaymentNotes ? `Partial Payment Notes: ${partialPaymentNotes}` : ''}` :
             payment_method: paymentMethod
           })
           .eq('sale_id', saleId)
+          .eq('business_id', businessId)
           .select()
           .single()
 
@@ -1146,6 +1184,7 @@ ${partialPaymentNotes ? `Partial Payment Notes: ${partialPaymentNotes}` : ''}` :
           const { data: existingCustomer, error: lookupError } = await supabase
             .from('customers')
             .select('customer_id')
+            .eq('business_id', businessId)
             .eq('name', customerName.trim())
             .single()
 
@@ -1158,7 +1197,8 @@ ${partialPaymentNotes ? `Partial Payment Notes: ${partialPaymentNotes}` : ''}` :
               .insert([{
                 name: customerName.trim(),
                 phone_number: customerPhone.trim() || '000-000-0000', // Use provided phone or default
-                email: null
+                email: null,
+                business_id: businessId
               }])
               .select()
               .single()
@@ -1201,7 +1241,8 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             partial_amount: allowPartialPayment ? (parseFloat(partialAmount) || 0) : null,
             remaining_amount: allowPartialPayment ? remainingAmount : null,
             partial_notes: allowPartialPayment ? partialPaymentNotes : null,
-            notes: notesContent || null
+            notes: notesContent || null,
+            business_id: businessId
           }
           
           const result = await supabase
@@ -1224,7 +1265,8 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             partial_payment: allowPartialPayment,
             partial_amount: allowPartialPayment ? (parseFloat(partialAmount) || 0) : null,
             remaining_amount: allowPartialPayment ? remainingAmount : null,
-            partial_notes: allowPartialPayment ? partialPaymentNotes : null
+            partial_notes: allowPartialPayment ? partialPaymentNotes : null,
+            business_id: businessId
           }
           
           const result = await supabase
@@ -1272,7 +1314,8 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             const { error: updateError } = await supabase
               .rpc('increment_product_sales', {
                 product_id_param: saleItem.product_id,
-                revenue_amount: itemRevenue
+                revenue_amount: itemRevenue,
+                business_id_param: businessId
               })
 
             if (updateError) {
@@ -1294,6 +1337,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               .from('side_business_items')
               .insert({
                 business_id: item.sideBusinessItem!.business_id,
+                parent_shop_id: businessId,
                 name: item.sideBusinessItem!.name,
                 price: item.customPrice || item.sideBusinessItem!.price,
                 stock_qty: null, // Services don't have stock
@@ -1314,7 +1358,9 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               quantity: item.quantity,
               total_amount: (item.customPrice || item.sideBusinessItem!.price || 0) * item.quantity,
               payment_method: paymentMethod,
-              date_time: getLocalDateTime()
+              date_time: getLocalDateTime(),
+              business_id: item.sideBusinessItem!.business_id,
+              parent_shop_id: businessId
             })
 
           if (sideBusinessError) throw sideBusinessError
@@ -1344,6 +1390,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               .from('side_business_items')
               .insert({
                 business_id: item.sideBusinessItem!.business_id,
+                parent_shop_id: businessId,
                 name: item.sideBusinessItem!.name,
                 price: item.customPrice || item.sideBusinessItem!.price,
                 stock_qty: null, // Services don't have stock
@@ -1364,7 +1411,9 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               quantity: item.quantity,
               total_amount: (item.customPrice || item.sideBusinessItem!.price || 0) * item.quantity,
               payment_method: paymentMethod,
-              date_time: getLocalDateTime()
+              date_time: getLocalDateTime(),
+              business_id: item.sideBusinessItem!.business_id,
+              parent_shop_id: businessId
             })
 
           if (sideBusinessError) throw sideBusinessError
@@ -1385,7 +1434,8 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             const { error: updateError } = await supabase
               .rpc('increment_product_sales', {
                 product_id_param: saleItem.product_id,
-                revenue_amount: itemRevenue
+                revenue_amount: itemRevenue,
+                business_id_param: businessId
               })
 
             if (updateError) {
@@ -1416,6 +1466,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             last_updated: getLocalDateTime()
           })
           .eq('product_id', item.product.product_id)
+          .eq('business_id', businessId)
 
         if (stockError) throw stockError
 
@@ -1426,7 +1477,8 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             product_id: item.product.product_id,
             quantity_change: -item.quantity,
             movement_type: 'Sale',
-            reference_id: saleData.sale_id
+            reference_id: saleData.sale_id,
+            business_id: businessId
           }])
 
         if (movementError) throw movementError
@@ -1444,6 +1496,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             stock_qty: item.sideBusinessItem.stock_qty - item.quantity
           })
           .eq('item_id', item.sideBusinessItem.item_id)
+          .eq('parent_shop_id', businessId)
 
         if (stockError) throw stockError
       }
@@ -1530,6 +1583,10 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
   }
 
   const createPartialPaymentReminder = async (customerName: string, customerPhone: string, remainingAmount: number, saleId: number) => {
+    if (businessId == null) {
+      return
+    }
+
     try {
       // Get the current user ID
       const ownerId = user?.user_id || 1
@@ -1551,7 +1608,8 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
           title: reminderTitle,
           body: reminderBody,
           remind_date: remindDate,
-          owner_id: ownerId
+          owner_id: ownerId,
+          business_id: businessId
         }])
         .select()
         .single()

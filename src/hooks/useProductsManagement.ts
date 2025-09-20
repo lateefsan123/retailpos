@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
+import type { KeyboardEvent } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { useBusinessId } from './useBusinessId'
 
 interface Product {
   product_id: string
@@ -17,6 +19,10 @@ interface Product {
   is_weighted?: boolean
   description?: string
   sku?: string
+  business_id: number
+  sales_count?: number
+  total_revenue?: number
+  last_sold_date?: string
 }
 
 interface NewProduct {
@@ -35,7 +41,8 @@ interface NewProduct {
 }
 
 export const useProductsManagement = () => {
-  // State
+  const { businessId, businessLoading, businessError } = useBusinessId()
+
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -46,24 +53,21 @@ export const useProductsManagement = () => {
   const [totalProducts, setTotalProducts] = useState(0)
   const [distinctCategories, setDistinctCategories] = useState<string[]>([])
 
-  // Generate UUID for new products
   const generateUUID = () => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
       const r = Math.random() * 16 | 0
       const v = c === 'x' ? r : (r & 0x3 | 0x8)
       return v.toString(16)
     })
   }
 
-  // Transform form data to product data with proper validation
   const transformFormToProductData = (formData: NewProduct, productId?: string) => {
-    // Validate numeric inputs before parsing
     const validateNumericField = (value: string, fieldName: string) => {
       if (!value || value.trim() === '') {
         throw new Error(`${fieldName} is required`)
       }
       const parsed = parseFloat(value)
-      if (isNaN(parsed)) {
+      if (Number.isNaN(parsed)) {
         throw new Error(`${fieldName} must be a valid number`)
       }
       return parsed
@@ -73,8 +77,8 @@ export const useProductsManagement = () => {
       if (!value || value.trim() === '') {
         throw new Error(`${fieldName} is required`)
       }
-      const parsed = parseInt(value)
-      if (isNaN(parsed) || !Number.isInteger(parsed)) {
+      const parsed = parseInt(value, 10)
+      if (Number.isNaN(parsed) || !Number.isInteger(parsed)) {
         throw new Error(`${fieldName} must be a valid whole number`)
       }
       return parsed
@@ -91,17 +95,36 @@ export const useProductsManagement = () => {
       last_updated: new Date().toISOString(),
       is_weighted: formData.is_weighted || false,
       weight_unit: formData.is_weighted ? formData.weight_unit : null,
-      price_per_unit: formData.is_weighted && formData.price_per_unit ? 
-        validateNumericField(formData.price_per_unit, 'Price per unit') : null,
+      price_per_unit: formData.is_weighted && formData.price_per_unit
+        ? validateNumericField(formData.price_per_unit, 'Price per unit')
+        : null,
       description: formData.description?.trim() || '',
       sku: formData.sku?.trim() || ''
     }
-    
+
     return productId ? { ...baseData, product_id: productId } : baseData
   }
 
-  // Fetch products with pagination and filtering
-  const fetchProducts = async (page = 1, limit = 10, search = '', category = 'all') => {
+  const fetchProducts = useCallback(async (
+    page = 1,
+    limit = 10,
+    search = '',
+    category = 'all',
+    scopedBusinessId?: number
+  ) => {
+    if (businessLoading) {
+      setLoading(true)
+      return
+    }
+
+    const effectiveBusinessId = scopedBusinessId ?? businessId
+    if (effectiveBusinessId == null) {
+      setProducts([])
+      setTotalProducts(0)
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       setError(null)
@@ -109,23 +132,24 @@ export const useProductsManagement = () => {
       let query = supabase
         .from('products')
         .select('*', { count: 'exact' })
+        .eq('business_id', effectiveBusinessId)
 
-      // Apply search filter
       if (search.trim()) {
-        query = query.or(`name.ilike.%${search}%,category.ilike.%${search}%,description.ilike.%${search}%,sku.ilike.%${search}%`)
+        query = query.or(
+          `name.ilike.%${search}%,category.ilike.%${search}%,description.ilike.%${search}%,sku.ilike.%${search}%`
+        )
       }
 
-      // Apply category filter
       if (category !== 'all') {
         query = query.eq('category', category)
       }
 
-      // Apply pagination
       const from = (page - 1) * limit
       const to = from + limit - 1
-      query = query.range(from, to).order('last_updated', { ascending: false })
 
       const { data, error, count } = await query
+        .range(from, to)
+        .order('last_updated', { ascending: false })
 
       if (error) {
         throw error
@@ -140,14 +164,24 @@ export const useProductsManagement = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [businessId, businessLoading])
 
-  // Fetch distinct categories from database
-  const fetchDistinctCategories = async () => {
+  const fetchDistinctCategories = useCallback(async (scopedBusinessId?: number) => {
+    if (businessLoading) {
+      return
+    }
+
+    const effectiveBusinessId = scopedBusinessId ?? businessId
+    if (effectiveBusinessId == null) {
+      setDistinctCategories([])
+      return
+    }
+
     try {
       const { data, error } = await supabase
         .from('products')
         .select('category')
+        .eq('business_id', effectiveBusinessId)
         .not('category', 'is', null)
         .not('category', 'eq', '')
 
@@ -156,110 +190,123 @@ export const useProductsManagement = () => {
         return
       }
 
-      // Extract unique categories and sort them
-      const uniqueCategories = Array.from(new Set(data.map(item => item.category)))
-        .filter(category => category && category.trim() !== '')
+      const uniqueCategories = Array.from(new Set((data || []).map(item => item.category)))
+        .filter(Boolean)
+        .map(category => category!.trim())
+        .filter(category => category.length > 0)
         .sort()
 
       setDistinctCategories(uniqueCategories)
-    } catch (error) {
-      console.error('Error fetching distinct categories:', error)
+    } catch (err) {
+      console.error('Error fetching distinct categories:', err)
     }
-  }
+  }, [businessId, businessLoading])
 
-  // Add new product
-  const addProduct = async (newProduct: NewProduct) => {
+  const addProduct = async (newProduct: NewProduct, scopedBusinessId?: number) => {
+    const effectiveBusinessId = scopedBusinessId ?? businessId
+    if (effectiveBusinessId == null) {
+      throw new Error('No business selected for creating products')
+    }
+
     try {
       const productId = generateUUID()
       const productData = transformFormToProductData(newProduct, productId)
-
-      const { data, error } = await supabase
-        .from('products')
-        .insert([productData])
-        .select()
-
-      if (error) {
-        throw error
+      const productDataWithBusiness = {
+        ...productData,
+        business_id: effectiveBusinessId
       }
 
-      // Update local state
-      setProducts(prevProducts => [...prevProducts, productData])
-      setTotalProducts(prevTotal => prevTotal + 1)
-      
-      // Refresh categories list
-      fetchDistinctCategories()
+      const { data, error: insertError } = await supabase
+        .from('products')
+        .insert([productDataWithBusiness])
+        .select()
 
-      return data[0]
-    } catch (error) {
-      console.error('Error adding product:', error)
-      throw error
+      if (insertError) {
+        throw insertError
+      }
+
+      const insertedProduct = data?.[0]
+      if (insertedProduct) {
+        setProducts(prev => [...prev, insertedProduct])
+        setTotalProducts(prevTotal => prevTotal + 1)
+      }
+
+      await fetchDistinctCategories(effectiveBusinessId)
+      return insertedProduct
+    } catch (err) {
+      console.error('Error adding product:', err)
+      throw err
     }
   }
 
-  // Update existing product
   const updateProduct = async (productId: string, updatedProduct: NewProduct) => {
+    if (businessId == null) {
+      throw new Error('No business selected for updating products')
+    }
+
     try {
       const productData = transformFormToProductData(updatedProduct)
 
-      const { data, error } = await supabase
+      const { data, error: updateError } = await supabase
         .from('products')
         .update(productData)
         .eq('product_id', productId)
+        .eq('business_id', businessId)
         .select()
 
-      if (error) {
-        throw error
+      if (updateError) {
+        throw updateError
       }
 
-      // Update local state
-      setProducts(products.map(p => 
-        p.product_id === productId ? data[0] : p
-      ))
-      
-      // Refresh categories list
-      fetchDistinctCategories()
+      const updatedRecord = data?.[0]
+      if (updatedRecord) {
+        setProducts(prev => prev.map(p => (p.product_id === productId ? updatedRecord : p)))
+      }
 
-      return data[0]
-    } catch (error) {
-      console.error('Error updating product:', error)
-      throw error
+      await fetchDistinctCategories(businessId)
+      return updatedRecord
+    } catch (err) {
+      console.error('Error updating product:', err)
+      throw err
     }
   }
 
-  // Delete product
   const deleteProduct = async (productId: string) => {
+    if (businessId == null) {
+      throw new Error('No business selected for deleting products')
+    }
+
     try {
-      const { error } = await supabase
+      const { error: deleteError } = await supabase
         .from('products')
         .delete()
         .eq('product_id', productId)
+        .eq('business_id', businessId)
 
-      if (error) {
-        throw error
+      if (deleteError) {
+        throw deleteError
       }
 
-      // Update local state
-      setProducts(products.filter(p => p.product_id !== productId))
+      setProducts(prev => prev.filter(p => p.product_id !== productId))
       setTotalProducts(prevTotal => Math.max(0, prevTotal - 1))
-    } catch (error) {
-      console.error('Error deleting product:', error)
-      throw error
+      await fetchDistinctCategories(businessId)
+    } catch (err) {
+      console.error('Error deleting product:', err)
+      throw err
     }
   }
 
-  // Search handlers
   const handleSearchSubmit = () => {
     setCurrentPage(1)
     fetchProducts(1, itemsPerPage, searchTerm, selectedCategory)
   }
 
-  const handleSearchKeyPress = (e: React.KeyboardEvent) => {
+  const handleSearchKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleSearchSubmit()
     }
   }
 
-  // Pagination handlers
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= Math.ceil(totalProducts / itemsPerPage)) {
       fetchProducts(newPage, itemsPerPage, searchTerm, selectedCategory)
@@ -272,44 +319,38 @@ export const useProductsManagement = () => {
     fetchProducts(1, newItemsPerPage, searchTerm, selectedCategory)
   }
 
-  // Category suggestions
   const getCategorySuggestions = (input: string) => {
     if (!input || input.length < 2) return []
-    
-    return distinctCategories.filter(category => 
-      category.toLowerCase().includes(input.toLowerCase()) ||
-      input.toLowerCase().includes(category.toLowerCase()) ||
-      // Check for similar words (simple similarity check)
-      category.toLowerCase().split(' ').some(word => 
-        word.includes(input.toLowerCase()) || input.toLowerCase().includes(word)
+
+    return distinctCategories
+      .filter(category =>
+        category.toLowerCase().includes(input.toLowerCase()) ||
+        input.toLowerCase().includes(category.toLowerCase()) ||
+        category.toLowerCase().split(' ').some(word =>
+          word.includes(input.toLowerCase()) || input.toLowerCase().includes(word)
+        )
       )
-    ).slice(0, 5) // Limit to 5 suggestions
+      .slice(0, 5)
   }
 
-  // Initialize
   useEffect(() => {
     fetchProducts()
     fetchDistinctCategories()
-  }, [])
+  }, [fetchProducts, fetchDistinctCategories])
 
   return {
-    // State
     products,
-    loading,
-    error,
+    loading: businessLoading || loading,
+    error: error ?? businessError ?? null,
     searchTerm,
     selectedCategory,
     currentPage,
     itemsPerPage,
     totalProducts,
     distinctCategories,
-    
-    // Setters
     setSearchTerm,
     setSelectedCategory,
     setError,
-    
-    // Functions
     fetchProducts,
     addProduct,
     updateProduct,

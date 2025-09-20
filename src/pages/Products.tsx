@@ -2,19 +2,25 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useRole } from '../contexts/RoleContext'
 import { useAuth } from '../contexts/AuthContext'
+import { useBusinessId } from '../hooks/useBusinessId'
 
-async function uploadProductImage(file: File, productId: string) {
-  console.log("🔄 Starting image upload for product:", productId)
-  console.log("📁 File details:", {
+async function uploadProductImage(file: File, productId: string, businessId: number | null) {
+  console.log("?? Starting image upload for product:", productId)
+  console.log("?? File details:", {
     name: file.name,
     size: file.size,
     type: file.type
   })
   
+  if (businessId == null) {
+    console.error('Cannot upload product image without an active business')
+    return null
+  }
+
   try {
     // Upload original file directly to Supabase Storage
     const fileName = `product-images/${productId}.${file.name.split('.').pop()}`
-    console.log("📤 Uploading to Supabase Storage:", fileName)
+    console.log("?? Uploading to Supabase Storage:", fileName)
     
     const { error: uploadError } = await supabase.storage
       .from('products')
@@ -24,7 +30,7 @@ async function uploadProductImage(file: File, productId: string) {
       })
     
     if (uploadError) {
-      console.error("❌ Upload failed:", uploadError)
+      console.error("? Upload failed:", uploadError)
       return null
     }
     
@@ -33,25 +39,26 @@ async function uploadProductImage(file: File, productId: string) {
       .from('products')
       .getPublicUrl(fileName)
     
-    console.log("✅ Image uploaded successfully:", publicUrl)
+    console.log("? Image uploaded successfully:", publicUrl)
     
     // Update database with public URL
-    console.log("💾 Updating database with public URL...")
+    console.log("?? Updating database with public URL...")
     const { error: dbError } = await supabase
       .from('products')
       .update({ image_url: publicUrl })
       .eq('product_id', productId)
+      .eq('business_id', businessId)
 
     if (dbError) {
-      console.error("❌ DB update failed:", dbError)
+      console.error("? DB update failed:", dbError)
       return null
     } else {
-      console.log("✅ Database updated with public URL")
+      console.log("? Database updated with public URL")
     }
 
     return publicUrl
   } catch (error) {
-    console.error("💥 Unexpected error during upload:", error)
+    console.error("?? Unexpected error during upload:", error)
     return null
   }
 }
@@ -68,7 +75,7 @@ interface Product {
   image_url?: string
   last_updated: string
   weight_unit?: string | null // e.g., 'kg', 'g', 'lb', 'oz'
-  price_per_unit?: number | null // price per weight unit (e.g., 3.00 for €3 per kg)
+  price_per_unit?: number | null // price per weight unit (e.g., 3.00 for ?3 per kg)
   is_weighted?: boolean // true if item is sold by weight
   description?: string
   sku?: string
@@ -80,6 +87,7 @@ interface Product {
 const Products = () => {
   const { hasPermission } = useRole()
   const { user } = useAuth()
+const { businessId, businessLoading } = useBusinessId()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -142,15 +150,23 @@ const Products = () => {
   const [allProducts, setAllProducts] = useState<Product[]>([])
 
   // Cache state for optimization
-  const [suggestionsCache, setSuggestionsCache] = useState<{data: {product_id: any, name: any, category: any}[], timestamp: number} | null>(null)
-  const [summaryStatsCache, setSummaryStatsCache] = useState<{data: any, timestamp: number} | null>(null)
+  const [suggestionsCache, setSuggestionsCache] = useState<{data: {product_id: any, name: any, category: any}[], timestamp: number, businessId: number} | null>(null)
+  const [summaryStatsCache, setSummaryStatsCache] = useState<{data: any, timestamp: number, businessId: number} | null>(null)
   const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
   // Fetch all products for search suggestions (not paginated)
   const fetchAllProductsForSuggestions = async (forceRefresh = false) => {
-    // Check cache first
-    if (!forceRefresh && suggestionsCache && (Date.now() - suggestionsCache.timestamp) < CACHE_DURATION) {
-      // Convert cached data to full Product objects for allProducts state
+    if (businessId == null) {
+      setAllProducts([])
+      return
+    }
+
+    if (
+      !forceRefresh &&
+      suggestionsCache &&
+      suggestionsCache.businessId === businessId &&
+      (Date.now() - suggestionsCache.timestamp) < CACHE_DURATION
+    ) {
       const fullProducts = suggestionsCache.data.map(item => ({
         ...item,
         price: 0,
@@ -169,6 +185,7 @@ const Products = () => {
       const { data, error } = await supabase
         .from('products')
         .select('product_id, name, category')
+        .eq('business_id', businessId)
         .order('name', { ascending: true })
 
       if (error) {
@@ -177,7 +194,6 @@ const Products = () => {
       }
 
       const products = data || []
-      // Convert to full Product objects for allProducts state
       const fullProducts = products.map(item => ({
         ...item,
         price: 0,
@@ -188,20 +204,27 @@ const Products = () => {
         created_at: '',
         updated_at: ''
       })) as Product[]
-      
+
       setAllProducts(fullProducts)
-      setSuggestionsCache({ data: products, timestamp: Date.now() })
+      setSuggestionsCache({ data: products, timestamp: Date.now(), businessId })
     } catch (error) {
       console.error('Error fetching all products for suggestions:', error)
     }
   }
 
+
   // Fetch distinct categories from database
   const fetchDistinctCategories = async () => {
+    if (businessId == null) {
+      setDistinctCategories([])
+      return
+    }
+
     try {
       const { data, error } = await supabase
         .from('products')
         .select('category')
+        .eq('business_id', businessId)
         .not('category', 'is', null)
         .not('category', 'eq', '')
 
@@ -210,7 +233,6 @@ const Products = () => {
         return
       }
 
-      // Extract unique categories and sort them
       const uniqueCategories = Array.from(new Set(data.map(item => item.category)))
         .filter(category => category && category.trim() !== '')
         .sort()
@@ -222,11 +244,24 @@ const Products = () => {
   }
 
   useEffect(() => {
-    fetchProducts()
+    if (businessLoading) {
+      return
+    }
+
+    if (businessId == null) {
+      setProducts([])
+      setAllProducts([])
+      setDistinctCategories([])
+      setSummaryStats({ totalProducts: 0, inStock: 0, lowStock: 0, outOfStock: 0 })
+      setTotalProducts(0)
+      return
+    }
+
+    fetchProducts(1, itemsPerPage, searchTerm, selectedCategory, activeSummaryFilter)
     fetchDistinctCategories()
-    fetchAllProductsForSuggestions()
-    fetchSummaryStats()
-  }, [])
+    fetchAllProductsForSuggestions(true)
+    fetchSummaryStats(true)
+  }, [businessId, businessLoading])
 
   // Debug modal state
   useEffect(() => {
@@ -281,35 +316,46 @@ const Products = () => {
 
   // Only fetch when category changes (not on every search keystroke)
   useEffect(() => {
+    if (businessLoading || businessId == null) {
+      return
+    }
+
     setCurrentPage(1) // Reset to first page
-    fetchProducts(1, itemsPerPage, searchTerm, selectedCategory)
-  }, [selectedCategory])
+    fetchProducts(1, itemsPerPage, searchTerm, selectedCategory, activeSummaryFilter)
+  }, [selectedCategory, businessId, businessLoading])
 
   const fetchProducts = async (page: number = currentPage, perPage: number = itemsPerPage, search: string = searchTerm, category: string = selectedCategory, summaryFilter: string | null = null) => {
+    if (businessLoading) {
+      return
+    }
+
+    if (businessId == null) {
+      setProducts([])
+      setTotalProducts(0)
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       setError(null)
-      
-      // If summary filter is active, fetch all products and do client-side pagination
+
       if (summaryFilter && summaryFilter !== 'totalProducts') {
-        // Fetch all products first
         let allDataQuery = supabase
           .from('products')
           .select('*')
+          .eq('business_id', businessId)
           .order('product_id', { ascending: true })
 
-        // Apply search filter
         if (search && search.trim()) {
           const searchFilter = `name.ilike.%${search.trim()}%,category.ilike.%${search.trim()}%`
           allDataQuery = allDataQuery.or(searchFilter)
         }
 
-        // Apply category filter
         if (category && category !== 'all') {
           allDataQuery = allDataQuery.eq('category', category)
         }
 
-        // Apply summary filter (stock status)
         if (summaryFilter === 'outOfStock') {
           allDataQuery = allDataQuery.eq('stock_quantity', 0)
         }
@@ -322,46 +368,41 @@ const Products = () => {
 
         let filteredData = allData || []
 
-        // Apply client-side filtering for inStock and lowStock
         if (summaryFilter === 'inStock') {
           filteredData = filteredData.filter(p => p.stock_quantity > p.reorder_level)
         } else if (summaryFilter === 'lowStock') {
           filteredData = filteredData.filter(p => p.stock_quantity <= p.reorder_level && p.stock_quantity > 0)
         }
 
-        // Set total count based on filtered results
         setTotalProducts(filteredData.length)
 
-        // Apply client-side pagination
         const offset = (page - 1) * perPage
         const paginatedData = filteredData.slice(offset, offset + perPage)
-        
+
         setProducts(paginatedData)
       } else {
-        // Normal server-side pagination for no summary filter or totalProducts filter
         let countQuery = supabase
           .from('products')
           .select('product_id', { count: 'exact', head: true })
+          .eq('business_id', businessId)
 
         let dataQuery = supabase
           .from('products')
           .select('*')
+          .eq('business_id', businessId)
           .order('product_id', { ascending: true })
 
-        // Apply search filter
         if (search && search.trim()) {
           const searchFilter = `name.ilike.%${search.trim()}%,category.ilike.%${search.trim()}%`
           countQuery = countQuery.or(searchFilter)
           dataQuery = dataQuery.or(searchFilter)
         }
 
-        // Apply category filter
         if (category && category !== 'all') {
           countQuery = countQuery.eq('category', category)
           dataQuery = dataQuery.eq('category', category)
         }
 
-        // Get total count with filters
         const { count, error: countError } = await countQuery
 
         if (countError) {
@@ -370,10 +411,8 @@ const Products = () => {
 
         setTotalProducts(count || 0)
 
-        // Calculate offset for pagination
         const offset = (page - 1) * perPage
-        
-        // Fetch products with pagination and filters
+
         const { data, error: fetchError } = await dataQuery.range(offset, offset + perPage - 1)
 
         if (fetchError) {
@@ -386,17 +425,26 @@ const Products = () => {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch products'
       setError(errorMessage)
       console.error('Error fetching products:', err)
-      // Show error to user
       alert(`Products loading error: ${errorMessage}. Please check your database permissions.`)
     } finally {
       setLoading(false)
     }
   }
 
+
   // Fetch summary statistics for all products (not filtered by search/category)
   const fetchSummaryStats = async (forceRefresh = false) => {
-    // Check cache first
-    if (!forceRefresh && summaryStatsCache && (Date.now() - summaryStatsCache.timestamp) < CACHE_DURATION) {
+    if (businessId == null) {
+      setSummaryStats({ totalProducts: 0, inStock: 0, lowStock: 0, outOfStock: 0 })
+      return
+    }
+
+    if (
+      !forceRefresh &&
+      summaryStatsCache &&
+      summaryStatsCache.businessId === businessId &&
+      (Date.now() - summaryStatsCache.timestamp) < CACHE_DURATION
+    ) {
       setSummaryStats(summaryStatsCache.data)
       return
     }
@@ -405,6 +453,7 @@ const Products = () => {
       const { data, error } = await supabase
         .from('products')
         .select('stock_quantity, reorder_level')
+        .eq('business_id', businessId)
 
       if (error) {
         throw error
@@ -424,12 +473,13 @@ const Products = () => {
         }
 
         setSummaryStats(stats)
-        setSummaryStatsCache({ data: stats, timestamp: Date.now() })
+        setSummaryStatsCache({ data: stats, timestamp: Date.now(), businessId })
       }
     } catch (err) {
       console.error('Error fetching summary stats:', err)
     }
   }
+
 
   // Handle summary card clicks to filter the table
   const handleSummaryCardClick = (filterType: string) => {
@@ -544,26 +594,25 @@ const Products = () => {
 
   // Fetch product insights/sales analytics
   const fetchProductInsights = async (product: Product) => {
+    if (businessId == null) {
+      setProductInsights(null)
+      return
+    }
+
     try {
       setInsightsLoading(true)
       setError(null)
 
       console.log('Fetching insights for product:', product.product_id, product.name)
 
-      // Use the sales data directly from the product record
       const totalSales = product.sales_count || 0
       const totalRevenue = product.total_revenue || 0
       const lastSoldDate = product.last_sold_date
-
-      // Calculate average sales per day (simple calculation)
       const averageSalesPerDay = totalSales > 0 ? (totalSales / 30).toFixed(1) : 0
-
-      // Calculate profit margin (assuming cost is 60% of price for demo)
       const estimatedCost = totalRevenue * 0.6
       const estimatedProfit = totalRevenue - estimatedCost
       const profitMargin = totalRevenue > 0 ? (estimatedProfit / totalRevenue) * 100 : 0
 
-      // Fetch all sales data for this product for charts
       const { data: allSalesData, error: allSalesError } = await supabase
         .from('sale_items')
         .select(`
@@ -574,18 +623,22 @@ const Products = () => {
             total_amount,
             payment_method,
             customers (name),
-            users (username)
+            users (username),
+            business_id
           )
         `)
         .eq('product_id', product.product_id)
+        .eq('sales.business_id', businessId)
         .order('sales.datetime', { ascending: false })
 
-      console.log('All sales query result:', { data: allSalesData, error: allSalesError })
+      if (allSalesError) {
+        throw allSalesError
+      }
 
-      // Get recent sales (last 10) for the table
+      console.log('All sales query result:', { data: allSalesData })
+
       const recentSalesData = allSalesData?.slice(0, 10) || []
 
-      // Get recent sales list
       const recentSalesList = recentSalesData?.map(item => ({
         date: item.sales ? new Date(item.sales.datetime).toLocaleDateString() : 'Unknown',
         time: item.sales ? new Date(item.sales.datetime).toLocaleTimeString() : 'Unknown',
@@ -596,16 +649,12 @@ const Products = () => {
         cashier: item.sales?.users?.username || 'Unknown'
       })) || []
 
-      // Calculate total quantity sold from recent sales data
-      const totalQuantitySold = recentSalesData?.reduce((sum, item) => {
-        return sum + (item.weight || item.quantity)
-      }, 0) || 0
+      const totalQuantitySold = recentSalesData?.reduce((sum, item) => sum + (item.weight || item.quantity), 0) || 0
 
-      // Get top selling days (last 30 days)
       const thirtyDaysAgo = new Date()
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-      
-      const recentSales = recentSalesData?.filter(item => 
+
+      const recentSales = recentSalesData?.filter(item =>
         item.sales && new Date(item.sales.datetime) >= thirtyDaysAgo
       ) || []
 
@@ -618,11 +667,10 @@ const Products = () => {
       }, {} as Record<string, number>)
 
       const topSellingDays = Object.entries(salesByDay)
-        .sort(([,a], [,b]) => b - a)
+        .sort(([, a], [, b]) => b - a)
         .slice(0, 5)
         .map(([date, count]) => ({ date, count }))
 
-      // Process data for charts
       const chartData = processChartData(allSalesData || [])
 
       console.log('Calculated insights:', {
@@ -660,6 +708,7 @@ const Products = () => {
       setInsightsLoading(false)
     }
   }
+
 
   // Handle product row click to show insights
   const handleProductClick = (product: Product) => {
@@ -841,43 +890,51 @@ const Products = () => {
     console.log('Form submitted, newProduct:', newProduct)
     setIsSubmitting(true)
 
+    if (businessId == null) {
+      setError('Please select a business before adding products')
+      setIsSubmitting(false)
+      return
+    }
+
     try {
       const productId = generateUUID()
       console.log('Generated product ID:', productId)
-      
-      // Transform and validate form data
+
       const productData = transformFormToProductData(newProduct, productId)
-      console.log('Inserting product data:', productData)
-      
+      const productPayload = { ...productData, business_id: businessId }
+      console.log('Inserting product data:', productPayload)
+
       const { data, error } = await supabase
         .from('products')
-        .insert([productData])
+        .insert([productPayload])
         .select()
 
       if (error) {
         console.error('Supabase error:', error)
         throw error
       }
-      
+
+      const insertedProduct = data?.[0]
+      if (!insertedProduct) {
+        throw new Error('Product insertion returned no data')
+      }
+
       console.log('Product added successfully!')
 
-      // Upload image if selected
       if (selectedImage) {
         const imageUrl = await handleImageUpload(productId)
         if (imageUrl) {
-          // Update the local products list with the image URL
-          const updatedProduct = { ...data[0], image_url: imageUrl }
+          const updatedProduct = { ...insertedProduct, image_url: imageUrl }
           setProducts(prevProducts => [...prevProducts, updatedProduct])
+        } else {
+          setProducts(prevProducts => [...prevProducts, insertedProduct])
         }
       } else {
-        // If no image, just add the product to the list
-        setProducts(prevProducts => [...prevProducts, data[0]])
+        setProducts(prevProducts => [...prevProducts, insertedProduct])
       }
-      
-      // Update total products count
+
       setTotalProducts(prevTotal => prevTotal + 1)
 
-      // Reset form and close modal
       setNewProduct({
         product_name: '',
         category: '',
@@ -895,20 +952,15 @@ const Products = () => {
       setSelectedImage(null)
       setImagePreview(null)
       setShowAddModal(false)
-      
-      // Refresh categories list in case a new category was added
+
       fetchDistinctCategories()
-      // Refresh all products for suggestions
       fetchAllProductsForSuggestions(true)
-      // Refresh summary statistics
       fetchSummaryStats(true)
     } catch (error) {
       console.error('Error adding product:', error)
-      
-      // Handle specific error types
+
       let errorMessage = 'Failed to add product'
       if (error instanceof Error && error.message) {
-        // Check for validation errors first
         if (error.message.includes('is required') || error.message.includes('must be a valid')) {
           errorMessage = error.message
         } else if (error.message.includes('duplicate key value violates unique constraint')) {
@@ -921,22 +973,27 @@ const Products = () => {
           errorMessage = `Failed to add product: ${error.message}`
         }
       }
-      
+
       setError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
   }
 
+
   const handleEditProduct = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingProduct) return
+
+    if (businessId == null) {
+      setError('Please select a business before updating products')
+      return
+    }
 
     setIsSubmitting(true)
     setError(null)
 
     try {
-      // Transform and validate form data
       console.log('Editing product data:', newProduct)
       const productData = transformFormToProductData(newProduct, undefined, true)
       console.log('Transformed product data:', productData)
@@ -945,6 +1002,7 @@ const Products = () => {
         .from('products')
         .update(productData)
         .eq('product_id', editingProduct.product_id)
+        .eq('business_id', businessId)
         .select()
 
       if (error) {
@@ -953,37 +1011,34 @@ const Products = () => {
         throw error
       }
 
-      // Upload image if selected
-      let updatedProduct = data[0]
+      let updatedProduct = data?.[0]
+      if (!updatedProduct) {
+        throw new Error('Product update returned no data')
+      }
+
       if (selectedImage) {
         const imageUrl = await handleImageUpload(editingProduct.product_id)
         if (imageUrl) {
-          updatedProduct = { ...data[0], image_url: imageUrl }
+          updatedProduct = { ...updatedProduct, image_url: imageUrl }
         }
       }
 
-      // Update the products list
-      setProducts(products.map(p => 
+      setProducts(products.map(p =>
         p.product_id === editingProduct.product_id ? updatedProduct : p
       ))
-      
+
       resetForm()
       setShowEditModal(false)
       setEditingProduct(null)
-      
-      // Refresh categories list in case a category was changed
+
       fetchDistinctCategories()
-      // Refresh all products for suggestions
       fetchAllProductsForSuggestions(true)
-      // Refresh summary statistics
       fetchSummaryStats(true)
     } catch (err) {
       console.error('Failed to update product:', err)
-      
-      // Handle specific error types
+
       let errorMessage = 'Failed to update product'
       if (err instanceof Error && err.message) {
-        // Check for validation errors first
         if (err.message.includes('is required') || err.message.includes('must be a valid')) {
           errorMessage = err.message
         } else if (err.message.includes('violates check constraint')) {
@@ -994,45 +1049,48 @@ const Products = () => {
           errorMessage = `Failed to update product: ${err.message}`
         }
       }
-      
+
       setError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
   }
 
+
   const handleDeleteProduct = async (productId: string) => {
+    if (businessId == null) {
+      setError('Please select a business before deleting products')
+      return
+    }
+
     try {
-      console.log("🗑️ Starting delete for product:", productId)
-      
-      // Delete the product from the database
+      console.log("??? Starting delete for product:", productId)
+
       const { error } = await supabase
         .from('products')
         .delete()
         .eq('product_id', productId)
+        .eq('business_id', businessId)
 
       if (error) {
-        console.error("❌ Error deleting product:", error)
+        console.error("?? Error deleting product:", error)
         throw error
       }
-      console.log("✅ Product deleted successfully")
+      console.log("? Product deleted successfully")
 
-      // Remove from local state
       setProducts(products.filter(p => p.product_id !== productId))
       setProductToDelete(null)
-      
-      // Update total products count
+
       setTotalProducts(prevTotal => Math.max(0, prevTotal - 1))
-      
-      // Refresh all products for suggestions
+
       fetchAllProductsForSuggestions(true)
-      // Refresh summary statistics
       fetchSummaryStats(true)
     } catch (err) {
-      console.error("💥 Delete failed:", err)
+      console.error("? Delete failed:", err)
       setError(err instanceof Error ? err.message : 'Failed to delete product')
     }
   }
+
 
   const resetForm = () => {
     setNewProduct({
@@ -1093,9 +1151,13 @@ const Products = () => {
 
   const handleImageUpload = async (productId: string) => {
     if (!selectedImage) return null
-    
+    if (businessId == null) {
+      console.error('Cannot upload image without selecting a business')
+      return null
+    }
+
     try {
-      const imageUrl = await uploadProductImage(selectedImage, productId)
+      const imageUrl = await uploadProductImage(selectedImage, productId, businessId)
       return imageUrl
     } catch (error) {
       console.error('Image upload failed:', error)
@@ -1663,16 +1725,16 @@ const Products = () => {
                                 gap: '8px'
                               }}>
                                 <span>{suggestion.product.category}</span>
-                                <span>•</span>
+                                <span>?</span>
                                 <span style={{ fontWeight: '500', color: '#059669' }}>
                                   {suggestion.product.is_weighted 
-                                    ? `€${suggestion.product.price_per_unit}/${suggestion.product.weight_unit}`
-                                    : `€${suggestion.product.price}`
+                                    ? `?${suggestion.product.price_per_unit}/${suggestion.product.weight_unit}`
+                                    : `?${suggestion.product.price}`
                                   }
                                 </span>
                                 {suggestion.product.sku && (
                                   <>
-                                    <span>•</span>
+                                    <span>?</span>
                                     <span>SKU: {suggestion.product.sku}</span>
                                   </>
                                 )}
@@ -1951,9 +2013,9 @@ const Products = () => {
                       <td style={{ padding: '16px', borderRight: '2px solid rgba(125, 141, 134, 0.25)' }}>
                         <p style={{ fontSize: '14px', fontWeight: '600', color: '#3e3f29', margin: 0 }}>
                           {product.is_weighted && product.price_per_unit && product.weight_unit ? (
-                            `€${product.price_per_unit.toFixed(2)}/${product.weight_unit}`
+                            `?${product.price_per_unit.toFixed(2)}/${product.weight_unit}`
                           ) : (
-                            `€${product.price.toFixed(2)}`
+                            `?${product.price.toFixed(2)}`
                           )}
                         </p>
                         {product.is_weighted && (
@@ -3711,7 +3773,7 @@ const Products = () => {
                         <i className="fas fa-euro-sign"></i>
                       </div>
                       <div style={{ fontSize: '32px', fontWeight: '700', color: '#166534', marginBottom: '8px' }}>
-                        €{productInsights.totalRevenue.toFixed(2)}
+                        ?{productInsights.totalRevenue.toFixed(2)}
                       </div>
                       <div style={{ fontSize: '14px', color: '#166534', fontWeight: '500' }}>Total Revenue</div>
                     </div>
@@ -3876,7 +3938,7 @@ const Products = () => {
                                       borderRadius: '2px 2px 0 0',
                                       minHeight: '2px'
                                     }}
-                                    title={`${day.date}: ${day.sales} sales, €${day.revenue.toFixed(2)}`}
+                                    title={`${day.date}: ${day.sales} sales, ?${day.revenue.toFixed(2)}`}
                                   />
                                   <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '4px', textAlign: 'center' }}>
                                     {day.day}
@@ -3910,7 +3972,7 @@ const Products = () => {
                                       borderRadius: '4px 4px 0 0',
                                       minHeight: '2px'
                                     }}
-                                    title={`${week.week}: ${week.sales} sales, €${week.revenue.toFixed(2)}`}
+                                    title={`${week.week}: ${week.sales} sales, ?${week.revenue.toFixed(2)}`}
                                   />
                                   <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '4px', textAlign: 'center' }}>
                                     {week.week}
@@ -3944,7 +4006,7 @@ const Products = () => {
                                       borderRadius: '4px 4px 0 0',
                                       minHeight: '2px'
                                     }}
-                                    title={`${month.month}: ${month.sales} sales, €${month.revenue.toFixed(2)}`}
+                                    title={`${month.month}: ${month.sales} sales, ?${month.revenue.toFixed(2)}`}
                                   />
                                   <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '4px', textAlign: 'center' }}>
                                     {month.month.split(' ')[0]}
@@ -4008,7 +4070,7 @@ const Products = () => {
                       <div>
                         <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Price</div>
                         <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>
-                          €{selectedProductForInsights.is_weighted 
+                          ?{selectedProductForInsights.is_weighted 
                             ? `${selectedProductForInsights.price_per_unit}/${selectedProductForInsights.weight_unit}`
                             : selectedProductForInsights.price.toFixed(2)
                           }
@@ -4036,7 +4098,7 @@ const Products = () => {
                         <strong>Average sales per day:</strong> {productInsights.averageSalesPerDay.toFixed(1)}
                       </div>
                       <div style={{ marginBottom: '8px' }}>
-                        <strong>Estimated profit:</strong> €{productInsights.estimatedProfit.toFixed(2)}
+                        <strong>Estimated profit:</strong> ?{productInsights.estimatedProfit.toFixed(2)}
                       </div>
                       <div style={{ marginBottom: '8px' }}>
                         <strong>Last sold:</strong> {productInsights.lastSoldDate 
@@ -4045,7 +4107,7 @@ const Products = () => {
                         }
                       </div>
                       <div>
-                        <strong>Price per unit:</strong> €{selectedProductForInsights.is_weighted 
+                        <strong>Price per unit:</strong> ?{selectedProductForInsights.is_weighted 
                           ? `${selectedProductForInsights.price_per_unit}/${selectedProductForInsights.weight_unit}`
                           : selectedProductForInsights.price.toFixed(2)
                         }
@@ -4122,7 +4184,7 @@ const Products = () => {
                                 {sale.quantity} {sale.unit}
                               </td>
                               <td style={{ padding: '8px 0', color: '#3e3f29' }}>
-                                €{sale.price.toFixed(2)}
+                                ?{sale.price.toFixed(2)}
                               </td>
                               <td style={{ padding: '8px 0', color: '#3e3f29' }}>
                                 {sale.customer}
@@ -4188,7 +4250,7 @@ const Products = () => {
                       <strong>Reorder Level:</strong> {selectedProductForInsights.reorder_level}
                     </div>
                     <div>
-                      <strong>Price:</strong> €{selectedProductForInsights.is_weighted 
+                      <strong>Price:</strong> ?{selectedProductForInsights.is_weighted 
                         ? `${selectedProductForInsights.price_per_unit}/${selectedProductForInsights.weight_unit}`
                         : selectedProductForInsights.price.toFixed(2)
                       }
