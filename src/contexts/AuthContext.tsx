@@ -16,6 +16,7 @@ interface AuthContextType {
   user: User | null
   supabaseUser: SupabaseUser | null
   login: (username: string, password: string) => Promise<boolean>
+  register: (username: string, password: string, businessName: string) => Promise<boolean>
   logout: () => void
   loading: boolean
   currentUserId: string | undefined
@@ -194,6 +195,90 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
+  const register = async (username: string, password: string, businessName: string): Promise<boolean> => {
+    try {
+      setLoading(true)
+      
+      // Check if username already exists
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('user_id')
+        .eq('username', username)
+        .single()
+
+      if (existingUser) {
+        console.error('Username already exists')
+        return false
+      }
+
+      // Create business first
+      const { data: businessData, error: businessError } = await supabase
+        .from('business_info')
+        .insert({
+          business_name: businessName,
+          business_type: 'Retail Store',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select('business_id')
+        .single()
+
+      if (businessError || !businessData) {
+        console.error('Error creating business:', businessError)
+        return false
+      }
+
+      // Create user with the business_id
+      const hashedPassword = hashPassword(password)
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .insert({
+          username: username,
+          password_hash: hashedPassword,
+          role: 'owner',
+          active: true,
+          business_id: businessData.business_id,
+          created_at: new Date().toISOString()
+        })
+        .select('*')
+        .single()
+
+      if (userError || !userData) {
+        console.error('Error creating user:', userError)
+        // Clean up business if user creation failed
+        await supabase
+          .from('business_info')
+          .delete()
+          .eq('business_id', businessData.business_id)
+        return false
+      }
+
+      // Set the user as logged in
+      const newUser: User = {
+        user_id: userData.user_id,
+        username: userData.username,
+        role: userData.role,
+        active: userData.active,
+        icon: userData.icon,
+        business_id: userData.business_id
+      }
+
+      setUser(newUser)
+      localStorage.setItem('pos_user', JSON.stringify(newUser))
+      localStorage.setItem('current_business_id', businessData.business_id.toString())
+      localStorage.setItem('lastLogin', new Date().toLocaleString())
+      
+      // Redirect to dashboard after successful registration
+      window.location.href = '/'
+      
+      return true
+    } catch (error) {
+      console.error('Registration error:', error)
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const logout = async () => {
     try {
@@ -218,6 +303,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     user,
     supabaseUser,
     login,
+    register,
     logout,
     loading,
     currentUserId: supabaseUser?.id || user?.user_id?.toString()

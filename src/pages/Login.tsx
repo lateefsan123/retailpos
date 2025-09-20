@@ -4,9 +4,11 @@ import { useAuth } from '../contexts/AuthContext'
 const Login = () => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [businessName, setBusinessName] = useState('')
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const { login, loading } = useAuth()
+  const [isRegisterMode, setIsRegisterMode] = useState(false)
+  const { login, register, loading } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -17,9 +19,19 @@ const Login = () => {
       return
     }
 
-    const success = await login(username, password)
+    if (isRegisterMode && !businessName) {
+      setError('Please enter your business name')
+      return
+    }
+
+    const success = isRegisterMode 
+      ? await register(username, password, businessName)
+      : await login(username, password)
+      
     if (!success) {
-      setError('Invalid username or password')
+      setError(isRegisterMode 
+        ? 'Registration failed. Username might already exist.' 
+        : 'Invalid username or password')
     }
   }
 
@@ -67,7 +79,7 @@ const Login = () => {
             marginBottom: '8px',
             lineHeight: '1.2'
           }}>
-            Welcome back!
+{isRegisterMode ? 'Create Your Account' : 'Welcome back!'}
           </h1>
           <p style={{ 
             fontSize: '16px', 
@@ -75,7 +87,10 @@ const Login = () => {
             margin: 0,
             lineHeight: '1.5'
           }}>
-            Your business, your team, your flow — all in one place.
+{isRegisterMode 
+              ? 'Get started with your own POS system in minutes.' 
+              : 'Your business, your team, your flow — all in one place.'
+            }
           </p>
         </div>
         
@@ -191,6 +206,50 @@ const Login = () => {
             </div>
           </div>
 
+          {/* Business Name Field - Only show in register mode */}
+          {isRegisterMode && (
+            <div>
+              <label htmlFor="businessName" style={{ 
+                display: 'block', 
+                fontSize: '14px', 
+                fontWeight: '600', 
+                color: '#374151', 
+                marginBottom: '8px' 
+              }}>
+                Business Name
+              </label>
+              <input
+                id="businessName"
+                name="businessName"
+                type="text"
+                required={isRegisterMode}
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  color: '#1a1a1a',
+                  background: '#ffffff',
+                  outline: 'none',
+                  transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                  boxSizing: 'border-box'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#3b82f6'
+                  e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)'
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#d1d5db'
+                  e.target.style.boxShadow = 'none'
+                }}
+                placeholder="Enter your business name"
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+          )}
 
           {error && (
             <div style={{
@@ -237,13 +296,37 @@ const Login = () => {
                   marginRight: '8px', 
                   animation: 'spin 1s linear infinite' 
                 }}></i>
-                Signing in...
+                {isRegisterMode ? 'Creating Account...' : 'Signing in...'}
               </div>
             ) : (
-              'Log In'
+              isRegisterMode ? 'Create Account' : 'Log In'
             )}
           </button>
 
+          {/* Toggle between Login and Register */}
+          <div style={{ textAlign: 'center', marginTop: '16px' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setIsRegisterMode(!isRegisterMode)
+                setError('')
+                setBusinessName('')
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#3b82f6',
+                fontSize: '14px',
+                cursor: 'pointer',
+                textDecoration: 'underline'
+              }}
+            >
+              {isRegisterMode 
+                ? 'Already have an account? Log in' 
+                : "Don't have an account? Create one"
+              }
+            </button>
+          </div>
 
           {/* Last Used Info */}
           {localStorage.getItem('pos_user') && (

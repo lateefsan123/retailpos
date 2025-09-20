@@ -6,11 +6,9 @@ import { useAuth } from './AuthContext'
 interface BusinessContextType {
   currentBusiness: BusinessInfo | null
   currentBusinessId: number | null
-  businesses: BusinessInfo[]
-  switchBusiness: (businessId: number) => void
   loading: boolean
   error: string | null
-  refreshBusinesses: () => Promise<void>
+  refreshBusiness: () => Promise<void>
 }
 
 const BusinessContext = createContext<BusinessContextType | undefined>(undefined)
@@ -22,36 +20,13 @@ interface BusinessProviderProps {
 export const BusinessProvider = ({ children }: BusinessProviderProps) => {
   const { user, loading: authLoading } = useAuth()
   const [currentBusiness, setCurrentBusiness] = useState<BusinessInfo | null>(null)
-  const [businesses, setBusinesses] = useState<BusinessInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const determineBusiness = useCallback((businessList: BusinessInfo[]): BusinessInfo | null => {
-    if (!businessList.length) {
-      return null
-    }
-
-    const savedBusinessId = localStorage.getItem('current_business_id')
-    if (savedBusinessId) {
-      const parsedId = parseInt(savedBusinessId, 10)
-      const savedBusiness = businessList.find(business => business.business_id === parsedId)
-      if (savedBusiness) {
-        return savedBusiness
-      }
-    }
-
-    if (user?.business_id != null) {
-      const userBusiness = businessList.find(business => business.business_id === user.business_id)
-      if (userBusiness) {
-        return userBusiness
-      }
-    }
-
-    return businessList[0]
-  }, [user?.business_id])
-
-  const fetchBusinesses = useCallback(async () => {
-    if (authLoading) {
+  const loadUserBusiness = useCallback(async (): Promise<void> => {
+    if (!user?.business_id) {
+      setCurrentBusiness(null)
+      setLoading(false)
       return
     }
 
@@ -59,73 +34,43 @@ export const BusinessProvider = ({ children }: BusinessProviderProps) => {
       setLoading(true)
       setError(null)
 
-      let businessList: BusinessInfo[] = []
-
-      const { data, error: fetchError } = await supabase
+      const { data: business, error: fetchError } = await supabase
         .from('business_info')
         .select('*')
-        .order('name')
+        .eq('business_id', user.business_id)
+        .single()
 
       if (fetchError) {
         throw fetchError
       }
 
-      businessList = data ?? []
-
-      if (user?.business_id != null && !businessList.some(b => b.business_id === user.business_id)) {
-        const { data: userBusiness, error: userBusinessError } = await supabase
-          .from('business_info')
-          .select('*')
-          .eq('business_id', user.business_id)
-          .maybeSingle()
-
-        if (!userBusinessError && userBusiness) {
-          businessList = [...businessList, userBusiness].sort((a, b) => a.name.localeCompare(b.name))
-        }
-      }
-
-      setBusinesses(businessList)
-
-      const nextBusiness = determineBusiness(businessList)
-      setCurrentBusiness(nextBusiness)
-
-      if (nextBusiness) {
-        localStorage.setItem('current_business_id', nextBusiness.business_id.toString())
-      } else {
-        localStorage.removeItem('current_business_id')
-      }
+      setCurrentBusiness(business)
+      localStorage.setItem('current_business_id', business.business_id.toString())
     } catch (err) {
-      console.error('Error fetching businesses:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch businesses')
+      console.error('Error loading business:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load business')
+      setCurrentBusiness(null)
     } finally {
       setLoading(false)
     }
-  }, [authLoading, determineBusiness, user?.business_id])
+  }, [user])
 
-  const switchBusiness = (businessId: number) => {
-    const business = businesses.find(b => b.business_id === businessId)
-    if (business) {
-      setCurrentBusiness(business)
-      localStorage.setItem('current_business_id', businessId.toString())
-    }
-  }
-
-  const refreshBusinesses = async () => {
-    await fetchBusinesses()
-  }
+  const refreshBusiness = useCallback(async () => {
+    await loadUserBusiness()
+  }, [loadUserBusiness])
 
   useEffect(() => {
-    fetchBusinesses()
-  }, [fetchBusinesses])
+    if (!authLoading) {
+      loadUserBusiness()
+    }
+  }, [loadUserBusiness, authLoading])
 
   const value: BusinessContextType = {
     currentBusiness,
     currentBusinessId: currentBusiness?.business_id ?? null,
-    businesses,
-    switchBusiness,
     loading: loading || authLoading,
     error,
-    refreshBusinesses
+    refreshBusiness
   }
 
   return (

@@ -2,7 +2,6 @@ import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useNav } from '../contexts/NavContext'
 import { useRole } from '../contexts/RoleContext'
-import BusinessSwitcher from './BusinessSwitcher'
 
 const Navigation = () => {
   const location = useLocation()
@@ -211,9 +210,6 @@ const Navigation = () => {
               }}>
                 {userRole}
               </p>
-              <div style={{ marginTop: '8px' }}>
-                <BusinessSwitcher className="text-white" />
-              </div>
             </div>
           )}
         </div>
