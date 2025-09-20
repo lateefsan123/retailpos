@@ -215,8 +215,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const { data: businessData, error: businessError } = await supabase
         .from('business_info')
         .insert({
+          name: businessName,  // This is the required NOT NULL field
           business_name: businessName,
           business_type: 'Retail Store',
+          address: 'Default Address',  // This is also required NOT NULL
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
