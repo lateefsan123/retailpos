@@ -23,7 +23,7 @@ export interface User {
   user_id: number
   username: string
   password_hash: string
-  role: 'admin' | 'cashier' | 'manager'
+  role: 'Admin' | 'Owner' | 'Cashier' | 'Manager'
   active: boolean
   icon?: string
   business_id: number
@@ -346,7 +346,7 @@ export interface BusinessForm {
 export interface UserForm {
   username: string
   password: string
-  role: 'admin' | 'cashier' | 'manager'
+  role: 'Admin' | 'Owner' | 'Cashier' | 'Manager'
   icon?: string
 }
 

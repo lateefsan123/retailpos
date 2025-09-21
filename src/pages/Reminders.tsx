@@ -248,9 +248,16 @@ export default function Reminders() {
     try {
       setLoading(true);
       
+      if (!user?.business_id) {
+        setReminders([]);
+        setLoading(false);
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('reminders')
         .select('*')
+        .eq('business_id', user.business_id)
         .order('remind_date', { ascending: true });
 
       if (error) {
@@ -366,7 +373,8 @@ export default function Reminders() {
       title: modalForm.title.trim(),
       body: modalForm.body.trim(),
       remind_date: modalForm.remind_date,
-      owner_id: currentUserId ? parseInt(currentUserId) : 1 // Use current user ID
+      owner_id: currentUserId ? parseInt(currentUserId) : 1, // Use current user ID
+      business_id: user?.business_id || 1 // Use current business ID
     };
 
     if (offlineMode) {

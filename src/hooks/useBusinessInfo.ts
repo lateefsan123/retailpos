@@ -1,57 +1,26 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { useBusinessData } from './data/useBusinessData'
 
 export interface BusinessInfo {
   business_id: number
   name: string
-  logo_url: string | null
-  address: string | null
-  phone_number: string | null
-  vat_number: string | null
-  receipt_footer: string | null
+  business_name: string
+  business_type: string
+  address: string
+  phone_number?: string
+  vat_number?: string
+  receipt_footer: string
+  logo_url?: string
   updated_at: string
+  created_at?: string
 }
 
 export const useBusinessInfo = () => {
-  const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const fetchBusinessInfo = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      const { data, error } = await supabase
-        .from('business_info')
-        .select('*')
-        .order('business_id', { ascending: true })
-        .limit(1)
-        .single()
-
-      if (error) {
-        console.error('Error fetching business info:', error)
-        setError(error.message)
-        return
-      }
-
-      setBusinessInfo(data)
-    } catch (err) {
-      console.error('Error in fetchBusinessInfo:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch business info')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchBusinessInfo()
-  }, [])
+  const { data: businessData, isLoading, error } = useBusinessData()
 
   return {
-    businessInfo,
-    loading,
-    error,
-    refetch: fetchBusinessInfo
+    businessInfo: businessData,
+    loading: isLoading,
+    error: error?.message || null,
+    refetch: () => {} // React Query handles refetching automatically
   }
 }

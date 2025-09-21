@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { useProducts } from '../hooks/useProducts'
+import { useProducts } from '../hooks/derived/useProducts'
 import { useOrder } from '../hooks/useOrder'
 import { PaymentInfo, PartialPayment } from '../types/sales'
 import ProductGrid from '../components/sales/ProductGrid'

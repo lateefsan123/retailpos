@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useProductAnalytics, ProductAnalytics } from '../../hooks/useProductAnalytics'
+import { useProductAnalytics, ProductAnalytics } from '../../hooks/derived/useProductAnalytics'
 import { formatCurrency } from '../../utils/currency'
 
 type TimePeriod = 'today' | 'week' | 'month'

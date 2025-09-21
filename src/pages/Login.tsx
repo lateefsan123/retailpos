@@ -1,40 +1,42 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import ProfessionalSignupForm from '../components/ProfessionalSignupForm'
 
 const Login = () => {
-  const [username, setUsername] = useState('')
+  const [username, setUsername] = useState('')  // Changed from email to username
   const [password, setPassword] = useState('')
-  const [businessName, setBusinessName] = useState('')
   const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isRegisterMode, setIsRegisterMode] = useState(false)
-  const { login, register, loading } = useAuth()
+  const { login, loading } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setSuccessMessage('')
 
-    if (!username || !password) {
-      setError('Please enter both username and password')
+    if (!username || !password) {  // Changed from email to username
+      setError('Please enter both username and password')  // Updated error message
       return
     }
 
-    if (isRegisterMode && !businessName) {
-      setError('Please enter your business name')
-      return
-    }
+    // Removed email validation completely
 
-    const success = isRegisterMode 
-      ? await register(username, password, businessName)
-      : await login(username, password)
-      
+    const success = await login(username, password)  // Changed from email to username
     if (!success) {
-      setError(isRegisterMode 
-        ? 'Registration failed. Username might already exist.' 
-        : 'Invalid username or password')
+      setError('Invalid username or password')  // Updated error message
     }
   }
 
+  const handleProfessionalSignupSuccess = (message: string) => {
+    setSuccessMessage(message)
+    setIsRegisterMode(false)
+  }
+
+  const handleProfessionalSignupError = (error: string) => {
+    setError(error)
+  }
 
   return (
     <div style={{ 
@@ -79,7 +81,7 @@ const Login = () => {
             marginBottom: '8px',
             lineHeight: '1.2'
           }}>
-{isRegisterMode ? 'Create Your Account' : 'Welcome back!'}
+            {isRegisterMode ? 'Create Your Business Account' : 'Welcome back!'}
           </h1>
           <p style={{ 
             fontSize: '16px', 
@@ -87,22 +89,30 @@ const Login = () => {
             margin: 0,
             lineHeight: '1.5'
           }}>
-{isRegisterMode 
-              ? 'Get started with your own POS system in minutes.' 
+            {isRegisterMode 
+              ? 'Set up your professional POS system with complete business information.' 
               : 'Your business, your team, your flow — all in one place.'
             }
           </p>
         </div>
         
-        {/* Login Form */}
-        <form style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: '20px',
-          maxWidth: '320px',
-          margin: '0 auto',
-          width: '100%'
-        }} onSubmit={handleSubmit}>
+        {/* Login Form or Professional Signup */}
+        {isRegisterMode ? (
+          <div style={{ maxWidth: '600px', margin: '0 auto', width: '100%' }}>
+            <ProfessionalSignupForm
+              onSuccess={handleProfessionalSignupSuccess}
+              onError={handleProfessionalSignupError}
+            />
+          </div>
+        ) : (
+          <form style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '20px',
+            maxWidth: '320px',
+            margin: '0 auto',
+            width: '100%'
+          }} onSubmit={handleSubmit}>
           {/* Username Field */}
           <div>
             <label htmlFor="username" style={{ 
@@ -206,51 +216,6 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Business Name Field - Only show in register mode */}
-          {isRegisterMode && (
-            <div>
-              <label htmlFor="businessName" style={{ 
-                display: 'block', 
-                fontSize: '14px', 
-                fontWeight: '600', 
-                color: '#374151', 
-                marginBottom: '8px' 
-              }}>
-                Business Name
-              </label>
-              <input
-                id="businessName"
-                name="businessName"
-                type="text"
-                required={isRegisterMode}
-                style={{
-                  width: '100%',
-                  padding: '14px 16px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  color: '#1a1a1a',
-                  background: '#ffffff',
-                  outline: 'none',
-                  transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-                  boxSizing: 'border-box'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = '#3b82f6'
-                  e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)'
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = '#d1d5db'
-                  e.target.style.boxShadow = 'none'
-                }}
-                placeholder="Enter your business name"
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-          )}
-
           {error && (
             <div style={{
               background: '#fef2f2',
@@ -261,6 +226,19 @@ const Login = () => {
               fontSize: '14px'
             }}>
               {error}
+            </div>
+          )}
+
+          {successMessage && (
+            <div style={{
+              background: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              color: '#166534',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              fontSize: '14px'
+            }}>
+              {successMessage}
             </div>
           )}
 
@@ -310,7 +288,6 @@ const Login = () => {
               onClick={() => {
                 setIsRegisterMode(!isRegisterMode)
                 setError('')
-                setBusinessName('')
               }}
               style={{
                 background: 'none',
@@ -359,7 +336,8 @@ const Login = () => {
               </button>
             </div>
           )}
-        </form>
+          </form>
+        )}
 
       </div>
 
@@ -379,6 +357,7 @@ const Login = () => {
         }}>
         
       </div>
+
     </div>
   )
 }

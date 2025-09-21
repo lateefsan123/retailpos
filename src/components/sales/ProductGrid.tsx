@@ -219,9 +219,9 @@ const ProductCard: React.FC<{ product: Product; onAdd: (product: Product) => voi
     </h4>
     <p style={{ 
       fontSize: '14px', 
-      fontWeight: '600', 
+      fontWeight: '600',
       color: '#7d8d86',
-      margin: '0 0 8px 0'
+      margin: '0 0 4px 0'
     }}>
       {product.is_weighted && product.price_per_unit && product.weight_unit ? (
         (() => {
@@ -238,6 +238,21 @@ const ProductCard: React.FC<{ product: Product; onAdd: (product: Product) => voi
         `€${product.price.toFixed(2)}`
       )}
     </p>
+    {product.barcode && (
+      <p style={{ 
+        fontSize: '10px', 
+        color: '#9ca3af',
+        margin: '0 0 8px 0',
+        fontFamily: 'monospace',
+        background: '#f9fafb',
+        padding: '2px 6px',
+        borderRadius: '4px',
+        border: '1px solid #e5e7eb'
+      }}>
+        <i className="fa-solid fa-barcode" style={{ marginRight: '4px', fontSize: '8px' }}></i>
+        {product.barcode}
+      </p>
+    )}
     <button
       onClick={() => onAdd(product)}
       style={{

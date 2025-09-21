@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '../lib/supabaseClient'
-import { useSalesData } from './data/useSalesData'
+import { supabase } from '../../lib/supabaseClient'
+import { useSalesData, type Sale } from '../data/useSalesData'
 
 export const useTransactions = () => {
   const { data: salesData, isLoading, error } = useSalesData()

@@ -6,6 +6,7 @@ interface VaultReportsProps {
   isOpen: boolean;
   onClose: () => void;
   vaultEntries: any[];
+  businessId?: number;
 }
 
 interface ReportData {
@@ -65,7 +66,7 @@ interface ReportData {
   }>;
 }
 
-export default function VaultReports({ isOpen, onClose, vaultEntries }: VaultReportsProps) {
+export default function VaultReports({ isOpen, onClose, vaultEntries, businessId }: VaultReportsProps) {
   const [reportType, setReportType] = useState('weekly');
   const [selectedWeek, setSelectedWeek] = useState('2025-W37');
   const [reportData, setReportData] = useState<ReportData | null>(null);
@@ -282,6 +283,7 @@ export default function VaultReports({ isOpen, onClose, vaultEntries }: VaultRep
             side_businesses!inner(name)
           )
         `)
+        .eq('parent_shop_id', businessId || 1)
         .gte('date_time', startDate.toISOString())
         .lte('date_time', endDate.toISOString());
 

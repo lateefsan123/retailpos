@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { hashPassword } from '../utils/auth'
+import { useBusinessId } from '../hooks/useBusinessId'
 import VaultModal from '../components/VaultModal'
 
 interface User {
@@ -10,6 +11,7 @@ interface User {
   role: string
   active: boolean
   icon?: string
+  business_id: number
 }
 
 interface NewUser {
@@ -20,6 +22,7 @@ interface NewUser {
 }
 
 const Admin = () => {
+  const { businessId, businessLoading } = useBusinessId()
   const [users, setUsers] = useState<User[]>([])
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -49,15 +52,24 @@ const Admin = () => {
   const [showVaultModal, setShowVaultModal] = useState(false)
 
   useEffect(() => {
-    fetchUsers()
-  }, [])
+    if (!businessLoading && businessId) {
+      fetchUsers()
+    }
+  }, [businessId, businessLoading])
 
   const fetchUsers = async () => {
+    if (!businessId) {
+      setUsers([])
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       const { data: users, error } = await supabase
         .from('users')
         .select('*')
+        .eq('business_id', businessId)
         .order('user_id', { ascending: false })
 
       if (error) {
@@ -80,24 +92,96 @@ const Admin = () => {
     setIsSubmitting(true)
     setError('')
 
+    // Validate required fields
+    if (!newUser.username.trim()) {
+      setError('Username is required')
+      setIsSubmitting(false)
+      return
+    }
+
+    if (!newUser.password.trim()) {
+      setError('Password is required')
+      setIsSubmitting(false)
+      return
+    }
+
+    if (!businessId) {
+      setError('Business ID is not available. Please refresh the page and try again.')
+      setIsSubmitting(false)
+      return
+    }
+
     try {
+      console.log('Adding user with data:', {
+        username: newUser.username,
+        role: newUser.role,
+        icon: newUser.icon,
+        business_id: businessId
+      })
+
+      // Check if username already exists
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('user_id')
+        .eq('username', newUser.username.trim())
+        .single()
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        // PGRST116 is "no rows returned" which is expected if username doesn't exist
+        console.error('Error checking username:', checkError)
+        throw new Error('Failed to check if username exists')
+      }
+
+      if (existingUser) {
+        throw new Error('Username already exists. Please choose a different username.')
+      }
+
       const passwordHash = hashPassword(newUser.password)
 
-      const { error } = await supabase
+      // Prepare user data - only include icon if column exists
+      const userData: any = {
+        username: newUser.username.trim(),
+        password_hash: passwordHash,
+        role: newUser.role,
+        active: true,
+        business_id: businessId
+      }
+
+      // Only add icon if the column exists (will be handled by database migration)
+      // For now, we'll try to include it and let the database handle it
+      userData.icon = newUser.icon
+
+      const { data, error } = await supabase
         .from('users')
-        .insert([{
-          username: newUser.username,
-          password_hash: passwordHash,
-          role: newUser.role,
-          active: true,
-          icon: newUser.icon
-        }])
+        .insert([userData])
         .select()
 
       if (error) {
-        console.error('Error adding user:', error)
-        throw error
+        console.error('Supabase error adding user:', error)
+        
+        // Handle specific error cases
+        if (error.code === '23505') {
+          throw new Error('Username already exists. Please choose a different username.')
+        } else if (error.code === '23503') {
+          throw new Error('Invalid business ID. Please refresh the page and try again.')
+        } else if (error.code === '23502') {
+          throw new Error('Required field is missing. Please fill in all required fields.')
+        } else if (error.message.includes('duplicate key value violates unique constraint')) {
+          throw new Error('Username already exists. Please choose a different username.')
+        } else if (error.message.includes('violates foreign key constraint')) {
+          throw new Error('Invalid business ID. Please refresh the page and try again.')
+        } else if (error.message.includes("Could not find the 'icon' column")) {
+          throw new Error('Database schema is outdated. Please run the database migration to add the icon column.')
+        } else {
+          throw new Error(`Database error: ${error.message}`)
+        }
       }
+
+      if (!data || data.length === 0) {
+        throw new Error('No data returned from insert operation')
+      }
+
+      console.log('User added successfully:', data[0])
 
       // Reset form and close modal
       setNewUser({
@@ -110,7 +194,11 @@ const Admin = () => {
       fetchUsers() // Refresh the list
     } catch (error) {
       console.error('Error adding user:', error)
-      setError(`Failed to add user: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      if (error instanceof Error) {
+        setError(`Failed to add user: ${error.message}`)
+      } else {
+        setError('Failed to add user: Unknown error occurred')
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -214,9 +302,70 @@ const Admin = () => {
     }
   }
 
+  const createAdminAccountForCurrentBusiness = async () => {
+    if (!businessId) {
+      setError('No business selected')
+      return
+    }
+
+    try {
+      setLoading(true)
+      
+      // Check if current business already has an admin account
+      const adminUsername = `admin_${businessId}`
+      const { data: existingAdmin, error: adminCheckError } = await supabase
+        .from('users')
+        .select('user_id')
+        .eq('business_id', businessId)
+        .eq('username', adminUsername)
+        .eq('role', 'Admin')
+        .single()
+
+      if (adminCheckError && adminCheckError.code !== 'PGRST116') {
+        // PGRST116 is "no rows returned" which is expected if no admin exists
+        console.error(`Error checking admin for business ${businessId}:`, adminCheckError)
+        setError('Failed to check for existing admin account')
+        return
+      }
+
+      // If admin doesn't exist, create one
+      if (!existingAdmin) {
+        const adminHashedPassword = hashPassword('admin123')
+        const { error: createError } = await supabase
+          .from('users')
+          .insert({
+            username: adminUsername,
+            password_hash: adminHashedPassword,
+            role: 'Admin',
+            active: true,
+            business_id: businessId,
+            icon: 'ryu',
+            created_at: new Date().toISOString()
+          })
+
+        if (createError) {
+          console.error(`Error creating admin for business ${businessId}:`, createError)
+          setError('Failed to create admin account')
+        } else {
+          console.log(`Admin account created for business ID: ${businessId}`)
+          setError('Admin account created successfully')
+          fetchUsers() // Refresh the user list
+        }
+      } else {
+        setError('Admin account already exists for this business')
+      }
+    } catch (error) {
+      console.error('Error creating admin account:', error)
+      setError(`Failed to create admin account: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'Admin': return '#ef4444' // Red
+      case 'Owner': return '#8b5cf6' // Purple
       case 'Manager': return '#f59e0b' // Orange
       case 'Cashier': return '#3b82f6' // Blue
       default: return '#1a1a1a' // Gray
@@ -268,26 +417,50 @@ const Admin = () => {
           </p>
         </div>
         
-        <button
-          onClick={() => setShowAddModal(true)}
-          style={{
-            background: '#7d8d86',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            padding: '12px 24px',
-            fontSize: '18px',
-            fontWeight: '500',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            transition: 'all 0.2s ease'
-          }}
-        >
-          <i className="fa-solid fa-plus"></i>
-          Add User
-        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={() => setShowAddModal(true)}
+            style={{
+              background: '#7d8d86',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '12px 24px',
+              fontSize: '18px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <i className="fa-solid fa-plus"></i>
+            Add User
+          </button>
+          
+          <button
+            onClick={createAdminAccountForCurrentBusiness}
+            style={{
+              background: '#ef4444',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '12px 24px',
+              fontSize: '16px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.2s ease'
+            }}
+            disabled={loading}
+          >
+            <i className="fa-solid fa-user-shield"></i>
+            Create Admin Account
+          </button>
+        </div>
       </div>
 
       {/* Error Display */}

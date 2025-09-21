@@ -222,26 +222,36 @@ const SideBusinesses = () => {
       setLoading(true)
       setError(null)
 
-      // Fetch side businesses
+      if (!user?.business_id) {
+        setBusinesses([])
+        setItems([])
+        setSales([])
+        setLoading(false)
+        return
+      }
+
+      // Fetch side businesses for current business
       const { data: businessesData, error: businessesError } = await supabase
         .from('side_businesses')
         .select('*')
+        .eq('parent_shop_id', user.business_id)
         .order('created_at', { ascending: false })
 
       if (businessesError) throw businessesError
 
-      // Fetch items with business names
+      // Fetch items with business names for current business
       const { data: itemsData, error: itemsError } = await supabase
         .from('side_business_items')
         .select(`
           *,
           side_businesses (name)
         `)
+        .eq('parent_shop_id', user.business_id)
         .order('created_at', { ascending: false })
 
       if (itemsError) throw itemsError
 
-      // Fetch recent sales with item and business names
+      // Fetch recent sales with item and business names for current business
       const { data: salesData, error: salesError } = await supabase
         .from('side_business_sales')
         .select(`
@@ -251,6 +261,7 @@ const SideBusinesses = () => {
             side_businesses (name)
           )
         `)
+        .eq('parent_shop_id', user.business_id)
         .order('date_time', { ascending: false })
         .limit(10)
 
@@ -294,7 +305,8 @@ const SideBusinesses = () => {
           owner_id: user.user_id,
           name: newBusiness.name.trim(),
           description: newBusiness.description.trim() || null,
-          business_type: newBusiness.business_type
+          business_type: newBusiness.business_type,
+          parent_shop_id: user.business_id
         })
         .select()
 
@@ -346,7 +358,8 @@ const SideBusinesses = () => {
           name: newItem.name,
           price: newItem.price ? parseFloat(newItem.price) : null,
           stock_qty: newItem.stock_qty ? parseInt(newItem.stock_qty) : null,
-          notes: newItem.notes.trim() || null
+          notes: newItem.notes.trim() || null,
+          parent_shop_id: user?.business_id
         })
 
       if (error) throw error
@@ -368,7 +381,8 @@ const SideBusinesses = () => {
           item_id: parseInt(newSale.item_id),
           quantity: newSale.quantity,
           total_amount: parseFloat(newSale.total_amount),
-          payment_method: newSale.payment_method
+          payment_method: newSale.payment_method,
+          parent_shop_id: user?.business_id
         })
 
       if (error) throw error

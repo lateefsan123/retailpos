@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LowStockProduct } from '../../hooks/useLowStockItems'
+import { LowStockProduct } from '../../hooks/derived/useLowStockItems'
 
 interface LowStockCardProps {
   product: LowStockProduct

@@ -79,6 +79,7 @@ interface Product {
   is_weighted?: boolean // true if item is sold by weight
   description?: string
   sku?: string
+  barcode?: string | null
   sales_count?: number // number of times this product has been sold
   total_revenue?: number // total revenue generated from this product
   last_sold_date?: string // when this product was last sold
@@ -126,6 +127,7 @@ const { businessId, businessLoading } = useBusinessId()
     tax_rate: '',
     description: '',
     sku: '',
+    barcode: '',
     is_weighted: false,
     weight_unit: '',
     price_per_unit: ''
@@ -879,10 +881,41 @@ const { businessId, businessLoading } = useBusinessId()
       price_per_unit: formData.is_weighted && formData.price_per_unit ? 
         validateNumericField(formData.price_per_unit, 'Price per unit', false) : null,
       description: formData.description?.trim() || '',
-      sku: formData.sku?.trim() || ''
+      sku: formData.sku?.trim() || '',
+      barcode: (() => {
+        const trimmed = formData.barcode?.trim()
+        return trimmed && trimmed.length > 0 ? trimmed : null
+      })()
     }
     
     return productId ? { ...baseData, product_id: productId } : baseData
+  }
+
+  // Prevent barcode scanners (Enter) from submitting the form prematurely
+  const handleModalFormKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
+    if (event.key !== 'Enter') return
+
+    const target = event.target as HTMLElement | null
+    if (!target) return
+
+    if (target instanceof HTMLTextAreaElement) return
+
+    if (
+      target instanceof HTMLButtonElement ||
+      (target instanceof HTMLInputElement && target.type === 'submit')
+    ) {
+      return
+    }
+
+    const shouldBlock = (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLSelectElement
+    )
+
+    if (!shouldBlock) return
+
+    event.preventDefault()
+    event.stopPropagation()
   }
 
   const handleAddProduct = async (e: React.FormEvent) => {
@@ -914,7 +947,7 @@ const { businessId, businessLoading } = useBusinessId()
         throw error
       }
 
-      const insertedProduct = data?.[0]
+      const insertedProduct = data?.[0] ? { ...data[0], barcode: productData.barcode ?? null } : null
       if (!insertedProduct) {
         throw new Error('Product insertion returned no data')
       }
@@ -945,6 +978,7 @@ const { businessId, businessLoading } = useBusinessId()
         tax_rate: '',
         description: '',
         sku: '',
+        barcode: '',
         is_weighted: false,
         weight_unit: '',
         price_per_unit: ''
@@ -1011,7 +1045,7 @@ const { businessId, businessLoading } = useBusinessId()
         throw error
       }
 
-      let updatedProduct = data?.[0]
+      let updatedProduct = data?.[0] ? { ...data[0], barcode: productData.barcode ?? null } : null
       if (!updatedProduct) {
         throw new Error('Product update returned no data')
       }
@@ -1103,6 +1137,7 @@ const { businessId, businessLoading } = useBusinessId()
       tax_rate: '',
       description: '',
       sku: '',
+      barcode: '',
       is_weighted: false,
       weight_unit: '',
       price_per_unit: ''
@@ -1127,6 +1162,7 @@ const { businessId, businessLoading } = useBusinessId()
       tax_rate: product.tax_rate?.toString() || '',
       description: product.description || '',
       sku: product.sku || '',
+      barcode: product.barcode || '',
       is_weighted: product.is_weighted || false,
       weight_unit: product.weight_unit || '',
       price_per_unit: product.price_per_unit?.toString() || ''
@@ -2341,7 +2377,7 @@ const { businessId, businessLoading } = useBusinessId()
               </button>
             </div>
 
-            <form onSubmit={handleAddProduct}>
+            <form onSubmit={handleAddProduct} onKeyDown={handleModalFormKeyDown}>
               {error && (
                 <div style={{
                   background: '#fef2f2',
@@ -2665,6 +2701,27 @@ const { businessId, businessLoading } = useBusinessId()
                 />
               </div>
 
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                  Barcode
+                </label>
+                <input
+                  type="text"
+                  value={newProduct.barcode}
+                  onChange={(e) => setNewProduct({...newProduct, barcode: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '2px solid #bca88d',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    background: '#f8fafc',
+                    color: '#3e3f29'
+                  }}
+                  placeholder="Scan or enter barcode"
+                />
+              </div>
+
               <div style={{ marginBottom: '24px' }}>
                 <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
                   Product Image
@@ -2918,7 +2975,7 @@ const { businessId, businessLoading } = useBusinessId()
               </button>
             </div>
 
-            <form onSubmit={handleEditProduct}>
+            <form onSubmit={handleEditProduct} onKeyDown={handleModalFormKeyDown}>
               {error && (
                 <div style={{
                   background: '#fef2f2',
@@ -3218,6 +3275,48 @@ const { businessId, businessLoading } = useBusinessId()
                     color: '#3e3f29'
                   }}
                   placeholder="e.g., African Foods Ltd, +234-xxx-xxxx"
+                />
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                  SKU
+                </label>
+                <input
+                  type="text"
+                  value={newProduct.sku}
+                  onChange={(e) => setNewProduct({...newProduct, sku: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '2px solid #bca88d',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    background: '#f8fafc',
+                    color: '#3e3f29'
+                  }}
+                  placeholder="Update SKU"
+                />
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                  Barcode
+                </label>
+                <input
+                  type="text"
+                  value={newProduct.barcode}
+                  onChange={(e) => setNewProduct({...newProduct, barcode: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '2px solid #bca88d',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    background: '#f8fafc',
+                    color: '#3e3f29'
+                  }}
+                  placeholder="Scan or enter barcode"
                 />
               </div>
 

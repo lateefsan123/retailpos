@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useLowStockItems } from '../../hooks/useLowStockItems'
+import { useLowStockItems } from '../../hooks/derived/useLowStockItems'
 import LowStockCard from './LowStockCard'
 
 const LowStockSection = () => {

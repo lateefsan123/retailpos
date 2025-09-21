@@ -1,4 +1,4 @@
-﻿import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../../contexts/AuthContext'
 
 export const useBusinessId = () => {
   const { user } = useAuth()
@@ -6,7 +6,6 @@ export const useBusinessId = () => {
   return {
     businessId: user?.business_id,
     businessLoading: false, // No loading since we get this from auth context
-    businessError: null,
-    hasBusinessSelected: user?.business_id != null,
+    businessError: null
   }
 }

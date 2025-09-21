@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useSalesAnalytics, WeeklySalesData, HourlySalesData, MonthlySalesData } from '../../hooks/useSalesAnalytics'
+import { useSalesAnalytics, WeeklySalesData, HourlySalesData, MonthlySalesData } from '../../hooks/derived/useSalesAnalytics'
 import { useBusinessInfo } from '../../hooks/useBusinessInfo'
 import { formatCurrency as formatCurrencyUtil, formatCurrencyCompact } from '../../utils/currency'
 

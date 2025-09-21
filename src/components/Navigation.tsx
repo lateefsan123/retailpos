@@ -26,6 +26,7 @@ const Navigation = () => {
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'Admin': return '#ef4444' // Red
+      case 'Owner': return '#8b5cf6' // Purple
       case 'Manager': return '#f59e0b' // Orange
       case 'Cashier': return '#3b82f6' // Blue
       default: return '#6b7280' // Gray
@@ -124,14 +125,16 @@ const Navigation = () => {
             }}
             onMouseEnter={(e) => {
               if (location.pathname !== item.path) {
-                (e.target as HTMLElement).style.backgroundColor = '#333333'
-                (e.target as HTMLElement).style.color = '#ffffff'
+                const target = e.currentTarget as HTMLElement
+                target.style.backgroundColor = '#333333'
+                target.style.color = '#ffffff'
               }
             }}
             onMouseLeave={(e) => {
               if (location.pathname !== item.path) {
-                (e.target as HTMLElement).style.backgroundColor = 'transparent'
-                (e.target as HTMLElement).style.color = '#cccccc'
+                const target = e.currentTarget as HTMLElement
+                target.style.backgroundColor = 'transparent'
+                target.style.color = '#cccccc'
               }
             }}
           >

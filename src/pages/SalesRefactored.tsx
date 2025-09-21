@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { useProducts } from '../hooks/useProducts'
+import { useProducts } from '../hooks/derived/useProducts'
 import { useOrder } from '../hooks/useOrder'
 import ProductGrid from '../components/sales/ProductGrid'
 import OrderSidebar from '../components/sales/OrderSidebar'

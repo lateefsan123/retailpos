@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './contexts/AuthContext'
 import { BusinessProvider } from './contexts/BusinessContext'
 import { NavProvider, useNav } from './contexts/NavContext'
@@ -8,7 +9,8 @@ import { useNavCollapse } from './hooks/useNavCollapse'
 import ProtectedRoute from './components/ProtectedRoute'
 import RoleProtectedRoute from './components/RoleProtectedRoute'
 import Navigation from './components/Navigation'
-import Login from './pages/Login'  // Add this import
+import Login from './pages/Login'
+import EmailVerification from './pages/EmailVerification'
 import Dashboard from './pages/Dashboard'
 import Products from './pages/Products'
 import Sales from './pages/Sales'
@@ -94,28 +96,42 @@ const AppContent = () => {
   )
 }
 
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime in newer versions)
+      retry: 1,
+    },
+  },
+})
+
 function App() {
   return (
-    <AuthProvider>
-      <BusinessProvider>
-        <RoleProvider>
-          <NavProvider>
-            <PinProvider>
-              <Router basename="/retailpos">
-                <Routes>
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/*" element={
-                    <ProtectedRoute>
-                      <AppContent />
-                    </ProtectedRoute>
-                  } />
-                </Routes>
-              </Router>
-            </PinProvider>
-          </NavProvider>
-        </RoleProvider>
-      </BusinessProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <BusinessProvider>
+          <RoleProvider>
+            <NavProvider>
+              <PinProvider>
+                <Router basename="/retailpos">
+                  <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/verify-email" element={<EmailVerification />} />
+                    <Route path="/*" element={
+                      <ProtectedRoute>
+                        <AppContent />
+                      </ProtectedRoute>
+                    } />
+                  </Routes>
+                </Router>
+              </PinProvider>
+            </NavProvider>
+          </RoleProvider>
+        </BusinessProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   )
 }
 

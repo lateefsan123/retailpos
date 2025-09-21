@@ -25,6 +25,16 @@ const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     canLookupProducts: true,
     canLookupCustomers: true
   },
+  Owner: {
+    canManageUsers: true,
+    canManageProducts: true,
+    canProcessSales: true,
+    canViewReports: true,
+    canChangeSettings: true,
+    canUploadImages: true,
+    canLookupProducts: true,
+    canLookupCustomers: true
+  },
   Manager: {
     canManageUsers: false,
     canManageProducts: true,

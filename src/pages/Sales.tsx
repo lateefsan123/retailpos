@@ -3,7 +3,9 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { useBusinessId } from '../hooks/useBusinessId'
+import { useBarcodeScanner, setModalOpen } from '../hooks/useBarcodeScanner'
 import { ttsService, TTSSettings } from '../lib/ttsService'
+import { RetroButton } from '../components/ui/RetroButton'
 
 // Helper function to get local time in database format
 const getLocalDateTime = () => {
@@ -207,6 +209,11 @@ const Sales = () => {
   const [, setTtsSettings] = useState<TTSSettings>(ttsService.getSettings())
   const [isTtsPlaying, setIsTtsPlaying] = useState(false)
   
+  // Barcode scanner states
+  const [barcodeScannerActive, setBarcodeScannerActive] = useState(false) // Start as inactive
+  const [barcodeStatus, setBarcodeStatus] = useState<'idle' | 'listening' | 'scanned' | 'not_found'>('idle') // Start as idle
+  const [lastScannedBarcode, setLastScannedBarcode] = useState('')
+  
   // Partial payment state
   const [allowPartialPayment, setAllowPartialPayment] = useState(false)
   const [partialAmount, setPartialAmount] = useState('')
@@ -223,7 +230,7 @@ const Sales = () => {
       return
     }
 
-    if (businessId == null) {
+        if (businessId == null) {
       setProducts([])
       setSideBusinessItems([])
       setTopProducts([])
@@ -318,7 +325,7 @@ const Sales = () => {
       return
     }
 
-    if (businessId == null) {
+      if (businessId == null) {
       setProducts([])
       setSideBusinessItems([])
       setTopProducts([])
@@ -869,6 +876,182 @@ const Sales = () => {
       })
     }))
   }
+
+  // Barcode scanning functions
+  const normalizeBarcodeValue = (value: string | null | undefined) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : ''
+
+  const findProductByBarcode = (barcode: string): Product | null => {
+    const normalized = normalizeBarcodeValue(barcode)
+    return products.find(product => normalizeBarcodeValue(product.barcode) === normalized) || null
+  }
+
+    const toNumber = (value: any, fallback = 0) => {
+    if (value == null || value == '') return fallback
+    if (typeof value === 'number') return Number.isFinite(value) ? value : fallback
+    const parsed = parseFloat(String(value))
+    return Number.isFinite(parsed) ? parsed : fallback
+  }
+
+  const toInteger = (value: any, fallback = 0) => {
+    if (value == null || value == '') return fallback
+    if (typeof value === 'number') return Number.isFinite(value) ? Math.trunc(value) : fallback
+    const parsed = parseInt(String(value), 10)
+    return Number.isFinite(parsed) ? parsed : fallback
+  }
+
+  const normalizeProduct = (raw: any): Product => ({
+    ...raw,
+    price: toNumber(raw.price),
+    stock_quantity: toInteger(raw.stock_quantity),
+    reorder_level: toInteger(raw.reorder_level),
+    tax_rate: toNumber(raw.tax_rate),
+    is_weighted: Boolean(raw.is_weighted),
+    price_per_unit: raw.price_per_unit == null ? null : toNumber(raw.price_per_unit),
+    total_revenue: raw.total_revenue == null ? undefined : toNumber(raw.total_revenue),
+    sales_count: raw.sales_count == null ? undefined : toInteger(raw.sales_count),
+    last_updated: raw.last_updated,
+    weight_unit: raw.weight_unit,
+    description: raw.description,
+    sku: raw.sku,
+    barcode: typeof raw.barcode === 'string' ? raw.barcode.trim() : raw.barcode,
+    supplier_info: raw.supplier_info,
+    image_url: raw.image_url
+  })
+
+  const handleBarcodeScanned = async (barcode: string) => {
+    console.log('🔍 Barcode scanned:', barcode)
+    let product = findProductByBarcode(barcode)
+    console.log('🔍 Local product found:', product)
+
+    if (!product) {
+      if (businessId == null) {
+        setBarcodeStatus('not_found')
+        setLastScannedBarcode(barcode)
+        setTimeout(() => {
+          setBarcodeStatus('idle')
+        }, 3000)
+        return
+      }
+
+      const normalizedBarcode = normalizeBarcodeValue(barcode)
+      console.log('🔍 Searching database for barcode:', normalizedBarcode, 'business_id:', businessId)
+      const { data: remoteProducts, error: remoteError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('business_id', businessId)
+        .ilike('barcode', normalizedBarcode)
+        .limit(1)
+      
+      console.log('🔍 Database query result:', remoteProducts, 'error:', remoteError)
+
+      if (remoteError) {
+        console.error('Barcode lookup failed:', remoteError)
+      }
+
+      const remoteProductData = remoteProducts && remoteProducts.length > 0
+        ? remoteProducts[0]
+        : null
+
+      if (remoteProductData) {
+        const normalizedProduct = normalizeProduct(remoteProductData)
+        product = normalizedProduct
+
+        setProducts(prev => {
+          if (prev.some(p => p.product_id === normalizedProduct.product_id)) {
+            return prev
+          }
+          const updated = [normalizedProduct, ...prev]
+          return updated.slice(0, 50)
+        })
+
+        setTopProducts(prev => {
+          if (prev.some(p => p.product_id === normalizedProduct.product_id)) {
+            return prev
+          }
+          const updated = [normalizedProduct, ...prev]
+          return updated.slice(0, 50)
+        })
+      }
+    }
+
+    if (product) {
+      console.log('✅ Adding product to order:', product.name)
+      addToOrder(product)
+      setBarcodeStatus('scanned')
+      setLastScannedBarcode(barcode)
+
+      setTimeout(() => {
+        setBarcodeStatus('idle')
+      }, 2000)
+    } else {
+      console.log('❌ Product not found for barcode:', barcode)
+      setBarcodeStatus('not_found')
+      setLastScannedBarcode(barcode)
+
+      setTimeout(() => {
+        setBarcodeStatus('idle')
+      }, 3000)
+    }
+  }
+
+
+  const toggleBarcodeScanner = () => {
+    if (barcodeScannerActive) {
+      stopListening()
+      setBarcodeScannerActive(false)
+      setBarcodeStatus('idle')
+    } else {
+      startListening()
+      setBarcodeScannerActive(true)
+      setBarcodeStatus('listening')
+    }
+  }
+
+  // Initialize barcode scanner
+  const { isListening, startListening, stopListening } = useBarcodeScanner({
+    onBarcodeScanned: handleBarcodeScanned,
+    debounceMs: 30, // Reduced for faster scanners
+    minLength: 8,
+    maxLength: 20,
+    isActive: barcodeScannerActive,
+    context: 'sales-page'
+  })
+
+  // Manual scanner management - no automatic start/stop
+
+  // Set modal state when sales page modals open/close
+  useEffect(() => {
+    const anyModalOpen = showCustomPriceModal || showWeightModal || showQuickServiceModal || showSalesSummary
+    setModalOpen(anyModalOpen)
+  }, [showCustomPriceModal, showWeightModal, showQuickServiceModal, showSalesSummary])
+
+  // Global barcode detection fallback
+  useEffect(() => {
+    if (!barcodeScannerActive) return
+
+    const handleGlobalInput = (event: Event) => {
+      // Check if this is a barcode scanner input
+      if (event.target && (event.target as HTMLElement).tagName === 'INPUT') {
+        const input = event.target as HTMLInputElement
+        const value = input.value.trim()
+        
+        // Check if this looks like a barcode (8-20 characters, mostly alphanumeric)
+        if (value.length >= 8 && value.length <= 20 && /^[A-Za-z0-9]+$/.test(value)) {
+          console.log('🔍 Global barcode fallback detected:', value)
+          handleBarcodeScanned(value)
+          input.value = ''
+        }
+      }
+    }
+
+    // Add global input listener
+    document.addEventListener('input', handleGlobalInput, true)
+    
+    return () => {
+      document.removeEventListener('input', handleGlobalInput, true)
+    }
+  }, [barcodeScannerActive, handleBarcodeScanned])
 
   // New function to show weight edit modal
   const showWeightEditModal = (item: OrderItem) => {
@@ -1710,87 +1893,106 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
 
         {/* Search Bar */}
         <div style={{ 
-          padding: '20px 32px 16px',
-          borderBottom: '1px solid #e5e7eb'
+          padding: '24px 32px',
+          borderBottom: '1px solid #e5e7eb',
+          background: '#f5f5f5'
         }}>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', maxWidth: '600px' }}>
-            <div style={{ position: 'relative', flex: 1 }}>
-              {/* Search icon */}
-              <i className="fa-solid fa-search" style={{
-                position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#6b7280',
-                fontSize: '16px',
-                zIndex: 1
-              }}></i>
-              
-              <input
-                type="text"
-                placeholder="Search products by name, category, description, or SKU..."
-                value={searchTerm}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                onFocus={(e) => {
-                  e.target.style.borderColor = '#7d8d86'
-                  setShowSuggestions(searchSuggestions.length > 0)
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = '#e5e7eb'
-                  setTimeout(() => setShowSuggestions(false), 200)
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    // Trigger search on Enter key
-                    if (searchTerm.trim()) {
-                      setShowSuggestions(false)
+          <div style={{ 
+            display: 'flex', 
+            gap: '16px', 
+            alignItems: 'center',
+            maxWidth: '800px',
+            margin: '0 auto'
+          }}>
+            {/* Modern Search Input */}
+            <div style={{ 
+              position: 'relative', 
+              flex: 1,
+              background: '#ffffff',
+              borderRadius: '12px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+              border: '2px solid #e5e7eb',
+              transition: 'all 0.3s ease'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '12px 16px'
+              }}>
+                <i className="fa-solid fa-search" style={{
+                  color: '#6b7280',
+                  fontSize: '18px',
+                  marginRight: '12px'
+                }}></i>
+                
+                <input
+                  type="text"
+                  placeholder="Search products, categories, or SKU..."
+                  value={searchTerm}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  onFocus={(e) => {
+                    e.target.parentElement.parentElement.style.borderColor = '#3b82f6'
+                    e.target.parentElement.parentElement.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.15)'
+                    setShowSuggestions(searchSuggestions.length > 0)
+                  }}
+                  onBlur={(e) => {
+                    e.target.parentElement.parentElement.style.borderColor = '#e5e7eb'
+                    e.target.parentElement.parentElement.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)'
+                    setTimeout(() => setShowSuggestions(false), 200)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      if (searchTerm.trim()) {
+                        setShowSuggestions(false)
+                      }
                     }
-                  }
-                }}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  paddingLeft: '40px',
-                  paddingRight: searchTerm ? '40px' : '16px',
-                  border: '2px solid #6b7280',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  outline: 'none',
-                  transition: 'border-color 0.2s ease'
-                }}
-              />
-              
-              {/* Clear search button */}
-              {searchTerm && (
-                <button
-                  onClick={() => {
-                    setSearchTerm('')
-                    setShowSuggestions(false)
-                    setSearchSuggestions([])
                   }}
                   style={{
-                    position: 'absolute',
-                    right: '8px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
+                    flex: 1,
+                    padding: '4px 8px',
                     border: 'none',
-                    cursor: 'pointer',
-                    color: '#6b7280',
+                    background: 'transparent',
                     fontSize: '16px',
-                    padding: '4px',
-                    borderRadius: '4px',
-                    transition: 'color 0.2s ease'
+                    outline: 'none',
+                    color: '#1f2937',
+                    fontWeight: '500'
                   }}
-                  onMouseEnter={(e) => (e.target as HTMLButtonElement).style.color = '#dc2626'}
-                  onMouseLeave={(e) => (e.target as HTMLButtonElement).style.color = '#6b7280'}
-                >
-                  <i className="fa-solid fa-times"></i>
-                </button>
-              )}
+                />
+                
+                {/* Clear search button */}
+                {searchTerm && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm('')
+                      setShowSuggestions(false)
+                      setSearchSuggestions([])
+                    }}
+                    style={{
+                      background: '#f3f4f6',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '6px',
+                      cursor: 'pointer',
+                      color: '#6b7280',
+                      fontSize: '14px',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.target as HTMLButtonElement).style.background = '#e5e7eb'
+                      (e.target as HTMLButtonElement).style.color = '#374151'
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.target as HTMLButtonElement).style.background = '#f3f4f6'
+                      (e.target as HTMLButtonElement).style.color = '#6b7280'
+                    }}
+                  >
+                    <i className="fa-solid fa-times"></i>
+                  </button>
+                )}
+              </div>
               
-              {/* Search Suggestions Dropdown */}
+              {/* Enhanced Search Suggestions Dropdown */}
               {showSuggestions && searchSuggestions.length > 0 && (
                 <div style={{
                   position: 'absolute',
@@ -1798,12 +2000,14 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   left: 0,
                   right: 0,
                   background: '#ffffff',
-                  border: '1px solid #6b7280',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                  border: 'none',
+                  borderRadius: '16px',
+                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
                   zIndex: 1000,
-                  maxHeight: '200px',
-                  overflowY: 'auto'
+                  maxHeight: '300px',
+                  overflowY: 'auto',
+                  marginTop: '8px',
+                  backdropFilter: 'blur(10px)'
                 }}>
                   {searchSuggestions.map((item, index) => {
                     const isProduct = 'product_id' in item
@@ -1814,45 +2018,57 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                         key={isProduct ? item.product_id : `sb-${item.item_id}`}
                         onClick={() => selectSuggestion(item)}
                         style={{
-                          padding: '12px 16px',
+                          padding: '16px 20px',
                           cursor: 'pointer',
-                          borderBottom: index < searchSuggestions.length - 1 ? '1px solid #f3f4f6' : 'none',
+                          borderBottom: index < searchSuggestions.length - 1 ? '1px solid #f1f5f9' : 'none',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '12px',
-                          transition: 'background-color 0.2s ease'
+                          gap: '16px',
+                          transition: 'all 0.2s ease',
+                          borderRadius: index === 0 ? '16px 16px 0 0' : index === searchSuggestions.length - 1 ? '0 0 16px 16px' : '0'
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.target as HTMLDivElement).style.background = 'linear-gradient(135deg, #f8fafc, #f1f5f9)'
+                          (e.target as HTMLDivElement).style.transform = 'translateX(4px)'
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.target as HTMLDivElement).style.background = 'transparent'
+                          (e.target as HTMLDivElement).style.transform = 'translateX(0)'
                         }}
                       >
                         <div style={{
-                          width: '32px',
-                          height: '32px',
+                          width: '40px',
+                          height: '40px',
                           background: isProduct && item.image_url 
                             ? `url(${item.image_url})` 
-                            : 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
+                            : 'linear-gradient(135deg, #667eea, #764ba2)',
                           backgroundSize: 'cover',
                           backgroundPosition: 'center',
-                          borderRadius: '4px',
+                          borderRadius: '12px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: '12px',
-                          color: '#6b7280'
+                          fontSize: '16px',
+                          color: '#ffffff',
+                          boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
                         }}>
                           {isSideBusinessItem && <i className="fa-solid fa-briefcase"></i>}
                         </div>
                         <div style={{ flex: 1 }}>
                           <p style={{ 
-                            margin: '0 0 2px 0', 
-                            fontSize: '14px', 
-                            fontWeight: '500', 
-                            color: '#1f2937' 
+                            margin: '0 0 4px 0', 
+                            fontSize: '16px', 
+                            fontWeight: '600', 
+                            color: '#1e293b',
+                            lineHeight: '1.3'
                           }}>
                             {item.name}
                           </p>
                           <p style={{ 
                             margin: '0', 
-                            fontSize: '12px', 
-                            color: '#6b7280' 
+                            fontSize: '14px', 
+                            color: '#64748b',
+                            fontWeight: '500'
                           }}>
                             {isProduct 
                               ? `${item.category} • €${item.price.toFixed(2)}`
@@ -1860,51 +2076,136 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                             }
                           </p>
                         </div>
-                        <i className="fa-solid fa-plus" style={{
-                          color: '#7d8d86',
-                          fontSize: '12px'
-                        }}></i>
+                        <div style={{
+                          background: 'linear-gradient(135deg, #10b981, #059669)',
+                          color: '#ffffff',
+                          borderRadius: '8px',
+                          padding: '8px 12px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                        }}>
+                          <i className="fa-solid fa-plus"></i>
+                          Add
+                        </div>
                       </div>
                     )
                   })}
                 </div>
               )}
             </div>
-            <button style={{
-              background: 'linear-gradient(135deg, #7d8d86, #3e3f29)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '12px 24px',
-              fontSize: '16px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <i className="fa-solid fa-search"></i>
-              Search
-            </button>
-            <button 
-              onClick={() => setShowQuickServiceModal(true)}
+
+            {/* Modern Action Buttons */}
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <RetroButton onClick={() => setShowQuickServiceModal(true)}>
+                <i className="fa-solid fa-plus-circle" style={{ marginRight: '8px' }}></i>
+                Quick Service
+              </RetroButton>
+            </div>
+          </div>
+        </div>
+
+        {/* Barcode Scanner Section */}
+        <div style={{ 
+          padding: '16px 32px',
+          borderBottom: '1px solid #e5e7eb',
+          background: barcodeScannerActive ? '#f0f9ff' : '#f9fafb',
+          transition: 'background-color 0.3s ease'
+        }}>
+          {/* Hidden input for barcode scanner fallback */}
+          {barcodeScannerActive && (
+            <input
+              type="text"
               style={{
-                background: 'linear-gradient(135deg, #10b981, #059669)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '12px 24px',
-                fontSize: '16px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
+                position: 'absolute',
+                left: '-9999px',
+                opacity: 0,
+                pointerEvents: 'none'
               }}
-            >
-              <i className="fa-solid fa-plus-circle"></i>
-              Quick Service
-            </button>
+              onInput={(e) => {
+                const value = (e.target as HTMLInputElement).value
+                if (value && value.length >= 8 && value.length <= 20) {
+                  console.log('🔍 Hidden input barcode detected:', value)
+                  handleBarcodeScanned(value)
+                  ;(e.target as HTMLInputElement).value = ''
+                }
+              }}
+              autoFocus
+            />
+          )}
+
+          <div style={{ 
+            display: 'flex', 
+            gap: '16px', 
+            alignItems: 'center',
+            flexWrap: 'wrap'
+          }}>
+            {/* Barcode Input Field */}
+            <div style={{ position: 'relative', flex: 1, minWidth: '300px', maxWidth: '400px' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '6px'
+              }}>
+                Barcode Scanner
+              </label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  placeholder="Scan or enter barcode manually"
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    border: `2px solid ${barcodeScannerActive ? '#3b82f6' : '#d1d5db'}`,
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    outline: 'none',
+                    transition: 'border-color 0.3s ease',
+                    background: barcodeScannerActive ? '#f0f9ff' : '#ffffff',
+                    color: barcodeScannerActive ? '#1e40af' : '#1f2937'
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const value = (e.target as HTMLInputElement).value.trim()
+                      if (value && value.length >= 8 && value.length <= 20) {
+                        console.log('🔍 Manual barcode input:', value)
+                        handleBarcodeScanned(value)
+                        ;(e.target as HTMLInputElement).value = ''
+                      }
+                    }
+                  }}
+                />
+                <RetroButton onClick={toggleBarcodeScanner}>
+                  {barcodeStatus === 'listening' ? (
+                    <>
+                      <i className="fa-solid fa-stop" style={{ marginRight: '8px' }}></i>
+                      Stop Scanner
+                    </>
+                  ) : barcodeStatus === 'scanned' ? (
+                    <>
+                      <i className="fa-solid fa-check" style={{ marginRight: '8px' }}></i>
+                      Item Added!
+                    </>
+                  ) : barcodeStatus === 'not_found' ? (
+                    <>
+                      <i className="fa-solid fa-exclamation-triangle" style={{ marginRight: '8px' }}></i>
+                      Not Found
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-barcode" style={{ marginRight: '8px' }}></i>
+                      Scan Barcode
+                    </>
+                  )}
+                </RetroButton>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -2663,7 +2964,6 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 setIsTtsPlaying(false)
               }
             }}
-            title={isTtsPlaying ? "Pause announcement" : "Announce all items in current order"}
             onMouseEnter={(e) => {
               if (order.items.length > 0) {
                 e.currentTarget.style.background = '#333333'
@@ -2677,131 +2977,99 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               }
             }}
           >
-            {/* Play Button */}
-            <div
+            {/* Simple Play/Pause Button */}
+            <button
+              onClick={async () => {
+                if (order.items.length === 0) return
+                
+                if (isTtsPlaying) {
+                  // Pause TTS
+                  console.log('Pausing TTS...')
+                  ttsService.stop()
+                  setIsTtsPlaying(false)
+                  return
+                }
+                
+                console.log('Announce Order clicked!')
+                console.log('Order items:', order.items)
+                
+                // Set playing state
+                setIsTtsPlaying(true)
+                
+                // Temporarily enable TTS
+                ttsService.updateSettings({ enabled: true })
+                setTtsSettings(ttsService.getSettings())
+                
+                console.log('TTS Settings after enabling:', ttsService.getSettings())
+                
+                try {
+                  await speakOrderItems(order.items)
+                  
+                  // Wait for the Nigerian food message to finish, then disable TTS
+                  setTimeout(() => {
+                    ttsService.updateSettings({ enabled: false })
+                    setTtsSettings(ttsService.getSettings())
+                    setIsTtsPlaying(false)
+                  }, 3000) // Wait 3 seconds for the delayed message
+                  
+                } catch (error) {
+                  console.error('TTS Error:', error)
+                  setIsTtsPlaying(false)
+                  ttsService.updateSettings({ enabled: false })
+                  setTtsSettings(ttsService.getSettings())
+                }
+              }}
+              disabled={order.items.length === 0}
               style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                background: '#8A85FF',
+                background: order.items.length === 0 ? '#666666' : '#4a5568',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '8px 12px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: order.items.length === 0 ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                boxShadow: '0 2px 4px rgba(138, 133, 255, 0.3)',
-                transition: 'all 0.2s ease'
+                gap: '6px',
+                transition: 'all 0.2s ease',
+                opacity: order.items.length === 0 ? 0.5 : 1
               }}
               onMouseEnter={(e) => {
                 if (order.items.length > 0) {
-                  e.currentTarget.style.background = '#9A95FF'
-                  e.currentTarget.style.transform = 'scale(1.05)'
+                  (e.target as HTMLButtonElement).style.background = '#2d3748'
                 }
               }}
               onMouseLeave={(e) => {
                 if (order.items.length > 0) {
-                  e.currentTarget.style.background = '#8A85FF'
-                  e.currentTarget.style.transform = 'scale(1)'
+                  (e.target as HTMLButtonElement).style.background = '#4a5568'
                 }
               }}
             >
               <i 
                 className={isTtsPlaying ? "fa-solid fa-pause" : "fa-solid fa-play"} 
-                style={{ 
-                  fontSize: '12px', 
-                  color: 'white',
-                  marginLeft: isTtsPlaying ? '0px' : '2px'
-                }}
+                style={{ fontSize: '12px' }}
               ></i>
-            </div>
-
-            {/* Waveform Visualization */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1px', flex: 1, maxWidth: '120px' }}>
-              {Array.from({ length: 15 }, (_, i) => (
-                <div
-                  key={i}
-                  style={{
-                    width: '2px',
-                    height: isTtsPlaying ? `${Math.random() * 12 + 3}px` : '4px',
-                    background: isTtsPlaying ? '#8A85FF' : '#666666',
-                    borderRadius: '1px',
-                    transition: 'all 0.3s ease',
-                    animation: isTtsPlaying ? `waveform-${i} 1.5s ease-in-out infinite` : 'none'
-                  }}
-                ></div>
-              ))}
-            </div>
-
-            {/* Duration/Status */}
-            <div style={{ 
-              color: 'white', 
-              fontSize: '11px', 
-              fontWeight: '500',
-              minWidth: '28px',
-              textAlign: 'center'
-            }}>
-              {isTtsPlaying ? '▶' : (order.items.length > 0 ? `${order.items.length}` : '0:00')}
-            </div>
-
-            {/* Volume Icon */}
-            <div style={{ 
-              color: 'white', 
-              fontSize: '14px',
-              opacity: 0.8
-            }}>
-              <i className="fa-solid fa-volume-high"></i>
-            </div>
+              {isTtsPlaying ? 'Stop' : 'Play'}
+            </button>
           </div>
 
           <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-            <button
+            <RetroButton
               onClick={resetTransaction}
               disabled={order.items.length === 0}
-              title={order.items.length > 0 ? 'Clear all items from current transaction' : 'No items to reset'}
-              style={{
-                background: order.items.length === 0 ? '#f3f4f6' : '#ef4444',
-                color: order.items.length === 0 ? '#9ca3af' : 'white',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '12px 16px',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: order.items.length === 0 ? 'not-allowed' : 'pointer',
-                flex: 1,
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px'
-              }}
+              style={{ flex: 1 }}
             >
-              <i className="fa-solid fa-rotate-left" style={{ fontSize: '12px' }}></i>
+              <i className="fa-solid fa-rotate-left" style={{ marginRight: '8px' }}></i>
               Reset
-            </button>
+            </RetroButton>
             
-            <button
+            <RetroButton
               onClick={() => setShowSalesSummary(true)}
               disabled={order.items.length === 0}
-              title={order.items.length > 0 ? 'Press Ctrl+Enter to view sales summary' : 'Add items to process sale'}
-              style={{
-                background: order.items.length === 0 
-                  ? '#9ca3af' 
-                  : 'linear-gradient(135deg, #7d8d86, #3e3f29)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '12px 16px',
-                fontSize: '14px',
-                fontWeight: '600',
-                cursor: order.items.length === 0 ? 'not-allowed' : 'pointer',
-                flex: 2,
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px'
-              }}
+              style={{ flex: 2 }}
             >
-              <i className="fa-solid fa-credit-card" style={{ fontSize: '12px' }}></i>
+              <i className="fa-solid fa-credit-card" style={{ marginRight: '8px' }}></i>
               Purchase
               {order.items.length > 0 && (
                 <span style={{ 
@@ -2812,7 +3080,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   (Ctrl+Enter)
                 </span>
               )}
-            </button>
+            </RetroButton>
           </div>
         </div>
       </div>

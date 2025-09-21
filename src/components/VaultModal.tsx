@@ -448,7 +448,6 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                   style={{
                     width: '70px',
                     height: '70px',
-                    border: 'none',
                     borderRadius: '50%',
                     background: '#ffffff',
                     border: '2px solid rgba(125, 141, 134, 0.2)',
@@ -480,7 +479,6 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                 style={{
                   width: '70px',
                   height: '70px',
-                  border: 'none',
                   borderRadius: '50%',
                   background: '#ffffff',
                   border: '2px solid rgba(125, 141, 134, 0.2)',
@@ -519,7 +517,6 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                 onClick={clearPin}
                 style={{
                   padding: '12px 24px',
-                  border: 'none',
                   borderRadius: '25px',
                   fontSize: '16px',
                   fontWeight: '600',
@@ -545,7 +542,6 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                 disabled={pin.length !== 4}
                 style={{
                   padding: '12px 24px',
-                  border: 'none',
                   borderRadius: '25px',
                   fontSize: '16px',
                   fontWeight: '600',
@@ -1460,6 +1456,7 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
           isOpen={showReports}
           onClose={() => setShowReports(false)}
           vaultEntries={vaultEntries}
+          businessId={user?.business_id}
         />
     </>
   )

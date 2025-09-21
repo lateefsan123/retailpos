@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { useState, useEffect, useRef } from 'react'
+import { useBarcodeScanner, setModalOpen } from '../../hooks/useBarcodeScanner'
 
 interface NewProduct {
   product_name: string
@@ -10,6 +11,7 @@ interface NewProduct {
   tax_rate: string
   description: string
   sku: string
+  barcode: string
   is_weighted: boolean
   weight_unit: string
   price_per_unit: string
@@ -54,6 +56,89 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   onImageChange,
   editingProduct
 }) => {
+  const [barcodeScannerActive, setBarcodeScannerActive] = useState(false)
+  const [barcodeStatus, setBarcodeStatus] = useState<'idle' | 'listening' | 'scanned'>('idle')
+  const [justScanned, setJustScanned] = useState(false)
+  const hiddenInputRef = useRef<HTMLInputElement>(null)
+  const barcodeInputRef = useRef<HTMLInputElement>(null)
+
+  const handleBarcodeScanned = (barcode: string) => {
+    console.log('🔍 ProductModal: Barcode scanned:', barcode)
+    const sanitized = barcode.trim()
+    setNewProduct(prev => ({ ...prev, barcode: sanitized }))
+    setBarcodeStatus('scanned')
+    setBarcodeScannerActive(false)
+    setJustScanned(true)
+    
+    // Reset status after 2 seconds
+    setTimeout(() => {
+      setBarcodeStatus('idle')
+    }, 2000)
+    
+    // Reset justScanned flag after a short delay
+    setTimeout(() => {
+      setJustScanned(false)
+    }, 100)
+  }
+
+  const { isListening, startListening, stopListening, currentInput } = useBarcodeScanner({
+    onBarcodeScanned: handleBarcodeScanned,
+    debounceMs: 50,
+    minLength: 8,
+    maxLength: 20,
+    isActive: isOpen && barcodeScannerActive,
+    context: 'product-modal'
+  })
+
+  const toggleBarcodeScanner = () => {
+    if (barcodeScannerActive) {
+      stopListening()
+      setBarcodeScannerActive(false)
+      setBarcodeStatus('idle')
+    } else {
+      startListening()
+      setBarcodeScannerActive(true)
+      setBarcodeStatus('listening')
+      setTimeout(() => {
+        if (hiddenInputRef.current) {
+          hiddenInputRef.current.focus()
+        }
+        barcodeInputRef.current?.focus()
+      }, 100)
+    }
+  }
+
+  // Stop scanner when modal closes and set modal state
+  useEffect(() => {
+    setModalOpen(isOpen)
+
+    if (isOpen) {
+      const focusTimer = setTimeout(() => {
+        barcodeInputRef.current?.focus()
+      }, 150)
+
+      return () => clearTimeout(focusTimer)
+    }
+
+    if (barcodeScannerActive) {
+      stopListening()
+      setBarcodeScannerActive(false)
+      setBarcodeStatus('idle')
+    }
+  }, [isOpen, barcodeScannerActive, stopListening])
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    if (barcodeStatus === 'idle' || barcodeStatus === 'listening') {
+      const focusTimer = setTimeout(() => {
+        barcodeInputRef.current?.focus()
+      }, 100)
+
+      return () => clearTimeout(focusTimer)
+    }
+  }, [barcodeStatus, isOpen])
+
   if (!isOpen) return null
 
   return (
@@ -127,7 +212,44 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           </div>
         )}
 
-        <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* Hidden input for barcode scanner to prevent form submission */}
+        {barcodeScannerActive && (
+          <input
+            ref={hiddenInputRef}
+            type="text"
+            style={{
+              position: 'absolute',
+              left: '-9999px',
+              opacity: 0,
+              pointerEvents: 'none'
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                e.stopPropagation()
+              }
+            }}
+          />
+        )}
+
+        <form 
+          onSubmit={(e) => {
+            // Prevent form submission if barcode scanner is active or just scanned
+            if (barcodeScannerActive || justScanned) {
+              e.preventDefault()
+              return
+            }
+            onSubmit(e)
+          }} 
+          onKeyDown={(e) => {
+            // Prevent Enter key from submitting form when scanner is active
+            if (e.key === 'Enter' && barcodeScannerActive) {
+              e.preventDefault()
+              e.stopPropagation()
+            }
+          }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
+        >
           {/* Product Name */}
           <div>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
@@ -415,6 +537,113 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               }}
               placeholder="Enter SKU"
             />
+          </div>
+
+          {/* Barcode */}
+          <div>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+              Barcode
+            </label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input
+                ref={barcodeInputRef}
+                type="text"
+                value={newProduct.barcode}
+                onChange={(e) => setNewProduct({...newProduct, barcode: e.target.value})}
+                style={{
+                  flex: 1,
+                  padding: '10px 12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  background: barcodeStatus === 'scanned' ? '#f0fdf4' : 'white',
+                  borderColor: barcodeStatus === 'scanned' ? '#10b981' : '#d1d5db'
+                }}
+                placeholder="Scan or enter barcode"
+                readOnly={barcodeStatus === 'listening'}
+              />
+              <button
+                type="button"
+                onClick={toggleBarcodeScanner}
+                style={{
+                  padding: '10px 16px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  background: barcodeStatus === 'listening' ? '#ef4444' : barcodeStatus === 'scanned' ? '#10b981' : '#3b82f6',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  minWidth: '120px',
+                  justifyContent: 'center'
+                }}
+                onMouseEnter={(e) => {
+                  if (barcodeStatus === 'idle') {
+                    (e.target as HTMLButtonElement).style.background = '#2563eb'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (barcodeStatus === 'idle') {
+                    (e.target as HTMLButtonElement).style.background = '#3b82f6'
+                  }
+                }}
+              >
+                {barcodeStatus === 'listening' ? (
+                  <>
+                    <i className="fa-solid fa-stop" style={{ fontSize: '12px' }}></i>
+                    Stop Scanner
+                  </>
+                ) : barcodeStatus === 'scanned' ? (
+                  <>
+                    <i className="fa-solid fa-check" style={{ fontSize: '12px' }}></i>
+                    Scanned!
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-barcode" style={{ fontSize: '12px' }}></i>
+                    Scan Barcode
+                  </>
+                )}
+              </button>
+            </div>
+            {barcodeStatus === 'listening' && (
+              <div style={{
+                marginTop: '8px',
+                padding: '8px 12px',
+                background: '#fef3c7',
+                border: '1px solid #f59e0b',
+                borderRadius: '6px',
+                fontSize: '12px',
+                color: '#92400e',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <i className="fa-solid fa-eye" style={{ fontSize: '12px' }}></i>
+                Scanner active - scan a barcode now
+              </div>
+            )}
+            {barcodeStatus === 'scanned' && (
+              <div style={{
+                marginTop: '8px',
+                padding: '8px 12px',
+                background: '#f0fdf4',
+                border: '1px solid #10b981',
+                borderRadius: '6px',
+                fontSize: '12px',
+                color: '#065f46',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <i className="fa-solid fa-check" style={{ fontSize: '12px' }}></i>
+                Barcode scanned successfully!
+              </div>
+            )}
           </div>
 
           {/* Description */}

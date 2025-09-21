@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { formatCurrency } from '../utils/currency'
 import { useBusinessId } from '../hooks/useBusinessId'
+import { useSalesData } from '../hooks/data/useSalesData'
+import { useProductsData } from '../hooks/data/useProductsData'
 import LowStockSection from '../components/dashboard/LowStockSection'
 import ProductAnalyticsSection from '../components/dashboard/ProductAnalyticsSection'
 import SalesChart from '../components/dashboard/SalesChart'
@@ -32,6 +34,8 @@ interface RecentTransaction {
 const Dashboard = () => {
   const navigate = useNavigate()
   const { businessId, businessLoading } = useBusinessId()
+  const { data: salesData } = useSalesData()
+  const { data: productsData } = useProductsData()
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalSales: 0,
@@ -60,13 +64,61 @@ const Dashboard = () => {
   const [sideBusinessTransactionCount, setSideBusinessTransactionCount] = useState<number>(0)
 
   useEffect(() => {
-    fetchDashboardStats()
-    fetchRecentTransactions()
-  }, [businessId, businessLoading])
+    // Calculate stats from cached data instead of making API calls
+    if (salesData && productsData && !businessLoading && businessId != null) {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+
+      // Calculate today's revenue from cached sales data
+      const todaySales = salesData.sales.filter(sale => {
+        const saleDate = new Date(sale.datetime)
+        return saleDate >= today && saleDate < tomorrow
+      })
+
+      const todaySideBusinessSales = salesData.sideBusinessSales.filter(sale => {
+        const saleDate = new Date(sale.date_time)
+        return saleDate >= today && saleDate < tomorrow
+      })
+
+      const todayRevenue = todaySales.reduce((sum, sale) => sum + (parseFloat(sale.total_amount.toString()) || 0), 0)
+      const todaySideBusinessRevenue = todaySideBusinessSales.reduce((sum, sale) => sum + (parseFloat(sale.total_amount.toString()) || 0), 0)
+
+      // Calculate low stock items from cached products data
+      const lowStockItems = productsData.products.filter(product => 
+        product.stock_quantity <= product.reorder_level
+      ).length
+
+      setStats({
+        totalProducts: productsData.products.length,
+        totalSales: salesData.sales.length,
+        totalCustomers: 0, // We'll need to add customers data to the cache later
+        todayRevenue,
+        todaySideBusinessRevenue,
+        todayTransactions: todaySales.length,
+        lowStockItems
+      })
+
+      setLoading(false)
+    } else if (businessId == null && !businessLoading) {
+      // Reset stats when no business is selected
+      setStats({
+        totalProducts: 0,
+        totalSales: 0,
+        totalCustomers: 0,
+        todayRevenue: 0,
+        todaySideBusinessRevenue: 0,
+        todayTransactions: 0,
+        lowStockItems: 0
+      })
+      setLoading(false)
+    }
+  }, [businessId, businessLoading, salesData?.sales?.length, productsData?.products?.length])
 
   useEffect(() => {
-    fetchDashboardStatsForPeriod(activePeriod, selectedDate)
-    fetchRecentTransactionsForPeriod(activePeriod, selectedDate)
+    // Data is automatically refreshed from cached sources when activePeriod or selectedDate changes
+    // No need for manual API calls since we're using React Query for data fetching
   }, [activePeriod, selectedDate, businessId, businessLoading])
 
   const fetchDashboardStats = async () => {
@@ -438,10 +490,8 @@ const Dashboard = () => {
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date)
     setShowCalendar(false)
-    // Refresh dashboard data for selected date
-    fetchDashboardStatsForDate(date)
-    // Also refresh recent transactions for the selected date
-    fetchRecentTransactions(date)
+    // Data is automatically refreshed from cached sources
+    // No need for manual API calls
   }
 
   const fetchDashboardStatsForDate = async (date: Date) => {

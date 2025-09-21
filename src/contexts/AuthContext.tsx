@@ -12,11 +12,17 @@ interface User {
   business_id: number | null
 }
 
+interface AdminCredentials {
+  username: string
+  password: string
+  businessId: number
+}
+
 interface AuthContextType {
   user: User | null
   supabaseUser: SupabaseUser | null
-  login: (username: string, password: string) => Promise<boolean>
-  register: (username: string, password: string, businessName: string) => Promise<boolean>
+  login: (email: string, password: string) => Promise<boolean>
+  register: (username: string, password: string, businessName: string) => Promise<{ success: boolean; adminCredentials?: AdminCredentials }>
   logout: () => void
   loading: boolean
   currentUserId: string | undefined
@@ -132,12 +138,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setLoading(true)
       
-      // Use legacy login directly since we're using username/password system
-      const success = await legacyLogin(username, password)
+      // Use legacy login with email (which is now stored as username)
+      const success = await legacyLogin(email, password)
       
       if (success) {
         localStorage.setItem('lastLogin', new Date().toLocaleString())
@@ -195,7 +201,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
-  const register = async (username: string, password: string, businessName: string): Promise<boolean> => {
+  const register = async (username: string, password: string, businessName: string): Promise<{ success: boolean; adminCredentials?: AdminCredentials }> => {
     try {
       setLoading(true)
       
@@ -208,7 +214,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (existingUser) {
         console.error('Username already exists')
-        return false
+        return { success: false }
       }
 
       // Create business first
@@ -227,7 +233,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (businessError || !businessData) {
         console.error('Error creating business:', businessError)
-        return false
+        return { success: false }
       }
 
       // Create user with the business_id
@@ -237,7 +243,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .insert({
           username: username,
           password_hash: hashedPassword,
-          role: 'owner',
+          role: 'Owner',
           active: true,
           business_id: businessData.business_id,
           created_at: new Date().toISOString()
@@ -252,7 +258,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           .from('business_info')
           .delete()
           .eq('business_id', businessData.business_id)
-        return false
+        return { success: false }
+      }
+
+      // Automatically create admin account for the business
+      // Each business gets an admin account with username "admin_{business_id}" and password "admin123"
+      try {
+        const adminHashedPassword = hashPassword('admin123')
+        const adminUsername = `admin_${businessData.business_id}` // Make username unique per business
+        await supabase
+          .from('users')
+          .insert({
+            username: adminUsername,
+            password_hash: adminHashedPassword,
+            role: 'Admin',
+            active: true,
+            business_id: businessData.business_id,
+            created_at: new Date().toISOString()
+          })
+        console.log('Admin account created successfully for business:', businessData.business_id, 'with username:', adminUsername)
+      } catch (adminError) {
+        console.warn('Failed to create admin account:', adminError)
+        // Don't fail the entire registration if admin creation fails
       }
 
       // Set the user as logged in
@@ -270,13 +297,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       localStorage.setItem('current_business_id', businessData.business_id.toString())
       localStorage.setItem('lastLogin', new Date().toLocaleString())
       
-      // Redirect to dashboard after successful registration
-      window.location.href = '/'
+      // Return admin credentials for display
+      const adminCredentials: AdminCredentials = {
+        username: `admin_${businessData.business_id}`,
+        password: 'admin123',
+        businessId: businessData.business_id
+      }
       
-      return true
+      return { success: true, adminCredentials }
     } catch (error) {
       console.error('Registration error:', error)
-      return false
+      return { success: false }
     } finally {
       setLoading(false)
     }

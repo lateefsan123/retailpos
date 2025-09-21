@@ -348,7 +348,7 @@ const OrderItemCard: React.FC<{
           : itemName}
       </p>
       <p style={{ 
-        margin: '0', 
+        margin: '0 0 2px 0', 
         fontSize: '14px', 
         color: '#7d8d86',
         fontWeight: '600'
@@ -361,6 +361,22 @@ const OrderItemCard: React.FC<{
           `€${itemPrice.toFixed(2)}`
         )}
       </p>
+      {item.product?.barcode && (
+        <p style={{ 
+          margin: '0', 
+          fontSize: '10px', 
+          color: '#9ca3af',
+          fontFamily: 'monospace',
+          background: '#ffffff',
+          padding: '1px 4px',
+          borderRadius: '3px',
+          border: '1px solid #e5e7eb',
+          display: 'inline-block'
+        }}>
+          <i className="fa-solid fa-barcode" style={{ marginRight: '3px', fontSize: '7px' }}></i>
+          {item.product.barcode}
+        </p>
+      )}
     </div>
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
       {/* Show quantity controls for regular items */}

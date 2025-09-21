@@ -12,6 +12,7 @@ export interface Product {
   tax_rate?: number
   description?: string
   sku?: string
+  barcode?: string | null
   sales_count?: number
   total_revenue?: number
   last_sold_date?: string
