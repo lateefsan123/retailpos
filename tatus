@@ -1,0 +1,10 @@
+[33m4627b92[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m key
+[33m8b2b60c[m insane progress
+[33m07c767c[m fix: Add required fields to business creation in registration
+[33m0f0b109[m feat: Implement user-centric multi-tenant model
+[33m1a949fd[m feat: Complete multi-tenant POS system implementation
+[33ma8dd084[m[33m ([m[1;31morigin/main[m[33m)[m dsdd
+[33m2d51f34[m page routes
+[33m9c11622[m qq
+[33mba850ca[m Fix base path and grant permissions
+[33m93139ce[m Add simple GitHub Pages deployment workflow

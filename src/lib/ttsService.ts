@@ -60,12 +60,11 @@ class TTSService {
 
   private loadSettings(): TTSSettings {
     const envElevenLabsKey = import.meta.env.VITE_ELEVENLABS_KEY || 'sk_337a097ef281682961b7c3db26217470f085fd565c3d711d'
-    // Hardcoded OpenAI API key for now
-    const hardcodedOpenAIKey = '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'
+    const envOpenAIKey = import.meta.env.VITE_OPENAI_API_KEY || ''
     
     console.log('Environment variables loaded:')
     console.log('VITE_ELEVENLABS_KEY:', envElevenLabsKey ? 'Present' : 'Missing')
-    console.log('OpenAI API Key: Hardcoded and Present')
+    console.log('VITE_OPENAI_API_KEY:', envOpenAIKey ? 'Present' : 'Missing')
     
     const defaultSettings: TTSSettings = {
       enabled: true, // Enable TTS by default
@@ -74,16 +73,10 @@ class TTSService {
       apiKey: envElevenLabsKey,
       dailyLimit: 5000, // 5K characters per day (ElevenLabs is more expensive)
       useOpenAI: true,
-      openaiApiKey: hardcodedOpenAIKey,
+      openaiApiKey: envOpenAIKey,
       openaiVoice: 'alloy'
     }
 
-    // Force use of hardcoded settings for now
-    console.log('Using hardcoded TTS settings:', defaultSettings)
-    return defaultSettings
-    
-    // Commented out localStorage loading to force hardcoded values
-    /*
     try {
       const saved = localStorage.getItem('tts-settings')
       if (saved) {
@@ -99,7 +92,6 @@ class TTSService {
       console.error('Error loading TTS settings:', error)
       return defaultSettings
     }
-    */
   }
 
   private loadUsage(): TTSUsage {
