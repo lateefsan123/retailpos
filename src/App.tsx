@@ -9,7 +9,9 @@ import { useNavCollapse } from './hooks/useNavCollapse'
 import ProtectedRoute from './components/ProtectedRoute'
 import RoleProtectedRoute from './components/RoleProtectedRoute'
 import Navigation from './components/Navigation'
+import Landing from './pages/Landing'
 import Login from './pages/Login'
+import Signup from './pages/Signup'
 import EmailVerification from './pages/EmailVerification'
 import Dashboard from './pages/Dashboard'
 import Products from './pages/Products'
@@ -18,6 +20,7 @@ import SideBusinesses from './pages/SideBusinesses'
 import Transactions from './pages/Transactions'
 import TransactionDetail from './pages/TransactionDetail'
 import Admin from './pages/Admin'
+import UserRoleLogin from './pages/UserRoleLogin'
 import Reminders from './pages/Reminders'
 
 const AppContent = () => {
@@ -65,7 +68,7 @@ const AppContent = () => {
           zIndex: 1
         }}>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/products" element={
               <RoleProtectedRoute>
                 <Products />
@@ -117,8 +120,12 @@ function App() {
               <PinProvider>
                 <Router basename="/retailpos">
                   <Routes>
+                    <Route path="/" element={<Landing />} />
+                    <Route path="/landing" element={<Landing />} />
                     <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<Signup />} />
                     <Route path="/verify-email" element={<EmailVerification />} />
+                    <Route path="/staff-login" element={<UserRoleLogin />} />
                     <Route path="/*" element={
                       <ProtectedRoute>
                         <AppContent />

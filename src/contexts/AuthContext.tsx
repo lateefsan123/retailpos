@@ -104,7 +104,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }, [])
 
-
   const loadUserProfile = async (userId: string) => {
     try {
       // Get the user from users table
@@ -190,9 +189,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       localStorage.setItem('pos_user', JSON.stringify(userData))
       localStorage.setItem('lastLogin', new Date().toLocaleString())
       localStorage.setItem('lastPassword', password)
-      
-      // Redirect to dashboard after successful login
-      window.location.href = '/'
       
       return true
     } catch (error) {

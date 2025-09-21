@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { supabase } from '../lib/supabaseClient'
 
 const UserRoleLogin = () => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { businessUser, login } = useAuth()
+  const navigate = useNavigate()
+  const { user, login, loading: authLoading } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,10 +24,11 @@ const UserRoleLogin = () => {
     try {
       // Try to login with the individual user credentials
       const success = await login(username, password)
-      if (!success) {
+      if (success) {
+        navigate('/dashboard')
+      } else {
         setError('Invalid username or password')
       }
-      // If successful, the AuthContext will handle the redirect to dashboard
     } catch (error) {
       console.error('Login error:', error)
       setError('An unexpected error occurred. Please try again.')
@@ -35,15 +37,19 @@ const UserRoleLogin = () => {
     }
   }
 
-  // If no business user is logged in, redirect to business login
+  // If no user is logged in, redirect to login
   useEffect(() => {
-    if (!businessUser) {
-      window.location.href = '/login'
+    if (!authLoading && !user) {
+      navigate('/login', { replace: true })
     }
-  }, [businessUser])
+  }, [authLoading, user, navigate])
 
-  if (!businessUser) {
-    return null // Will redirect
+  if (authLoading) {
+    return null
+  }
+
+  if (!user) {
+    return null // Will redirect once navigation runs
   }
 
   return (
@@ -105,7 +111,7 @@ const UserRoleLogin = () => {
               </div>
               <h2 style={{ fontSize: '36px', fontWeight: 'bold', color: 'white', marginBottom: '8px', textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)' }}>Staff Login</h2>
               <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '16px' }}>
-                Welcome to {businessUser.username}'s business
+                Welcome to {user.username}'s business
               </p>
             </div>
         
@@ -245,7 +251,7 @@ const UserRoleLogin = () => {
                     type="button"
                     onClick={() => {
                       // Logout from business account
-                      window.location.href = '/login'
+                      window.location.href = '/retailpos/login'
                     }}
                     style={{ 
                       color: '#60a5fa', 

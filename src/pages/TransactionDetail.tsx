@@ -172,7 +172,7 @@ const TransactionDetail = () => {
   }
 
   const handleBack = () => {
-    navigate('/')
+    navigate('/dashboard')
   }
 
   const handleEdit = () => {
@@ -438,7 +438,7 @@ const TransactionDetail = () => {
       alert('Transaction deleted successfully!')
       
       // Navigate back to transactions list
-      navigate('/')
+      navigate('/dashboard')
       
     } catch (error) {
       console.error('Error deleting transaction:', error)
