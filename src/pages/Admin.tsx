@@ -138,6 +138,9 @@ const Admin = () => {
       }
 
       const passwordHash = hashPassword(newUser.password)
+      console.log('Creating user with password:', newUser.password)
+      console.log('Generated hash:', passwordHash)
+      console.log('Hash type:', typeof passwordHash)
 
       // Prepare user data - only include icon if column exists
       const userData: any = {
@@ -272,7 +275,11 @@ const Admin = () => {
 
       // Only update password if provided
       if (newUser.password.trim()) {
-        updateData.password_hash = hashPassword(newUser.password)
+        const newPasswordHash = hashPassword(newUser.password)
+        console.log('Updating user password:', newUser.password)
+        console.log('Generated hash:', newPasswordHash)
+        console.log('Hash type:', typeof newPasswordHash)
+        updateData.password_hash = newPasswordHash
       }
 
       const { error } = await supabase
@@ -332,6 +339,9 @@ const Admin = () => {
       // If admin doesn't exist, create one
       if (!existingAdmin) {
         const adminHashedPassword = hashPassword('admin123')
+        console.log('Creating admin account with password: admin123')
+        console.log('Generated hash:', adminHashedPassword)
+        console.log('Hash type:', typeof adminHashedPassword)
         const { error: createError } = await supabase
           .from('users')
           .insert({

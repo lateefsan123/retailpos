@@ -349,36 +349,6 @@ const Login: React.FC = () => {
 
         {/* Right Side - Image */}
         <div className={styles.imageContainer}>
-          <div className={styles.imageOverlay}></div>
-          <div className={styles.imageContent}>
-            <div className={styles.imageText}>
-              <div className={styles.imageIcon}>
-                <i className="fas fa-chart-line"></i>
-              </div>
-              <h2 className={styles.imageTitle}>Manage Your Business</h2>
-              <p className={styles.imageSubtitle}>
-                Access your dashboard to track sales, manage inventory, and grow your business with powerful analytics.
-              </p>
-              <div className={styles.featureList}>
-                <div className={styles.featureItem}>
-                  <i className="fas fa-chart-bar"></i>
-                  <span>Real-time sales tracking</span>
-                </div>
-                <div className={styles.featureItem}>
-                  <i className="fas fa-boxes"></i>
-                  <span>Inventory management</span>
-                </div>
-                <div className={styles.featureItem}>
-                  <i className="fas fa-users"></i>
-                  <span>Customer insights</span>
-                </div>
-                <div className={styles.featureItem}>
-                  <i className="fas fa-mobile-alt"></i>
-                  <span>Mobile-friendly interface</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

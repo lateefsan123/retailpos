@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 
@@ -14,8 +13,13 @@ interface User {
   pin?: string;
 }
 
-const SelectUser: React.FC = () => {
-  const navigate = useNavigate();
+interface SelectUserModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onUserSwitch: (selectedUser: User, password: string, usePin?: boolean) => Promise<void>;
+}
+
+const SelectUserModal: React.FC<SelectUserModalProps> = ({ isOpen, onClose, onUserSwitch }) => {
   const { user, switchUser } = useAuth();
 
   const [users, setUsers] = useState<User[]>([]);
@@ -32,17 +36,17 @@ const SelectUser: React.FC = () => {
   const [usePinAuth, setUsePinAuth] = useState(false);
 
   useEffect(() => {
-    if (user?.business_id) {
+    if (isOpen && user?.business_id) {
       fetchUsers();
     }
-  }, [user?.business_id]);
+  }, [isOpen, user?.business_id]);
 
   useEffect(() => {
-    // Show PIN prompt on component mount if user has a PIN
-    if (user?.pin && !pinVerified) {
+    // Show PIN prompt on modal open if user has a PIN
+    if (isOpen && user?.pin && !pinVerified) {
       setShowPinPrompt(true);
     }
-  }, [user?.pin, pinVerified]);
+  }, [isOpen, user?.pin, pinVerified]);
 
   const fetchUsers = async () => {
     if (!user?.business_id) return;
@@ -50,7 +54,7 @@ const SelectUser: React.FC = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('users') // if your table is shop_staff, change this to 'shop_staff'
+        .from('users')
         .select('*')
         .eq('business_id', user.business_id)
         .eq('active', true)
@@ -85,13 +89,8 @@ const SelectUser: React.FC = () => {
     setPasswordError('');
 
     try {
-      const success = await switchUser(selectedUser.user_id, password, usePinAuth);
-
-      if (success) {
-        navigate('/dashboard');
-      } else {
-        throw new Error(usePinAuth ? 'Invalid PIN' : 'Invalid password');
-      }
+      await onUserSwitch(selectedUser, password, usePinAuth);
+      // If successful, the parent component will handle closing the modal
     } catch (error) {
       console.log('Password error:', error);
       setPasswordError(usePinAuth ? 'Invalid PIN. Please try again.' : 'Invalid password. Please try again.');
@@ -107,6 +106,24 @@ const SelectUser: React.FC = () => {
     setPasswordError('');
     setIsAuthenticating(false);
     setUsePinAuth(false);
+  };
+
+  const handlePinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pinInput) {
+      setPinError('Please enter your PIN');
+      return;
+    }
+
+    // Check if the entered PIN matches the current user's PIN
+    if (user?.pin && user.pin === pinInput) {
+      setShowPinPrompt(false);
+      setPinVerified(true);
+      setPinInput('');
+      setPinError('');
+    } else {
+      setPinError('Invalid PIN. Please try again.');
+    }
   };
 
   const getRoleColor = (role: string) => {
@@ -138,27 +155,7 @@ const SelectUser: React.FC = () => {
     });
   };
 
-
-
-
-  const handlePinSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pinInput) {
-      setPinError('Please enter your PIN');
-      return;
-    }
-
-    // Check if the entered PIN matches the current user's PIN
-    if (user?.pin && user.pin === pinInput) {
-      setShowPinPrompt(false);
-      setPinVerified(true);
-      setPinInput('');
-      setPinError('');
-    } else {
-      setPinError('Invalid PIN. Please try again.');
-    }
-  };
-
+  if (!isOpen) return null;
 
   return (
     <div
@@ -205,7 +202,6 @@ const SelectUser: React.FC = () => {
               height: '700px',
             }}
           >
-
             {/* Header */}
             <div
               style={{
@@ -231,16 +227,10 @@ const SelectUser: React.FC = () => {
                   margin: 0,
                 }}
               >
-                Select User
+                Switch User
               </h2>
               <button
-                onClick={() => {
-                  if (showPasswordView) {
-                    handleBackToUsers();
-                  } else {
-                    navigate('/login');
-                  }
-                }}
+                onClick={onClose}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -334,9 +324,7 @@ const SelectUser: React.FC = () => {
                       <div style={{ display: 'flex', gap: 12 }}>
                         <button
                           type="button"
-                          onClick={() => {
-                            navigate('/login');
-                          }}
+                          onClick={onClose}
                           style={{
                             flex: 1,
                             padding: '12px 16px',
@@ -356,7 +344,7 @@ const SelectUser: React.FC = () => {
                             (e.currentTarget as HTMLButtonElement).style.background = '#4a5568';
                           }}
                         >
-                          Back to Login
+                          Cancel
                         </button>
 
                         <button
@@ -442,26 +430,26 @@ const SelectUser: React.FC = () => {
                             src={`/retailpos/images/icons/${selectedUser.icon}.png`} 
                             alt={selectedUser.icon}
                             style={{
-                            width: '120px',
-                            height: '120px',
+                              width: '120px',
+                              height: '120px',
                               objectFit: 'cover',
                               borderRadius: '50%'
                             }}
                           />
                         ) : (
-                        <svg
-                          viewBox="0 0 24 24"
-                          style={{
-                            width: '80px',
-                            height: '80px',
-                            color: 'rgba(255,255,255,0.85)'
-                          }}
-                          fill="currentColor"
-                        >
-                          <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z" />
-                        </svg>
+                          <svg
+                            viewBox="0 0 24 24"
+                            style={{
+                              width: '80px',
+                              height: '80px',
+                              color: 'rgba(255,255,255,0.85)'
+                            }}
+                            fill="currentColor"
+                          >
+                            <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z" />
+                          </svg>
                         )}
-                      </div>
+                    </div>
                   </div>
 
                   {/* Username */}
@@ -634,24 +622,24 @@ const SelectUser: React.FC = () => {
                     </div>
 
                     {/* Error Message */}
-                      {passwordError && (
-                        <div
-                          style={{
+                    {passwordError && (
+                      <div
+                        style={{
                           background: 'rgba(220, 38, 38, 0.1)',
                           border: '1px solid rgba(220, 38, 38, 0.3)',
                           borderRadius: '8px',
                           padding: '12px 16px',
                           marginBottom: '16px',
-                            display: 'flex',
-                            alignItems: 'center',
+                          display: 'flex',
+                          alignItems: 'center',
                           gap: '8px',
                           backdropFilter: 'blur(10px)'
-                          }}
-                        >
+                        }}
+                      >
                         <i className="fa-solid fa-exclamation-triangle" style={{ color: '#fca5a5', fontSize: '14px', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }} />
                         <p style={{ fontSize: '14px', color: '#fca5a5', margin: 0, fontWeight: 500, textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>{passwordError}</p>
-                        </div>
-                      )}
+                      </div>
+                    )}
 
                     {/* Helper Text */}
                     <div style={{ 
@@ -827,32 +815,32 @@ const SelectUser: React.FC = () => {
                         <path d="M11 2h2v4h-2zM4 9h16v2H4zM6 12l4 .5V22H8v-7.5L6 14v-2zm12 0v2l-2 .5V22h-2v-9.5l4-.5z" />
                       </svg>
                     </button>
-                      <button
-                        onClick={() => navigate('/login')}
-                        style={{
-                          width: '40px',
-                          height: '40px',
-                          borderRadius: '50%',
-                          background: 'rgba(0,0,0,0.4)',
-                          border: '1px solid rgba(255,255,255,0.3)',
-                          backdropFilter: 'blur(10px)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                          color: 'rgba(255,255,255,0.9)'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#991b1b';
-                          e.currentTarget.style.border = '1px solid #991b1b';
-                          e.currentTarget.style.color = '#ffffff';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'rgba(0,0,0,0.4)';
-                          e.currentTarget.style.border = '1px solid rgba(255,255,255,0.3)';
-                          e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
-                        }}
+                    <button
+                      onClick={onClose}
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        background: 'rgba(0,0,0,0.4)',
+                        border: '1px solid rgba(255,255,255,0.3)',
+                        backdropFilter: 'blur(10px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        color: 'rgba(255,255,255,0.9)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#991b1b';
+                        e.currentTarget.style.border = '1px solid #991b1b';
+                        e.currentTarget.style.color = '#ffffff';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(0,0,0,0.4)';
+                        e.currentTarget.style.border = '1px solid rgba(255,255,255,0.3)';
+                        e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
+                      }}
                     >
                       <svg viewBox="0 0 24 24" style={{ width: '20px', height: '20px' }} fill="currentColor">
                         <path d="M11 2h2v10h-2z" />
@@ -876,7 +864,6 @@ const SelectUser: React.FC = () => {
                 </div>
               ) : (
                 <div>
-
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
                     {users.map((u) => (
                       <button
@@ -1016,4 +1003,4 @@ const SelectUser: React.FC = () => {
   );
 };
 
-export default SelectUser;
+export default SelectUserModal;

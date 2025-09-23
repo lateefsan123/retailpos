@@ -22,7 +22,7 @@ const AdminCredentialsModal: React.FC<AdminCredentialsModalProps> = ({
   const handleContinue = () => {
     onClose()
     // Redirect to dashboard after user acknowledges the credentials
-    window.location.href = '/'
+    window.location.href = '/retailpos/dashboard'
   }
 
   const copyToClipboard = (text: string) => {

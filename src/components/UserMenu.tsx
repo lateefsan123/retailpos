@@ -2,17 +2,23 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useRole } from '../contexts/RoleContext'
 import { supabase } from '../lib/supabaseClient'
-import SwitchUserModal from './SwitchUserModal'
+import SelectUserModal from './SelectUserModal'
 
 const UserMenu: React.FC = () => {
   const { user, logout, switchUser } = useAuth()
   const { userRole } = useRole()
   const [isOpen, setIsOpen] = useState(false)
-  const [showSwitchUserModal, setShowSwitchUserModal] = useState(false)
+  const [showSelectUserModal, setShowSelectUserModal] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   // Debug logging
   console.log('UserMenu - Current user:', user?.username, 'Role:', user?.role, 'UserRole from context:', userRole)
+  console.log('UserMenu - User object:', user)
+
+  // Monitor user changes
+  useEffect(() => {
+    console.log('UserMenu - User changed to:', user?.username, 'Role:', user?.role)
+  }, [user])
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -59,7 +65,7 @@ const UserMenu: React.FC = () => {
 
   const handleSwitchUser = () => {
     setIsOpen(false)
-    setShowSwitchUserModal(true)
+    setShowSelectUserModal(true)
   }
 
   const handleUserSwitch = async (selectedUser: any, password: string, usePin?: boolean) => {
@@ -69,9 +75,12 @@ const UserMenu: React.FC = () => {
       
       if (success) {
         console.log('User switch successful, closing modal')
-        setShowSwitchUserModal(false)
-        // The user state will be automatically updated by the AuthContext
-        // No need to show an alert - the UI will update automatically
+        setShowSelectUserModal(false)
+        // Force a small delay to ensure state updates are processed
+        setTimeout(() => {
+          console.log('User switch completed - Current user should now be:', selectedUser.username)
+          // The AuthContext should automatically update all dependent components
+        }, 100)
       } else {
         // Keep the modal open and show error
         throw new Error(usePin ? 'Invalid PIN' : 'Invalid password')
@@ -288,10 +297,10 @@ const UserMenu: React.FC = () => {
         </div>
       )}
 
-      {/* Switch User Modal */}
-      <SwitchUserModal
-        isOpen={showSwitchUserModal}
-        onClose={() => setShowSwitchUserModal(false)}
+      {/* Select User Modal */}
+      <SelectUserModal
+        isOpen={showSelectUserModal}
+        onClose={() => setShowSelectUserModal(false)}
         onUserSwitch={handleUserSwitch}
       />
     </div>

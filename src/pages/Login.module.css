@@ -430,8 +430,8 @@
   display: none;
   width: 50%;
   position: relative;
-  background-image: url('/retailpos/images/backgrounds/login_bg.png');
-  background-size: contain;
+  background-image: url('/retailpos/images/backgrounds/u2541828551_An_elegant_illustration_of_a_small_African_corner_5e875dd7-e5d8-4655-af92-bb5c9c2865fd_1.png');
+  background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 }
@@ -442,87 +442,6 @@
   }
 }
 
-.imageOverlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, var(--sage), var(--dark-olive));
-}
-
-.imageOverlay::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.2);
-}
-
-.imageContent {
-  position: relative;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem;
-}
-
-.imageText {
-  text-align: center;
-  color: var(--cream);
-}
-
-.imageIcon {
-  margin-bottom: 2rem;
-}
-
-.imageIcon i {
-  font-size: 4rem;
-}
-
-.imageTitle {
-  font-size: 2.25rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-}
-
-.imageSubtitle {
-  font-size: 1.25rem;
-  opacity: 0.9;
-  margin-bottom: 2rem;
-}
-
-.featureList {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-  text-align: left;
-  max-width: 20rem;
-  margin: 0 auto;
-}
-
-.featureItem {
-  display: flex;
-  align-items: center;
-}
-
-.featureItem i {
-  margin-right: 0.75rem;
-  width: 1rem;
-}
-
-.featureItem i.fa-chart-bar {
-  color: #60a5fa;
-}
-
-.featureItem i.fa-boxes {
-  color: #fbbf24;
-}
-
-.featureItem i.fa-users {
-  color: #4ade80;
-}
-
-.featureItem i.fa-mobile-alt {
-  color: #a78bfa;
-}
 
 /* Responsive Design */
 @media (max-width: 640px) {
