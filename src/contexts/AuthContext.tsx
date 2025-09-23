@@ -10,6 +10,8 @@ interface User {
   active: boolean
   icon?: string
   business_id: number | null
+  last_used?: string
+  pin?: string
 }
 
 interface AdminCredentials {
@@ -22,7 +24,9 @@ interface AuthContextType {
   user: User | null
   supabaseUser: SupabaseUser | null
   login: (email: string, password: string) => Promise<boolean>
+  authenticate: (email: string, password: string) => Promise<{ success: boolean; businessId?: number }>
   register: (username: string, password: string, businessName: string) => Promise<{ success: boolean; adminCredentials?: AdminCredentials }>
+  switchUser: (targetUserId: number, password: string, usePin?: boolean) => Promise<boolean>
   logout: () => void
   loading: boolean
   currentUserId: string | undefined
@@ -58,7 +62,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // Check for existing Supabase session
     const checkSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession()
+        const { data: { session } } = await supabase.auth.getSession()
         
         if (session?.user) {
           setSupabaseUser(session.user)
@@ -70,7 +74,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setUser(JSON.parse(savedUser))
           }
         }
-      } catch (error) {
+      } catch {
         // If there's an error, still set loading to false to prevent infinite loading
       } finally {
         setLoading(false)
@@ -137,17 +141,45 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
+  const authenticate = async (email: string, password: string): Promise<{ success: boolean; businessId?: number }> => {
+    try {
+      setLoading(true)
+
+      // Hash the provided password
+      const hashedPassword = hashPassword(password)
+      
+      // Query the users table to find matching credentials
+      const { data, error } = await supabase
+        .from('users')
+        .select('business_id')
+        .eq('username', email)
+        .eq('password_hash', hashedPassword)
+        .eq('active', true)
+        .single()
+
+      if (error || !data) {
+        return { success: false }
+      }
+
+      return { success: true, businessId: data.business_id }
+    } catch (error) {
+      return { success: false }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setLoading(true)
-      
+
       // Use legacy login with email (which is now stored as username)
       const success = await legacyLogin(email, password)
-      
+
       if (success) {
         localStorage.setItem('lastLogin', new Date().toLocaleString())
       }
-      
+
       return success
     } catch (error) {
       // console.error('Login error:', error)
@@ -182,13 +214,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         role: data.role,
         active: data.active,
         icon: data.icon,
-        business_id: data.business_id ?? null
+        business_id: data.business_id ?? null,
+        last_used: data.last_used
       }
 
       setUser(userData)
       localStorage.setItem('pos_user', JSON.stringify(userData))
       localStorage.setItem('lastLogin', new Date().toLocaleString())
       localStorage.setItem('lastPassword', password)
+      
+      // Update the last_used timestamp for the user
+      await supabase
+        .from('users')
+        .update({ last_used: new Date().toISOString() })
+        .eq('user_id', data.user_id)
       
       return true
     } catch (error) {
@@ -202,7 +241,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setLoading(true)
       
       // Check if username already exists
-      const { data: existingUser, error: checkError } = await supabase
+      const { data: existingUser } = await supabase
         .from('users')
         .select('user_id')
         .eq('username', username)
@@ -214,7 +253,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       // Check if business name already exists
-      const { data: existingBusiness, error: businessCheckError } = await supabase
+      const { data: existingBusiness } = await supabase
         .from('business_info')
         .select('business_id')
         .eq('name', businessName)
@@ -321,6 +360,85 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
+  const switchUser = async (targetUserId: number, password: string, usePin: boolean = false): Promise<boolean> => {
+    try {
+      setLoading(true)
+      
+      console.log('Switching to user ID:', targetUserId, 'with', usePin ? 'PIN' : 'password', 'length:', password.length)
+      
+      let query
+      
+      if (usePin) {
+        // For PIN authentication, compare directly without hashing
+        query = supabase
+          .from('users')
+          .select('*')
+          .eq('user_id', targetUserId)
+          .eq('pin', password)
+          .eq('active', true)
+          .single()
+      } else {
+        // For password authentication, hash the password
+        const hashedPassword = hashPassword(password)
+        console.log('Hashed password:', hashedPassword)
+        
+        query = supabase
+          .from('users')
+          .select('*')
+          .eq('user_id', targetUserId)
+          .eq('password_hash', hashedPassword)
+          .eq('active', true)
+          .single()
+      }
+      
+      const { data, error } = await query
+
+      if (error || !data) {
+        console.error('User switch failed:', error)
+        console.error('Query result - data:', data, 'error:', error)
+        return false
+      }
+
+      console.log('Found target user data:', data)
+
+      // Update the last_used timestamp for the target user
+      await supabase
+        .from('users')
+        .update({ last_used: new Date().toISOString() })
+        .eq('user_id', targetUserId)
+
+      // Create new user data with updated last_used
+      const newUserData: User = {
+        user_id: data.user_id,
+        username: data.username,
+        role: data.role,
+        active: data.active,
+        icon: data.icon,
+        business_id: data.business_id ?? null,
+        last_used: new Date().toISOString(),
+        pin: data.pin
+      }
+
+      // Update the current user state
+      console.log('Before switch - Current user:', user?.username, 'Role:', user?.role)
+      setUser(newUserData)
+      localStorage.setItem('pos_user', JSON.stringify(newUserData))
+      localStorage.setItem('lastLogin', new Date().toLocaleString())
+      if (!usePin) {
+        localStorage.setItem('lastPassword', password)
+      }
+      
+      console.log('After switch - New user:', newUserData.username, 'Role:', newUserData.role)
+      console.log('User switched successfully to:', newUserData.username, 'Role:', newUserData.role)
+      return true
+    } catch (error) {
+      console.error('User switch error:', error)
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const logout = async () => {
     try {
       if (supabaseUser) {
@@ -344,7 +462,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     user,
     supabaseUser,
     login,
+    authenticate,
     register,
+    switchUser,
     logout,
     loading,
     currentUserId: supabaseUser?.id || user?.user_id?.toString()

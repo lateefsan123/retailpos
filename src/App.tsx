@@ -12,7 +12,6 @@ import Navigation from './components/Navigation'
 import UserMenu from './components/UserMenu'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
-import Signup from './pages/Signup'
 import EmailVerification from './pages/EmailVerification'
 import Dashboard from './pages/Dashboard'
 import Products from './pages/Products'
@@ -21,8 +20,8 @@ import SideBusinesses from './pages/SideBusinesses'
 import Transactions from './pages/Transactions'
 import TransactionDetail from './pages/TransactionDetail'
 import Admin from './pages/Admin'
-import UserRoleLogin from './pages/UserRoleLogin'
 import Reminders from './pages/Reminders'
+import SelectUser from './pages/SelectUser'
 
 const AppContent = () => {
   const { isCollapsed } = useNav()
@@ -129,9 +128,8 @@ function App() {
                     <Route path="/" element={<Landing />} />
                     <Route path="/landing" element={<Landing />} />
                     <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<Signup />} />
                     <Route path="/verify-email" element={<EmailVerification />} />
-                    <Route path="/staff-login" element={<UserRoleLogin />} />
+                    <Route path="/select-user" element={<SelectUser />} />
                     <Route path="/*" element={
                       <ProtectedRoute>
                         <AppContent />

@@ -5,6 +5,7 @@ import { formatCurrency } from '../utils/currency'
 import { useBusinessId } from '../hooks/useBusinessId'
 import { useSalesData } from '../hooks/data/useSalesData'
 import { useProductsData } from '../hooks/data/useProductsData'
+import { useAuth } from '../contexts/AuthContext'
 import LowStockSection from '../components/dashboard/LowStockSection'
 import ProductAnalyticsSection from '../components/dashboard/ProductAnalyticsSection'
 import SalesChart from '../components/dashboard/SalesChart'
@@ -36,6 +37,7 @@ const Dashboard = () => {
   const { businessId, businessLoading } = useBusinessId()
   const { data: salesData } = useSalesData()
   const { data: productsData } = useProductsData()
+  const { user, switchUser } = useAuth()
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalSales: 0,
@@ -120,6 +122,7 @@ const Dashboard = () => {
     // Data is automatically refreshed from cached sources when activePeriod or selectedDate changes
     // No need for manual API calls since we're using React Query for data fetching
   }, [activePeriod, selectedDate, businessId, businessLoading])
+
 
   const fetchDashboardStats = async () => {
     if (businessLoading) {
@@ -1682,6 +1685,7 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+
     </div>
   )
 }

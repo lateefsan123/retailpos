@@ -93,11 +93,11 @@ const Login: React.FC = () => {
     if (validateLoginForm()) {
       setIsSubmitting(true);
       
-      // Use email as username for login
+      // Use full login functionality
       const success = await login(formData.email, formData.password);
       if (success) {
-        // Automatically redirect to staff login after successful authentication
-        navigate('/staff-login');
+        // Redirect to select user page after successful login
+        navigate('/select-user');
       } else {
         setErrors({ general: 'Invalid email or password' });
       }
@@ -136,9 +136,6 @@ const Login: React.FC = () => {
     setFormData(prev => ({ ...prev, password: '' }));
   };
 
-  const handleGoToStaffLogin = () => {
-    navigate('/staff-login');
-  };
 
   return (
     <div className={styles.container}>
@@ -252,10 +249,6 @@ const Login: React.FC = () => {
                     )}
                   </button>
 
-                  <div className={styles.signupLink}>
-                    Don't have an account? 
-                    <a href="/signup" className={styles.link}>Sign Up</a>
-                  </div>
                 </form>
 
                 {/* Social Login Options */}

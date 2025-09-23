@@ -119,11 +119,12 @@ const Admin = () => {
         business_id: businessId
       })
 
-      // Check if username already exists
+      // Check if username already exists within this business
       const { data: existingUser, error: checkError } = await supabase
         .from('users')
         .select('user_id')
         .eq('username', newUser.username.trim())
+        .eq('business_id', businessId)
         .single()
 
       if (checkError && checkError.code !== 'PGRST116') {

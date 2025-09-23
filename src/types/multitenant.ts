@@ -28,6 +28,7 @@ export interface User {
   icon?: string
   business_id: number
   auth_user_id?: string // UUID from Supabase auth
+  pin?: string // User PIN for quick authentication
 }
 
 // =====================================================
@@ -348,6 +349,7 @@ export interface UserForm {
   password: string
   role: 'Admin' | 'Owner' | 'Cashier' | 'Manager'
   icon?: string
+  pin?: string
 }
 
 // =====================================================

@@ -76,8 +76,8 @@ const Landing: React.FC = () => {
               <Link to="/login" className={styles.navLink}>
                 Sign In
               </Link>
-              <Link to="/signup" className={styles.navButton}>
-                Get Started
+              <Link to="/login" className={styles.navButton}>
+                Sign In
               </Link>
             </div>
           </div>
@@ -98,8 +98,8 @@ const Landing: React.FC = () => {
           </p>
           
           <div className={styles.heroButtons}>
-            <Link to="/signup" className={styles.primaryButton}>
-              Start Free Trial
+            <Link to="/login" className={styles.primaryButton}>
+              Sign In
             </Link>
             <button className={styles.secondaryButton}>
               Watch Demo
@@ -200,8 +200,8 @@ const Landing: React.FC = () => {
             Experience the power of modern point-of-sale technology. No setup fees, no long-term contracts.
           </p>
           <div className={styles.ctaSectionButtons}>
-            <Link to="/signup" className={styles.ctaSectionPrimaryButton}>
-              Get Started Free
+            <Link to="/login" className={styles.ctaSectionPrimaryButton}>
+              Sign In
             </Link>
             <button className={styles.ctaSectionSecondaryButton}>
               Schedule Demo
