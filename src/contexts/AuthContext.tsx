@@ -213,6 +213,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return { success: false }
       }
 
+      // Check if business name already exists
+      const { data: existingBusiness, error: businessCheckError } = await supabase
+        .from('business_info')
+        .select('business_id')
+        .eq('name', businessName)
+        .single()
+
+      if (existingBusiness) {
+        console.error('Business name already exists')
+        return { success: false }
+      }
+
       // Create business first
       const { data: businessData, error: businessError } = await supabase
         .from('business_info')

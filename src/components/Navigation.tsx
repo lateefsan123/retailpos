@@ -1,13 +1,11 @@
 import { Link, useLocation } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
 import { useNav } from '../contexts/NavContext'
 import { useRole } from '../contexts/RoleContext'
 
 const Navigation = () => {
   const location = useLocation()
-  const { user, logout } = useAuth()
   const { isCollapsed, setIsCollapsed } = useNav()
-  const { canAccessRoute, userRole } = useRole()
+  const { canAccessRoute } = useRole()
 
   const allNavItems = [
     { path: '/dashboard', label: 'Dashboard', icon: 'fas fa-home' },
@@ -22,16 +20,6 @@ const Navigation = () => {
   // Filter nav items based on user permissions
   const navItems = allNavItems.filter(item => canAccessRoute(item.path))
 
-  // Get role color
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'Admin': return '#ef4444' // Red
-      case 'Owner': return '#8b5cf6' // Purple
-      case 'Manager': return '#f59e0b' // Orange
-      case 'Cashier': return '#3b82f6' // Blue
-      default: return '#6b7280' // Gray
-    }
-  }
 
   return (
     <nav style={{
@@ -152,108 +140,6 @@ const Navigation = () => {
         ))}
       </div>
 
-      {/* User section */}
-      <div style={{
-        padding: '8px 0',
-        borderTop: '1px solid #333333',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        alignItems: isCollapsed ? 'center' : 'stretch'
-      }}>
-        {/* User info */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: isCollapsed ? 'center' : 'flex-start',
-          gap: '12px',
-          padding: isCollapsed ? '8px' : '8px 12px',
-          borderRadius: '8px',
-          background: '#333333',
-          cursor: 'pointer',
-          transition: 'background 0.2s ease',
-          width: isCollapsed ? '50px' : 'auto'
-        }}
-        onMouseEnter={(e) => (e.target as HTMLElement).style.setProperty('background-color', '#444444')}
-        onMouseLeave={(e) => (e.target as HTMLElement).style.setProperty('background-color', '#333333')}
-        >
-          <div style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '50%',
-            background: '#ffffff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#1a1a1a',
-            fontSize: '14px',
-            fontWeight: 'bold'
-          }}>
-            {user?.username?.charAt(0).toUpperCase()}
-          </div>
-          {!isCollapsed && (
-            <div style={{ flex: 1 }}>
-              <p style={{ 
-                color: '#ffffff', 
-                fontSize: '14px', 
-                fontWeight: '500', 
-                margin: 0,
-                lineHeight: '1.2',
-                transition: 'opacity 0.3s ease'
-              }}>
-                {user?.username}
-              </p>
-              <p style={{ 
-                color: getRoleColor(userRole), 
-                fontSize: '12px', 
-                margin: 0,
-                textTransform: 'capitalize',
-                transition: 'opacity 0.3s ease',
-                fontWeight: '500'
-              }}>
-                {userRole}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Logout button */}
-        <button
-          onClick={async () => {
-            console.log('Logout button clicked')
-            await logout()
-          }}
-          style={{
-            width: isCollapsed ? '50px' : '100%',
-            height: '40px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            borderRadius: '8px',
-            background: '#dc3545',
-            border: 'none',
-            cursor: 'pointer',
-            transition: 'background 0.2s ease, width 0.3s ease',
-            color: '#ffffff',
-            fontSize: '14px',
-            fontWeight: '500'
-          }}
-          onMouseEnter={(e) => {
-            const target = e.target as HTMLButtonElement
-            target.style.background = '#c82333'
-          }}
-          onMouseLeave={(e) => {
-            const target = e.target as HTMLButtonElement
-            target.style.background = '#dc3545'
-          }}
-        >
-          <i className="fa-solid fa-sign-out-alt" style={{ fontSize: '16px' }}></i>
-          {!isCollapsed && (
-            <span style={{ transition: 'opacity 0.3s ease' }}>Logout</span>
-          )}
-        </button>
-      </div>
     </nav>
   )
 }

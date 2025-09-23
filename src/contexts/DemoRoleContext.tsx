@@ -1,5 +1,5 @@
 import { createContext, useContext, ReactNode } from 'react'
-import { useAuth } from './AuthContext'
+import { useAuth } from './DemoAuthContext'
 
 // Define role permissions
 export interface RolePermissions {
@@ -23,7 +23,7 @@ const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     canChangeSettings: true,
     canUploadImages: true,
     canLookupProducts: true,
-    canLookupCustomers: true
+    canLookupCustomers: true,
   },
   Owner: {
     canManageUsers: true,
@@ -33,7 +33,7 @@ const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     canChangeSettings: true,
     canUploadImages: true,
     canLookupProducts: true,
-    canLookupCustomers: true
+    canLookupCustomers: true,
   },
   Manager: {
     canManageUsers: false,
@@ -43,7 +43,7 @@ const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     canChangeSettings: false,
     canUploadImages: true,
     canLookupProducts: true,
-    canLookupCustomers: true
+    canLookupCustomers: true,
   },
   Cashier: {
     canManageUsers: false,
@@ -53,18 +53,30 @@ const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     canChangeSettings: false,
     canUploadImages: false,
     canLookupProducts: true,
-    canLookupCustomers: true
-  }
+    canLookupCustomers: true,
+  },
 }
 
 interface RoleContextType {
-  userRole: string
   permissions: RolePermissions
   hasPermission: (permission: keyof RolePermissions) => boolean
-  canAccessRoute: (route: string) => boolean
+  hasAnyPermission: (permissions: (keyof RolePermissions)[]) => boolean
+  hasAllPermissions: (permissions: (keyof RolePermissions)[]) => boolean
+  isAdmin: boolean
+  isOwner: boolean
+  isManager: boolean
+  isCashier: boolean
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined)
+
+export const useRole = () => {
+  const context = useContext(RoleContext)
+  if (context === undefined) {
+    throw new Error('useRole must be used within a RoleProvider')
+  }
+  return context
+}
 
 interface RoleProviderProps {
   children: ReactNode
@@ -73,44 +85,35 @@ interface RoleProviderProps {
 export const RoleProvider = ({ children }: RoleProviderProps) => {
   const { user } = useAuth()
   
-  // Get user role from localStorage or default to 'Cashier'
-  // Capitalize the first letter to match the ROLE_PERMISSIONS keys
-  const rawRole = user?.role || 'Cashier'
-  const userRole = rawRole.charAt(0).toUpperCase() + rawRole.slice(1).toLowerCase()
-  const permissions = ROLE_PERMISSIONS[userRole] || ROLE_PERMISSIONS.Cashier
+  // Get permissions based on user role
+  const permissions = ROLE_PERMISSIONS[user?.role || 'Cashier'] || ROLE_PERMISSIONS.Cashier
 
   const hasPermission = (permission: keyof RolePermissions): boolean => {
     return permissions[permission] || false
   }
 
-  const canAccessRoute = (route: string): boolean => {
-    switch (route) {
-      case '/admin':
-        return hasPermission('canManageUsers')
-      case '/products':
-        return hasPermission('canManageProducts') || hasPermission('canLookupProducts')
-      case '/sales':
-        return hasPermission('canProcessSales')
-      case '/transactions':
-        return hasPermission('canProcessSales') // All users who can process sales should be able to view transactions
-      case '/side-businesses':
-        return hasPermission('canProcessSales') // All users who can process sales should be able to access side businesses
-      case '/reminders':
-        return hasPermission('canProcessSales') // All users who can process sales should be able to access reminders
-      case '/customers':
-        return hasPermission('canLookupCustomers')
-      case '/':
-        return true // Dashboard accessible to all
-      default:
-        return true
-    }
+  const hasAnyPermission = (permissionsList: (keyof RolePermissions)[]): boolean => {
+    return permissionsList.some(permission => hasPermission(permission))
   }
 
+  const hasAllPermissions = (permissionsList: (keyof RolePermissions)[]): boolean => {
+    return permissionsList.every(permission => hasPermission(permission))
+  }
+
+  const isAdmin = user?.role === 'Admin'
+  const isOwner = user?.role === 'Owner'
+  const isManager = user?.role === 'Manager'
+  const isCashier = user?.role === 'Cashier'
+
   const value: RoleContextType = {
-    userRole,
     permissions,
     hasPermission,
-    canAccessRoute
+    hasAnyPermission,
+    hasAllPermissions,
+    isAdmin,
+    isOwner,
+    isManager,
+    isCashier,
   }
 
   return (
@@ -118,12 +121,4 @@ export const RoleProvider = ({ children }: RoleProviderProps) => {
       {children}
     </RoleContext.Provider>
   )
-}
-
-export const useRole = (): RoleContextType => {
-  const context = useContext(RoleContext)
-  if (context === undefined) {
-    throw new Error('useRole must be used within a RoleProvider')
-  }
-  return context
 }

@@ -1,15 +1,17 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { AuthProvider } from './contexts/AuthContext'
-import { BusinessProvider } from './contexts/BusinessContext'
+import './utils/fontAwesomeFix' // Ensure FontAwesome is loaded
+import { AuthProvider } from './contexts/DemoAuthContext'
+import { BusinessProvider } from './contexts/DemoBusinessContext'
+import { StaffProvider } from './contexts/DemoStaffContext'
 import { NavProvider, useNav } from './contexts/NavContext'
-import { RoleProvider } from './contexts/RoleContext'
-import { PinProvider } from './contexts/PinContext'
+import { RoleProvider } from './contexts/DemoRoleContext'
+import { PinProvider } from './contexts/DemoPinContext'
 import { useNavCollapse } from './hooks/useNavCollapse'
-import ProtectedRoute from './components/ProtectedRoute'
+import { useGlobalShortcuts } from './hooks/useGlobalShortcuts'
 import RoleProtectedRoute from './components/RoleProtectedRoute'
 import Navigation from './components/Navigation'
-import UserMenu from './components/UserMenu'
+import UserProfileDropdown from './components/UserProfileDropdown'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -22,11 +24,13 @@ import Transactions from './pages/Transactions'
 import TransactionDetail from './pages/TransactionDetail'
 import Admin from './pages/Admin'
 import UserRoleLogin from './pages/UserRoleLogin'
+import UserSelection from './pages/UserSelection'
 import Reminders from './pages/Reminders'
 
 const AppContent = () => {
   const { isCollapsed } = useNav()
   useNavCollapse()
+  useGlobalShortcuts()
 
   return (
     <div style={{ 
@@ -51,8 +55,35 @@ const AppContent = () => {
         backgroundColor: 'rgba(0, 0, 0, 0.05)',
         zIndex: 0
       }}></div>
+      
+      {/* Demo Mode Banner */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#10b981',
+        color: 'white',
+        padding: '8px 16px',
+        textAlign: 'center',
+        fontSize: '14px',
+        fontWeight: '600',
+        zIndex: 1002
+      }}>
+DEMO MODE - All data is simulated for demonstration purposes
+      </div>
+      
+      {/* User Profile Dropdown - Top Right */}
+      <div style={{
+        position: 'fixed',
+        top: '48px', // Adjusted for demo banner
+        right: '20px',
+        zIndex: 1001
+      }}>
+        <UserProfileDropdown />
+      </div>
+      
       <Navigation />
-      <UserMenu />
       <main style={{
         flex: 1,
         marginLeft: isCollapsed ? '70px' : '200px',
@@ -61,7 +92,8 @@ const AppContent = () => {
         overflow: 'auto',
         transition: 'margin-left 0.3s ease',
         position: 'relative',
-        zIndex: 1
+        zIndex: 1,
+        marginTop: '40px' // Account for demo banner
       }}>
         <div style={{
           maxWidth: '1400px',
@@ -82,7 +114,7 @@ const AppContent = () => {
               </RoleProtectedRoute>
             } />
             <Route path="/side-businesses" element={
-              <RoleProtectedRoute requiredPermission="canProcessSales">
+              <RoleProtectedRoute>
                 <SideBusinesses />
               </RoleProtectedRoute>
             } />
@@ -91,11 +123,7 @@ const AppContent = () => {
                 <Transactions />
               </RoleProtectedRoute>
             } />
-            <Route path="/admin" element={
-              <RoleProtectedRoute requiredPermission="canManageUsers">
-                <Admin />
-              </RoleProtectedRoute>
-            } />
+            <Route path="/admin" element={<Admin />} />
             <Route path="/reminders" element={<Reminders />} />
             <Route path="/transaction/:transactionId" element={<TransactionDetail />} />
           </Routes>
@@ -116,36 +144,35 @@ const queryClient = new QueryClient({
   },
 })
 
-function App() {
+function AppDemo() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BusinessProvider>
-          <RoleProvider>
-            <NavProvider>
-              <PinProvider>
-                <Router basename="/retailpos">
-                  <Routes>
-                    <Route path="/" element={<Landing />} />
-                    <Route path="/landing" element={<Landing />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<Signup />} />
-                    <Route path="/verify-email" element={<EmailVerification />} />
-                    <Route path="/staff-login" element={<UserRoleLogin />} />
-                    <Route path="/*" element={
-                      <ProtectedRoute>
-                        <AppContent />
-                      </ProtectedRoute>
-                    } />
-                  </Routes>
-                </Router>
-              </PinProvider>
-            </NavProvider>
-          </RoleProvider>
+          <StaffProvider>
+            <RoleProvider>
+              <NavProvider>
+                <PinProvider>
+                    <Router basename="/retailpos">
+                      <Routes>
+                        <Route path="/" element={<Landing />} />
+                        <Route path="/landing" element={<Landing />} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/signup" element={<Signup />} />
+                        <Route path="/verify-email" element={<EmailVerification />} />
+                        <Route path="/staff-login" element={<UserRoleLogin />} />
+                        <Route path="/user-selection" element={<UserSelection />} />
+                        <Route path="/*" element={<AppContent />} />
+                      </Routes>
+                    </Router>
+                </PinProvider>
+              </NavProvider>
+            </RoleProvider>
+          </StaffProvider>
         </BusinessProvider>
       </AuthProvider>
     </QueryClientProvider>
   )
 }
 
-export default App
+export default AppDemo

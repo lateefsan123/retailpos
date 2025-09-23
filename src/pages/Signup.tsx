@@ -176,6 +176,17 @@ const Signup: React.FC = () => {
           receipt_footer: 'Thank you for shopping with us!'
         });
 
+        // Check if business name already exists
+        const { data: existingBusiness, error: businessCheckError } = await supabase
+          .from('business_info')
+          .select('business_id')
+          .eq('name', formData.businessName)
+          .single();
+
+        if (existingBusiness) {
+          throw new Error('A business with this name already exists. Please choose a different business name.');
+        }
+
         // Create business first
         const businessResponse = await supabase
           .from('business_info')
