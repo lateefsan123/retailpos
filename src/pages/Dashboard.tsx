@@ -6,6 +6,7 @@ import { useBusinessId } from '../hooks/useBusinessId'
 import { useSalesData } from '../hooks/data/useSalesData'
 import { useProductsData } from '../hooks/data/useProductsData'
 import { useAuth } from '../contexts/AuthContext'
+import { useBusiness } from '../contexts/BusinessContext'
 import LowStockSection from '../components/dashboard/LowStockSection'
 import ProductAnalyticsSection from '../components/dashboard/ProductAnalyticsSection'
 import SalesChart from '../components/dashboard/SalesChart'
@@ -38,6 +39,7 @@ const Dashboard = () => {
   const { data: salesData } = useSalesData()
   const { data: productsData } = useProductsData()
   const { user, switchUser } = useAuth()
+  const { currentBusiness } = useBusiness()
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalSales: 0,
@@ -779,8 +781,8 @@ const Dashboard = () => {
   const statCards = [
     {
       title: getSalesCardTitle(),
-      value: formatCurrency(stats.todayRevenue + stats.todaySideBusinessRevenue),
-      change: `Products: ${formatCurrency(stats.todayRevenue)} | Side Business: ${formatCurrency(stats.todaySideBusinessRevenue)}`,
+      value: formatCurrency(stats.todayRevenue + stats.todaySideBusinessRevenue, {}, currentBusiness?.currency),
+      change: `Products: ${formatCurrency(stats.todayRevenue, {}, currentBusiness?.currency)} | Side Business: ${formatCurrency(stats.todaySideBusinessRevenue, {}, currentBusiness?.currency)}`,
       changeColor: '#1a1a1a',
       icon: 'fa-solid fa-euro-sign',
       bgColor: '#1a1a1a',
@@ -1096,7 +1098,7 @@ const Dashboard = () => {
                               fontWeight: '600',
                               margin: 0
                             }}>
-                              {formatCurrency(business.total_amount)}
+                              {formatCurrency(business.total_amount, {}, currentBusiness?.currency)}
                             </p>
                           </div>
                         </div>
@@ -1301,7 +1303,7 @@ const Dashboard = () => {
                             color: '#10b981', 
                             margin: '0 0 2px 0' 
                           }}>
-                            {formatCurrency(transaction.partial_amount || 0)}
+                            {formatCurrency(transaction.partial_amount || 0, {}, currentBusiness?.currency)}
                           </p>
                           <p style={{ 
                             fontSize: '11px', 
@@ -1309,7 +1311,7 @@ const Dashboard = () => {
                             margin: '0 0 2px 0',
                             fontWeight: '500'
                           }}>
-                            of {formatCurrency((transaction.partial_amount || 0) + (transaction.remaining_amount || 0))}
+                            of {formatCurrency((transaction.partial_amount || 0) + (transaction.remaining_amount || 0), {}, currentBusiness?.currency)}
                           </p>
                           <p style={{ 
                             fontSize: '10px', 
@@ -1317,7 +1319,7 @@ const Dashboard = () => {
                             margin: 0,
                             fontWeight: '600'
                           }}>
-                            OWES: {formatCurrency(transaction.remaining_amount || 0)}
+                            OWES: {formatCurrency(transaction.remaining_amount || 0, {}, currentBusiness?.currency)}
                           </p>
                         </div>
                       ) : (
@@ -1327,7 +1329,7 @@ const Dashboard = () => {
                           color: '#1a1a1a', 
                           margin: 0 
                         }}>
-                          {formatCurrency(transaction.total_amount)}
+                          {formatCurrency(transaction.total_amount, {}, currentBusiness?.currency)}
                         </p>
                       )}
                     </div>
@@ -1501,7 +1503,7 @@ const Dashboard = () => {
                       fontWeight: '600',
                       color: '#1a1a1a'
                     }}>
-                      {formatCurrency(transaction.total_amount)}
+                      {formatCurrency(transaction.total_amount, {}, currentBusiness?.currency)}
                     </div>
                   </div>
                 ))}

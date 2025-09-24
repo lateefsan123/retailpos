@@ -1,15 +1,48 @@
 import { Order, PaymentInfo, PartialPayment } from '../types/sales'
 
+interface BusinessInfo {
+  name?: string;
+  business_name?: string;
+  logo_url?: string;
+  address?: string;
+  phone_number?: string;
+  vat_number?: string;
+  receipt_footer?: string;
+  currency?: string;
+}
+
 export const generateReceiptHTML = (
   order: Order,
   paymentInfo: PaymentInfo,
   user: any,
+  businessInfo?: BusinessInfo,
   partialPayment?: PartialPayment
 ) => {
   const receiptNumber = `RCP-${Date.now()}`
   const currentDate = new Date()
   const dateStr = currentDate.toLocaleDateString('en-IE')
   const timeStr = currentDate.toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' })
+  
+  // Get currency symbol
+  const getCurrencySymbol = (currency?: string) => {
+    if (!currency) return '€'
+    const symbols: Record<string, string> = {
+      'USD': '$',
+      'EUR': '€',
+      'GBP': '£',
+      'CAD': 'C$',
+      'AUD': 'A$',
+      'JPY': '¥',
+    }
+    return symbols[currency] || '€'
+  }
+  
+  const currencySymbol = getCurrencySymbol(businessInfo?.currency)
+  const businessName = businessInfo?.business_name || businessInfo?.name || 'Business'
+  const businessAddress = businessInfo?.address || ''
+  const businessPhone = businessInfo?.phone_number || ''
+  const businessLogo = businessInfo?.logo_url || '/retailpos/images/backgrounds/logo1.png'
+  const receiptFooter = businessInfo?.receipt_footer || 'Thank you for shopping with us!'
   
   return `
     <!DOCTYPE html>
@@ -104,12 +137,11 @@ export const generateReceiptHTML = (
     <body>
       <div class="receipt">
         <div class="header">
-          <img src="/retailpos/images/backgrounds/logo1.png" alt="LandM Store" style="max-width: 80px; height: auto; display: block; margin: 0 auto 10px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-          <div class="logo-fallback" style="display: none; font-size: 24px; font-weight: bold; margin-bottom: 8px; color: #3e3f29;">LandM Store</div>
+          <img src="${businessLogo}" alt="${businessName}" style="max-width: 80px; height: auto; display: block; margin: 0 auto 10px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+          <div class="logo-fallback" style="display: none; font-size: 24px; font-weight: bold; margin-bottom: 8px; color: #3e3f29;">${businessName}</div>
           <div class="business-info">
-            <div>Unit 2 Glenmore Park</div>
-            <div>Dundalk, Co. Louth</div>
-            <div>087 797 0412</div>
+            ${businessAddress ? `<div>${businessAddress}</div>` : ''}
+            ${businessPhone ? `<div>${businessPhone}</div>` : ''}
           </div>
         </div>
         
@@ -138,7 +170,7 @@ export const generateReceiptHTML = (
           return `
           <div class="item-row">
             <span>${itemName} x${item.quantity}</span>
-            <span>€${(itemPrice * item.quantity).toFixed(2)}</span>
+            <span>${currencySymbol}${(itemPrice * item.quantity).toFixed(2)}</span>
           </div>
         `
         }).join('')}
@@ -147,11 +179,11 @@ export const generateReceiptHTML = (
         
         <div class="item-row total-row">
           <span>SUBTOTAL:</span>
-          <span>€${order.subtotal.toFixed(2)}</span>
+          <span>${currencySymbol}${order.subtotal.toFixed(2)}</span>
         </div>
         <div class="item-row total-row">
           <span>GRAND TOTAL:</span>
-          <span>€${order.total.toFixed(2)}</span>
+          <span>${currencySymbol}${order.total.toFixed(2)}</span>
         </div>
         
         <div class="payment-info">
@@ -162,11 +194,11 @@ export const generateReceiptHTML = (
           ${paymentInfo.method === 'cash' ? `
           <div class="item-row">
             <span>Amount Received:</span>
-            <span>€${parseFloat(paymentInfo.amountEntered).toFixed(2)}</span>
+            <span>${currencySymbol}${parseFloat(paymentInfo.amountEntered).toFixed(2)}</span>
           </div>
           <div class="item-row">
             <span>Change Given:</span>
-            <span>€${paymentInfo.change.toFixed(2)}</span>
+            <span>${currencySymbol}${paymentInfo.change.toFixed(2)}</span>
           </div>
           ` : paymentInfo.method === 'card' ? `
           <div class="item-row">
@@ -184,11 +216,11 @@ export const generateReceiptHTML = (
           </div>
           <div class="item-row">
             <span>Amount Paid Today:</span>
-            <span class="success">€${partialPayment.amountPaid.toFixed(2)}</span>
+            <span class="success">${currencySymbol}${partialPayment.amountPaid.toFixed(2)}</span>
           </div>
           <div class="item-row">
             <span>Remaining Balance:</span>
-            <span class="warning">€${partialPayment.amountRemaining.toFixed(2)}</span>
+            <span class="warning">${currencySymbol}${partialPayment.amountRemaining.toFixed(2)}</span>
           </div>
           ${partialPayment.dueDate ? `
           <div class="item-row">
@@ -215,12 +247,12 @@ export const generateReceiptHTML = (
         <div class="divider"></div>
         
         <div class="footer">
-          <div>Thank you for shopping with us!</div>
-          <div style="margin-top: 5px;">LandM Store - Your Local African Food Store</div>
+          <div>${receiptFooter}</div>
+          <div style="margin-top: 5px;">${businessName}</div>
           ${partialPayment ? `
           <div style="margin-top: 10px; font-size: 9px; color: #92400e;">
             <strong>Please keep this receipt for your records</strong><br>
-            Remaining balance: €${partialPayment.amountRemaining.toFixed(2)}
+            Remaining balance: ${currencySymbol}${partialPayment.amountRemaining.toFixed(2)}
           </div>
           ` : ''}
         </div>
@@ -234,12 +266,13 @@ export const printReceipt = (
   order: Order,
   paymentInfo: PaymentInfo,
   user: any,
+  businessInfo?: BusinessInfo,
   partialPayment?: PartialPayment
 ) => {
   const printWindow = window.open('', '_blank')
   if (!printWindow) return
 
-  printWindow.document.write(generateReceiptHTML(order, paymentInfo, user, partialPayment))
+  printWindow.document.write(generateReceiptHTML(order, paymentInfo, user, businessInfo, partialPayment))
   printWindow.document.close()
   printWindow.print()
   printWindow.close()

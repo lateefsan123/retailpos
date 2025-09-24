@@ -3,12 +3,14 @@ import { useAuth } from '../contexts/AuthContext'
 import { useRole } from '../contexts/RoleContext'
 import { supabase } from '../lib/supabaseClient'
 import SelectUserModal from './SelectUserModal'
+import BusinessSettingsModal from './BusinessSettingsModal'
 
 const UserMenu: React.FC = () => {
   const { user, logout, switchUser } = useAuth()
   const { userRole } = useRole()
   const [isOpen, setIsOpen] = useState(false)
   const [showSelectUserModal, setShowSelectUserModal] = useState(false)
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   // Debug logging
@@ -93,8 +95,7 @@ const UserMenu: React.FC = () => {
   }
 
   const handleSettings = () => {
-    // TODO: Implement settings functionality
-    alert('Settings functionality not implemented yet')
+    setShowSettingsModal(true)
     setIsOpen(false)
   }
 
@@ -156,11 +157,18 @@ const UserMenu: React.FC = () => {
             }}></i>
           )}
         </div>
-            <span style={{
-              fontSize: '14px',
-              fontWeight: '500',
-              color: '#111827'
-            }}>
+            <span 
+              style={{
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#111827',
+                maxWidth: '120px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}
+              title={user?.username || 'Unknown User'}
+            >
               {user?.username || 'Unknown User'}
             </span>
             <i className={`fa-solid fa-chevron-${isOpen ? 'up' : 'down'}`} style={{ fontSize: '12px', color: '#4b5563' }}></i>
@@ -173,7 +181,8 @@ const UserMenu: React.FC = () => {
           right: '0',
           top: '100%',
           marginTop: '8px',
-          width: '200px',
+          minWidth: '200px',
+          maxWidth: '300px',
           background: '#ffffff',
           borderRadius: '8px',
           boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
@@ -187,12 +196,19 @@ const UserMenu: React.FC = () => {
             borderBottom: '1px solid #e5e7eb',
             marginBottom: '8px'
           }}>
-            <div style={{
-              color: '#111827',
-              fontSize: '14px',
-              fontWeight: '500',
-              marginBottom: '4px'
-            }}>
+            <div 
+              style={{
+                color: '#111827',
+                fontSize: '14px',
+                fontWeight: '500',
+                marginBottom: '4px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                maxWidth: '100%'
+              }}
+              title={user?.username || 'Unknown User'}
+            >
               {user?.username || 'Unknown User'}
             </div>
             <div style={{
@@ -302,6 +318,12 @@ const UserMenu: React.FC = () => {
         isOpen={showSelectUserModal}
         onClose={() => setShowSelectUserModal(false)}
         onUserSwitch={handleUserSwitch}
+      />
+
+      {/* Business Settings Modal */}
+      <BusinessSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
       />
     </div>
   )

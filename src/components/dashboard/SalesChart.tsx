@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSalesAnalytics, WeeklySalesData, HourlySalesData, MonthlySalesData } from '../../hooks/derived/useSalesAnalytics'
-import { useBusinessInfo } from '../../hooks/useBusinessInfo'
+import { useBusiness } from '../../contexts/BusinessContext'
 import { formatCurrency as formatCurrencyUtil, formatCurrencyCompact } from '../../utils/currency'
 
 type ChartView = 'weekly' | 'hourly' | 'monthly'
@@ -14,8 +14,8 @@ interface SalesChartProps {
 }
 
 const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesChartProps) => {
-  const { weeklyData, hourlyData, monthlyData, loading, error, refreshHourlyData, refreshWeeklyData, refreshMonthlyData } = useSalesAnalytics()
-  const { businessInfo } = useBusinessInfo()
+  const { weeklyData, hourlyData, monthlyData, loading, error, businessHours, businessTimezone, refreshHourlyData, refreshWeeklyData, refreshMonthlyData } = useSalesAnalytics()
+  const { currentBusiness } = useBusiness()
   const [view, setView] = useState<ChartView>('weekly')
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [weekOffset, setWeekOffset] = useState(0) // 0 = current week, -1 = previous week, 1 = next week
@@ -146,9 +146,6 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return `€${amount.toFixed(2)}`
-  }
 
   if (loading) {
     return (
@@ -217,7 +214,42 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
     )
   }
 
-  const currentData = view === 'weekly' ? weeklyData : view === 'monthly' ? monthlyData : hourlyData
+  // Filter hourly data to only show business hours
+  const getBusinessHoursRange = (businessHours: string = '9:00 AM - 6:00 PM') => {
+    try {
+      const match = businessHours.match(/(\d{1,2}):(\d{2})\s*(AM|PM)\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)/i)
+      if (match) {
+        const [, startHour, startMin, startPeriod, endHour, endMin, endPeriod] = match
+        
+        const parseTime = (hour: string, min: string, period: string) => {
+          let h = parseInt(hour)
+          const m = parseInt(min)
+          if (period.toUpperCase() === 'PM' && h !== 12) h += 12
+          if (period.toUpperCase() === 'AM' && h === 12) h = 0
+          return h
+        }
+        
+        const startHourNum = parseTime(startHour, startMin, startPeriod)
+        const endHourNum = parseTime(endHour, endMin, endPeriod)
+        
+        return { startHour: startHourNum, endHour: endHourNum }
+      }
+    } catch (error) {
+      console.warn(`Could not parse business hours: ${businessHours}`)
+    }
+    
+    // Default to 9 AM - 6 PM
+    return { startHour: 9, endHour: 18 }
+  }
+
+  const filteredHourlyData = (() => {
+    if (view !== 'hourly') return hourlyData
+    
+    const { startHour, endHour } = getBusinessHoursRange(businessHours)
+    return hourlyData.filter(item => item.hour >= startHour && item.hour <= endHour)
+  })()
+
+  const currentData = view === 'weekly' ? weeklyData : view === 'monthly' ? monthlyData : filteredHourlyData
   const maxValue = currentData.length > 0 ? getMaxValue(currentData) : 100
   const labelStep = view === 'monthly' ? Math.ceil(currentData.length / 12) : 1
   
@@ -254,10 +286,10 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
             justifyContent: 'center',
             overflow: 'hidden'
           }}>
-          {(businessInfo?.logo_url || '/retailpos/images/backgrounds/logo1.png') ? (
+          {(currentBusiness?.logo_url || '/retailpos/images/backgrounds/logo1.png') ? (
             <img 
-              src={businessInfo?.logo_url || '/retailpos/images/backgrounds/logo1.png'} 
-              alt={businessInfo?.name || 'LandM Store Logo'} 
+              src={currentBusiness?.logo_url || '/retailpos/images/backgrounds/logo1.png'} 
+              alt={currentBusiness?.business_name || currentBusiness?.name || 'Business Logo'} 
               style={{
                 width: '100%',
                 height: '100%',
@@ -287,14 +319,14 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
             }}>
               Sales Overview
             </h2>
-          {(businessInfo?.name || 'LandM Store') && (
+          {(currentBusiness?.business_name || currentBusiness?.name) && (
             <p style={{
               fontSize: '14px',
               color: '#7d8d86',
               margin: 0,
               fontWeight: '500'
             }}>
-              {businessInfo?.name || 'LandM Store'}
+              {currentBusiness?.business_name || currentBusiness?.name}
             </p>
           )}
           </div>
@@ -359,10 +391,10 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           justifyContent: 'center',
           overflow: 'hidden'
         }}>
-          {(businessInfo?.logo_url || '/retailpos/images/backgrounds/logo1.png') ? (
+          {(currentBusiness?.logo_url || '/retailpos/images/backgrounds/logo1.png') ? (
             <img 
-              src={businessInfo?.logo_url || '/retailpos/images/backgrounds/logo1.png'} 
-              alt={businessInfo?.name || 'LandM Store Logo'} 
+              src={currentBusiness?.logo_url || '/retailpos/images/backgrounds/logo1.png'} 
+              alt={currentBusiness?.business_name || currentBusiness?.name || 'Business Logo'} 
               style={{
                 width: '100%',
                 height: '100%',
@@ -392,14 +424,14 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           }}>
             Sales Overview
           </h2>
-          {(businessInfo?.name || 'LandM Store') && (
+          {(currentBusiness?.business_name || currentBusiness?.name) && (
             <p style={{
               fontSize: '14px',
               color: '#7d8d86',
               margin: 0,
               fontWeight: '500'
             }}>
-              {businessInfo?.name || 'LandM Store'}
+              {currentBusiness?.business_name || currentBusiness?.name}
             </p>
           )}
         </div>
@@ -745,7 +777,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
                 transform: 'translateY(-50%)'
               }}
             >
-              {formatCurrencyCompact((maxValue * value) / 100)}
+              {formatCurrencyCompact((maxValue * value) / 100, {}, currentBusiness?.currency)}
             </span>
           ))}
         </div>
@@ -887,7 +919,13 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
     </div>
 
     {/* Chart Legend in its own container under the chart card */}
-    <div style={{ width: '100%', maxWidth: '1000px', margin: '12px auto 0 auto' }}>
+    <div style={{ 
+      width: '100%', 
+      maxWidth: '1000px', 
+      margin: '12px auto 0 auto',
+      display: 'flex',
+      justifyContent: 'center'
+    }}>
       <div style={{
         display: 'flex',
         justifyContent: 'center',
@@ -907,7 +945,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <i className="fa-solid fa-chart-bar" style={{ fontSize: '12px', color: '#f1f0e4' }}></i>
           <span style={{ fontSize: '11px', color: '#f1f0e4', fontWeight: 500 }}>
-            Max: {formatCurrencyUtil(maxValue)}
+            Max: {formatCurrencyUtil(maxValue, {}, currentBusiness?.currency)}
           </span>
         </div>
       </div>

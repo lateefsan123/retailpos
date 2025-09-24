@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useBusiness } from '../contexts/BusinessContext'
 import { useProducts } from '../hooks/derived/useProducts'
 import { useOrder } from '../hooks/useOrder'
 import { PaymentInfo, PartialPayment } from '../types/sales'
@@ -11,6 +12,7 @@ import { Product, SideBusinessItem } from '../types/sales'
 
 const SalesWithPartialPayment = () => {
   const { user } = useAuth()
+  const { currentBusiness } = useBusiness()
   
   // Use custom hooks
   const {
@@ -187,7 +189,7 @@ const SalesWithPartialPayment = () => {
       }, 3000)
 
       // Print receipt
-      printReceipt(order, paymentInfo, user, partialPayment)
+      printReceipt(order, paymentInfo, user, currentBusiness, partialPayment)
       
       // Close modal and reset
       setShowSalesSummary(false)

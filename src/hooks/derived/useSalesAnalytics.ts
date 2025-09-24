@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useSalesData } from '../data/useSalesData'
+import { useBusiness } from '../../contexts/BusinessContext'
 
 export interface WeeklySalesData {
   day: string
@@ -24,8 +25,50 @@ export interface MonthlySalesData {
   averageTransaction: number
 }
 
-const getDateRange = (period: 'today' | 'week' | 'month') => {
-  const now = new Date()
+// Utility function to convert date to business timezone
+const convertToBusinessTimezone = (date: Date, timezone: string = 'UTC'): Date => {
+  try {
+    // Create a new date in the business timezone
+    const businessDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }))
+    return businessDate
+  } catch (error) {
+    // Fallback to UTC if timezone is invalid
+    console.warn(`Invalid timezone: ${timezone}, falling back to UTC`)
+    return new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }))
+  }
+}
+
+// Utility function to get business hours range
+const getBusinessHoursRange = (businessHours: string = '9:00 AM - 6:00 PM') => {
+  try {
+    // Parse business hours (e.g., "9:00 AM - 6:00 PM")
+    const match = businessHours.match(/(\d{1,2}):(\d{2})\s*(AM|PM)\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)/i)
+    if (match) {
+      const [, startHour, startMin, startPeriod, endHour, endMin, endPeriod] = match
+      
+      const parseTime = (hour: string, min: string, period: string) => {
+        let h = parseInt(hour)
+        const m = parseInt(min)
+        if (period.toUpperCase() === 'PM' && h !== 12) h += 12
+        if (period.toUpperCase() === 'AM' && h === 12) h = 0
+        return h * 60 + m // Convert to minutes from midnight
+      }
+      
+      const startMinutes = parseTime(startHour, startMin, startPeriod)
+      const endMinutes = parseTime(endHour, endMin, endPeriod)
+      
+      return { startMinutes, endMinutes }
+    }
+  } catch (error) {
+    console.warn(`Could not parse business hours: ${businessHours}`)
+  }
+  
+  // Default to 9 AM - 6 PM
+  return { startMinutes: 9 * 60, endMinutes: 18 * 60 }
+}
+
+const getDateRange = (period: 'today' | 'week' | 'month', timezone: string = 'UTC') => {
+  const now = convertToBusinessTimezone(new Date(), timezone)
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   
   switch (period) {
@@ -53,8 +96,8 @@ const getDateRange = (period: 'today' | 'week' | 'month') => {
   }
 }
 
-const processWeeklyData = (sales: any[], sideBusinessSales: any[]): WeeklySalesData[] => {
-  const { start, end } = getDateRange('week')
+const processWeeklyData = (sales: any[], sideBusinessSales: any[], timezone: string = 'UTC'): WeeklySalesData[] => {
+  const { start, end } = getDateRange('week', timezone)
   const weeklyData: { [key: string]: { totalSales: number, transactionCount: number } } = {}
   
   // Initialize all days of the week
@@ -66,19 +109,21 @@ const processWeeklyData = (sales: any[], sideBusinessSales: any[]): WeeklySalesD
   
   // Process main sales
   sales.forEach(sale => {
-    const saleDate = new Date(sale.datetime).toISOString().split('T')[0]
-    if (weeklyData[saleDate]) {
-      weeklyData[saleDate].totalSales += parseFloat(sale.total_amount) || 0
-      weeklyData[saleDate].transactionCount += 1
+    const saleDate = convertToBusinessTimezone(new Date(sale.datetime), timezone)
+    const dayKey = saleDate.toISOString().split('T')[0]
+    if (weeklyData[dayKey]) {
+      weeklyData[dayKey].totalSales += parseFloat(sale.total_amount) || 0
+      weeklyData[dayKey].transactionCount += 1
     }
   })
   
   // Process side business sales
   sideBusinessSales.forEach(sale => {
-    const saleDate = new Date(sale.date_time).toISOString().split('T')[0]
-    if (weeklyData[saleDate]) {
-      weeklyData[saleDate].totalSales += parseFloat(sale.total_amount) || 0
-      weeklyData[saleDate].transactionCount += 1
+    const saleDate = convertToBusinessTimezone(new Date(sale.date_time), timezone)
+    const dayKey = saleDate.toISOString().split('T')[0]
+    if (weeklyData[dayKey]) {
+      weeklyData[dayKey].totalSales += parseFloat(sale.total_amount) || 0
+      weeklyData[dayKey].transactionCount += 1
     }
   })
   
@@ -91,8 +136,9 @@ const processWeeklyData = (sales: any[], sideBusinessSales: any[]): WeeklySalesD
   }))
 }
 
-const processHourlyData = (sales: any[], sideBusinessSales: any[]): HourlySalesData[] => {
+const processHourlyData = (sales: any[], sideBusinessSales: any[], timezone: string = 'UTC', businessHours: string = '9:00 AM - 6:00 PM'): HourlySalesData[] => {
   const hourlyData: { [key: number]: { totalSales: number, transactionCount: number } } = {}
+  const { startMinutes, endMinutes } = getBusinessHoursRange(businessHours)
   
   // Initialize all hours
   for (let i = 0; i < 24; i++) {
@@ -101,16 +147,30 @@ const processHourlyData = (sales: any[], sideBusinessSales: any[]): HourlySalesD
   
   // Process main sales
   sales.forEach(sale => {
-    const hour = new Date(sale.datetime).getHours()
-    hourlyData[hour].totalSales += parseFloat(sale.total_amount) || 0
-    hourlyData[hour].transactionCount += 1
+    const saleDate = convertToBusinessTimezone(new Date(sale.datetime), timezone)
+    const hour = saleDate.getHours()
+    const minutes = saleDate.getMinutes()
+    const totalMinutes = hour * 60 + minutes
+    
+    // Only count sales during business hours
+    if (totalMinutes >= startMinutes && totalMinutes <= endMinutes) {
+      hourlyData[hour].totalSales += parseFloat(sale.total_amount) || 0
+      hourlyData[hour].transactionCount += 1
+    }
   })
   
   // Process side business sales
   sideBusinessSales.forEach(sale => {
-    const hour = new Date(sale.date_time).getHours()
-    hourlyData[hour].totalSales += parseFloat(sale.total_amount) || 0
-    hourlyData[hour].transactionCount += 1
+    const saleDate = convertToBusinessTimezone(new Date(sale.date_time), timezone)
+    const hour = saleDate.getHours()
+    const minutes = saleDate.getMinutes()
+    const totalMinutes = hour * 60 + minutes
+    
+    // Only count sales during business hours
+    if (totalMinutes >= startMinutes && totalMinutes <= endMinutes) {
+      hourlyData[hour].totalSales += parseFloat(sale.total_amount) || 0
+      hourlyData[hour].transactionCount += 1
+    }
   })
   
   return Object.entries(hourlyData).map(([hour, data]) => ({
@@ -121,8 +181,8 @@ const processHourlyData = (sales: any[], sideBusinessSales: any[]): HourlySalesD
   }))
 }
 
-const processMonthlyData = (sales: any[], sideBusinessSales: any[]): MonthlySalesData[] => {
-  const { start, end } = getDateRange('month')
+const processMonthlyData = (sales: any[], sideBusinessSales: any[], timezone: string = 'UTC'): MonthlySalesData[] => {
+  const { start, end } = getDateRange('month', timezone)
   const monthlyData: { [key: string]: { totalSales: number, transactionCount: number } } = {}
   
   // Initialize all days of the month
@@ -135,19 +195,21 @@ const processMonthlyData = (sales: any[], sideBusinessSales: any[]): MonthlySale
   
   // Process main sales
   sales.forEach(sale => {
-    const saleDate = new Date(sale.datetime).toISOString().split('T')[0]
-    if (monthlyData[saleDate]) {
-      monthlyData[saleDate].totalSales += parseFloat(sale.total_amount) || 0
-      monthlyData[saleDate].transactionCount += 1
+    const saleDate = convertToBusinessTimezone(new Date(sale.datetime), timezone)
+    const dayKey = saleDate.toISOString().split('T')[0]
+    if (monthlyData[dayKey]) {
+      monthlyData[dayKey].totalSales += parseFloat(sale.total_amount) || 0
+      monthlyData[dayKey].transactionCount += 1
     }
   })
   
   // Process side business sales
   sideBusinessSales.forEach(sale => {
-    const saleDate = new Date(sale.date_time).toISOString().split('T')[0]
-    if (monthlyData[saleDate]) {
-      monthlyData[saleDate].totalSales += parseFloat(sale.total_amount) || 0
-      monthlyData[saleDate].transactionCount += 1
+    const saleDate = convertToBusinessTimezone(new Date(sale.date_time), timezone)
+    const dayKey = saleDate.toISOString().split('T')[0]
+    if (monthlyData[dayKey]) {
+      monthlyData[dayKey].totalSales += parseFloat(sale.total_amount) || 0
+      monthlyData[dayKey].transactionCount += 1
     }
   })
   
@@ -162,21 +224,25 @@ const processMonthlyData = (sales: any[], sideBusinessSales: any[]): MonthlySale
 
 export const useSalesAnalytics = () => {
   const { data: salesData, isLoading, error } = useSalesData()
+  const { currentBusiness } = useBusiness()
+  
+  const businessTimezone = currentBusiness?.timezone || 'UTC'
+  const businessHours = currentBusiness?.business_hours || '9:00 AM - 6:00 PM'
   
   const weeklyData = useMemo(() => {
     if (!salesData) return []
-    return processWeeklyData(salesData.sales, salesData.sideBusinessSales)
-  }, [salesData])
+    return processWeeklyData(salesData.sales, salesData.sideBusinessSales, businessTimezone)
+  }, [salesData, businessTimezone])
   
   const hourlyData = useMemo(() => {
     if (!salesData) return []
-    return processHourlyData(salesData.sales, salesData.sideBusinessSales)
-  }, [salesData])
+    return processHourlyData(salesData.sales, salesData.sideBusinessSales, businessTimezone, businessHours)
+  }, [salesData, businessTimezone, businessHours])
   
   const monthlyData = useMemo(() => {
     if (!salesData) return []
-    return processMonthlyData(salesData.sales, salesData.sideBusinessSales)
-  }, [salesData])
+    return processMonthlyData(salesData.sales, salesData.sideBusinessSales, businessTimezone)
+  }, [salesData, businessTimezone])
   
   return {
     weeklyData,
@@ -184,6 +250,8 @@ export const useSalesAnalytics = () => {
     monthlyData,
     loading: isLoading,
     error: error?.message || null,
+    businessTimezone,
+    businessHours,
     refreshHourlyData: () => {}, // React Query handles this automatically
     refreshWeeklyData: () => {}, // React Query handles this automatically
     refreshMonthlyData: () => {} // React Query handles this automatically

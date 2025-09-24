@@ -3,7 +3,9 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { useBusinessId } from '../hooks/useBusinessId'
+import { useBusiness } from '../contexts/BusinessContext'
 import { useBarcodeScanner, setModalOpen } from '../hooks/useBarcodeScanner'
+import { generateReceiptHTML as generateReceiptHTMLUtil, printReceipt as printReceiptUtil } from '../utils/receiptUtils'
 import { ttsService, TTSSettings } from '../lib/ttsService'
 import { RetroButton } from '../components/ui/RetroButton'
 
@@ -161,6 +163,7 @@ interface Order {
 const Sales = () => {
   const { user } = useAuth()
   const { businessId, businessLoading } = useBusinessId()
+  const { currentBusiness } = useBusiness()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [products, setProducts] = useState<Product[]>([])
@@ -1115,218 +1118,41 @@ const Sales = () => {
   }
 
   const generateReceiptHTML = () => {
-    const receiptNumber = `RCP-${Date.now()}`
-    const currentDate = new Date()
-    const dateStr = currentDate.toLocaleDateString('en-IE')
-    const timeStr = currentDate.toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' })
-    
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Receipt - ${receiptNumber}</title>
-        <style>
-          body { 
-            font-family: 'Courier New', monospace; 
-            font-size: 12px; 
-            line-height: 1.4; 
-            margin: 0; 
-            padding: 10px; 
-            background: white;
-            color: black;
-          }
-          .receipt { 
-            width: 100%; 
-            max-width: 400px; 
-            margin: 0 auto; 
-            border: 1px solid #ccc; 
-            padding: 20px; 
-            background: white;
-          }
-          .header { 
-            text-align: center; 
-            margin-bottom: 15px; 
-            border-bottom: 1px dashed #333; 
-            padding-bottom: 10px; 
-          }
-          .logo-fallback {
-            display: none;
-            background: #333;
-            color: white;
-            padding: 8px;
-            text-align: center;
-            font-weight: bold;
-            margin-bottom: 10px;
-          }
-          .business-info { 
-            font-size: 10px; 
-            margin: 8px 0; 
-          }
-          .divider { 
-            border-top: 1px dashed #333; 
-            margin: 10px 0; 
-          }
-          .item-row { 
-            display: flex; 
-            justify-content: space-between; 
-            margin: 3px 0; 
-          }
-          .total-row { 
-            font-weight: bold; 
-            border-top: 1px solid #333; 
-            padding-top: 5px; 
-            margin-top: 8px; 
-          }
-          .payment-info { 
-            margin: 10px 0; 
-          }
-          .notes-section {
-            margin: 10px 0;
-            padding: 8px;
-            background: #f5f5f5;
-            border-radius: 4px;
-          }
-          .footer { 
-            text-align: center; 
-            margin-top: 15px; 
-            font-size: 10px; 
-            border-top: 1px dashed #333; 
-            padding-top: 10px; 
-          }
-        </style>
-      </head>
-      <body>
-        <div class="receipt">
-          <div class="header">
-            <img src="/retailpos/images/backgrounds/logo1.png" alt="LandM Store" style="max-width: 80px; height: auto; display: block; margin: 0 auto 10px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-            <div class="logo-fallback" style="display: none; font-size: 24px; font-weight: bold; margin-bottom: 8px; color: #1a1a1a;">LandM Store</div>
-            <div class="business-info">
-              <div>Unit 2 Glenmore Park</div>
-              <div>Dundalk, Co. Louth</div>
-              <div>087 797 0412</div>
-            </div>
-          </div>
-          
-          <div class="divider"></div>
-          
-          <div class="item-row">
-            <span>Date: ${dateStr}</span>
-            <span>Time: ${timeStr}</span>
-          </div>
-          <div class="item-row">
-            <span>Receipt: ${receiptNumber}</span>
-            <span>Cashier: ${user?.username || 'System'}</span>
-          </div>
-          
-          <div class="divider"></div>
-          
-          ${order.items.map(item => {
-            const itemName = item.product?.name || item.sideBusinessItem?.name || 'Unknown Item'
-            const itemPrice = item.product?.price || item.customPrice || item.sideBusinessItem?.price || 0
-            return `
-            <div class="item-row">
-              <span>${itemName} x${item.quantity}</span>
-              <span>€${(itemPrice * item.quantity).toFixed(2)}</span>
-            </div>
-          `
-          }).join('')}
-          
-          <div class="divider"></div>
-          
-          <div class="item-row total-row">
-            <span>SUBTOTAL:</span>
-            <span>€${order.subtotal.toFixed(2)}</span>
-          </div>
-          <div class="item-row total-row">
-            <span>${allowPartialPayment ? 'ORDER TOTAL:' : 'GRAND TOTAL:'}</span>
-            <span>€${order.total.toFixed(2)}</span>
-          </div>
-          
-          ${allowPartialPayment ? `
-          <div class="divider"></div>
-          <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 4px; padding: 8px; margin: 10px 0;">
-            <div style="font-weight: bold; margin-bottom: 5px; color: #92400e;">
-              <i class="fa-solid fa-credit-card" style="margin-right: 5px;"></i>
-              PARTIAL PAYMENT
-            </div>
-            <div class="item-row">
-              <span>Amount Paid Today:</span>
-              <span style="color: #059669; font-weight: bold;">€${(parseFloat(partialAmount) || 0).toFixed(2)}</span>
-            </div>
-            <div class="item-row">
-              <span>Remaining Balance:</span>
-              <span style="color: #dc2626; font-weight: bold;">€${remainingAmount.toFixed(2)}</span>
-            </div>
-            ${partialPaymentNotes ? `
-            <div style="margin-top: 5px; font-size: 10px; color: #92400e;">
-              Note: ${partialPaymentNotes}
-            </div>
-            ` : ''}
-          </div>
-          ` : ''}
-          
-          <div class="payment-info">
-            <div class="item-row">
-              <span>Payment Method:</span>
-              <span>${paymentMethod.toUpperCase()}</span>
-            </div>
-            ${paymentMethod === 'cash' ? `
-            <div class="item-row">
-              <span>Amount Received:</span>
-              <span>€${parseFloat(amountEntered).toFixed(2)}</span>
-            </div>
-            <div class="item-row">
-              <span>Change Given:</span>
-              <span>€${change.toFixed(2)}</span>
-            </div>
-            ` : paymentMethod === 'card' ? `
-            <div class="item-row">
-              <span>Card: ****1234</span>
-              <span>Approval: ${Math.floor(Math.random() * 10000)}</span>
-            </div>
-            ` : ''}
-          </div>
-          
-          ${(receiptNotes || (allowPartialPayment && partialPaymentNotes)) ? `
-          <div class="divider"></div>
-          <div class="notes-section">
-            <div style="font-weight: bold; margin-bottom: 5px;">Notes:</div>
-            <div style="font-size: 9px; line-height: 1.3; margin-left: 10px;">
-              ${allowPartialPayment ? `PARTIAL PAYMENT
-Amount Paid Today: €${(parseFloat(partialAmount) || 0).toFixed(2)}
-Remaining Balance: €${remainingAmount.toFixed(2)}
-${partialPaymentNotes ? `Partial Payment Notes: ${partialPaymentNotes}` : ''}` : ''}
-              ${receiptNotes ? (allowPartialPayment ? '\n\n' : '') + receiptNotes : ''}
-            </div>
-          </div>
-          ` : ''}
-          
-          <div class="divider"></div>
-          
-          <div class="footer">
-            <div>Thank you for shopping with us!</div>
-            <div style="margin-top: 5px;">LandM Store - Your Local African Food Store</div>
-            ${allowPartialPayment ? `
-            <div style="margin-top: 10px; font-size: 9px; color: #92400e;">
-              <strong>Please keep this receipt for your records</strong><br>
-              Remaining balance: €${remainingAmount.toFixed(2)}
-            </div>
-            ` : ''}
-          </div>
-        </div>
-      </body>
-      </html>
-    `
+    const paymentInfo = {
+      method: paymentMethod,
+      amountEntered: amountEntered,
+      change: change,
+      customerName: customerName,
+      receiptNotes: receiptNotes
+    }
+
+    const partialPayment = allowPartialPayment ? {
+      amountPaid: parseFloat(partialAmount) || 0,
+      amountRemaining: remainingAmount,
+      dueDate: null,
+      notes: partialPaymentNotes
+    } : undefined
+
+    return generateReceiptHTMLUtil(order, paymentInfo, user, currentBusiness, partialPayment)
   }
 
   const printReceipt = () => {
-    const printWindow = window.open('', '_blank')
-    if (!printWindow) return
+    const paymentInfo = {
+      method: paymentMethod,
+      amountEntered: amountEntered,
+      change: change,
+      customerName: customerName,
+      receiptNotes: receiptNotes
+    }
 
-    printWindow.document.write(generateReceiptHTML())
-    printWindow.document.close()
-    printWindow.print()
-    printWindow.close()
+    const partialPayment = allowPartialPayment ? {
+      amountPaid: parseFloat(partialAmount) || 0,
+      amountRemaining: remainingAmount,
+      dueDate: null,
+      notes: partialPaymentNotes
+    } : undefined
+
+    printReceiptUtil(order, paymentInfo, user, currentBusiness, partialPayment)
   }
 
   const processSale = async () => {
