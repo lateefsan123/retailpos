@@ -173,9 +173,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       setLoading(true)
 
-      // Use legacy login with email (which is now stored as username)
-      const success = await legacyLogin(email, password)
+      // First try to find user by email in the email field
+      const { data: userByEmail, error: emailError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .eq('active', true)
+        .maybeSingle()
 
+      if (userByEmail && !emailError) {
+        // User found by email, use their username for login
+        const success = await legacyLogin(userByEmail.username, password)
+        if (success) {
+          localStorage.setItem('lastLogin', new Date().toLocaleString())
+        }
+        return success
+      }
+
+      // If not found by email, try using email as username (legacy behavior)
+      const success = await legacyLogin(email, password)
       if (success) {
         localStorage.setItem('lastLogin', new Date().toLocaleString())
       }
@@ -201,10 +217,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .eq('username', username)
         .eq('password_hash', hashedPassword)
         .eq('active', true)
-        .single()
+        .maybeSingle()
 
-      if (error || !data) {
-        // console.error('Legacy login failed:', error)
+      if (error) {
+        console.error('Legacy login error:', error)
+        return false
+      }
+      
+      if (!data) {
+        console.log('No user found with those credentials')
         return false
       }
 
@@ -262,7 +283,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .from('users')
         .select('user_id')
         .eq('username', username)
-        .single()
+        .maybeSingle()
 
       if (existingUser) {
         console.error('Username already exists')
@@ -274,7 +295,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .from('business_info')
         .select('business_id')
         .eq('name', businessName)
-        .single()
+        .maybeSingle()
 
       if (existingBusiness) {
         console.error('Business name already exists')

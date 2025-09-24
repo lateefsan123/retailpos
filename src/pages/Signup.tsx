@@ -42,6 +42,7 @@ const Signup: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAdminCredentials, setShowAdminCredentials] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
   
@@ -119,13 +120,23 @@ const Signup: React.FC = () => {
       );
 
       if (result.success) {
-        // Redirect to login or dashboard
-        navigate('/login', { 
-          state: { 
-            message: 'Account created successfully! Please sign in.',
-            email: formData.email 
-          } 
-        });
+        // Show admin credentials if available
+        if (result.adminCredentials) {
+          setError(null);
+          setShowAdminCredentials(true);
+          // Show success message with admin credentials
+          const adminMessage = `Account created successfully!\n\nAdmin Credentials:\nUsername: ${result.adminCredentials.username}\nPassword: ${result.adminCredentials.password}\n\nPlease save these credentials and use them to login.`;
+          setError(adminMessage);
+          // Don't redirect automatically - let user click submit
+        } else {
+          // Redirect to login immediately if no admin credentials
+          navigate('/login', { 
+            state: { 
+              message: 'Account created successfully! Please sign in.',
+              email: formData.email 
+            } 
+          });
+        }
       } else {
         throw new Error("Failed to create account. Please try again.");
       }
@@ -328,18 +339,47 @@ const Signup: React.FC = () => {
             <div style={{ height: "100%", width: `${progress}%`, backgroundColor: "#7d8d86" }} />
           </div>
 
-          {/* Error Display */}
+          {/* Error/Success Display */}
           {error && (
             <div style={{
-              backgroundColor: "#fef2f2",
-              border: "1px solid #fecaca",
-              color: "#dc2626",
-              padding: "1rem",
-              borderRadius: "8px",
+              backgroundColor: error.includes("Account created successfully") ? "#f0fdf4" : "#fef2f2",
+              border: error.includes("Account created successfully") ? "2px solid #22c55e" : "1px solid #fecaca",
+              color: error.includes("Account created successfully") ? "#166534" : "#dc2626",
+              padding: showAdminCredentials ? "2rem" : "1rem",
+              borderRadius: "12px",
               marginBottom: "1.5rem",
-              fontSize: "0.9rem"
+              fontSize: showAdminCredentials ? "1rem" : "0.9rem",
+              whiteSpace: "pre-line",
+              textAlign: showAdminCredentials ? "center" : "left",
+              boxShadow: showAdminCredentials ? "0 4px 12px rgba(34, 197, 94, 0.15)" : "none"
             }}>
-              {error}
+              {showAdminCredentials && (
+                <div style={{ marginBottom: "1.5rem" }}>
+                  <div style={{ 
+                    fontSize: "2rem", 
+                    marginBottom: "1rem",
+                    color: "#22c55e"
+                  }}>
+                    ✅
+                  </div>
+                  <h2 style={{ 
+                    fontSize: "1.5rem", 
+                    fontWeight: "700", 
+                    marginBottom: "1rem",
+                    color: "#166534"
+                  }}>
+                    Account Created Successfully!
+                  </h2>
+                </div>
+              )}
+              <div style={{ 
+                backgroundColor: showAdminCredentials ? "#ffffff" : "transparent",
+                padding: showAdminCredentials ? "1.5rem" : "0",
+                borderRadius: showAdminCredentials ? "8px" : "0",
+                border: showAdminCredentials ? "1px solid #d1fae5" : "none"
+              }}>
+                {error}
+              </div>
             </div>
           )}
 
@@ -690,7 +730,7 @@ const Signup: React.FC = () => {
             </>
           )}
 
-          {currentStep === 4 && (
+          {currentStep === 4 && !showAdminCredentials && (
                   <div style={{ padding: "1.5rem", backgroundColor: "#f8fafc", borderRadius: "12px" }}>
                     <h3 style={{ marginBottom: "1rem", color: "#374151", fontSize: "1.25rem" }}>Review Your Information</h3>
                     <div style={{ display: "grid", gap: "0.75rem" }}>
@@ -754,7 +794,13 @@ const Signup: React.FC = () => {
 
                 {currentStep === steps.length ? (
                   <button 
-                    type="submit" 
+                    type={showAdminCredentials ? "button" : "submit"}
+                    onClick={showAdminCredentials ? () => navigate('/login', { 
+                      state: { 
+                        message: 'Account created successfully! Please sign in.',
+                        email: formData.email 
+                      } 
+                    }) : undefined}
                     disabled={isSubmitting}
                     style={{
                       ...buttonStyle,
@@ -765,7 +811,7 @@ const Signup: React.FC = () => {
                       cursor: isSubmitting ? "not-allowed" : "pointer"
                     }}
                   >
-                    {isSubmitting ? "Creating Account..." : "Submit"}
+                    {isSubmitting ? "Creating Account..." : showAdminCredentials ? "Continue to Login" : "Submit"}
                   </button>
                 ) : (
                   <div />
