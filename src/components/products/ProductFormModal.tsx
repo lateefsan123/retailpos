@@ -437,7 +437,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           </div>
 
           {/* Stock Quantity and Reorder Level */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
               <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
                 Stock Quantity *
@@ -449,7 +449,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 onChange={(e) => setNewProduct({...newProduct, stock_quantity: e.target.value})}
                 style={{
                   width: '100%',
-                  padding: '10px 12px',
+                  padding: '0.875rem',
                   border: '1px solid #d1d5db',
                   borderRadius: '8px',
                   fontSize: '14px'
@@ -468,7 +468,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 onChange={(e) => setNewProduct({...newProduct, reorder_level: e.target.value})}
                 style={{
                   width: '100%',
-                  padding: '10px 12px',
+                  padding: '0.875rem',
                   border: '1px solid #d1d5db',
                   borderRadius: '8px',
                   fontSize: '14px'

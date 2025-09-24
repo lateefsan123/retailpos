@@ -57,10 +57,22 @@
   align-items: center;
 }
 
+.logoContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .logo {
+  height: 60px;
+  width: 200px;
+}
+
+.logoText {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--sage);
+  margin: 0;
 }
 
 .headerRight {
@@ -434,6 +446,23 @@
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+}
+
+/* Logo Overlay */
+.logoOverlay {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+.overlayLogo {
+  height: 300px;
+  width: auto;
+  object-fit: contain;
+  opacity: 0.6;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
 }
 
 @media (min-width: 1024px) {

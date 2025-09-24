@@ -40,12 +40,20 @@
 .logoContainer {
   display: flex;
   align-items: center;
+  gap: 12px;
+}
+
+.logoImage {
+  height: 60px;
+  width: auto;
+  object-fit: contain;
 }
 
 .logoText {
   font-size: 1.5rem;
   font-weight: bold;
   color: #7d8d86;
+  margin: 0;
 }
 
 .navLinks {

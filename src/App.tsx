@@ -12,6 +12,7 @@ import Navigation from './components/Navigation'
 import UserMenu from './components/UserMenu'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
+import Signup from './pages/Signup'
 import EmailVerification from './pages/EmailVerification'
 import Dashboard from './pages/Dashboard'
 import Products from './pages/Products'
@@ -128,6 +129,7 @@ function App() {
                     <Route path="/" element={<Landing />} />
                     <Route path="/landing" element={<Landing />} />
                     <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<Signup />} />
                     <Route path="/verify-email" element={<EmailVerification />} />
                     <Route path="/select-user" element={<SelectUser />} />
                     <Route path="/*" element={

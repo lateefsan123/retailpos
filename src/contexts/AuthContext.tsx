@@ -236,7 +236,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
-  const register = async (username: string, password: string, businessName: string): Promise<{ success: boolean; adminCredentials?: AdminCredentials }> => {
+  const register = async (
+    username: string, 
+    password: string, 
+    businessName: string,
+    firstName?: string,
+    lastName?: string,
+    email?: string,
+    phone?: string,
+    businessType?: string,
+    businessDescription?: string,
+    businessAddress?: string,
+    businessPhone?: string,
+    currency?: string,
+    website?: string,
+    vatNumber?: string,
+    openTime?: string,
+    closeTime?: string
+  ): Promise<{ success: boolean; adminCredentials?: AdminCredentials }> => {
     try {
       setLoading(true)
       
@@ -264,16 +281,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return { success: false }
       }
 
-      // Create business first
+      // Create business first with all provided details
+      const businessHours = openTime && closeTime ? `${openTime} - ${closeTime}` : null;
+      
       const { data: businessData, error: businessError } = await supabase
         .from('business_info')
         .insert({
           name: businessName,  // This is the required NOT NULL field
           business_name: businessName,
-          business_type: 'Retail Store',
-          address: 'Default Address',  // This is also required NOT NULL
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          business_type: businessType || 'Retail Store',
+          description: businessDescription || null,
+          address: businessAddress || 'Default Address',  // This is also required NOT NULL
+          phone_number: businessPhone || null,
+          website: website || null,
+          vat_number: vatNumber || null,
+          business_hours: businessHours,
+          currency: currency || 'USD',
+          created_at: new Date().toISOString()
         })
         .select('business_id')
         .single()
@@ -283,16 +307,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return { success: false }
       }
 
-      // Create user with the business_id
+      // Create user with the business_id and additional details
       const hashedPassword = hashPassword(password)
+      const fullName = firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || null
+      
       const { data: userData, error: userError } = await supabase
         .from('users')
         .insert({
           username: username,
           password_hash: hashedPassword,
-          role: 'Owner',
+          role: 'owner',
           active: true,
           business_id: businessData.business_id,
+          email: email || null,
+          full_name: fullName,
           created_at: new Date().toISOString()
         })
         .select('*')

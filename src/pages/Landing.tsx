@@ -65,9 +65,18 @@ const Landing: React.FC = () => {
         <div className={styles.navContent}>
           <div className={styles.navFlex}>
             <div className={styles.logoContainer}>
-              <h1 className={styles.logoText}>
-                TillPoint
-              </h1>
+              <svg 
+                className={styles.logoImage}
+                viewBox="0 0 200 60" 
+                fill="none" 
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                {/* Circle */}
+                <circle cx="25" cy="30" r="14" fill="#7d8d86"/>
+                
+                {/* TillPoint Text */}
+                <text x="45" y="38" fontFamily="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" fontSize="22" fontWeight="600" fill="#3e3f29">TillPoint</text>
+              </svg>
             </div>
             <div className={styles.navLinks}>
               <a href="#features" className={styles.navLink}>Features</a>
@@ -76,8 +85,8 @@ const Landing: React.FC = () => {
               <Link to="/login" className={styles.navLink}>
                 Sign In
               </Link>
-              <Link to="/login" className={styles.navButton}>
-                Sign In
+              <Link to="/signup" className={styles.navButton}>
+                Sign Up
               </Link>
             </div>
           </div>

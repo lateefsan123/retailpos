@@ -143,7 +143,20 @@ const Login: React.FC = () => {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <div className={styles.headerLeft}>
-            <h1 className={styles.logo}>TillPoint</h1>
+            <div className={styles.logoContainer}>
+              <svg 
+                className={styles.logo}
+                viewBox="0 0 200 60" 
+                fill="none" 
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                {/* Circle */}
+                <circle cx="25" cy="30" r="14" fill="#7d8d86"/>
+                
+                {/* TillPoint Text */}
+                <text x="45" y="38" fontFamily="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" fontSize="22" fontWeight="600" fill="#3e3f29">TillPoint</text>
+              </svg>
+            </div>
           </div>
           <div className={styles.headerRight}>
             <a href="/" className={styles.backLink}>← Back to Home</a>
@@ -323,7 +336,7 @@ const Login: React.FC = () => {
                 </div>
                 <h3 className={styles.successTitle}>Welcome Back!</h3>
                 <p className={styles.successText}>You have successfully signed in to your account.</p>
-                <button onClick={handleGoToStaffLogin} className={styles.submitButton}>
+                <button onClick={() => navigate('/select-user')} className={styles.submitButton}>
                   Go to Staff Login
                 </button>
               </div>
@@ -349,6 +362,13 @@ const Login: React.FC = () => {
 
         {/* Right Side - Image */}
         <div className={styles.imageContainer}>
+          <div className={styles.logoOverlay}>
+            <img 
+              src="/retailpos/images/tillpointlogo.png" 
+              alt="TillPoint Logo" 
+              className={styles.overlayLogo}
+            />
+          </div>
         </div>
       </div>
     </div>
