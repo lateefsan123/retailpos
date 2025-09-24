@@ -328,6 +328,32 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return { success: false }
       }
 
+      // Create default branch for the business
+      try {
+        const { error: branchError } = await supabase
+          .from('branches')
+          .insert({
+            branch_name: 'Main Branch',
+            address: businessAddress || 'Default Address',
+            phone: businessPhone || null,
+            manager_id: null,
+            shop_image: 'shop1',
+            business_id: businessData.business_id,
+            active: true,
+            created_at: new Date().toISOString()
+          })
+        
+        if (branchError) {
+          console.warn('Failed to create default branch:', branchError)
+          // Don't fail the entire registration if branch creation fails
+        } else {
+          console.log('Default branch created successfully for business:', businessData.business_id)
+        }
+      } catch (branchError) {
+        console.warn('Failed to create default branch:', branchError)
+        // Don't fail the entire registration if branch creation fails
+      }
+
       // Create user with the business_id and additional details
       const hashedPassword = hashPassword(password)
       const fullName = firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || null

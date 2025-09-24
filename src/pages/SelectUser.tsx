@@ -14,13 +14,31 @@ interface User {
   pin?: string;
 }
 
+interface Branch {
+  branch_id: number;
+  branch_name: string;
+  address: string;
+  phone: string;
+  manager_id?: number;
+  shop_image: string;
+  business_id: number;
+  active: boolean;
+  created_at: string;
+}
+
+
 const SelectUser: React.FC = () => {
   const navigate = useNavigate();
   const { user, switchUser } = useAuth();
 
   const [users, setUsers] = useState<User[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+  const [showBranchSelection, setShowBranchSelection] = useState(false);
+  const [currentBranchIndex, setCurrentBranchIndex] = useState(0);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [showPasswordView, setShowPasswordView] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -34,6 +52,7 @@ const SelectUser: React.FC = () => {
   useEffect(() => {
     if (user?.business_id) {
       fetchUsers();
+      fetchBranches();
     }
   }, [user?.business_id]);
 
@@ -69,6 +88,34 @@ const SelectUser: React.FC = () => {
     }
   };
 
+  const fetchBranches = async () => {
+    if (!user?.business_id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('branches')
+        .select('*')
+        .eq('business_id', user.business_id)
+        .eq('active', true)
+        .order('branch_id', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching branches:', error);
+        return;
+      }
+
+      setBranches(data || []);
+      // Show branch selection if multiple branches exist
+      if (data && data.length > 1) {
+        setShowBranchSelection(true);
+      } else if (data && data.length === 1) {
+        setSelectedBranch(data[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching branches:', error);
+    }
+  };
+
   const handleUserSelect = (u: User) => {
     setSelectedUser(u);
     setShowPasswordView(true);
@@ -77,9 +124,31 @@ const SelectUser: React.FC = () => {
     setUsePinAuth(false);
   };
 
+  const handleBranchSelect = (branch: Branch) => {
+    setSelectedBranch(branch);
+    setShowBranchSelection(false);
+  };
+
+  const handleNextBranch = () => {
+    setSlideDirection('right');
+    setCurrentBranchIndex((prev) => (prev + 1) % branches.length);
+  };
+
+  const handlePrevBranch = () => {
+    setSlideDirection('left');
+    setCurrentBranchIndex((prev) => (prev - 1 + branches.length) % branches.length);
+  };
+
+  const handleSelectCurrentBranch = () => {
+    if (branches[currentBranchIndex]) {
+      handleBranchSelect(branches[currentBranchIndex]);
+    }
+  };
+
+
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedUser || !password) return;
+    if (!selectedUser || !password || !selectedBranch) return;
 
     setIsAuthenticating(true);
     setPasswordError('');
@@ -88,6 +157,9 @@ const SelectUser: React.FC = () => {
       const success = await switchUser(selectedUser.user_id, password, usePinAuth);
 
       if (success) {
+        // Store selected branch in localStorage
+        localStorage.setItem('selected_branch_id', selectedBranch.branch_id.toString());
+        localStorage.setItem('selected_branch_name', selectedBranch.branch_name);
         navigate('/dashboard');
       } else {
         throw new Error(usePinAuth ? 'Invalid PIN' : 'Invalid password');
@@ -107,6 +179,11 @@ const SelectUser: React.FC = () => {
     setPasswordError('');
     setIsAuthenticating(false);
     setUsePinAuth(false);
+    
+    // If there are multiple branches, go back to branch selection
+    if (branches.length > 1) {
+      setShowBranchSelection(true);
+    }
   };
 
   const getRoleColor = (role: string) => {
@@ -161,20 +238,45 @@ const SelectUser: React.FC = () => {
 
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: '0',
-        backgroundColor: '#0b0d10',
-        backgroundImage:
-          'repeating-linear-gradient(0deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02) 2px, transparent 2px, transparent 4px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
-        zIndex: 9999,
-      }}
-    >
+    <>
+      <style>
+        {`
+          @keyframes slideInFromRight {
+            from {
+              opacity: 0;
+              transform: translateX(50px);
+            }
+            to {
+              opacity: 1;
+              transform: translateX(0);
+            }
+          }
+          @keyframes slideInFromLeft {
+            from {
+              opacity: 0;
+              transform: translateX(-50px);
+            }
+            to {
+              opacity: 1;
+              transform: translateX(0);
+            }
+          }
+        `}
+      </style>
+      <div
+        style={{
+          position: 'fixed',
+          inset: '0',
+          backgroundColor: '#0b0d10',
+          backgroundImage:
+            'repeating-linear-gradient(0deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02) 2px, transparent 2px, transparent 4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px',
+          zIndex: 9999,
+        }}
+      >
       {/* Outer card to create depth behind the monitor */}
       <div
         style={{
@@ -231,12 +333,14 @@ const SelectUser: React.FC = () => {
                   margin: 0,
                 }}
               >
-                Select User
+                {showBranchSelection ? 'Select Branch' : 'Select User'}
               </h2>
               <button
                 onClick={() => {
                   if (showPasswordView) {
                     handleBackToUsers();
+                  } else if (showBranchSelection) {
+                    navigate('/login');
                   } else {
                     navigate('/login');
                   }
@@ -483,6 +587,7 @@ const SelectUser: React.FC = () => {
                     }}>
                       {selectedUser?.role}
                     </div>
+                    
                   </div>
 
                   {/* Windows-style Password Form */}
@@ -874,10 +979,162 @@ const SelectUser: React.FC = () => {
                   <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: 12, fontSize: '24px' }} />
                   <span style={{ fontSize: '18px' }}>Loading users...</span>
                 </div>
-              ) : (
-                <div>
+              ) : showBranchSelection ? (
+                /* Branch Selection Screen */
+                <div style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  height: '100%',
+                  gap: '32px',
+                  padding: '40px 20px'
+                }}>
+                  <div style={{
+                    color: '#ffffff',
+                    fontSize: '28px',
+                    fontWeight: '600',
+                    textAlign: 'center',
+                    marginBottom: '24px'
+                  }}>
+                    Choose Your Branch
+                  </div>
+                  
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '40px',
+                    maxWidth: '800px',
+                    width: '100%',
+                    margin: '0 auto'
+                  }}>
+                    {/* Left Arrow */}
+                    <button
+                      onClick={handlePrevBranch}
+                      style={{
+                        background: 'rgba(26, 26, 26, 0.3)',
+                        border: '1px solid #4a5568',
+                        borderRadius: '50%',
+                        width: '60px',
+                        height: '60px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        color: '#ffffff'
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.background = 'rgba(59, 130, 246, 0.2)';
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = '#3b82f6';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.background = 'rgba(26, 26, 26, 0.3)';
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = '#4a5568';
+                      }}
+                    >
+                      <i className='fa-solid fa-chevron-left' style={{ fontSize: '24px' }}></i>
+                    </button>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+                    {/* Current Branch Card */}
+                    {branches[currentBranchIndex] && (
+                      <div
+                        key={branches[currentBranchIndex].branch_id}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          padding: '20px',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease-in-out',
+                          textAlign: 'center',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '8px',
+                          minHeight: '300px',
+                          width: '280px',
+                          animation: slideDirection === 'right' ? 'slideInFromRight 0.3s ease-in-out' : 
+                                   slideDirection === 'left' ? 'slideInFromLeft 0.3s ease-in-out' : 
+                                   'none'
+                        }}
+                        onClick={handleSelectCurrentBranch}
+                      >
+                        <div 
+                          style={{
+                            width: '200px',
+                            height: '200px',
+                            backgroundImage: `url(images/shop/${branches[currentBranchIndex].shop_image}.png)`,
+                            backgroundSize: 'contain',
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'center',
+                            backgroundColor: 'white',
+                            borderRadius: '20px',
+                            transition: 'all 0.3s ease-in-out'
+                          }}
+                        />
+                        <div style={{
+                          color: '#ffffff',
+                          fontSize: '16px',
+                          fontWeight: '500',
+                          textAlign: 'center',
+                          transition: 'all 0.3s ease-in-out',
+                          marginTop: '8px'
+                        }}>
+                          {branches[currentBranchIndex].branch_name}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Right Arrow */}
+                    <button
+                      onClick={handleNextBranch}
+                      style={{
+                        background: 'rgba(26, 26, 26, 0.3)',
+                        border: '1px solid #4a5568',
+                        borderRadius: '50%',
+                        width: '60px',
+                        height: '60px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        color: '#ffffff'
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.background = 'rgba(59, 130, 246, 0.2)';
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = '#3b82f6';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.background = 'rgba(26, 26, 26, 0.3)';
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = '#4a5568';
+                      }}
+                    >
+                      <i className='fa-solid fa-chevron-right' style={{ fontSize: '24px' }}></i>
+                    </button>
+                  </div>
+                  
+                  {/* Branch Counter */}
+                  <div style={{
+                    color: '#9ca3af',
+                    fontSize: '16px',
+                    textAlign: 'center',
+                    marginTop: '24px'
+                  }}>
+                    {currentBranchIndex + 1} of {branches.length}
+                  </div>
+                </div>
+              ) : (
+                /* User Selection Screen */
+                <div>
+                  <div style={{ 
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                    gap: '20px',
+                    maxWidth: '1200px',
+                    margin: '0 auto'
+                  }}>
                     {users.map((u) => (
                       <button
                         key={u.user_id}
@@ -889,7 +1146,6 @@ const SelectUser: React.FC = () => {
                           padding: 24,
                           cursor: 'pointer',
                           transition: 'all 0.2s ease',
-                          width: '100%',
                           textAlign: 'left',
                           position: 'relative',
                           minHeight: '160px',
@@ -1013,6 +1269,7 @@ const SelectUser: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
