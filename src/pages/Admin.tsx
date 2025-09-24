@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { hashPassword } from '../utils/auth'
 import { useBusinessId } from '../hooks/useBusinessId'
+import { useBranch } from '../contexts/BranchContext'
 import VaultModal from '../components/VaultModal'
 
 interface User {
@@ -43,6 +44,7 @@ interface NewBranch {
 
 const Admin = () => {
   const { businessId, businessLoading } = useBusinessId()
+  const { selectedBranchId } = useBranch()
   const [users, setUsers] = useState<User[]>([])
   const [branches, setBranches] = useState<Branch[]>([])
   const [showAddModal, setShowAddModal] = useState(false)
@@ -95,7 +97,7 @@ const Admin = () => {
       fetchUsers()
       fetchBranches()
     }
-  }, [businessId, businessLoading])
+  }, [businessId, businessLoading, selectedBranchId])
 
   const fetchUsers = async () => {
     if (!businessId) {
@@ -106,11 +108,18 @@ const Admin = () => {
 
     try {
       setLoading(true)
-      const { data: users, error } = await supabase
+      let query = supabase
         .from('users')
         .select('*')
         .eq('business_id', businessId)
         .order('user_id', { ascending: false })
+
+      // Add branch filtering if branch is selected
+      if (selectedBranchId) {
+        query = query.eq('branch_id', selectedBranchId)
+      }
+
+      const { data: users, error } = await query
 
       if (error) {
         console.error('Error fetching users:', error)
@@ -214,7 +223,8 @@ const Admin = () => {
         password_hash: passwordHash,
         role: newUser.role,
         active: true,
-        business_id: businessId
+        business_id: businessId,
+        branch_id: selectedBranchId
       }
 
       // Only add icon if the column exists (will be handled by database migration)

@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './contexts/AuthContext'
 import { BusinessProvider } from './contexts/BusinessContext'
+import { BranchProvider } from './contexts/BranchContext'
 import { NavProvider, useNav } from './contexts/NavContext'
 import { RoleProvider } from './contexts/RoleContext'
 import { PinProvider } from './contexts/PinContext'
@@ -121,9 +122,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BusinessProvider>
-          <RoleProvider>
-            <NavProvider>
-              <PinProvider>
+          <BranchProvider>
+            <RoleProvider>
+              <NavProvider>
+                <PinProvider>
                 <Router basename="/retailpos">
                   <Routes>
                     <Route path="/" element={<Landing />} />
@@ -139,9 +141,10 @@ function App() {
                     } />
                   </Routes>
                 </Router>
-              </PinProvider>
-            </NavProvider>
-          </RoleProvider>
+                </PinProvider>
+              </NavProvider>
+            </RoleProvider>
+          </BranchProvider>
         </BusinessProvider>
       </AuthProvider>
     </QueryClientProvider>

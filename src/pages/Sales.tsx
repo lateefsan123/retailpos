@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { useBusinessId } from '../hooks/useBusinessId'
+import { useBranch } from '../contexts/BranchContext'
 import { useBusiness } from '../contexts/BusinessContext'
 import { useBarcodeScanner, setModalOpen } from '../hooks/useBarcodeScanner'
 import { generateReceiptHTML as generateReceiptHTMLUtil, printReceipt as printReceiptUtil } from '../utils/receiptUtils'
@@ -163,6 +164,7 @@ interface Order {
 const Sales = () => {
   const { user } = useAuth()
   const { businessId, businessLoading } = useBusinessId()
+  const { selectedBranchId } = useBranch()
   const { currentBusiness } = useBusiness()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -1190,12 +1192,17 @@ const Sales = () => {
         let customerId = null
         if (customerName.trim()) {
           // Check if customer exists
-          const { data: existingCustomer, error: lookupError } = await supabase
+          let customerQuery = supabase
             .from('customers')
             .select('customer_id')
             .eq('business_id', businessId)
             .eq('name', customerName.trim())
-            .single()
+
+          if (selectedBranchId) {
+            customerQuery = customerQuery.eq('branch_id', selectedBranchId)
+          }
+
+          const { data: existingCustomer, error: lookupError } = await customerQuery.single()
 
           if (existingCustomer && !lookupError) {
             customerId = existingCustomer.customer_id
@@ -1207,7 +1214,8 @@ const Sales = () => {
                 name: customerName.trim(),
                 phone_number: customerPhone.trim() || '000-000-0000', // Use provided phone or default
                 email: null,
-                business_id: businessId
+                business_id: businessId,
+                branch_id: selectedBranchId
               }])
               .select()
               .single()
@@ -1251,7 +1259,8 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             remaining_amount: allowPartialPayment ? remainingAmount : null,
             partial_notes: allowPartialPayment ? partialPaymentNotes : null,
             notes: notesContent || null,
-            business_id: businessId
+            business_id: businessId,
+            branch_id: selectedBranchId
           }
           
           const result = await supabase
@@ -1275,7 +1284,8 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             partial_amount: allowPartialPayment ? (parseFloat(partialAmount) || 0) : null,
             remaining_amount: allowPartialPayment ? remainingAmount : null,
             partial_notes: allowPartialPayment ? partialPaymentNotes : null,
-            business_id: businessId
+            business_id: businessId,
+            branch_id: selectedBranchId
           }
           
           const result = await supabase

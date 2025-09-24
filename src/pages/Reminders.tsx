@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
+import { useBranch } from '../contexts/BranchContext';
 import styles from './Reminders.module.css';
 
 interface Reminder {
@@ -20,6 +21,7 @@ interface Reminder {
 
 export default function Reminders() {
   const { user, currentUserId } = useAuth();
+  const { selectedBranchId } = useBranch();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [draggedNote, setDraggedNote] = useState<Reminder | null>(null);
@@ -254,11 +256,16 @@ export default function Reminders() {
         return;
       }
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('reminders')
         .select('*')
-        .eq('business_id', user.business_id)
-        .order('remind_date', { ascending: true });
+        .eq('business_id', user.business_id);
+
+      if (selectedBranchId) {
+        query = query.eq('branch_id', selectedBranchId);
+      }
+
+      const { data, error } = await query.order('remind_date', { ascending: true });
 
       if (error) {
         console.error('Database fetch error:', error);
@@ -312,6 +319,13 @@ export default function Reminders() {
     
     testTable();
   }, []);
+
+  // Refresh reminders when branch changes
+  useEffect(() => {
+    if (user?.business_id) {
+      fetchReminders();
+    }
+  }, [selectedBranchId]);
 
   const openAddReminderModal = () => {
     setModalForm({
@@ -374,7 +388,8 @@ export default function Reminders() {
       body: modalForm.body.trim(),
       remind_date: modalForm.remind_date,
       owner_id: currentUserId ? parseInt(currentUserId) : 1, // Use current user ID
-      business_id: user?.business_id || 1 // Use current business ID
+      business_id: user?.business_id || 1, // Use current business ID
+      branch_id: selectedBranchId // Use current branch ID
     };
 
     if (offlineMode) {
@@ -402,7 +417,8 @@ export default function Reminders() {
           title: newReminder.title,
           body: newReminder.body,
           remind_date: newReminder.remind_date,
-          owner_id: newReminder.owner_id
+          owner_id: newReminder.owner_id,
+          branch_id: newReminder.branch_id
         }])
         .select()
         .single();

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
+import { useBranch } from '../contexts/BranchContext'
 import SearchContainer from '../components/SearchContainer'
 import styles from './SideBusinesses.module.css'
 
@@ -114,6 +115,7 @@ interface SideBusinessSale {
 
 const SideBusinesses = () => {
   const { user } = useAuth()
+  const { selectedBranchId } = useBranch()
   const [businesses, setBusinesses] = useState<SideBusiness[]>([])
   const [items, setItems] = useState<SideBusinessItem[]>([])
   const [sales, setSales] = useState<SideBusinessSale[]>([])
@@ -215,7 +217,7 @@ const SideBusinesses = () => {
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [selectedBranchId])
 
   const fetchData = async () => {
     try {
@@ -231,28 +233,40 @@ const SideBusinesses = () => {
       }
 
       // Fetch side businesses for current business
-      const { data: businessesData, error: businessesError } = await supabase
+      let businessesQuery = supabase
         .from('side_businesses')
         .select('*')
         .eq('parent_shop_id', user.business_id)
+
+      if (selectedBranchId) {
+        businessesQuery = businessesQuery.eq('branch_id', selectedBranchId)
+      }
+
+      const { data: businessesData, error: businessesError } = await businessesQuery
         .order('created_at', { ascending: false })
 
       if (businessesError) throw businessesError
 
       // Fetch items with business names for current business
-      const { data: itemsData, error: itemsError } = await supabase
+      let itemsQuery = supabase
         .from('side_business_items')
         .select(`
           *,
           side_businesses (name)
         `)
         .eq('parent_shop_id', user.business_id)
+
+      if (selectedBranchId) {
+        itemsQuery = itemsQuery.eq('branch_id', selectedBranchId)
+      }
+
+      const { data: itemsData, error: itemsError } = await itemsQuery
         .order('created_at', { ascending: false })
 
       if (itemsError) throw itemsError
 
       // Fetch recent sales with item and business names for current business
-      const { data: salesData, error: salesError } = await supabase
+      let salesQuery = supabase
         .from('side_business_sales')
         .select(`
           *,
@@ -262,6 +276,12 @@ const SideBusinesses = () => {
           )
         `)
         .eq('parent_shop_id', user.business_id)
+
+      if (selectedBranchId) {
+        salesQuery = salesQuery.eq('branch_id', selectedBranchId)
+      }
+
+      const { data: salesData, error: salesError } = await salesQuery
         .order('date_time', { ascending: false })
         .limit(10)
 
@@ -306,7 +326,8 @@ const SideBusinesses = () => {
           name: newBusiness.name.trim(),
           description: newBusiness.description.trim() || null,
           business_type: newBusiness.business_type,
-          parent_shop_id: user.business_id
+          parent_shop_id: user.business_id,
+          branch_id: selectedBranchId
         })
         .select()
 
@@ -359,7 +380,8 @@ const SideBusinesses = () => {
           price: newItem.price ? parseFloat(newItem.price) : null,
           stock_qty: newItem.stock_qty ? parseInt(newItem.stock_qty) : null,
           notes: newItem.notes.trim() || null,
-          parent_shop_id: user?.business_id
+          parent_shop_id: user?.business_id,
+          branch_id: selectedBranchId
         })
 
       if (error) throw error
@@ -382,7 +404,8 @@ const SideBusinesses = () => {
           quantity: newSale.quantity,
           total_amount: parseFloat(newSale.total_amount),
           payment_method: newSale.payment_method,
-          parent_shop_id: user?.business_id
+          parent_shop_id: user?.business_id,
+          branch_id: selectedBranchId
         })
 
       if (error) throw error

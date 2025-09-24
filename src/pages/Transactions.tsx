@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTransactions } from '../hooks/useTransactions'
 import { useAuth } from '../contexts/AuthContext'
+import { useBranch } from '../contexts/BranchContext'
 import PageLayout from '../components/ui/PageLayout'
 import PageHeader from '../components/ui/PageHeader'
 import Card from '../components/ui/Card'
@@ -13,6 +14,7 @@ import Calendar from '../components/ui/Calendar'
 const Transactions: React.FC = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { selectedBranchId } = useBranch()
   const { transactions, loading, error, deleteTransaction, resolvePartialPayment } = useTransactions()
   
   // Filter and search statesa
@@ -222,6 +224,11 @@ const Transactions: React.FC = () => {
   useEffect(() => {
     setCurrentPage(1)
   }, [searchTerm, paymentFilter, dateFilter, selectedDateString, sortBy, sortOrder])
+
+  // Refresh transactions when branch changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedBranchId])
 
   if (loading) {
     return (

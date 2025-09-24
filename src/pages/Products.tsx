@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useRole } from '../contexts/RoleContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useBusinessId } from '../hooks/useBusinessId'
+import { useBranch } from '../contexts/BranchContext'
 
 async function uploadProductImage(file: File, productId: string, businessId: number | null) {
   console.log("?? Starting image upload for product:", productId)
@@ -88,7 +89,8 @@ interface Product {
 const Products = () => {
   const { hasPermission } = useRole()
   const { user } = useAuth()
-const { businessId, businessLoading } = useBusinessId()
+  const { businessId, businessLoading } = useBusinessId()
+  const { selectedBranchId } = useBranch()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -152,8 +154,8 @@ const { businessId, businessLoading } = useBusinessId()
   const [allProducts, setAllProducts] = useState<Product[]>([])
 
   // Cache state for optimization
-  const [suggestionsCache, setSuggestionsCache] = useState<{data: {product_id: any, name: any, category: any}[], timestamp: number, businessId: number} | null>(null)
-  const [summaryStatsCache, setSummaryStatsCache] = useState<{data: any, timestamp: number, businessId: number} | null>(null)
+  const [suggestionsCache, setSuggestionsCache] = useState<{data: {product_id: any, name: any, category: any}[], timestamp: number, businessId: number, branchId?: number} | null>(null)
+  const [summaryStatsCache, setSummaryStatsCache] = useState<{data: any, timestamp: number, businessId: number, branchId?: number} | null>(null)
   const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
   // Fetch all products for search suggestions (not paginated)
@@ -167,6 +169,7 @@ const { businessId, businessLoading } = useBusinessId()
       !forceRefresh &&
       suggestionsCache &&
       suggestionsCache.businessId === businessId &&
+      suggestionsCache.branchId === selectedBranchId &&
       (Date.now() - suggestionsCache.timestamp) < CACHE_DURATION
     ) {
       const fullProducts = suggestionsCache.data.map(item => ({
@@ -184,11 +187,16 @@ const { businessId, businessLoading } = useBusinessId()
     }
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('products')
         .select('product_id, name, category')
         .eq('business_id', businessId)
-        .order('name', { ascending: true })
+
+      if (selectedBranchId) {
+        query = query.eq('branch_id', selectedBranchId)
+      }
+
+      const { data, error } = await query.order('name', { ascending: true })
 
       if (error) {
         console.error('Error fetching all products for suggestions:', error)
@@ -208,7 +216,7 @@ const { businessId, businessLoading } = useBusinessId()
       })) as Product[]
 
       setAllProducts(fullProducts)
-      setSuggestionsCache({ data: products, timestamp: Date.now(), businessId })
+      setSuggestionsCache({ data: products, timestamp: Date.now(), businessId, branchId: selectedBranchId })
     } catch (error) {
       console.error('Error fetching all products for suggestions:', error)
     }
@@ -223,10 +231,16 @@ const { businessId, businessLoading } = useBusinessId()
     }
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('products')
         .select('category')
         .eq('business_id', businessId)
+
+      if (selectedBranchId) {
+        query = query.eq('branch_id', selectedBranchId)
+      }
+
+      const { data, error } = await query
         .not('category', 'is', null)
         .not('category', 'eq', '')
 
@@ -263,7 +277,7 @@ const { businessId, businessLoading } = useBusinessId()
     fetchDistinctCategories()
     fetchAllProductsForSuggestions(true)
     fetchSummaryStats(true)
-  }, [businessId, businessLoading])
+  }, [businessId, businessLoading, selectedBranchId])
 
   // Debug modal state
   useEffect(() => {
@@ -324,7 +338,7 @@ const { businessId, businessLoading } = useBusinessId()
 
     setCurrentPage(1) // Reset to first page
     fetchProducts(1, itemsPerPage, searchTerm, selectedCategory, activeSummaryFilter)
-  }, [selectedCategory, businessId, businessLoading])
+  }, [selectedCategory, businessId, businessLoading, selectedBranchId])
 
   const fetchProducts = async (page: number = currentPage, perPage: number = itemsPerPage, search: string = searchTerm, category: string = selectedCategory, summaryFilter: string | null = null) => {
     if (businessLoading) {
@@ -347,7 +361,12 @@ const { businessId, businessLoading } = useBusinessId()
           .from('products')
           .select('*')
           .eq('business_id', businessId)
-          .order('product_id', { ascending: true })
+
+        if (selectedBranchId) {
+          allDataQuery = allDataQuery.eq('branch_id', selectedBranchId)
+        }
+
+        allDataQuery = allDataQuery.order('product_id', { ascending: true })
 
         if (search && search.trim()) {
           const searchFilter = `name.ilike.%${search.trim()}%,category.ilike.%${search.trim()}%`
@@ -392,7 +411,13 @@ const { businessId, businessLoading } = useBusinessId()
           .from('products')
           .select('*')
           .eq('business_id', businessId)
-          .order('product_id', { ascending: true })
+
+        if (selectedBranchId) {
+          countQuery = countQuery.eq('branch_id', selectedBranchId)
+          dataQuery = dataQuery.eq('branch_id', selectedBranchId)
+        }
+
+        dataQuery = dataQuery.order('product_id', { ascending: true })
 
         if (search && search.trim()) {
           const searchFilter = `name.ilike.%${search.trim()}%,category.ilike.%${search.trim()}%`
@@ -445,6 +470,7 @@ const { businessId, businessLoading } = useBusinessId()
       !forceRefresh &&
       summaryStatsCache &&
       summaryStatsCache.businessId === businessId &&
+      summaryStatsCache.branchId === selectedBranchId &&
       (Date.now() - summaryStatsCache.timestamp) < CACHE_DURATION
     ) {
       setSummaryStats(summaryStatsCache.data)
@@ -452,10 +478,16 @@ const { businessId, businessLoading } = useBusinessId()
     }
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('products')
         .select('stock_quantity, reorder_level')
         .eq('business_id', businessId)
+
+      if (selectedBranchId) {
+        query = query.eq('branch_id', selectedBranchId)
+      }
+
+      const { data, error } = await query
 
       if (error) {
         throw error
@@ -475,7 +507,7 @@ const { businessId, businessLoading } = useBusinessId()
         }
 
         setSummaryStats(stats)
-        setSummaryStatsCache({ data: stats, timestamp: Date.now(), businessId })
+        setSummaryStatsCache({ data: stats, timestamp: Date.now(), businessId, branchId: selectedBranchId })
       }
     } catch (err) {
       console.error('Error fetching summary stats:', err)
@@ -934,7 +966,7 @@ const { businessId, businessLoading } = useBusinessId()
       console.log('Generated product ID:', productId)
 
       const productData = transformFormToProductData(newProduct, productId)
-      const productPayload = { ...productData, business_id: businessId }
+      const productPayload = { ...productData, business_id: businessId, branch_id: selectedBranchId }
       console.log('Inserting product data:', productPayload)
 
       const { data, error } = await supabase
@@ -1034,7 +1066,7 @@ const { businessId, businessLoading } = useBusinessId()
 
       const { data, error } = await supabase
         .from('products')
-        .update(productData)
+        .update({ ...productData, branch_id: selectedBranchId })
         .eq('product_id', editingProduct.product_id)
         .eq('business_id', businessId)
         .select()

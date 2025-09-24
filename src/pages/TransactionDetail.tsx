@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { useBranch } from '../contexts/BranchContext'
 
 interface Transaction {
   sale_id: number
@@ -36,6 +37,7 @@ interface TransactionItem {
 const TransactionDetail = () => {
   const { transactionId } = useParams<{ transactionId: string }>()
   const navigate = useNavigate()
+  const { selectedBranchId } = useBranch()
   const [transaction, setTransaction] = useState<Transaction | null>(null)
   const [items, setItems] = useState<TransactionItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -55,6 +57,11 @@ const TransactionDetail = () => {
       fetchCustomers()
     }
   }, [transactionId])
+
+  // Refresh customers when branch changes
+  useEffect(() => {
+    fetchCustomers()
+  }, [selectedBranchId])
 
   const fetchTransactionDetails = async () => {
     try {
@@ -156,10 +163,15 @@ const TransactionDetail = () => {
 
   const fetchCustomers = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('customers')
         .select('id, name')
-        .order('name')
+
+      if (selectedBranchId) {
+        query = query.eq('branch_id', selectedBranchId)
+      }
+
+      const { data, error } = await query.order('name')
 
       if (error) {
         console.error('Error fetching customers:', error)

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../contexts/AuthContext'
+import { useBranch } from '../../contexts/BranchContext'
 
 export interface Product {
   product_id: string
@@ -22,6 +23,7 @@ export interface Product {
   total_revenue: number
   last_sold_date?: string
   business_id: number
+  branch_id?: number
 }
 
 export interface SideBusinessItem {
@@ -33,6 +35,7 @@ export interface SideBusinessItem {
   created_at: string
   notes?: string
   parent_shop_id: number
+  branch_id?: number
 }
 
 interface ProductsData {
@@ -41,21 +44,31 @@ interface ProductsData {
   categories: string[]
 }
 
-const fetchProductsData = async (businessId: number): Promise<ProductsData> => {
-  console.log('[fetchProductsData] fetching products data for business:', businessId)
+const fetchProductsData = async (businessId: number, branchId: number | null): Promise<ProductsData> => {
+  console.log('[fetchProductsData] fetching products data for business:', businessId, 'branch:', branchId)
   
-  const [productsResult, sideBusinessResult] = await Promise.all([
-    supabase
-      .from('products')
-      .select('*')
-      .eq('business_id', businessId)
-      .order('name'),
+  // Build queries with branch filtering
+  let productsQuery = supabase
+    .from('products')
+    .select('*')
+    .eq('business_id', businessId)
+    .order('name')
 
-    supabase
-      .from('side_business_items')
-      .select('*')
-      .eq('parent_shop_id', businessId)
-      .order('name')
+  let sideBusinessQuery = supabase
+    .from('side_business_items')
+    .select('*')
+    .eq('parent_shop_id', businessId)
+    .order('name')
+
+  // Add branch filtering if branch is selected
+  if (branchId) {
+    productsQuery = productsQuery.eq('branch_id', branchId)
+    sideBusinessQuery = sideBusinessQuery.eq('branch_id', branchId)
+  }
+
+  const [productsResult, sideBusinessResult] = await Promise.all([
+    productsQuery,
+    sideBusinessQuery
   ])
 
   if (productsResult.error) throw productsResult.error
@@ -73,10 +86,11 @@ const fetchProductsData = async (businessId: number): Promise<ProductsData> => {
 
 export const useProductsData = () => {
   const { user } = useAuth()
+  const { selectedBranchId } = useBranch()
   
   return useQuery({
-    queryKey: ['productsData', user?.business_id],
-    queryFn: () => fetchProductsData(user?.business_id!),
+    queryKey: ['productsData', user?.business_id, selectedBranchId],
+    queryFn: () => fetchProductsData(user?.business_id!, selectedBranchId),
     enabled: !!user?.business_id,
     staleTime: 5 * 60 * 1000, // 5 minutes for products data
     refetchOnWindowFocus: false, // Prevent unnecessary refetches

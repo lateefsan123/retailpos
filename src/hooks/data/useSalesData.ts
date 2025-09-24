@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../contexts/AuthContext'
+import { useBranch } from '../../contexts/BranchContext'
 
 export interface SaleItem {
   sale_item_id: number
@@ -33,6 +34,7 @@ export interface Sale {
   partial_notes?: string
   notes?: string
   business_id: number
+  branch_id?: number
   customers?: {
     name: string
   }
@@ -56,6 +58,7 @@ export interface SideBusinessSale {
   date_time: string
   item_id: number
   parent_shop_id: number
+  branch_id?: number
   side_business_items?: {
     name: string
     price: number
@@ -67,43 +70,51 @@ interface SalesData {
   sideBusinessSales: SideBusinessSale[]
 }
 
-const fetchSalesData = async (businessId: number): Promise<SalesData> => {
-  console.log('[fetchSalesData] fetching sales data for business:', businessId)
+const fetchSalesData = async (businessId: number, branchId: number | null): Promise<SalesData> => {
+  console.log('[fetchSalesData] fetching sales data for business:', businessId, 'branch:', branchId)
   
-  const [salesResult, sideBusinessResult] = await Promise.all([
-    // Main sales with nested data
-    supabase
-      .from('sales')
-      .select(`
+  // Build queries with branch filtering
+  let salesQuery = supabase
+    .from('sales')
+    .select(`
+      *,
+      customers (name),
+      shop_staff!sales_cashier_id_fkey (username),
+      sale_items (
         *,
-        customers (name),
-        shop_staff!sales_cashier_id_fkey (username),
-        sale_items (
-          *,
-          products (
-            name,
-            price,
-            is_weighted,
-            price_per_unit,
-            weight_unit
-          )
-        )
-      `)
-      .eq('business_id', businessId)
-      .order('datetime', { ascending: false }),
-
-    // Side business sales
-    supabase
-      .from('side_business_sales')
-      .select(`
-        *,
-        side_business_items (
+        products (
           name,
-          price
+          price,
+          is_weighted,
+          price_per_unit,
+          weight_unit
         )
-      `)
-      .eq('parent_shop_id', businessId)
-      .order('date_time', { ascending: false })
+      )
+    `)
+    .eq('business_id', businessId)
+    .order('datetime', { ascending: false })
+
+  let sideBusinessQuery = supabase
+    .from('side_business_sales')
+    .select(`
+      *,
+      side_business_items (
+        name,
+        price
+      )
+    `)
+    .eq('parent_shop_id', businessId)
+    .order('date_time', { ascending: false })
+
+  // Add branch filtering if branch is selected
+  if (branchId) {
+    salesQuery = salesQuery.eq('branch_id', branchId)
+    sideBusinessQuery = sideBusinessQuery.eq('branch_id', branchId)
+  }
+
+  const [salesResult, sideBusinessResult] = await Promise.all([
+    salesQuery,
+    sideBusinessQuery
   ])
 
   if (salesResult.error) throw salesResult.error
@@ -150,10 +161,11 @@ const fetchSalesData = async (businessId: number): Promise<SalesData> => {
 
 export const useSalesData = () => {
   const { user } = useAuth()
+  const { selectedBranchId } = useBranch()
   
   return useQuery({
-    queryKey: ['salesData', user?.business_id],
-    queryFn: () => fetchSalesData(user?.business_id!),
+    queryKey: ['salesData', user?.business_id, selectedBranchId],
+    queryFn: () => fetchSalesData(user?.business_id!, selectedBranchId),
     enabled: !!user?.business_id,
     staleTime: 2 * 60 * 1000, // 2 minutes for sales data
     refetchOnWindowFocus: false, // Prevent unnecessary refetches
