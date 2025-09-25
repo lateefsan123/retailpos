@@ -101,7 +101,8 @@ const SalesRefactored = () => {
 
   // Handle side business item addition with custom price modal
   const handleAddSideBusinessItem = (sideBusinessItem: SideBusinessItem) => {
-    if (!sideBusinessItem.price) {
+    // Check if price is null or undefined (but allow 0 as a valid price)
+    if (sideBusinessItem.price == null) {
       setPendingSideBusinessItem(sideBusinessItem)
       setCustomPriceInput('')
       setShowCustomPriceModal(true)

@@ -380,20 +380,37 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
     <>
       {/* PIN Entry Interface - Only show when not unlocked */}
       {!isUnlocked && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: 1000,
-            maxWidth: '400px',
-            width: '90%',
-            textAlign: 'center'
-          }}
-          onKeyDown={handleKeyDown}
-          tabIndex={-1}
-        >
+        <>
+          {/* Dark Overlay */}
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0, 0, 0, 0.8)',
+              zIndex: 999,
+              backdropFilter: 'blur(4px)'
+            }}
+            onClick={onClose}
+          />
+          
+          {/* PIN Modal */}
+          <div 
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 1000,
+              maxWidth: '400px',
+              width: '90%',
+              textAlign: 'center'
+            }}
+            onKeyDown={handleKeyDown}
+            tabIndex={-1}
+          >
           <div style={{
             background: '#ffffff',
             borderRadius: '20px',
@@ -590,6 +607,7 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
             )}
           </div>
         </div>
+        </>
       )}
 
       {/* Vault Interior - Shows when unlocked */}

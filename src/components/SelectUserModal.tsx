@@ -60,12 +60,13 @@ const SelectUserModal: React.FC<SelectUserModalProps> = ({ isOpen, onClose, onUs
       // Get selected branch from localStorage (set during login)
       const selectedBranchId = localStorage.getItem('selected_branch_id');
       
+      // Fetch users from selected branch AND all owners (regardless of branch)
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('business_id', user.business_id)
         .eq('active', true)
-        .eq('branch_id', selectedBranchId) // Only get users from selected branch
+        .or(`branch_id.eq.${selectedBranchId},role.eq.owner`) // Get users from selected branch OR all owners
         .order('user_id', { ascending: false });
 
       if (error) {

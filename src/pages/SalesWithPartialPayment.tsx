@@ -9,6 +9,7 @@ import OrderSidebar from '../components/sales/OrderSidebar'
 import SalesSummaryModal from '../components/sales/SalesSummaryModal'
 import { printReceipt } from '../utils/receiptUtils'
 import { Product, SideBusinessItem } from '../types/sales'
+import { supabase } from '../lib/supabaseClient'
 
 const SalesWithPartialPayment = () => {
   const { user } = useAuth()
@@ -70,7 +71,8 @@ const SalesWithPartialPayment = () => {
 
   // Handle side business item addition with custom price modal
   const handleAddSideBusinessItem = (sideBusinessItem: SideBusinessItem) => {
-    if (!sideBusinessItem.price) {
+    // Check if price is null or undefined (but allow 0 as a valid price)
+    if (sideBusinessItem.price == null) {
       setPendingSideBusinessItem(sideBusinessItem)
       setCustomPriceInput('')
       setShowCustomPriceModal(true)
@@ -161,10 +163,117 @@ const SalesWithPartialPayment = () => {
 
   // Process sale with partial payment support
   const handleProcessSale = async (paymentInfo: PaymentInfo, partialPayment?: PartialPayment) => {
+    if (!currentBusiness?.business_id) {
+      alert('Please select a business before processing a sale.')
+      return
+    }
+
     try {
-      // Here you would typically save to database
-      console.log('Processing sale:', { paymentInfo, partialPayment, order })
-      
+      // Handle customer if name is provided
+      let customerId = null
+      if (customerName.trim()) {
+        // Check if customer exists
+        const { data: existingCustomer, error: lookupError } = await supabase
+          .from('customers')
+          .select('customer_id')
+          .eq('business_id', currentBusiness.business_id)
+          .eq('name', customerName.trim())
+          .single()
+
+        if (existingCustomer && !lookupError) {
+          customerId = existingCustomer.customer_id
+        } else {
+          // Create new customer
+          const { data: newCustomer, error: customerError } = await supabase
+            .from('customers')
+            .insert([{
+              name: customerName.trim(),
+              phone_number: '000-000-0000', // Default phone number
+              email: null,
+              business_id: currentBusiness.business_id,
+              branch_id: null // No branch selection in this component
+            }])
+            .select()
+            .single()
+
+          if (customerError) {
+            console.error('Error creating customer:', customerError)
+            // Continue without customer ID if creation fails
+            customerId = null
+          } else {
+            customerId = newCustomer.customer_id
+          }
+        }
+      }
+
+      // Prepare notes with partial payment information
+      let notesContent = ''
+      if (partialPayment) {
+        notesContent = `PARTIAL PAYMENT
+Amount Paid Today: €${partialPayment.amountPaid.toFixed(2)}
+Remaining Balance: €${partialPayment.amountRemaining.toFixed(2)}`
+        if (partialPayment.notes) {
+          notesContent += `\n\nPartial Payment Notes: ${partialPayment.notes}`
+        }
+      }
+      if (paymentInfo.receiptNotes) {
+        notesContent += (notesContent ? '\n\n' : '') + paymentInfo.receiptNotes
+      }
+
+      // Create sale record
+      const insertData = {
+        datetime: new Date().toISOString(),
+        total_amount: partialPayment ? partialPayment.amountPaid : order.total,
+        payment_method: paymentInfo.method,
+        cashier_id: user?.user_id,
+        customer_id: customerId,
+        discount_applied: 0, // No discount in this component
+        partial_payment: !!partialPayment,
+        partial_amount: partialPayment ? partialPayment.amountPaid : null,
+        remaining_amount: partialPayment ? partialPayment.amountRemaining : null,
+        partial_notes: partialPayment ? partialPayment.notes : null,
+        notes: notesContent || null,
+        business_id: currentBusiness.business_id,
+        branch_id: null // No branch selection in this component
+      }
+
+      const { data: saleData, error: saleError } = await supabase
+        .from('sales')
+        .insert([insertData])
+        .select('*')
+        .single()
+
+      if (saleError) {
+        throw saleError
+      }
+
+      // Create sale items
+      for (const item of order.items) {
+        if (item.product) {
+          const saleItemData = {
+            sale_id: saleData.sale_id,
+            product_id: item.product.product_id,
+            quantity: item.quantity,
+            price_each: item.product.price,
+            weight: item.weight || null,
+            calculated_price: item.calculatedPrice || null
+          }
+
+          const { error: itemError } = await supabase
+            .from('sale_items')
+            .insert([saleItemData])
+
+          if (itemError) {
+            console.error('Error creating sale item:', itemError)
+          }
+        }
+      }
+
+      // Create reminder for partial payment if applicable
+      if (partialPayment && partialPayment.amountRemaining > 0 && saleData?.sale_id) {
+        await createPartialPaymentReminder(customerName, partialPayment.amountRemaining, saleData.sale_id)
+      }
+
       // Show success message
       const successMsg = document.createElement('div')
       successMsg.style.cssText = `
@@ -180,7 +289,7 @@ const SalesWithPartialPayment = () => {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       `
       successMsg.textContent = partialPayment 
-        ? `Partial payment processed! €${partialPayment.amountPaid.toFixed(2)} paid, €${partialPayment.amountRemaining.toFixed(2)} remaining.`
+        ? `Partial payment processed! €${partialPayment.amountPaid.toFixed(2)} paid, €${partialPayment.amountRemaining.toFixed(2)} remaining. Reminder created.`
         : 'Sale processed successfully!'
       document.body.appendChild(successMsg)
       
@@ -199,6 +308,53 @@ const SalesWithPartialPayment = () => {
     } catch (error) {
       console.error('Error processing sale:', error)
       alert('Failed to process sale. Please try again.')
+    }
+  }
+
+  // Create reminder for partial payment
+  const createPartialPaymentReminder = async (customerName: string, remainingAmount: number, saleId: number) => {
+    if (!currentBusiness?.business_id) {
+      return
+    }
+
+    try {
+      // Get the current user ID
+      const ownerId = user?.user_id || 1
+      
+      // Create reminder title and body
+      const reminderTitle = `Payment Due: ${customerName || 'Customer'}`
+      const reminderBody = `Customer owes €${remainingAmount.toFixed(2)} from Sale #${saleId}. Please follow up for payment.`
+      
+      // Set reminder date to tomorrow
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const remindDate = tomorrow.toISOString().split('T')[0]
+      
+      // Create the reminder
+      const reminderData = {
+        title: reminderTitle,
+        body: reminderBody,
+        remind_date: remindDate,
+        owner_id: ownerId,
+        business_id: currentBusiness.business_id,
+        branch_id: null, // No branch selection in this component
+        sale_id: saleId // Link to the specific sale
+      }
+      
+      const { error } = await supabase
+        .from('reminders')
+        .insert([reminderData])
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating partial payment reminder:', error)
+      } else {
+        console.log('Partial payment reminder created successfully')
+      }
+    } catch (error) {
+      console.error('Error creating partial payment reminder:', error)
+      // Don't throw error - reminder creation failure shouldn't break the sale
     }
   }
 

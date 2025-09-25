@@ -174,21 +174,33 @@ const Dashboard = () => {
       setLoading(true)
 
       // Fetch counts from each table filtered by business_id
+      let salesCountQuery = supabase.from('sales').select('sale_id', { count: 'exact', head: true }).eq('business_id', businessId).limit(1000)
+      if (selectedBranchId) {
+        salesCountQuery = salesCountQuery.eq('branch_id', selectedBranchId)
+      }
+      
       const [productsResult, salesResult, customersResult] = await Promise.all([
         supabase.from('products').select('product_id', { count: 'exact', head: true }).eq('business_id', businessId).limit(1000),
-        supabase.from('sales').select('sale_id', { count: 'exact', head: true }).eq('business_id', businessId).limit(1000),
+        salesCountQuery,
         supabase.from('customers').select('customer_id', { count: 'exact', head: true }).eq('business_id', businessId).limit(1000)
       ])
 
       // Fetch today's revenue and transaction count
       const ymdLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
       const today = ymdLocal(new Date())
-      const { data: todaySales, count: todayTransactionsCount } = await supabase
+      let todaySalesQuery = supabase
         .from('sales')
         .select('total_amount', { count: 'exact' })
         .eq('business_id', businessId)
         .gte('datetime', `${today}T00:00:00`)
         .lt('datetime', `${today}T23:59:59`)
+      
+      // Filter by branch if selected
+      if (selectedBranchId) {
+        todaySalesQuery = todaySalesQuery.eq('branch_id', selectedBranchId)
+      }
+      
+      const { data: todaySales, count: todayTransactionsCount } = await todaySalesQuery
 
       const todayRevenue = todaySales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
 
@@ -196,17 +208,24 @@ const Dashboard = () => {
       const yesterday = new Date()
       yesterday.setDate(yesterday.getDate() - 1)
       const yesterdayStr = ymdLocal(yesterday)
-      const { count: yesterdayTransactionsCount } = await supabase
+      let yesterdaySalesQuery = supabase
         .from('sales')
         .select('sale_id', { count: 'exact', head: true })
         .eq('business_id', businessId)
         .gte('datetime', `${yesterdayStr}T00:00:00`)
         .lt('datetime', `${yesterdayStr}T23:59:59`)
+      
+      // Filter by branch if selected
+      if (selectedBranchId) {
+        yesterdaySalesQuery = yesterdaySalesQuery.eq('branch_id', selectedBranchId)
+      }
+      
+      const { count: yesterdayTransactionsCount } = await yesterdaySalesQuery
 
       setPreviousDayTransactions(yesterdayTransactionsCount || 0)
 
       // Fetch today's side business revenue with breakdown
-      const { data: todaySideBusinessSales, count: todaySideBusinessTransactionCount } = await supabase
+      let sideBusinessQuery = supabase
         .from('side_business_sales')
         .select(`
           total_amount,
@@ -221,6 +240,13 @@ const Dashboard = () => {
         .eq('side_business_items.side_businesses.parent_shop_id', businessId)
         .gte('date_time', `${today}T00:00:00`)
         .lt('date_time', `${today}T23:59:59`)
+      
+      // Filter by branch if selected
+      if (selectedBranchId) {
+        sideBusinessQuery = sideBusinessQuery.eq('branch_id', selectedBranchId)
+      }
+      
+      const { data: todaySideBusinessSales, count: todaySideBusinessTransactionCount } = await sideBusinessQuery
 
       const todaySideBusinessRevenue = todaySideBusinessSales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
       setSideBusinessTransactionCount(todaySideBusinessTransactionCount || 0)
@@ -343,12 +369,19 @@ const Dashboard = () => {
       const { start, end } = getDateRangeForPeriod(period, baseDate)
 
       // Fetch sales data for the period
-      const { data: periodSales, count: periodTransactionsCount } = await supabase
+      let periodSalesQuery = supabase
         .from('sales')
         .select('total_amount', { count: 'exact' })
         .eq('business_id', businessId)
         .gte('datetime', start)
         .lt('datetime', end)
+      
+      // Filter by branch if selected
+      if (selectedBranchId) {
+        periodSalesQuery = periodSalesQuery.eq('branch_id', selectedBranchId)
+      }
+      
+      const { data: periodSales, count: periodTransactionsCount } = await periodSalesQuery
 
       const periodRevenue = periodSales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
 
@@ -546,22 +579,34 @@ const Dashboard = () => {
       const dateString = ymdLocal(date)
       
       // Fetch counts from each table for the selected date
+      let daySalesCountQuery = supabase.from('sales').select('sale_id', { count: 'exact', head: true })
+        .eq('business_id', businessId)
+        .gte('datetime', `${dateString}T00:00:00`)
+        .lt('datetime', `${dateString}T23:59:59`)
+      
+      if (selectedBranchId) {
+        daySalesCountQuery = daySalesCountQuery.eq('branch_id', selectedBranchId)
+      }
+      
       const [productsResult, salesResult, customersResult] = await Promise.all([
         supabase.from('products').select('product_id', { count: 'exact', head: true }).eq('business_id', businessId),
-        supabase.from('sales').select('sale_id', { count: 'exact', head: true })
-          .eq('business_id', businessId)
-          .gte('datetime', `${dateString}T00:00:00`)
-          .lt('datetime', `${dateString}T23:59:59`),
+        daySalesCountQuery,
         supabase.from('customers').select('customer_id', { count: 'exact', head: true }).eq('business_id', businessId)
       ])
 
       // Fetch revenue and transaction count for selected date
-      const { data: daySales, count: dayTransactionsCount } = await supabase
+      let daySalesQuery = supabase
         .from('sales')
         .select('total_amount', { count: 'exact' })
         .eq('business_id', businessId)
         .gte('datetime', `${dateString}T00:00:00`)
         .lt('datetime', `${dateString}T23:59:59`)
+      
+      if (selectedBranchId) {
+        daySalesQuery = daySalesQuery.eq('branch_id', selectedBranchId)
+      }
+      
+      const { data: daySales, count: dayTransactionsCount } = await daySalesQuery
 
       const dayRevenue = daySales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
 
@@ -569,12 +614,18 @@ const Dashboard = () => {
       const previousDay = new Date(date)
       previousDay.setDate(previousDay.getDate() - 1)
       const previousDayStr = ymdLocal(previousDay)
-      const { count: previousDayTransactionsCount } = await supabase
+      let previousDayQuery = supabase
         .from('sales')
         .select('sale_id', { count: 'exact', head: true })
         .eq('business_id', businessId)
         .gte('datetime', `${previousDayStr}T00:00:00`)
         .lt('datetime', `${previousDayStr}T23:59:59`)
+      
+      if (selectedBranchId) {
+        previousDayQuery = previousDayQuery.eq('branch_id', selectedBranchId)
+      }
+      
+      const { count: previousDayTransactionsCount } = await previousDayQuery
 
       setPreviousDayTransactions(previousDayTransactionsCount || 0)
 

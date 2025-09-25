@@ -574,68 +574,6 @@ const Admin = () => {
     }
   }
 
-  const createAdminAccountForCurrentBusiness = async () => {
-    if (!businessId) {
-      setError('No business selected')
-      return
-    }
-
-    try {
-      setLoading(true)
-      
-      // Check if current business already has an admin account
-      const adminUsername = `admin_${businessId}`
-      const { data: existingAdmin, error: adminCheckError } = await supabase
-        .from('users')
-        .select('user_id')
-        .eq('business_id', businessId)
-        .eq('username', adminUsername)
-        .eq('role', 'Admin')
-        .single()
-
-      if (adminCheckError && adminCheckError.code !== 'PGRST116') {
-        // PGRST116 is "no rows returned" which is expected if no admin exists
-        console.error(`Error checking admin for business ${businessId}:`, adminCheckError)
-        setError('Failed to check for existing admin account')
-        return
-      }
-
-      // If admin doesn't exist, create one
-      if (!existingAdmin) {
-        const adminHashedPassword = hashPassword('admin123')
-        console.log('Creating admin account with password: admin123')
-        console.log('Generated hash:', adminHashedPassword)
-        console.log('Hash type:', typeof adminHashedPassword)
-        const { error: createError } = await supabase
-          .from('users')
-          .insert({
-            username: adminUsername,
-            password_hash: adminHashedPassword,
-            role: 'Admin',
-            active: true,
-            business_id: businessId,
-            icon: 'ryu',
-            created_at: new Date().toISOString()
-          })
-
-        if (createError) {
-          console.error(`Error creating admin for business ${businessId}:`, createError)
-          setError('Failed to create admin account')
-        } else {
-          console.log(`Admin account created for business ID: ${businessId}`)
-          setError('Admin account created successfully')
-          fetchUsers() // Refresh the user list
-        }
-      } else {
-        setError('Admin account already exists for this business')
-      }
-    } catch (error) {
-      console.error('Error creating admin account:', error)
-      setError(`Failed to create admin account: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -740,27 +678,6 @@ const Admin = () => {
             Add Branch
           </button>
           
-          <button
-            onClick={createAdminAccountForCurrentBusiness}
-            style={{
-              background: '#ef4444',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '12px 24px',
-              fontSize: '16px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s ease'
-            }}
-            disabled={loading}
-          >
-            <i className="fa-solid fa-user-shield"></i>
-            Create Admin Account
-          </button>
           </div>
         </div>
       </div>

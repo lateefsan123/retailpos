@@ -803,7 +803,8 @@ const Sales = () => {
 
   const addSideBusinessItemToOrder = (sideBusinessItem: SideBusinessItem) => {
     // For service items without fixed prices, show custom price modal
-    if (!sideBusinessItem.price) {
+    // Check if price is null or undefined (but allow 0 as a valid price)
+    if (sideBusinessItem.price == null) {
       setPendingSideBusinessItem(sideBusinessItem)
       setCustomPriceInput('')
       setShowCustomPriceModal(true)
@@ -1751,27 +1752,27 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
       const remindDate = tomorrow.toISOString().split('T')[0]
       
       // Create the reminder
+      const reminderData = {
+        title: reminderTitle,
+        body: reminderBody,
+        remind_date: remindDate,
+        owner_id: ownerId,
+        business_id: businessId,
+        branch_id: selectedBranchId,
+        sale_id: saleId // Link to the specific sale
+      }
+      
       const { error } = await supabase
         .from('reminders')
-        .insert([{
-          title: reminderTitle,
-          body: reminderBody,
-          remind_date: remindDate,
-          owner_id: ownerId,
-          business_id: businessId
-        }])
+        .insert([reminderData])
         .select()
         .single()
 
       if (error) {
         console.error('Error creating partial payment reminder:', error)
-        console.error('Reminder data attempted:', {
-          title: reminderTitle,
-          body: reminderBody,
-          remind_date: remindDate,
-          owner_id: ownerId
-        })
-        // Don't throw error - reminder creation failure shouldn't break the sale
+        console.error('Reminder data attempted:', reminderData)
+      } else {
+        console.log('Partial payment reminder created successfully')
       }
     } catch (error) {
       console.error('Error creating partial payment reminder:', error)
@@ -2936,6 +2937,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               placeholder="Enter customer name"
               style={{
                 width: '100%',
+                maxWidth: '300px',
                 padding: '8px 12px',
                 border: '1px solid #6b7280',
                 borderRadius: '6px',
@@ -3344,6 +3346,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 placeholder="Enter customer name (optional)"
                 style={{
                   width: '100%',
+                  maxWidth: '300px',
                   padding: '12px 16px',
                   border: '1px solid #6b7280',
                   borderRadius: '8px',
@@ -4040,6 +4043,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 placeholder="0.00"
                 style={{
                   width: '100%',
+                  maxWidth: '300px',
                   padding: '12px',
                   border: '1px solid #6b7280',
                   borderRadius: '8px',
@@ -4169,6 +4173,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 placeholder={`Enter weight in ${pendingWeightedProduct.weight_unit}`}
                 style={{
                   width: '100%',
+                  maxWidth: '300px',
                   padding: '12px',
                   border: '2px solid #6b7280',
                   borderRadius: '8px',
@@ -4355,6 +4360,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 placeholder="e.g., Haircut, Consultation, Repair..."
                 style={{
                   width: '100%',
+                  maxWidth: '300px',
                   padding: '12px',
                   border: '2px solid #6b7280',
                   borderRadius: '8px',
@@ -4387,6 +4393,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 placeholder="0.00"
                 style={{
                   width: '100%',
+                  maxWidth: '300px',
                   padding: '12px',
                   border: '2px solid #6b7280',
                   borderRadius: '8px',

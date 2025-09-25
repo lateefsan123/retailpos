@@ -435,6 +435,26 @@ const TransactionDetail = () => {
     }
   }
 
+  // Resolve reminders related to a specific sale
+  const resolveRelatedReminders = async (saleId: number) => {
+    try {
+      const { error } = await supabase
+        .from('reminders')
+        .update({ resolved: true })
+        .eq('sale_id', saleId)
+        .eq('resolved', false) // Only update unresolved reminders
+
+      if (error) {
+        console.error('Error resolving related reminders:', error)
+      } else {
+        console.log('Related reminders resolved successfully')
+      }
+    } catch (error) {
+      console.error('Error resolving related reminders:', error)
+      // Don't throw error - reminder resolution failure shouldn't break payment completion
+    }
+  }
+
   const handleCompletePayment = async () => {
     if (!transaction || !transaction.partial_payment) return
 
@@ -469,8 +489,11 @@ const TransactionDetail = () => {
         return
       }
 
+      // Automatically resolve related reminders
+      await resolveRelatedReminders(saleId)
+
       // Show success message
-      alert('Payment completed successfully!')
+      alert('Payment completed successfully! Related reminders have been resolved.')
       
       // Refresh transaction data
       await fetchTransactionDetails()

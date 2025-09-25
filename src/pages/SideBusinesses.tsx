@@ -215,6 +215,21 @@ const SideBusinesses = () => {
     payment_method: 'cash'
   })
 
+  // Auto-calculate total amount when item or quantity changes
+  useEffect(() => {
+    if (newSale.item_id && newSale.quantity > 0) {
+      const selectedItem = items.find(item => item.item_id.toString() === newSale.item_id)
+      if (selectedItem && selectedItem.price && selectedItem.price > 0) {
+        // Only auto-calculate for items with fixed prices (not services)
+        const business = businesses.find(b => b.name === selectedItem.side_businesses?.name)
+        if (business && business.business_type !== 'service') {
+          const totalAmount = (selectedItem.price * newSale.quantity).toFixed(2)
+          setNewSale(prev => ({ ...prev, total_amount: totalAmount }))
+        }
+      }
+    }
+  }, [newSale.item_id, newSale.quantity, items, businesses])
+
   useEffect(() => {
     fetchData()
   }, [selectedBranchId])
@@ -1376,7 +1391,7 @@ const SideBusinesses = () => {
             <h2 className={styles.modalDialogTitle}>Record Sale</h2>
             <form onSubmit={handleAddSale} className={styles.modalDialogForm}>
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Item</label>
+                <label className={styles.formFieldLabel}>Item</label>
                 <select
                   required
                   value={newSale.item_id}
@@ -1396,7 +1411,7 @@ const SideBusinesses = () => {
               </div>
               
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Quantity</label>
+                <label className={styles.formFieldLabel}>Quantity</label>
                 <input
                   type="number"
                   min="1"
@@ -1408,27 +1423,71 @@ const SideBusinesses = () => {
               </div>
               
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Total Amount (€)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  value={newSale.total_amount}
-                  onChange={(e) => setNewSale(prev => ({ ...prev, total_amount: e.target.value }))}
-                  className={styles.formFieldInput}
-                  placeholder="0.00"
-                />
-                {newSale.item_id && items.find(item => item.item_id.toString() === newSale.item_id) && 
-                 businesses.find(b => b.name === items.find(item => item.item_id.toString() === newSale.item_id)?.side_businesses?.name)?.business_type === 'service' && (
-                  <p style={{ color: '#7d8d86', fontSize: '12px', margin: '4px 0 0 0' }}>
-                    <i className="fa-solid fa-info-circle" style={{ marginRight: '4px' }}></i>
-                    Enter the custom amount for this service
-                  </p>
-                )}
+                <label className={styles.formFieldLabel}>Total Amount (€)</label>
+                {(() => {
+                  const selectedItem = items.find(item => item.item_id.toString() === newSale.item_id)
+                  const business = selectedItem ? businesses.find(b => b.name === selectedItem.side_businesses?.name) : null
+                  const isService = business?.business_type === 'service'
+                  const hasFixedPrice = selectedItem && selectedItem.price && selectedItem.price > 0
+                  
+                  if (isService) {
+                    // Service items require manual price input
+                    return (
+                      <>
+                        <input
+                          type="number"
+                          step="0.01"
+                          required
+                          value={newSale.total_amount}
+                          onChange={(e) => setNewSale(prev => ({ ...prev, total_amount: e.target.value }))}
+                          className={styles.formFieldInput}
+                          placeholder="0.00"
+                        />
+                        <p style={{ color: '#7d8d86', fontSize: '12px', margin: '4px 0 0 0' }}>
+                          <i className="fa-solid fa-info-circle" style={{ marginRight: '4px' }}></i>
+                          Enter the custom amount for this service
+                        </p>
+                      </>
+                    )
+                  } else if (hasFixedPrice) {
+                    // Items with fixed prices show calculated amount (read-only)
+                    return (
+                      <>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={newSale.total_amount}
+                          readOnly
+                          className={styles.formFieldInput}
+                          style={{ backgroundColor: '#f9fafb', color: '#6b7280' }}
+                        />
+                      </>
+                    )
+                  } else {
+                    // Items without price require manual input
+                    return (
+                      <>
+                        <input
+                          type="number"
+                          step="0.01"
+                          required
+                          value={newSale.total_amount}
+                          onChange={(e) => setNewSale(prev => ({ ...prev, total_amount: e.target.value }))}
+                          className={styles.formFieldInput}
+                          placeholder="0.00"
+                        />
+                        <p style={{ color: '#f59e0b', fontSize: '12px', margin: '4px 0 0 0' }}>
+                          <i className="fa-solid fa-exclamation-triangle" style={{ marginRight: '4px' }}></i>
+                          This item has no set price. Please enter the amount manually.
+                        </p>
+                      </>
+                    )
+                  }
+                })()}
               </div>
               
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Payment Method</label>
+                <label className={styles.formFieldLabel}>Payment Method</label>
                 <select
                   value={newSale.payment_method}
                   onChange={(e) => setNewSale(prev => ({ ...prev, payment_method: e.target.value }))}

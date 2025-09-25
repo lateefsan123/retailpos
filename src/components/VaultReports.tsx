@@ -77,6 +77,8 @@ export default function VaultReports({ isOpen, onClose, vaultEntries, businessId
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [exportLoading, setExportLoading] = useState(false);
+  const [branches, setBranches] = useState<Array<{branch_id: number, branch_name: string}>>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
 
   // Business information variables
   const businessName = currentBusiness?.business_name || currentBusiness?.name || 'Business';
@@ -100,6 +102,25 @@ export default function VaultReports({ isOpen, onClose, vaultEntries, businessId
   
   const currencySymbol = getCurrencySymbol(currentBusiness?.currency)
   const formatCurrency = (amount: number) => `${currencySymbol}${amount.toFixed(2)}`;
+
+  // Fetch branches for the business
+  const fetchBranches = async () => {
+    if (!currentBusiness?.business_id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('branches')
+        .select('branch_id, branch_name')
+        .eq('business_id', currentBusiness.business_id)
+        .eq('active', true)
+        .order('branch_name');
+      
+      if (error) throw error;
+      setBranches(data || []);
+    } catch (error) {
+      console.error('Error fetching branches:', error);
+    }
+  };
 
   // Fetch report data from database
   const fetchReportData = async (customStart?: string, customEnd?: string) => {
@@ -133,11 +154,18 @@ export default function VaultReports({ isOpen, onClose, vaultEntries, businessId
       }
 
       // Fetch KPIs
-      const { data: salesData, error: salesError } = await supabase
+      let salesQuery = supabase
         .from('sales')
         .select('total_amount, discount_applied, cashier_id')
         .gte('datetime', startDate.toISOString())
         .lte('datetime', endDate.toISOString());
+      
+      // Filter by branch if selected
+      if (selectedBranchId) {
+        salesQuery = salesQuery.eq('branch_id', selectedBranchId);
+      }
+      
+      const { data: salesData, error: salesError } = await salesQuery;
 
       if (salesError) throw salesError;
 
@@ -147,16 +175,23 @@ export default function VaultReports({ isOpen, onClose, vaultEntries, businessId
       const avgTransaction = transactions > 0 ? totalSales / transactions : 0;
 
       // Fetch sales by category
-      const { data: categoryData, error: categoryError } = await supabase
+      let categoryQuery = supabase
         .from('sale_items')
         .select(`
           quantity,
           price_each,
           products!inner(category),
-          sales!inner(datetime)
+          sales!inner(datetime, branch_id)
         `)
         .gte('sales.datetime', startDate.toISOString())
         .lte('sales.datetime', endDate.toISOString());
+      
+      // Filter by branch if selected
+      if (selectedBranchId) {
+        categoryQuery = categoryQuery.eq('sales.branch_id', selectedBranchId);
+      }
+      
+      const { data: categoryData, error: categoryError } = await categoryQuery;
 
       if (categoryError) throw categoryError;
 
@@ -179,16 +214,23 @@ export default function VaultReports({ isOpen, onClose, vaultEntries, businessId
       })).sort((a, b) => b.revenue - a.revenue);
 
       // Fetch top products
-      const { data: productData, error: productError } = await supabase
+      let productQuery = supabase
         .from('sale_items')
         .select(`
           quantity,
           price_each,
           products!inner(name),
-          sales!inner(datetime)
+          sales!inner(datetime, branch_id)
         `)
         .gte('sales.datetime', startDate.toISOString())
         .lte('sales.datetime', endDate.toISOString());
+      
+      // Filter by branch if selected
+      if (selectedBranchId) {
+        productQuery = productQuery.eq('sales.branch_id', selectedBranchId);
+      }
+      
+      const { data: productData, error: productError } = await productQuery;
 
       if (productError) throw productError;
 
@@ -378,9 +420,17 @@ export default function VaultReports({ isOpen, onClose, vaultEntries, businessId
   // Fetch data when component opens or report type changes
   useEffect(() => {
     if (isOpen) {
+      fetchBranches();
       fetchReportData();
     }
   }, [isOpen, reportType, selectedWeek]);
+
+  // Refetch data when branch changes
+  useEffect(() => {
+    if (isOpen && reportData) {
+      fetchReportData(customStartDate, customEndDate);
+    }
+  }, [selectedBranchId]);
   
   const generateReport = () => {
     const reportWindow = window.open('', '_blank');
@@ -762,6 +812,28 @@ export default function VaultReports({ isOpen, onClose, vaultEntries, businessId
             <option value="weekly">Weekly Report</option>
             <option value="monthly">Monthly Report</option>
             <option value="custom">Custom Date Range</option>
+          </select>
+          
+          {/* Branch Filter */}
+          <select 
+            style={{
+              padding: '10px 15px',
+              border: '2px solid rgba(125, 141, 134, 0.3)',
+              borderRadius: '10px',
+              background: '#ffffff',
+              color: '#3e3f29',
+              fontSize: '14px',
+              outline: 'none'
+            }}
+            value={selectedBranchId || ''}
+            onChange={(e) => setSelectedBranchId(e.target.value ? parseInt(e.target.value) : null)}
+          >
+            <option value="">All Branches</option>
+            {branches.map((branch) => (
+              <option key={branch.branch_id} value={branch.branch_id}>
+                {branch.branch_name}
+              </option>
+            ))}
           </select>
           
           {reportType === 'weekly' && (
