@@ -9,7 +9,7 @@ interface User {
   role: string;
   active: boolean;
   icon?: string;
-  business_id: number;
+  business_id: number | null;
   last_used?: string;
   pin?: string;
   branch_id?: number;
@@ -50,6 +50,7 @@ const SelectUser: React.FC = () => {
   const [pinError, setPinError] = useState('');
   const [pinVerified, setPinVerified] = useState(false);
   const [usePinAuth, setUsePinAuth] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
 
   useEffect(() => {
     if (user?.business_id) {
@@ -207,6 +208,15 @@ const SelectUser: React.FC = () => {
     if (branches.length > 1) {
       setShowBranchSelection(true);
     }
+  };
+
+  const handleDropdownUserSelected = (user: User) => {
+    setSelectedUser(user);
+    setShowPasswordView(true);
+    setPassword('');
+    setPasswordError('');
+    setUsePinAuth(false);
+    setShowUserDropdown(false);
   };
 
   const getRoleColor = (role: string) => {
@@ -829,18 +839,216 @@ const SelectUser: React.FC = () => {
                     position: 'relative',
                     zIndex: 1
                   }}>
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px',
-                      maxWidth: '300px',
-                      maxHeight: '200px',
-                      overflowY: 'auto',
-                      paddingRight: '8px'
-                    }}>
-                      {users
-                        .filter(u => u.user_id !== selectedUser?.user_id) // Exclude current selected user
-                        .map((u) => (
+                    {users.length > 2 ? (
+                      /* Show Switch User Dropdown for many users */
+                      <div style={{ position: 'relative' }}>
+                        <button
+                          onClick={() => setShowUserDropdown(!showUserDropdown)}
+                          style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            background: 'rgba(0,0,0,0.4)',
+                            border: '1px solid rgba(255,255,255,0.3)',
+                            backdropFilter: 'blur(10px)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            color: 'rgba(255,255,255,0.9)'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(0,0,0,0.6)';
+                            e.currentTarget.style.color = '#ffffff';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(0,0,0,0.4)';
+                            e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
+                          }}
+                          title={`Switch User (${users.length} users)`}
+                        >
+                          <svg
+                            style={{ width: '20px', height: '20px' }}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                            />
+                          </svg>
+                        </button>
+
+                        {showUserDropdown && (
+                          <>
+                            {/* Backdrop */}
+                            <div
+                              style={{
+                                position: 'fixed',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                zIndex: 10
+                              }}
+                              onClick={() => setShowUserDropdown(false)}
+                            />
+                            
+                            {/* Dropdown */}
+                            <div style={{
+                              position: 'fixed',
+                              top: '50%',
+                              left: '50%',
+                              transform: 'translate(-50%, -50%)',
+                              width: '500px',
+                              maxHeight: '500px',
+                              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                              border: '1px solid rgba(255, 255, 255, 0.2)',
+                              borderRadius: '16px',
+                              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.6)',
+                              zIndex: 20,
+                              backdropFilter: 'blur(15px)',
+                              overflow: 'hidden'
+                            }}>
+                              <div style={{
+                                padding: '20px',
+                                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                                backgroundColor: 'rgba(255, 255, 255, 0.03)'
+                              }}>
+                                <h3 style={{
+                                  color: '#ffffff',
+                                  fontSize: '16px',
+                                  fontWeight: '600',
+                                  margin: '0 0 4px 0'
+                                }}>
+                                  Switch User
+                                </h3>
+                                <p style={{
+                                  color: '#cccccc',
+                                  fontSize: '12px',
+                                  margin: '0'
+                                }}>
+                                  Choose a user to switch to
+                                </p>
+                              </div>
+
+                              <div style={{
+                                maxHeight: '420px',
+                                overflowY: 'auto',
+                                padding: '12px'
+                              }}>
+                                <div style={{
+                                  display: 'grid',
+                                  gridTemplateColumns: 'repeat(3, 1fr)',
+                                  gap: '12px'
+                                }}>
+                                  {users
+                                    .filter(u => u.user_id !== selectedUser?.user_id)
+                                    .map((user) => (
+                                      <button
+                                        key={user.user_id}
+                                        onClick={() => handleDropdownUserSelected(user)}
+                                        style={{
+                                          display: 'flex',
+                                          flexDirection: 'column',
+                                          alignItems: 'center',
+                                          gap: '8px',
+                                          padding: '16px',
+                                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                                          borderRadius: '12px',
+                                          color: '#ffffff',
+                                          cursor: 'pointer',
+                                          transition: 'all 0.2s ease',
+                                          minHeight: '120px'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'
+                                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'
+                                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'
+                                        }}
+                                      >
+                                        <div style={{
+                                          width: '50px',
+                                          height: '50px',
+                                          borderRadius: '50%',
+                                          backgroundColor: 'rgba(255,255,255,0.15)',
+                                          border: '1px solid rgba(255,255,255,0.15)',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          overflow: 'hidden'
+                                        }}>
+                                          {user.icon ? (
+                                            <img 
+                                              src={`/retailpos/images/icons/${user.icon}.png`} 
+                                              alt={user.icon}
+                                              style={{
+                                                width: '42px',
+                                                height: '42px',
+                                                objectFit: 'cover',
+                                                borderRadius: '50%'
+                                              }}
+                                            />
+                                          ) : (
+                                            <div style={{ fontSize: '20px', color: 'rgba(255,255,255,0.7)' }}>○</div>
+                                          )}
+                                        </div>
+                                        <div style={{ textAlign: 'center', width: '100%' }}>
+                                          <div style={{
+                                            fontSize: '13px',
+                                            fontWeight: '500',
+                                            marginBottom: '4px',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis'
+                                          }}>
+                                            {user.username}
+                                          </div>
+                                          <div style={{
+                                            fontSize: '11px',
+                                            color: getRoleColor(user.role),
+                                            marginBottom: '2px',
+                                            fontWeight: '500'
+                                          }}>
+                                            {user.role}
+                                          </div>
+                                          <div style={{
+                                            fontSize: '10px',
+                                            color: '#999'
+                                          }}>
+                                            {formatLastUsed(user.last_used)}
+                                          </div>
+                                        </div>
+                                      </button>
+                                    ))}
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      /* Show grid layout for few users */
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                        gap: '12px',
+                        maxWidth: '400px',
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        paddingRight: '8px'
+                      }}>
+                        {users
+                          .filter(u => u.user_id !== selectedUser?.user_id) // Exclude current selected user
+                          .map((u) => (
                           <button
                             key={u.user_id}
                             onClick={() => {
@@ -851,18 +1059,18 @@ const SelectUser: React.FC = () => {
                             }}
                             style={{
                               display: 'flex',
+                              flexDirection: 'column',
                               alignItems: 'center',
-                              gap: '10px',
-                              borderRadius: '8px',
-                              padding: '6px 10px',
+                              gap: '8px',
+                              padding: '12px',
                               background: 'rgba(0,0,0,0.4)',
                               border: '1px solid rgba(255,255,255,0.3)',
                               backdropFilter: 'blur(10px)',
+                              borderRadius: '12px',
                               color: 'rgba(255,255,255,0.9)',
                               cursor: 'pointer',
                               transition: 'all 0.2s ease',
-                              minWidth: '140px',
-                              fontSize: '13px'
+                              minHeight: '100px'
                             }}
                             onMouseEnter={(e) => {
                               e.currentTarget.style.background = 'rgba(0,0,0,0.5)';
@@ -874,45 +1082,55 @@ const SelectUser: React.FC = () => {
                             }}
                           >
                             <div style={{
-                              width: '28px',
-                              height: '28px',
+                              width: '40px',
+                              height: '40px',
                               borderRadius: '50%',
                               background: 'rgba(255,255,255,0.15)',
                               border: '1px solid rgba(255,255,255,0.15)',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              overflow: 'hidden',
-                              flexShrink: 0
+                              overflow: 'hidden'
                             }}>
                               {u.icon ? (
                                 <img 
                                   src={`/retailpos/images/icons/${u.icon}.png`} 
                                   alt={u.icon}
                                   style={{
-                                    width: '24px',
-                                    height: '24px',
+                                    width: '32px',
+                                    height: '32px',
                                     objectFit: 'cover',
                                     borderRadius: '50%'
                                   }}
                                 />
                               ) : (
-                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>○</div>
+                                <div style={{ fontSize: '16px', color: 'rgba(255,255,255,0.7)' }}>○</div>
                               )}
                             </div>
-                            <span style={{ 
-                              fontWeight: '400',
-                              fontSize: '13px',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              textShadow: '0 1px 2px rgba(0,0,0,0.8)'
-                            }}>
-                              {u.username}
-                            </span>
+                            <div style={{ textAlign: 'center', width: '100%' }}>
+                              <div style={{ 
+                                fontWeight: '500',
+                                fontSize: '12px',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+                                marginBottom: '2px'
+                              }}>
+                                {u.username}
+                              </div>
+                              <div style={{
+                                fontSize: '10px',
+                                color: getRoleColor(u.role),
+                                fontWeight: '500'
+                              }}>
+                                {u.role}
+                              </div>
+                            </div>
                           </button>
                         ))}
-                    </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Very Bottom: System Icons */}
@@ -1303,6 +1521,7 @@ const SelectUser: React.FC = () => {
         </div>
       </div>
     </div>
+
     </>
   );
 };
