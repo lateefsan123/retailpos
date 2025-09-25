@@ -107,7 +107,7 @@ const BranchSelector: React.FC<BranchSelectorProps> = ({
           document.body.removeChild(toast)
         }, 300)
       }, 2000)
-    }, 3000) // 3 seconds
+    }, 1500) // 1.5 seconds
   }
 
   // Don't render if there's only one branch or no branches

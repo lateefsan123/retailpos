@@ -41,26 +41,85 @@ const convertToBusinessTimezone = (date: Date, timezone: string = 'UTC'): Date =
 // Utility function to get business hours range
 const getBusinessHoursRange = (businessHours: string = '9:00 AM - 6:00 PM') => {
   try {
-    // Parse business hours (e.g., "9:00 AM - 6:00 PM")
-    const match = businessHours.match(/(\d{1,2}):(\d{2})\s*(AM|PM)\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)/i)
-    if (match) {
-      const [, startHour, startMin, startPeriod, endHour, endMin, endPeriod] = match
-      
-      const parseTime = (hour: string, min: string, period: string) => {
-        let h = parseInt(hour)
-        const m = parseInt(min)
-        if (period.toUpperCase() === 'PM' && h !== 12) h += 12
-        if (period.toUpperCase() === 'AM' && h === 12) h = 0
-        return h * 60 + m // Convert to minutes from midnight
-      }
-      
-      const startMinutes = parseTime(startHour, startMin, startPeriod)
-      const endMinutes = parseTime(endHour, endMin, endPeriod)
-      
-      return { startMinutes, endMinutes }
+    if (!businessHours || businessHours.trim() === '') {
+      return { startMinutes: 9 * 60, endMinutes: 18 * 60 }
     }
+
+    // Try multiple parsing patterns for different business hours formats
+    const patterns = [
+      // Standard format: "9:00 AM - 6:00 PM"
+      /(\d{1,2}):(\d{2})\s*(AM|PM)\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)/i,
+      // Format without minutes: "9 AM - 6 PM"
+      /(\d{1,2})\s*(AM|PM)\s*-\s*(\d{1,2})\s*(AM|PM)/i,
+      // 24-hour format: "09:00 - 18:00"
+      /(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/,
+      // Simple format: "9-18" (24-hour)
+      /(\d{1,2})\s*-\s*(\d{1,2})/,
+      // Format with day ranges: "Mon-Fri 9AM-6PM" - extract just the time part
+      /(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun|Weekdays?|Daily)[\s\-,]*(\d{1,2}):?(\d{0,2})\s*(AM|PM)?[\s\-,]*(\d{1,2}):?(\d{0,2})\s*(AM|PM)?/i
+    ]
+
+    for (const pattern of patterns) {
+      const match = businessHours.match(pattern)
+      if (match) {
+        const parseTime = (hour: string, min: string = '0', period: string = '') => {
+          let h = parseInt(hour)
+          const m = parseInt(min || '0')
+          
+          // Handle AM/PM
+          if (period.toUpperCase() === 'PM' && h !== 12) h += 12
+          if (period.toUpperCase() === 'AM' && h === 12) h = 0
+          
+          // If no AM/PM specified and hour > 12, assume 24-hour format
+          if (!period && h > 12) {
+            // Already in 24-hour format
+          } else if (!period && h <= 12) {
+            // Assume business hours are in 12-hour format, default to AM for early hours
+            if (h < 6) h += 12 // Early morning hours (1-5 AM) are likely PM
+          }
+          
+          return h * 60 + m // Convert to minutes from midnight
+        }
+
+        let startMinutes, endMinutes
+
+        if (pattern === patterns[0]) {
+          // Standard format: "9:00 AM - 6:00 PM"
+          const [, startHour, startMin, startPeriod, endHour, endMin, endPeriod] = match
+          startMinutes = parseTime(startHour, startMin, startPeriod)
+          endMinutes = parseTime(endHour, endMin, endPeriod)
+        } else if (pattern === patterns[1]) {
+          // Format without minutes: "9 AM - 6 PM"
+          const [, startHour, startPeriod, endHour, endPeriod] = match
+          startMinutes = parseTime(startHour, '0', startPeriod)
+          endMinutes = parseTime(endHour, '0', endPeriod)
+        } else if (pattern === patterns[2]) {
+          // 24-hour format: "09:00 - 18:00"
+          const [, startHour, startMin, endHour, endMin] = match
+          startMinutes = parseTime(startHour, startMin)
+          endMinutes = parseTime(endHour, endMin)
+        } else if (pattern === patterns[3]) {
+          // Simple format: "9-18" (24-hour)
+          const [, startHour, endHour] = match
+          startMinutes = parseTime(startHour, '0')
+          endMinutes = parseTime(endHour, '0')
+        } else if (pattern === patterns[4]) {
+          // Format with day ranges: "Mon-Fri 9AM-6PM"
+          const [, startHour, startMin, startPeriod, endHour, endMin, endPeriod] = match
+          startMinutes = parseTime(startHour, startMin || '0', startPeriod)
+          endMinutes = parseTime(endHour, endMin || '0', endPeriod)
+        }
+
+        // Validate the parsed times
+        if (startMinutes >= 0 && endMinutes <= 24 * 60 && startMinutes < endMinutes) {
+          return { startMinutes, endMinutes }
+        }
+      }
+    }
+
+    console.warn(`Could not parse business hours format: "${businessHours}". Using default hours.`)
   } catch (error) {
-    console.warn(`Could not parse business hours: ${businessHours}`)
+    console.warn(`Error parsing business hours: ${businessHours}`, error)
   }
   
   // Default to 9 AM - 6 PM
@@ -140,8 +199,12 @@ const processHourlyData = (sales: any[], sideBusinessSales: any[], timezone: str
   const hourlyData: { [key: number]: { totalSales: number, transactionCount: number } } = {}
   const { startMinutes, endMinutes } = getBusinessHoursRange(businessHours)
   
-  // Initialize all hours
-  for (let i = 0; i < 24; i++) {
+  // Calculate start and end hours from business hours
+  const startHour = Math.floor(startMinutes / 60)
+  const endHour = Math.floor(endMinutes / 60)
+  
+  // Initialize only business hours
+  for (let i = startHour; i <= endHour; i++) {
     hourlyData[i] = { totalSales: 0, transactionCount: 0 }
   }
   
@@ -173,12 +236,15 @@ const processHourlyData = (sales: any[], sideBusinessSales: any[], timezone: str
     }
   })
   
-  return Object.entries(hourlyData).map(([hour, data]) => ({
-    hour: parseInt(hour),
-    hourLabel: `${hour}:00`,
-    totalSales: data.totalSales,
-    transactionCount: data.transactionCount
-  }))
+  // Return only business hours, sorted by hour
+  return Object.entries(hourlyData)
+    .map(([hour, data]) => ({
+      hour: parseInt(hour),
+      hourLabel: `${hour}:00`,
+      totalSales: data.totalSales,
+      transactionCount: data.transactionCount
+    }))
+    .sort((a, b) => a.hour - b.hour)
 }
 
 const processMonthlyData = (sales: any[], sideBusinessSales: any[], timezone: string = 'UTC'): MonthlySalesData[] => {

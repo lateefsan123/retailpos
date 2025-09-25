@@ -612,30 +612,31 @@ const TransactionDetail = () => {
     })
   }
 
-  if (loading) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '400px'
-      }}>
-        <div style={{
-          fontSize: '20px',
-          color: '#7d8d86',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px'
-        }}>
-          <i className="fa-solid fa-spinner" style={{
-            animation: 'spin 1s linear infinite',
-            fontSize: '24px'
-          }}></i>
-          Loading transaction details...
-        </div>
-      </div>
-    )
-  }
+  // Loading state hidden - always show content
+  // if (loading) {
+  //   return (
+  //     <div style={{
+  //       display: 'flex',
+  //       justifyContent: 'center',
+  //       alignItems: 'center',
+  //       minHeight: '400px'
+  //     }}>
+  //       <div style={{
+  //         fontSize: '20px',
+  //         color: '#7d8d86',
+  //         display: 'flex',
+  //         alignItems: 'center',
+  //         gap: '12px'
+  //       }}>
+  //         <i className="fa-solid fa-spinner" style={{
+  //           animation: 'spin 1s linear infinite',
+  //           fontSize: '24px'
+  //         }}></i>
+  //         Loading transaction details...
+  //       </div>
+  //     </div>
+  //   )
+  // }
 
   if (!transaction) {
     return (

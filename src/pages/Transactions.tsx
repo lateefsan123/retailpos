@@ -230,32 +230,33 @@ const Transactions: React.FC = () => {
     setCurrentPage(1)
   }, [selectedBranchId])
 
-  if (loading) {
-    return (
-      <PageLayout>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          minHeight: '400px' 
-        }}>
-          <div style={{ 
-            fontSize: '20px', 
-            color: '#1a1a1a',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px'
-          }}>
-            <i className="fa-solid fa-spinner" style={{ 
-              animation: 'spin 1s linear infinite',
-              fontSize: '24px'
-            }}></i>
-            Loading transactions...
-          </div>
-        </div>
-      </PageLayout>
-    )
-  }
+  // Loading state hidden - always show content
+  // if (loading) {
+  //   return (
+  //     <PageLayout>
+  //       <div style={{ 
+  //         display: 'flex', 
+  //         justifyContent: 'center', 
+  //         alignItems: 'center', 
+  //         minHeight: '400px' 
+  //       }}>
+  //         <div style={{ 
+  //           fontSize: '20px', 
+  //           color: '#1a1a1a',
+  //           display: 'flex',
+  //           alignItems: 'center',
+  //           gap: '12px'
+  //         }}>
+  //           <i className="fa-solid fa-spinner" style={{ 
+  //             animation: 'spin 1s linear infinite',
+  //             fontSize: '24px'
+  //           }}></i>
+  //           Loading transactions...
+  //         </div>
+  //       </div>
+  //     </PageLayout>
+  //   )
+  // }
 
   if (error) {
     return (

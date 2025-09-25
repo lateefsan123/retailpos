@@ -29,6 +29,14 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   onLoadMore
 }) => {
   return (
+    <>
+      <style>{`
+        .product-quantity-text {
+          color: #000000 !important;
+          -webkit-text-fill-color: #000000 !important;
+          -webkit-text-stroke-color: transparent !important;
+        }
+      `}</style>
     <div style={{ 
       flex: 1, 
       padding: '24px 32px',
@@ -158,6 +166,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
         </div>
       )}
     </div>
+    </>
   )
 }
 
@@ -182,6 +191,32 @@ const ProductCard: React.FC<{ product: Product; onAdd: (product: Product) => voi
     e.currentTarget.style.boxShadow = 'none'
   }}
   >
+    {/* Quantity display in top left corner */}
+    <div style={{
+      position: 'absolute',
+      top: '8px',
+      left: '8px',
+      background: 'rgba(255, 255, 255, 0.9)',
+      borderRadius: '4px',
+      padding: '2px 6px',
+      fontSize: '12px',
+      fontWeight: '600',
+      color: '#000000',
+      border: '1px solid rgba(0, 0, 0, 0.1)',
+      zIndex: 1,
+      textShadow: 'none'
+    }}>
+      <span 
+        className="product-quantity-text"
+        style={{ 
+          color: '#000000',
+          WebkitTextFillColor: '#000000',
+          WebkitTextStrokeColor: 'transparent'
+        }}
+      >
+        {product.stock_quantity}
+      </span>
+    </div>
     <div style={{
       width: '100%',
       height: '100px',

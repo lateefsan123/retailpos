@@ -801,16 +801,17 @@ const SideBusinesses = () => {
 
   const businessTypes = [...new Set(businesses.map(b => b.business_type).filter(Boolean))]
 
-  if (loading) {
-    return (
-      <div className={styles.loadingStateContainer}>
-        <div className={styles.loadingStateText}>
-          <i className={`fa-solid fa-spinner ${styles.loadingStateSpinner}`}></i>
-          Loading side businesses...
-        </div>
-      </div>
-    )
-  }
+  // Loading state hidden - always show content
+  // if (loading) {
+  //   return (
+  //     <div className={styles.loadingStateContainer}>
+  //       <div className={styles.loadingStateText}>
+  //         <i className={`fa-solid fa-spinner ${styles.loadingStateSpinner}`}></i>
+  //         Loading side businesses...
+  //       </div>
+  //     </div>
+  //   )
+  // }
 
   if (error) {
     return (

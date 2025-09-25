@@ -708,15 +708,33 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           borderRadius: '8px',
           border: '2px solid #d1d5db'
         }}>
-          <label style={{
-            display: 'block',
-            fontSize: '14px',
-            fontWeight: '500',
-            color: '#3e3f29',
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
             marginBottom: '8px'
           }}>
-            Select Date:
-          </label>
+            <label style={{
+              fontSize: '14px',
+              fontWeight: '500',
+              color: '#3e3f29'
+            }}>
+              Select Date:
+            </label>
+            {businessHours && (
+              <div style={{
+                fontSize: '12px',
+                color: '#7d8d86',
+                background: '#e5e7eb',
+                padding: '4px 8px',
+                borderRadius: '4px',
+                fontWeight: '500'
+              }}>
+                <i className="fa-solid fa-clock" style={{ marginRight: '4px' }}></i>
+                Business Hours: {businessHours}
+              </div>
+            )}
+          </div>
           <input
             type="date"
             value={selectedDate}

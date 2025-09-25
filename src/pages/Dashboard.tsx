@@ -567,8 +567,8 @@ const Dashboard = () => {
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date)
     setShowCalendar(false)
-    // Data is automatically refreshed from cached sources
-    // No need for manual API calls
+    // Fetch stats for the selected date
+    fetchDashboardStatsForDate(date)
   }
 
   const fetchDashboardStatsForDate = async (date: Date) => {
@@ -686,6 +686,9 @@ const Dashboard = () => {
         todayTransactions: dayTransactionsCount || 0,
         lowStockItems: lowStockCount || 0
       })
+      
+      // Update side business transaction count for breakdown calculation
+      setSideBusinessTransactionCount(daySideBusinessTransactionCount || 0)
     } catch (error) {
       console.error('Error fetching dashboard stats for date:', error)
     } finally {
@@ -897,37 +900,38 @@ const Dashboard = () => {
   // Display cards with consistent currency formatting
   const displayCards = statCards
 
-  if (loading) {
-    return (
-      <div style={{ padding: '0' }}>
-        <style>{`
-          @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
-          .skeleton { background-image: linear-gradient(90deg, #e5e7eb 0px, #f3f4f6 40px, #e5e7eb 80px); background-size: 600px 100%; animation: shimmer 1.2s infinite linear; }
-        `}</style>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: '24px',
-          marginBottom: '32px'
-        }}>
-          <div className="skeleton" style={{ height: '140px', borderRadius: '16px' }}></div>
-          <div className="skeleton" style={{ height: '140px', borderRadius: '16px' }}></div>
-          <div className="skeleton" style={{ height: '140px', borderRadius: '16px' }}></div>
-          <div className="skeleton" style={{ height: '140px', borderRadius: '16px' }}></div>
-        </div>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '24px',
-          marginBottom: '32px'
-        }}>
-          <div className="skeleton" style={{ height: '300px', borderRadius: '16px' }}></div>
-          <div className="skeleton" style={{ height: '300px', borderRadius: '16px' }}></div>
-        </div>
-        <div className="skeleton" style={{ height: '420px', borderRadius: '16px' }}></div>
-      </div>
-    )
-  }
+  // Loading state hidden - always show content
+  // if (loading) {
+  //   return (
+  //     <div style={{ padding: '0' }}>
+  //       <style>{`
+  //         @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+  //         .skeleton { background-image: linear-gradient(90deg, #e5e7eb 0px, #f3f4f6 40px, #e5e7eb 80px); background-size: 600px 100%; animation: shimmer 1.2s infinite linear; }
+  //       `}</style>
+  //       <div style={{
+  //         display: 'grid',
+  //         gridTemplateColumns: 'repeat(4, 1fr)',
+  //         gap: '24px',
+  //         marginBottom: '32px'
+  //       }}>
+  //         <div className="skeleton" style={{ height: '140px', borderRadius: '16px' }}></div>
+  //         <div className="skeleton" style={{ height: '140px', borderRadius: '16px' }}></div>
+  //         <div className="skeleton" style={{ height: '140px', borderRadius: '16px' }}></div>
+  //         <div className="skeleton" style={{ height: '140px', borderRadius: '16px' }}></div>
+  //       </div>
+  //       <div style={{
+  //         display: 'grid',
+  //         gridTemplateColumns: '1fr 1fr',
+  //         gap: '24px',
+  //         marginBottom: '32px'
+  //       }}>
+  //         <div className="skeleton" style={{ height: '300px', borderRadius: '16px' }}></div>
+  //         <div className="skeleton" style={{ height: '300px', borderRadius: '16px' }}></div>
+  //       </div>
+  //       <div className="skeleton" style={{ height: '420px', borderRadius: '16px' }}></div>
+  //     </div>
+  //   )
+  // }
 
   return (
     <div style={{ padding: '0' }}>

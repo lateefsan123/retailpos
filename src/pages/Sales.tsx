@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useBusinessId } from '../hooks/useBusinessId'
 import { useBranch } from '../contexts/BranchContext'
 import { useBusiness } from '../contexts/BusinessContext'
+import { useNav } from '../contexts/NavContext'
 import { useBarcodeScanner, setModalOpen } from '../hooks/useBarcodeScanner'
 import { generateReceiptHTML as generateReceiptHTMLUtil, printReceipt as printReceiptUtil } from '../utils/receiptUtils'
 import { ttsService, TTSSettings } from '../lib/ttsService'
@@ -173,6 +174,7 @@ const Sales = () => {
   const { businessId, businessLoading } = useBusinessId()
   const { selectedBranchId } = useBranch()
   const { currentBusiness } = useBusiness()
+  const { isCollapsed } = useNav()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [products, setProducts] = useState<Product[]>([])
@@ -258,8 +260,8 @@ const Sales = () => {
       return
     }
 
-    // Load initial products and related data
-    fetchProducts(selectedCategory, searchTerm)
+    // Load initial products and categories
+    fetchAllProductsAndCategories()
     fetchServiceBusinesses()
 
     const transactionParam = searchParams.get('transaction')
@@ -268,7 +270,18 @@ const Sales = () => {
       setIsAddingToTransaction(true)
       fetchExistingTransaction(transactionParam)
     }
-  }, [searchParams, businessId, businessLoading, selectedCategory, searchTerm])
+  }, [searchParams, businessId, businessLoading])
+
+  // Separate effect for filtering products when category or search changes
+  useEffect(() => {
+    if (businessId && !businessLoading && topProducts.length > 0) {
+      // Use client-side filtering for instant response
+      filterProducts()
+    } else if (businessId && !businessLoading && !topProducts.length) {
+      // Only fetch from server if we don't have products cached
+      fetchProducts(selectedCategory, searchTerm)
+    }
+  }, [selectedCategory, searchTerm])
 
   // Note: TTS will only be triggered manually by the cashier when they want to announce the order
   // This ensures TTS is only used when the cashier has finished adding items
@@ -336,12 +349,12 @@ const Sales = () => {
     }
   }, [order.total, allowPartialPayment, partialAmount])
 
-  const fetchProducts = async (category?: string, search?: string) => {
+  const fetchAllProductsAndCategories = async () => {
     if (businessLoading) {
       return
     }
 
-      if (businessId == null) {
+    if (businessId == null) {
       setProducts([])
       setSideBusinessItems([])
       setTopProducts([])
@@ -353,6 +366,70 @@ const Sales = () => {
 
     try {
       setLoading(true)
+
+      // Fetch all products without category filter to get all categories
+      const { data: allProductsData, error: productsError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('business_id', businessId)
+        .order('sales_count', { ascending: false })
+        .limit(100)
+
+      if (productsError) throw productsError
+
+      const { data: sideBusinessData, error: sideBusinessError } = await supabase
+        .from('side_business_items')
+        .select(`
+          *,
+          side_businesses (name, business_type)
+        `)
+        .eq('parent_shop_id', businessId)
+        .order('name')
+
+      if (sideBusinessError) throw sideBusinessError
+
+      const safeProducts = allProductsData || []
+      const safeSideBusinessItems = sideBusinessData || []
+
+      // Set all products as top products (for filtering)
+      setTopProducts(safeProducts)
+      setSideBusinessItems(safeSideBusinessItems)
+
+      // Build categories from all products
+      const productCategories = safeProducts.map(p => p.category).filter(Boolean)
+      const sideBusinessCategories = safeSideBusinessItems.map(item => item.side_businesses?.name).filter(Boolean)
+      const allCategories = ['All', ...new Set([...productCategories, ...sideBusinessCategories])]
+      setCategories(allCategories)
+
+      setLoading(false)
+      setIsFiltering(false)
+    } catch (error) {
+      console.error('Error fetching products:', error)
+      setProducts([])
+      setSideBusinessItems([])
+      setTopProducts([])
+      setCategories(['All'])
+      setLoading(false)
+      setIsFiltering(false)
+    }
+  }
+
+  const fetchProducts = async (category?: string, search?: string) => {
+    if (businessLoading) {
+      return
+    }
+
+    if (businessId == null) {
+      setProducts([])
+      setIsFiltering(false)
+      return
+    }
+
+    try {
+      // Only show loading for initial load, not for category switches
+      if (!topProducts.length) {
+        setLoading(true)
+      }
 
       let query = supabase
         .from('products')
@@ -373,28 +450,8 @@ const Sales = () => {
       const { data: productsData, error: productsError } = await query
       if (productsError) throw productsError
 
-      const { data: sideBusinessData, error: sideBusinessError } = await supabase
-        .from('side_business_items')
-        .select(`
-          *,
-          side_businesses (name, business_type)
-        `)
-        .eq('parent_shop_id', businessId)
-        .order('name')
-
-      if (sideBusinessError) throw sideBusinessError
-
       const safeProducts = productsData || []
-      const safeSideBusinessItems = sideBusinessData || []
-
       setProducts(safeProducts)
-      setSideBusinessItems(safeSideBusinessItems)
-      setTopProducts(safeProducts)
-
-      const productCategories = safeProducts.map(p => p.category).filter(Boolean)
-      const sideBusinessCategories = safeSideBusinessItems.map(item => item.side_businesses?.name).filter(Boolean)
-      const allCategories = ['All', ...new Set([...productCategories, ...sideBusinessCategories])]
-      setCategories(allCategories)
     } catch (error) {
       // Error fetching products - handled silently per user preference
     } finally {
@@ -676,6 +733,20 @@ const Sales = () => {
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value)
+    
+    // Check if it looks like a barcode (8-20 digits) and auto-detect
+    if (value.trim() && /^\d{8,20}$/.test(value.trim())) {
+      // Small delay to ensure it's a complete barcode scan, not typing
+      setTimeout(() => {
+        if (searchTerm === value && value.trim() && /^\d{8,20}$/.test(value.trim())) {
+          console.log('🔍 Auto-detected barcode in search:', value.trim())
+          handleBarcodeScanned(value.trim())
+          setSearchTerm('')
+          return
+        }
+      }, 100)
+    }
+    
     generateSearchSuggestions(value)
   }
 
@@ -1780,38 +1851,48 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
     }
   }
 
-  if (loading) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '400px',
-        fontSize: '18px',
-        color: '#6b7280'
-      }}>
-        <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '12px' }}></i>
-        Loading products...
-      </div>
-    )
-  }
+  // Loading state hidden - always show content
+  // if (loading) {
+  //   return (
+  //     <div style={{ 
+  //       display: 'flex', 
+  //       justifyContent: 'center', 
+  //       alignItems: 'center', 
+  //       height: '400px',
+  //       fontSize: '18px',
+  //       color: '#6b7280'
+  //     }}>
+  //       <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '12px' }}></i>
+  //       Loading products...
+  //     </div>
+  //   )
+  // }
 
   return (
+    <>
     <div style={{ 
+      position: 'fixed',
+      top: 0,
+      left: isCollapsed ? '70px' : '200px', // Dynamic based on nav state
+      right: 0,
+      bottom: 0,
       display: 'flex', 
       height: '100vh', 
       background: 'linear-gradient(135deg, #7d8d86, #3e3f29)',
-      fontFamily: 'Poppins, sans-serif'
+      fontFamily: 'Poppins, sans-serif',
+      zIndex: 1000,
+      transition: 'left 0.3s ease' // Smooth transition when nav collapses
     }}>
       {/* Main Content Area */}
       <div style={{ 
         flex: 1, 
         background: '#ffffff', 
-        margin: '20px', 
-        borderRadius: '20px',
+        margin: '0', 
+        borderRadius: '0',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        borderRight: '2px solid #e5e7eb'
       }}>
         {/* Header */}
         <div style={{ 
@@ -1881,7 +1962,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               background: '#ffffff',
               borderRadius: '12px',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-              border: '2px solid #e5e7eb',
+              border: '2px solid #000000',
               transition: 'all 0.3s ease'
             }}>
               <div style={{
@@ -1897,7 +1978,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 
                 <input
                   type="text"
-                  placeholder="Search products, categories, or SKU..."
+                  placeholder="Search products, categories, SKU, or scan barcode..."
                   value={searchTerm}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   onFocus={(e) => {
@@ -1906,14 +1987,25 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                     setShowSuggestions(searchSuggestions.length > 0)
                   }}
                   onBlur={(e) => {
-                    e.target.parentElement.parentElement.style.borderColor = '#e5e7eb'
+                    e.target.parentElement.parentElement.style.borderColor = '#000000'
                     e.target.parentElement.parentElement.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)'
                     setTimeout(() => setShowSuggestions(false), 200)
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault()
-                      if (searchTerm.trim()) {
+                      const value = searchTerm.trim()
+                      
+                      // Check if it looks like a barcode (8-20 digits)
+                      if (value && /^\d{8,20}$/.test(value)) {
+                        console.log('🔍 Barcode detected in search:', value)
+                        handleBarcodeScanned(value)
+                        setSearchTerm('')
+                        return
+                      }
+                      
+                      // Regular search
+                      if (value) {
                         setShowSuggestions(false)
                       }
                     }
@@ -2114,12 +2206,59 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 <i className="fa-solid fa-plus-circle" style={{ marginRight: '8px' }}></i>
                 Quick Service
               </button>
+              
+              {/* Calculator Button */}
+              <button 
+                onClick={() => setIsCalculatorOpen(true)}
+                style={{
+                  padding: '14px 32px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  minWidth: '120px',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                  background: '#6b7280',
+                  color: 'white'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#4b5563';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#6b7280';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                }}
+                onMouseDown={(e) => {
+                  e.currentTarget.style.background = '#374151';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.15)';
+                }}
+                onMouseUp={(e) => {
+                  e.currentTarget.style.background = '#4b5563';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.2)';
+                }}
+              >
+                <i className="fa-solid fa-calculator" style={{ marginRight: '8px' }}></i>
+                Calculator
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Barcode Scanner Section */}
-        <div style={{ 
+        {/* Barcode Scanner Section - Now integrated into main search */}
+        <div style={{
+          display: 'none', // Hide the separate barcode scanner since it's now integrated 
           padding: '16px 32px',
           borderBottom: '1px solid #e5e7eb',
           background: barcodeScannerActive ? '#f0f9ff' : '#f9fafb',
@@ -2307,57 +2446,86 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
           padding: '16px 32px',
           borderBottom: '1px solid #e5e7eb'
         }}>
+          {/* Category Tabs */}
           <div style={{ 
             display: 'flex', 
-            alignItems: 'center',
-            gap: '12px'
+            alignItems: 'flex-end',
+            gap: '0px',
+            overflowX: 'auto',
+            paddingBottom: '0px',
+            borderBottom: '2px solid #e5e7eb'
           }}>
-            <label style={{
-              fontSize: '14px',
-              fontWeight: '500',
-              color: '#374151',
-              whiteSpace: 'nowrap'
-            }}>
-              Category:
-            </label>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              style={{
-                background: '#ffffff',
-                border: '2px solid #6b7280',
-                borderRadius: '8px',
-                padding: '8px 12px',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                cursor: 'pointer',
-                minWidth: '200px',
-                outline: 'none',
-                transition: 'border-color 0.2s ease'
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#7d8d86'}
-              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-            >
-              {categories.map(category => {
-                // Calculate count for each category
-                let count = 0
-                if (category === 'All') {
-                  count = products.length + sideBusinessItems.length
-                } else {
-                  // For individual categories, we can't easily get the count without additional queries
-                  // So we'll show the category name without count for now
-                  // This could be improved with a separate API call to get category counts
-                  count = sideBusinessItems.filter(item => item.side_businesses?.name === category).length
-                }
+            {categories.map(category => {
+              // Calculate count for each category
+              let count = 0
+              if (category === 'All') {
+                count = products.length + sideBusinessItems.length
+              } else {
+                count = sideBusinessItems.filter(item => item.side_businesses?.name === category).length
+              }
+
+              // Get random pastel color for each category
+              const getCategoryColor = (cat: string) => {
+                const pastelColors = [
+                  { bg: '#FFE4E1', text: '#8B4513', border: '#FFB6C1' }, // Light Pink
+                  { bg: '#E6F3FF', text: '#003366', border: '#87CEEB' }, // Light Blue
+                  { bg: '#F0FFF0', text: '#006400', border: '#98FB98' }, // Light Green
+                  { bg: '#FFF8DC', text: '#B8860B', border: '#F0E68C' }, // Light Yellow
+                  { bg: '#F5F0FF', text: '#4B0082', border: '#DDA0DD' }, // Light Purple
+                  { bg: '#FFF0F5', text: '#8B008B', border: '#FFB6C1' }, // Light Magenta
+                  { bg: '#F0FFFF', text: '#008B8B', border: '#AFEEEE' }, // Light Cyan
+                  { bg: '#FFF5EE', text: '#A0522D', border: '#F5DEB3' }, // Light Orange
+                ]
                 
-                return (
-                  <option key={category} value={category}>
-                    {category} {category === 'All' ? `(${count})` : count > 0 ? `(${count})` : ''}
-                  </option>
-                )
-              })}
-            </select>
+                // Use category name to consistently assign colors
+                const hash = cat.split('').reduce((a, b) => {
+                  a = ((a << 5) - a) + b.charCodeAt(0)
+                  return a & a
+                }, 0)
+                return pastelColors[Math.abs(hash) % pastelColors.length]
+              }
+
+              const isSelected = selectedCategory === category
+              const colors = getCategoryColor(category)
+              
+              return (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  style={{
+                    background: isSelected ? colors.bg : '#ffffff',
+                    color: isSelected ? colors.text : colors.text,
+                    border: isSelected ? `2px solid ${colors.border}` : `2px solid ${colors.border}`,
+                    borderBottom: isSelected ? `2px solid ${colors.bg}` : 'none',
+                    borderRadius: '8px 8px 0 0',
+                    padding: '12px 24px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.2s ease',
+                    minWidth: '120px',
+                    position: 'relative',
+                    zIndex: isSelected ? 2 : 1,
+                    marginBottom: isSelected ? '-2px' : '0px'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.background = colors.bg
+                      e.currentTarget.style.color = colors.text
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.background = '#ffffff'
+                      e.currentTarget.style.color = colors.text
+                    }
+                  }}
+                >
+                  {category} {count > 0 ? `(${count})` : ''}
+                </button>
+              )
+            })}
           </div>
         </div>
 
@@ -2365,7 +2533,8 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
         <div style={{ 
           flex: 1, 
           padding: '24px 32px',
-          overflowY: 'auto'
+          overflowY: 'auto',
+          transition: 'opacity 0.2s ease'
         }}>
           <div style={{ marginBottom: '16px' }}>
             <h3 style={{ 
@@ -2408,7 +2577,8 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             <div style={{ 
               display: 'grid', 
               gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', 
-              gap: '12px' 
+              gap: '12px',
+              transition: 'all 0.3s ease'
             }}>
               {filteredProducts.map(product => (
               <div key={product.product_id} style={{
@@ -2433,6 +2603,38 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 e.currentTarget.style.border = '2px solid #6b7280'
               }}
               >
+                {/* Quantity Badge - Top Left */}
+                {(() => {
+                  const currentQuantity = order.items
+                    .filter(item => item.product?.product_id === product.product_id && !item.weight)
+                    .reduce((sum, item) => sum + item.quantity, 0)
+                  
+                  if (currentQuantity > 0) {
+                    return (
+                      <div style={{
+                        position: 'absolute',
+                        top: '8px',
+                        left: '8px',
+                        background: '#dc2626',
+                        color: 'white',
+                        borderRadius: '50%',
+                        width: '24px',
+                        height: '24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        zIndex: 1,
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                      }}>
+                        {currentQuantity}
+                      </div>
+                    )
+                  }
+                  return null
+                })()}
+                
                 <div style={{
                   width: '100%',
                   height: '100px',
@@ -2619,10 +2821,10 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
 
       {/* Order Sidebar */}
       <div style={{ 
-        width: '400px', 
-        background: '#ffffff', 
-        margin: '20px 20px 20px 0', 
-        borderRadius: '20px',
+        width: '500px', 
+        background: '#f8f9fa', 
+        margin: '0', 
+        borderRadius: '0',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden'
@@ -2631,7 +2833,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
         <div style={{ 
           padding: '20px 24px', 
           borderBottom: '1px solid #e5e7eb',
-          background: '#f9fafb'
+          background: '#e5e7eb'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
             <div style={{
@@ -2712,7 +2914,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   padding: '12px',
                   background: '#ffffff',
                   borderRadius: '8px',
-                  border: '3px solid #dc2626',
+                  border: '3px solid #374151',
                   boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
                 }}>
                   <div style={{
@@ -2885,7 +3087,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                         height: '24px',
                         borderRadius: '4px',
                         border: 'none',
-                        background: '#ef4444',
+                        background: '#374151',
                         color: 'white',
                         cursor: 'pointer',
                         display: 'flex',
@@ -2905,256 +3107,62 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
           )}
         </div>
 
-        {/* Payment Details */}
-        <div style={{ 
-          padding: '24px',
-          borderTop: '1px solid #e5e7eb',
-          background: '#f9fafb'
-        }}>
-          <h3 style={{ 
-            fontSize: '18px', 
-            fontWeight: '600', 
-            color: '#1f2937',
-            margin: '0 0 16px 0'
-          }}>
-            Payment Detail
-          </h3>
-
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ 
-              display: 'block', 
-              fontSize: '14px', 
-              fontWeight: '500', 
-              color: '#374151',
-              marginBottom: '8px'
-            }}>
-              Customer Name
-            </label>
-            <input
-              type="text"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Enter customer name"
-              style={{
-                width: '100%',
-                maxWidth: '300px',
-                padding: '8px 12px',
-                border: '1px solid #6b7280',
-                borderRadius: '6px',
-                fontSize: '14px',
-                outline: 'none'
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '16px' }}>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              marginBottom: '8px' 
-            }}>
-              <span style={{ fontSize: '14px', color: '#6b7280' }}>Sub Total</span>
-              <span style={{ fontSize: '14px', fontWeight: '500', color: '#1f2937' }}>
-                €{order.subtotal.toFixed(2)}
-              </span>
-            </div>
-            {order.discount > 0 && (
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                marginBottom: '8px' 
-              }}>
-                <span style={{ fontSize: '14px', color: '#6b7280' }}>Discount</span>
-                <span style={{ fontSize: '14px', fontWeight: '500', color: '#1f2937' }}>
-                  €{order.discount.toFixed(2)}
-                </span>
-              </div>
-            )}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              paddingTop: '8px',
-              borderTop: '1px solid #d1d5db',
-              marginBottom: '16px'
-            }}>
-              <span style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937' }}>Total Payment</span>
-              <span style={{ fontSize: '16px', fontWeight: '600', color: '#7d8d86' }}>
-                €{order.total.toFixed(2)}
-              </span>
-            </div>
-          </div>
-
-          <button style={{
-            background: '#f3f4f6',
-            color: '#374151',
-            border: 'none',
+        {/* Order Total Display */}
+        {order.items.length > 0 && (
+          <div style={{
+            background: '#f1f3f4',
+            border: '1px solid #d1d5db',
             borderRadius: '8px',
-            padding: '12px 24px',
-            fontSize: '14px',
-            fontWeight: '500',
-            cursor: 'pointer',
-            width: '100%',
-            marginBottom: '12px'
+            padding: '16px',
+            marginBottom: '12px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
           }}>
-            Add Voucher
-          </button>
-
-          {/* TTS Announce Order Button - Audio Player Style */}
-          <div
-            style={{
-              background: '#2a2a2a',
-              border: '1px solid #404040',
-              borderRadius: '12px',
-              padding: '10px 12px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              width: 'fit-content',
-              maxWidth: '280px',
-              marginBottom: '12px',
-              opacity: order.items.length === 0 ? 0.5 : 1,
-              cursor: order.items.length === 0 ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
-            }}
-            onClick={async () => {
-              if (order.items.length === 0) return
-              
-              if (isTtsPlaying) {
-                // Pause TTS
-                console.log('Pausing TTS...')
-                ttsService.pause()
-                setIsTtsPlaying(false)
-                return
-              }
-              
-              console.log('Announce Order clicked!')
-              console.log('Order items:', order.items)
-              
-              // Set playing state
-              setIsTtsPlaying(true)
-              
-              // Temporarily enable TTS
-              ttsService.updateSettings({ enabled: true })
-              setTtsSettings(ttsService.getSettings())
-              
-              console.log('TTS Settings after enabling:', ttsService.getSettings())
-              
-              try {
-                await speakOrderItems(order.items)
-                
-                // Wait for the Nigerian food message to finish, then disable TTS
-                setTimeout(() => {
-                  ttsService.updateSettings({ enabled: false })
-                  setTtsSettings(ttsService.getSettings())
-                  setIsTtsPlaying(false)
-                }, 3000) // Wait 3 seconds for the delayed message
-                
-              } catch (error) {
-                console.error('TTS Error:', error)
-                // Disable TTS immediately on error
-                ttsService.updateSettings({ enabled: false })
-                setTtsSettings(ttsService.getSettings())
-                setIsTtsPlaying(false)
-              }
-            }}
-            onMouseEnter={(e) => {
-              if (order.items.length > 0) {
-                e.currentTarget.style.background = '#333333'
-                e.currentTarget.style.borderColor = '#555555'
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (order.items.length > 0) {
-                e.currentTarget.style.background = '#2a2a2a'
-                e.currentTarget.style.borderColor = '#404040'
-              }
-            }}
-          >
-            {/* Simple Play/Pause Button */}
-            <button
-              onClick={async () => {
-                if (order.items.length === 0) return
-                
-                if (isTtsPlaying) {
-                  // Pause TTS
-                  console.log('Pausing TTS...')
-                  ttsService.stop()
-                  setIsTtsPlaying(false)
-                  return
-                }
-                
-                console.log('Announce Order clicked!')
-                console.log('Order items:', order.items)
-                
-                // Set playing state
-                setIsTtsPlaying(true)
-                
-                // Temporarily enable TTS
-                ttsService.updateSettings({ enabled: true })
-                setTtsSettings(ttsService.getSettings())
-                
-                console.log('TTS Settings after enabling:', ttsService.getSettings())
-                
-                try {
-                  await speakOrderItems(order.items)
-                  
-                  // Wait for the Nigerian food message to finish, then disable TTS
-                  setTimeout(() => {
-                    ttsService.updateSettings({ enabled: false })
-                    setTtsSettings(ttsService.getSettings())
-                    setIsTtsPlaying(false)
-                  }, 3000) // Wait 3 seconds for the delayed message
-                  
-                } catch (error) {
-                  console.error('TTS Error:', error)
-                  setIsTtsPlaying(false)
-                  ttsService.updateSettings({ enabled: false })
-                  setTtsSettings(ttsService.getSettings())
-                }
-              }}
-              disabled={order.items.length === 0}
-              style={{
-                background: order.items.length === 0 ? '#666666' : '#4a5568',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                padding: '8px 12px',
+            <div>
+              <div style={{
                 fontSize: '14px',
-                fontWeight: '500',
-                cursor: order.items.length === 0 ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.2s ease',
-                opacity: order.items.length === 0 ? 0.5 : 1
-              }}
-              onMouseEnter={(e) => {
-                if (order.items.length > 0) {
-                  (e.target as HTMLButtonElement).style.background = '#2d3748'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (order.items.length > 0) {
-                  (e.target as HTMLButtonElement).style.background = '#4a5568'
-                }
-              }}
-            >
-              <i 
-                className={isTtsPlaying ? "fa-solid fa-pause" : "fa-solid fa-play"} 
-                style={{ fontSize: '12px' }}
-              ></i>
-              {isTtsPlaying ? 'Stop' : 'Play'}
-            </button>
+                color: '#6b7280',
+                marginBottom: '4px'
+              }}>
+                Items: {order.items.length}
+              </div>
+              <div style={{
+                fontSize: '12px',
+                color: '#9ca3af'
+              }}>
+                Subtotal: €{order.subtotal.toFixed(2)}
+              </div>
+            </div>
+            <div style={{
+              textAlign: 'right'
+            }}>
+              <div style={{
+                fontSize: '20px',
+                fontWeight: '600',
+                color: '#1f2937',
+                marginBottom: '2px'
+              }}>
+                Total: €{order.total.toFixed(2)}
+              </div>
+              <div style={{
+                fontSize: '12px',
+                color: '#6b7280'
+              }}>
+                Ready to pay
+              </div>
+            </div>
           </div>
+        )}
 
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginBottom: '12px' }}>
             <button
               onClick={resetTransaction}
               disabled={order.items.length === 0}
               style={{
-                flex: 1,
-                padding: '14px 32px',
+                width: '120px',
+                padding: '14px 16px',
                 border: 'none',
                 borderRadius: '8px',
                 fontSize: '16px',
@@ -3203,13 +3211,111 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               <i className="fa-solid fa-rotate-left" style={{ marginRight: '8px' }}></i>
               Reset
             </button>
+
+            {/* TTS Play Button */}
+            <button
+              onClick={async () => {
+                if (order.items.length === 0) return
+                
+                if (isTtsPlaying) {
+                  // Stop TTS
+                  console.log('Stopping TTS...')
+                  ttsService.stop()
+                  setIsTtsPlaying(false)
+                  return
+                }
+                
+                console.log('Announce Order clicked!')
+                console.log('Order items:', order.items)
+                
+                // Set playing state
+                setIsTtsPlaying(true)
+                
+                // Temporarily enable TTS
+                ttsService.updateSettings({ enabled: true })
+                setTtsSettings(ttsService.getSettings())
+                
+                console.log('TTS Settings after enabling:', ttsService.getSettings())
+                
+                try {
+                  await speakOrderItems(order.items)
+                  
+                  // Wait for the Nigerian food message to finish, then disable TTS
+                  setTimeout(() => {
+                    ttsService.updateSettings({ enabled: false })
+                    setTtsSettings(ttsService.getSettings())
+                    setIsTtsPlaying(false)
+                  }, 3000) // Wait 3 seconds for the delayed message
+                  
+                } catch (error) {
+                  console.error('TTS Error:', error)
+                  setIsTtsPlaying(false)
+                  ttsService.updateSettings({ enabled: false })
+                  setTtsSettings(ttsService.getSettings())
+                }
+              }}
+              disabled={order.items.length === 0}
+              style={{
+                width: '100px',
+                padding: '14px 12px',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '500',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: order.items.length === 0 ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                background: order.items.length === 0 ? '#9ca3af' : '#4a5568',
+                color: 'white',
+                opacity: order.items.length === 0 ? 0.6 : 1
+              }}
+              onMouseEnter={(e) => {
+                if (order.items.length > 0) {
+                  e.currentTarget.style.background = '#2d3748'
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(31, 41, 55, 0.2)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (order.items.length > 0) {
+                  e.currentTarget.style.background = '#4a5568'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)'
+                }
+              }}
+              onMouseDown={(e) => {
+                if (order.items.length > 0) {
+                  e.currentTarget.style.background = '#1a202c'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(31, 41, 55, 0.15)'
+                }
+              }}
+              onMouseUp={(e) => {
+                if (order.items.length > 0) {
+                  e.currentTarget.style.background = '#2d3748'
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(31, 41, 55, 0.2)'
+                }
+              }}
+            >
+              <i 
+                className={isTtsPlaying ? "fa-solid fa-stop" : "fa-solid fa-play"} 
+                style={{ marginRight: '8px', fontSize: '14px' }}
+              ></i>
+              {isTtsPlaying ? 'Stop' : 'Play'}
+            </button>
             
             <button
               onClick={() => setShowSalesSummary(true)}
               disabled={order.items.length === 0}
               style={{
-                flex: 2,
-                padding: '14px 32px',
+                width: '140px',
+                padding: '14px 20px',
                 border: 'none',
                 borderRadius: '8px',
                 fontSize: '16px',
@@ -3257,15 +3363,6 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             >
               <i className="fa-solid fa-credit-card" style={{ marginRight: '8px' }}></i>
               Purchase
-              {order.items.length > 0 && (
-                <span style={{ 
-                  fontSize: '10px', 
-                  opacity: 0.8,
-                  marginLeft: '2px'
-                }}>
-                  (Ctrl+Enter)
-                </span>
-              )}
             </button>
           </div>
         </div>
@@ -3339,6 +3436,19 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               }}>
                 Customer Information
               </h3>
+            </div>
+
+            {/* Customer Name */}
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '8px'
+              }}>
+                Customer Name (Optional)
+              </label>
               <input
                 type="text"
                 value={customerName}
@@ -3346,13 +3456,11 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 placeholder="Enter customer name (optional)"
                 style={{
                   width: '100%',
-                  maxWidth: '300px',
                   padding: '12px 16px',
                   border: '1px solid #6b7280',
                   borderRadius: '8px',
                   fontSize: '16px',
-                  outline: 'none',
-                  marginBottom: '12px'
+                  outline: 'none'
                 }}
               />
             </div>
@@ -4507,7 +4615,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
 

@@ -717,16 +717,17 @@ export default function Reminders() {
     );
   };
 
-  if (loading) {
-    return (
-      <div className={styles.loading}>
-        <div className={styles.loadingContent}>
-          <i className={`fa-solid fa-spinner fa-spin ${styles.loadingIcon}`}></i>
-          <p className={styles.loadingText}>Loading reminders...</p>
-        </div>
-      </div>
-    );
-  }
+  // Loading state hidden - always show content
+  // if (loading) {
+  //   return (
+  //     <div className={styles.loading}>
+  //       <div className={styles.loadingContent}>
+  //         <i className={`fa-solid fa-spinner fa-spin ${styles.loadingIcon}`}></i>
+  //         <p className={styles.loadingText}>Loading reminders...</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
     return (
     <div className={styles.container}>
