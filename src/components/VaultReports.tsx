@@ -266,8 +266,7 @@ export default function VaultReports({ isOpen, onClose, vaultEntries, businessId
         .from('sales')
         .select(`
           total_amount,
-          cashier_id,
-          users!inner(username)
+          cashier_id
         `)
         .gte('datetime', startDate.toISOString())
         .lte('datetime', endDate.toISOString());
@@ -277,7 +276,7 @@ export default function VaultReports({ isOpen, onClose, vaultEntries, businessId
       const staffMap = new Map<number, { name: string; revenue: number; transactions: number }>();
       staffData?.forEach(sale => {
         const cashierId = sale.cashier_id;
-        const cashierName = sale.users?.username || 'Unknown';
+        const cashierName = 'System User';
         const existing = staffMap.get(cashierId) || { name: cashierName, revenue: 0, transactions: 0 };
         staffMap.set(cashierId, {
           name: cashierName,

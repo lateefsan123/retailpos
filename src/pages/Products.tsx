@@ -658,13 +658,12 @@ const Products = () => {
             total_amount,
             payment_method,
             customers (name),
-            users (username),
             business_id
           )
         `)
         .eq('product_id', product.product_id)
         .eq('sales.business_id', businessId)
-        .order('sales.datetime', { ascending: false })
+        .order('datetime', { ascending: false, foreignTable: 'sales' })
 
       if (allSalesError) {
         throw allSalesError
@@ -681,7 +680,7 @@ const Products = () => {
         unit: item.weight ? (product.weight_unit || 'kg') : 'units',
         price: item.calculated_price || (item.price_each * item.quantity),
         customer: item.sales?.customers?.name || 'Walk-in Customer',
-        cashier: item.sales?.users?.username || 'Unknown'
+        cashier: 'System User'
       })) || []
 
       const totalQuantitySold = recentSalesData?.reduce((sum, item) => sum + (item.weight || item.quantity), 0) || 0
@@ -4285,24 +4284,24 @@ const Products = () => {
                       <table style={{ width: '100%', fontSize: '14px' }}>
                         <thead>
                           <tr style={{ borderBottom: '2px solid #e5e7eb', background: '#f9fafb' }}>
-                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <i className="fas fa-calendar" style={{ fontSize: '12px', color: '#6b7280' }}></i>
+                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151' }}>
+                              <i className="fas fa-calendar" style={{ fontSize: '12px', color: '#6b7280', marginRight: '6px' }}></i>
                               Date
                             </th>
-                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <i className="fas fa-hashtag" style={{ fontSize: '12px', color: '#6b7280' }}></i>
+                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151' }}>
+                              <i className="fas fa-hashtag" style={{ fontSize: '12px', color: '#6b7280', marginRight: '6px' }}></i>
                               Quantity
                             </th>
-                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <i className="fas fa-euro-sign" style={{ fontSize: '12px', color: '#6b7280' }}></i>
+                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151' }}>
+                              <i className="fas fa-euro-sign" style={{ fontSize: '12px', color: '#6b7280', marginRight: '6px' }}></i>
                               Price
                             </th>
-                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <i className="fas fa-user" style={{ fontSize: '12px', color: '#6b7280' }}></i>
+                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151' }}>
+                              <i className="fas fa-user" style={{ fontSize: '12px', color: '#6b7280', marginRight: '6px' }}></i>
                               Customer
                             </th>
-                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <i className="fas fa-user-tie" style={{ fontSize: '12px', color: '#6b7280' }}></i>
+                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151' }}>
+                              <i className="fas fa-user-tie" style={{ fontSize: '12px', color: '#6b7280', marginRight: '6px' }}></i>
                               Cashier
                             </th>
                           </tr>

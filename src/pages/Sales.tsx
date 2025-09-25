@@ -10,6 +10,7 @@ import { generateReceiptHTML as generateReceiptHTMLUtil, printReceipt as printRe
 import { ttsService, TTSSettings } from '../lib/ttsService'
 import { RetroButton } from '../components/ui/RetroButton'
 import BranchSelector from '../components/BranchSelector'
+import Calculator from '../components/Calculator'
 
 // Helper function to get local time in database format
 const getLocalDateTime = () => {
@@ -22,6 +23,8 @@ const getLocalDateTime = () => {
   const seconds = String(now.getSeconds()).padStart(2, '0')
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
+
+const generateOrderDetailNumber = () => Math.floor(Math.random() * 10000000)
 
 // TTS functionality now handled by ttsService
 
@@ -138,7 +141,7 @@ interface SideBusinessItem {
   business_id: number
   name: string
   price: number | null
-  stock_qty: number | null
+  stock_quantity: number | null
   side_businesses?: {
     name: string
     business_type: string
@@ -152,6 +155,9 @@ interface OrderItem {
   customPrice?: number // For service items with custom pricing
   weight?: number // Weight/quantity for weighted items
   calculatedPrice?: number // Calculated price for weighted items
+  originalQuantity?: number
+  originalWeight?: number
+  originalCalculatedPrice?: number
 }
 
 interface Order {
@@ -180,6 +186,7 @@ const Sales = () => {
   const [topProducts, setTopProducts] = useState<Product[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isFiltering, setIsFiltering] = useState(false)
+  const [orderDetailNumber, setOrderDetailNumber] = useState(() => generateOrderDetailNumber())
   const [order, setOrder] = useState<Order>({
     items: [],
     subtotal: 0,
@@ -222,6 +229,9 @@ const Sales = () => {
   
   // Partial payment state
   const [allowPartialPayment, setAllowPartialPayment] = useState(false)
+  
+  // Calculator modal state
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false)
   const [partialAmount, setPartialAmount] = useState('')
   const [remainingAmount, setRemainingAmount] = useState(0)
   const [partialPaymentNotes, setPartialPaymentNotes] = useState('')
@@ -428,17 +438,16 @@ const Sales = () => {
         .from('sales')
         .select(`
           *,
-          customers (name),
-          users (username)
+          customers (name)
         `)
         .eq('sale_id', saleId)
         .eq('business_id', businessId)
         .single()
 
       if (transactionError || !transactionData) {
+        console.error('Error fetching transaction:', transactionError)
         return
       }
-
       setExistingTransaction(transactionData)
 
       const { data: itemsData, error: itemsError } = await supabase
@@ -459,6 +468,7 @@ const Sales = () => {
         .eq('sale_id', saleId)
 
       if (itemsError) {
+        console.error('Error fetching sale items:', itemsError)
         return
       }
 
@@ -477,33 +487,106 @@ const Sales = () => {
 
         const orderItem: OrderItem = {
           product,
-          quantity: item.quantity
+          quantity: item.quantity,
+          originalQuantity: item.quantity
         }
 
         if (item.products?.is_weighted && item.weight && item.calculated_price) {
           orderItem.weight = item.weight
           orderItem.calculatedPrice = item.calculated_price
+          orderItem.originalWeight = item.weight
+          orderItem.originalCalculatedPrice = item.calculated_price
         }
 
         return orderItem
       })
 
-      const subtotal = existingItems.reduce((sum, item) => {
-        if (item.weight && item.calculatedPrice) {
-          return sum + item.calculatedPrice
-        }
-        return sum + (item.product!.price * item.quantity)
-      }, 0)
-      const tax = subtotal * 0.1 // 10% tax
-      const total = subtotal + tax
+      const { data: sideSalesData, error: sideSalesError } = await supabase
+        .from('side_business_sales')
+        .select(`
+          sale_id,
+          quantity,
+          total_amount,
+          item_id,
+          parent_shop_id,
+          side_business_items (
+            item_id,
+            business_id,
+            name,
+            price,
+            stock_qty,
+            side_businesses (
+              name,
+              business_type
+            )
+          )
+        `)
+        .eq('sale_id', saleId)
+        .eq('parent_shop_id', businessId)
 
+      if (sideSalesError) {
+        console.error('Error fetching side business items:', sideSalesError)
+      }
+
+      const existingServiceItems: OrderItem[] = (sideSalesData || [])
+        .map(serviceItem => {
+          const sideItemData = serviceItem.side_business_items
+          if (!sideItemData) {
+            return null
+          }
+
+          const quantity = serviceItem.quantity ?? 0
+          const totalAmount = Number(serviceItem.total_amount ?? 0)
+          const unitPrice = quantity > 0
+            ? totalAmount / quantity
+            : (sideItemData.price ?? 0)
+
+          const sideBusinessItem: SideBusinessItem = {
+            item_id: sideItemData.item_id,
+            business_id: sideItemData.business_id,
+            name: sideItemData.name,
+            price: sideItemData.price,
+            stock_qty: sideItemData.stock_qty,
+            side_businesses: sideItemData.side_businesses
+              ? {
+                  name: sideItemData.side_businesses.name,
+                  business_type: sideItemData.side_businesses.business_type
+                }
+              : undefined
+          }
+
+          const orderItem: OrderItem = {
+            sideBusinessItem,
+            quantity: quantity || 1,
+            originalQuantity: quantity || 0
+          }
+
+          const referencePrice = Number.isFinite(unitPrice) ? unitPrice : 0
+          const basePrice = sideBusinessItem.price ?? 0
+          const hasCustomPrice =
+            sideBusinessItem.price == null ||
+            (quantity > 0 && Math.abs(basePrice * quantity - totalAmount) > 0.01)
+
+          if (hasCustomPrice) {
+            orderItem.customPrice = referencePrice
+          }
+
+          return orderItem
+        })
+        .filter((item): item is OrderItem => item !== null)
+
+      const combinedItems = [...existingItems, ...existingServiceItems]
+
+      // Set the order with items first, then let calculateOrderTotal handle the totals
       setOrder({
-        items: existingItems,
-        subtotal,
-        tax,
+        items: combinedItems,
+        subtotal: 0,
+        tax: 0,
         discount: 0,
-        total
+        total: 0
       })
+      
+      setOrderDetailNumber(Number.isFinite(saleId) ? saleId : generateOrderDetailNumber())
 
       if (transactionData.customers?.name) {
         setCustomerName(transactionData.customers.name)
@@ -669,7 +752,7 @@ const Sales = () => {
       } else {
         return {
           ...prev,
-          items: [...prev.items, { product, quantity: 1 }]
+          items: [...prev.items, { product, quantity: 1, originalQuantity: 0 }]
         }
       }
     })
@@ -704,7 +787,10 @@ const Sales = () => {
           product, 
           quantity: 1, 
           weight, 
-          calculatedPrice 
+          calculatedPrice, 
+          originalQuantity: 0, 
+          originalWeight: 0, 
+          originalCalculatedPrice: 0 
         }]
       }))
     }
@@ -738,7 +824,7 @@ const Sales = () => {
         } else {
           return {
             ...prev,
-            items: [...prev.items, { sideBusinessItem, quantity: 1 }]
+            items: [...prev.items, { sideBusinessItem, quantity: 1, originalQuantity: 0 }]
           }
         }
       })
@@ -777,7 +863,7 @@ const Sales = () => {
       } else {
         return {
           ...prev,
-          items: [...prev.items, { sideBusinessItem: pendingSideBusinessItem, quantity: 1, customPrice: price }]
+          items: [...prev.items, { sideBusinessItem: pendingSideBusinessItem, quantity: 1, customPrice: price, originalQuantity: 0 }]
         }
       }
     })
@@ -813,7 +899,7 @@ const Sales = () => {
         business_id: parseInt(quickServiceBusiness),
         name: quickServiceName.trim(),
         price: price,
-        stock_qty: null, // Services don't have stock
+        stock_quantity: null, // Services don't have stock
         side_businesses: {
           name: serviceBusinesses.find(b => b.business_id.toString() === quickServiceBusiness)?.name || 'Service',
           business_type: 'service'
@@ -823,7 +909,7 @@ const Sales = () => {
       // Add to order
       setOrder(prev => ({
         ...prev,
-        items: [...prev.items, { sideBusinessItem: tempServiceItem, quantity: 1, customPrice: price }]
+        items: [...prev.items, { sideBusinessItem: tempServiceItem, quantity: 1, customPrice: price, originalQuantity: 0 }]
       }))
 
       // Announce service created
@@ -852,7 +938,8 @@ const Sales = () => {
       items: prev.items.map(item => {
         if (item.product?.product_id === itemId) {
           return { ...item, quantity: newQuantity }
-        } else if (item.sideBusinessItem?.item_id.toString() === itemId) {
+        } else if (item.sideBusinessItem?.item_id.toString() === itemId || 
+                   `sb-${item.sideBusinessItem?.item_id}` === itemId) {
           return { ...item, quantity: newQuantity }
         }
         return item
@@ -1075,7 +1162,8 @@ const Sales = () => {
       ...prev,
       items: prev.items.filter(item => 
         item.product?.product_id !== itemId && 
-        item.sideBusinessItem?.item_id.toString() !== itemId
+        item.sideBusinessItem?.item_id.toString() !== itemId &&
+        `sb-${item.sideBusinessItem?.item_id}` !== itemId
       )
     }))
   }
@@ -1090,6 +1178,7 @@ const Sales = () => {
         discount: 0,
         total: 0
       })
+      setOrderDetailNumber(generateOrderDetailNumber())
       setCustomerName('')
       setCustomerPhone('')
       setPaymentMethod('cash')
@@ -1305,54 +1394,93 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
 
       // Create sale items and update stock
       if (isAddingToTransaction && existingTransactionId) {
-        // Only add new items that aren't already in the transaction
-        const existingItemIds = existingTransaction ? 
-          (await supabase.from('sale_items').select('product_id').eq('sale_id', saleData.sale_id)).data?.map(item => item.product_id) || [] : []
-        
-        const newItems = order.items.filter(item => item.product && !existingItemIds.includes(item.product.product_id))
-        
-        if (newItems.length > 0) {
-          const saleItems = newItems.map(item => ({
-            sale_id: saleData.sale_id,
-            product_id: item.product!.product_id,
-            quantity: item.quantity,
-            price_each: item.product!.price,
-            weight: item.weight || null,
-            calculated_price: item.calculatedPrice || null
-          }))
+        type SaleItemAddition = {
+          record: {
+            sale_id: number
+            product_id: string
+            quantity: number
+            price_each: number
+            weight: number | null
+            calculated_price: number | null
+          }
+          revenue: number
+        }
 
+        const saleItemAdditions = order.items
+          .filter(item => item.product)
+          .reduce((acc, item) => {
+            const originalQuantity = item.originalQuantity ?? 0
+            const quantityDelta = item.quantity - originalQuantity
+
+            if (item.weight && item.calculatedPrice) {
+              const originalWeight = item.originalWeight ?? 0
+              const weightDelta = (item.weight || 0) - originalWeight
+              const originalCalc = item.originalCalculatedPrice ?? 0
+              const priceDelta = (item.calculatedPrice || 0) - originalCalc
+
+              if (weightDelta > 0 && priceDelta > 0) {
+                acc.push({
+                  record: {
+                    sale_id: saleData.sale_id,
+                    product_id: item.product!.product_id,
+                    quantity: quantityDelta > 0 ? quantityDelta : 1,
+                    price_each: item.product!.price,
+                    weight: weightDelta,
+                    calculated_price: priceDelta
+                  },
+                  revenue: priceDelta
+                })
+              }
+            } else if (quantityDelta > 0) {
+              acc.push({
+                record: {
+                  sale_id: saleData.sale_id,
+                  product_id: item.product!.product_id,
+                  quantity: quantityDelta,
+                  price_each: item.product!.price,
+                  weight: null,
+                  calculated_price: null
+                },
+                revenue: item.product!.price * quantityDelta
+              })
+            }
+
+            return acc
+          }, [] as SaleItemAddition[])
+
+        if (saleItemAdditions.length > 0) {
           const { error: itemsError } = await supabase
             .from('sale_items')
-            .insert(saleItems)
+            .insert(saleItemAdditions.map(item => item.record))
 
           if (itemsError) throw itemsError
 
-          // Update product sales counters
-          for (const saleItem of saleItems) {
-            const itemRevenue = saleItem.calculated_price || (saleItem.price_each * saleItem.quantity)
-            
+          for (const addition of saleItemAdditions) {
             const { error: updateError } = await supabase
               .rpc('increment_product_sales', {
-                product_id_param: saleItem.product_id,
-                revenue_amount: itemRevenue,
+                product_id_param: addition.record.product_id,
+                revenue_amount: addition.revenue,
                 business_id_param: businessId
               })
 
             if (updateError) {
               console.error('Error updating product sales counter:', updateError)
-              // Don't throw here as the main sale was successful
             }
           }
         }
 
-        // Handle side business items for existing transactions
         const sideBusinessItems = order.items.filter(item => item.sideBusinessItem)
-        
+
         for (const item of sideBusinessItems) {
+          const originalQuantity = item.originalQuantity ?? 0
+          const quantityDelta = item.quantity - originalQuantity
+          if (quantityDelta <= 0) {
+            continue
+          }
+
           let itemId = item.sideBusinessItem!.item_id
-          
-          // If this is a temporary service item (created via Quick Service), create it in the database first
-          if (itemId > 1000000000) { // Temporary IDs are timestamps, so they'll be large numbers
+
+          if (itemId > 1000000000) {
             const { data: newItem, error: createItemError } = await supabase
               .from('side_business_items')
               .insert({
@@ -1360,8 +1488,9 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 parent_shop_id: businessId,
                 name: item.sideBusinessItem!.name,
                 price: item.customPrice || item.sideBusinessItem!.price,
-                stock_qty: null, // Services don't have stock
-                notes: 'Created via Quick Service'
+                stock_quantity: null,
+                notes: 'Created via Quick Service',
+                branch_id: selectedBranchId
               })
               .select()
               .single()
@@ -1370,17 +1499,18 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             itemId = newItem.item_id
           }
 
-          // Record the sale
           const { error: sideBusinessError } = await supabase
             .from('side_business_sales')
             .insert({
               item_id: itemId,
-              quantity: item.quantity,
-              total_amount: (item.customPrice || item.sideBusinessItem!.price || 0) * item.quantity,
+              quantity: quantityDelta,
+              price_each: item.customPrice || item.sideBusinessItem!.price || 0,
+              total_amount: (item.customPrice || item.sideBusinessItem!.price || 0) * quantityDelta,
               payment_method: paymentMethod,
               date_time: getLocalDateTime(),
               business_id: item.sideBusinessItem!.business_id,
-              parent_shop_id: businessId
+              parent_shop_id: businessId,
+              branch_id: selectedBranchId
             })
 
           if (sideBusinessError) throw sideBusinessError
@@ -1398,14 +1528,12 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             calculated_price: item.calculatedPrice || null
           }))
 
-        // Handle side business items (including temporary quick services)
         const sideBusinessItems = order.items.filter(item => item.sideBusinessItem)
-        
+
         for (const item of sideBusinessItems) {
           let itemId = item.sideBusinessItem!.item_id
-          
-          // If this is a temporary service item (created via Quick Service), create it in the database first
-          if (itemId > 1000000000) { // Temporary IDs are timestamps, so they'll be large numbers
+
+          if (itemId > 1000000000) {
             const { data: newItem, error: createItemError } = await supabase
               .from('side_business_items')
               .insert({
@@ -1413,8 +1541,9 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 parent_shop_id: businessId,
                 name: item.sideBusinessItem!.name,
                 price: item.customPrice || item.sideBusinessItem!.price,
-                stock_qty: null, // Services don't have stock
-                notes: 'Created via Quick Service'
+                stock_quantity: null,
+                notes: 'Created via Quick Service',
+                branch_id: selectedBranchId
               })
               .select()
               .single()
@@ -1423,23 +1552,23 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             itemId = newItem.item_id
           }
 
-          // Record the sale
           const { error: sideBusinessError } = await supabase
             .from('side_business_sales')
             .insert({
               item_id: itemId,
               quantity: item.quantity,
+              price_each: item.customPrice || item.sideBusinessItem!.price || 0,
               total_amount: (item.customPrice || item.sideBusinessItem!.price || 0) * item.quantity,
               payment_method: paymentMethod,
               date_time: getLocalDateTime(),
               business_id: item.sideBusinessItem!.business_id,
-              parent_shop_id: businessId
+              parent_shop_id: businessId,
+              branch_id: selectedBranchId
             })
 
           if (sideBusinessError) throw sideBusinessError
         }
 
-        // Insert regular product sales
         if (saleItems.length > 0) {
           const { error: itemsError } = await supabase
             .from('sale_items')
@@ -1447,10 +1576,9 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
 
           if (itemsError) throw itemsError
 
-          // Update product sales counters
           for (const saleItem of saleItems) {
             const itemRevenue = saleItem.calculated_price || (saleItem.price_each * saleItem.quantity)
-            
+
             const { error: updateError } = await supabase
               .rpc('increment_product_sales', {
                 product_id_param: saleItem.product_id,
@@ -1460,42 +1588,38 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
 
             if (updateError) {
               console.error('Error updating product sales counter:', updateError)
-              // Don't throw here as the main sale was successful
             }
           }
         }
       }
 
-      // Update product stock quantities (only for regular products)
-      const productItemsToProcess = isAddingToTransaction && existingTransactionId ? 
-        order.items.filter(item => {
-          if (!item.product) return false
-          // Only process items that are new to the transaction
-          const existingItemIds = existingTransaction ? 
-            (existingTransaction.sale_items || []).map((item: any) => item.product_id) : []
-          return !existingItemIds.includes(item.product.product_id)
-        }) : order.items.filter(item => item.product)
+      // Update product stock quantities based on the additional items sold
+      const productStockAdjustments = order.items
+        .filter(item => item.product)
+        .map(item => {
+          const originalQuantity = item.originalQuantity ?? 0
+          const quantityDelta = item.quantity - originalQuantity
+          return { item, quantityDelta }
+        })
+        .filter(({ quantityDelta }) => quantityDelta > 0)
 
-      for (const item of productItemsToProcess) {
-        if (!item.product) continue
-        
+      for (const { item, quantityDelta } of productStockAdjustments) {
         const { error: stockError } = await supabase
           .from('products')
           .update({ 
-            stock_quantity: item.product.stock_quantity - item.quantity,
+            stock_quantity: item.product!.stock_quantity - quantityDelta,
             last_updated: getLocalDateTime()
           })
-          .eq('product_id', item.product.product_id)
+          .eq('product_id', item.product!.product_id)
           .eq('business_id', businessId)
 
         if (stockError) throw stockError
 
-        // Create inventory movement record
         const { error: movementError } = await supabase
           .from('inventory_movements')
           .insert([{
             product_id: item.product.product_id,
-            quantity_change: -item.quantity,
+            quantity_change: -quantityDelta,
             movement_type: 'Sale',
             reference_id: saleData.sale_id,
             business_id: businessId
@@ -1508,12 +1632,16 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
       const sideBusinessItemsToProcess = order.items.filter(item => item.sideBusinessItem)
 
       for (const item of sideBusinessItemsToProcess) {
-        if (!item.sideBusinessItem || item.sideBusinessItem.stock_qty === null) continue
+        if (!item.sideBusinessItem || item.sideBusinessItem.stock_quantity === null) continue
+
+        const originalQuantity = item.originalQuantity ?? 0
+        const quantityDelta = item.quantity - originalQuantity
+        if (quantityDelta <= 0) continue
         
         const { error: stockError } = await supabase
           .from('side_business_items')
           .update({ 
-            stock_qty: item.sideBusinessItem.stock_qty - item.quantity
+            stock_quantity: item.sideBusinessItem.stock_quantity - quantityDelta
           })
           .eq('item_id', item.sideBusinessItem.item_id)
           .eq('parent_shop_id', businessId)
@@ -1529,6 +1657,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
         discount: 0,
         total: 0
       })
+      setOrderDetailNumber(generateOrderDetailNumber())
       setCustomerName('')
       setCustomerPhone('')
       setPaymentMethod('cash')
@@ -1940,10 +2069,50 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
 
             {/* Modern Action Buttons */}
             <div style={{ display: 'flex', gap: '12px' }}>
-              <RetroButton onClick={() => setShowQuickServiceModal(true)}>
+              <button 
+                onClick={() => setShowQuickServiceModal(true)}
+                style={{
+                  padding: '14px 32px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  minWidth: '120px',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                    background: '#000000',
+                  color: 'white'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#333333';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(31, 41, 55, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#000000';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                }}
+                onMouseDown={(e) => {
+                  e.currentTarget.style.background = '#1a1a1a';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(31, 41, 55, 0.15)';
+                }}
+                onMouseUp={(e) => {
+                  e.currentTarget.style.background = '#333333';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(31, 41, 55, 0.2)';
+                }}
+              >
                 <i className="fa-solid fa-plus-circle" style={{ marginRight: '8px' }}></i>
                 Quick Service
-              </RetroButton>
+              </button>
             </div>
           </div>
         </div>
@@ -2020,7 +2189,46 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                     }
                   }}
                 />
-                <RetroButton onClick={toggleBarcodeScanner}>
+                <button 
+                  onClick={toggleBarcodeScanner}
+                  style={{
+                    padding: '14px 32px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    fontWeight: '500',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    minWidth: '120px',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                    background: barcodeStatus === 'listening' ? '#dc2626' : 
+                               barcodeStatus === 'scanned' ? '#16a34a' : 
+                               barcodeStatus === 'not_found' ? '#ea580c' : '#000000',
+                    color: 'white'
+                  }}
+                  onMouseEnter={(e) => {
+                    const currentBg = e.currentTarget.style.background;
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                  }}
+                  onMouseDown={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.15)';
+                  }}
+                  onMouseUp={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.2)';
+                  }}
+                >
                   {barcodeStatus === 'listening' ? (
                     <>
                       <i className="fa-solid fa-stop" style={{ marginRight: '8px' }}></i>
@@ -2042,7 +2250,51 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                       Scan Barcode
                     </>
                   )}
-                </RetroButton>
+                </button>
+                <button 
+                  onClick={() => setIsCalculatorOpen(true)}
+                  style={{
+                    padding: '14px 32px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    fontWeight: '500',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    minWidth: '120px',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                    background: '#000000',
+                    color: 'white'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#333333';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(31, 41, 55, 0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#000000';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                  }}
+                  onMouseDown={(e) => {
+                    e.currentTarget.style.background = '#1a1a1a';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(31, 41, 55, 0.15)';
+                  }}
+                  onMouseUp={(e) => {
+                    e.currentTarget.style.background = '#333333';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(31, 41, 55, 0.2)';
+                  }}
+                >
+                  <i className="fa-solid fa-calculator" style={{ marginRight: '8px' }}></i>
+                  Calculator
+                </button>
               </div>
             </div>
 
@@ -2427,7 +2679,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             color: '#1f2937',
             margin: '0 0 16px 0'
           }}>
-            Order Detail #{Math.floor(Math.random() * 10000000)}
+            Order Detail #{orderDetailNumber}
           </h3>
 
           {order.items.length === 0 ? (
@@ -2895,19 +3147,111 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
           </div>
 
           <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-            <RetroButton
+            <button
               onClick={resetTransaction}
               disabled={order.items.length === 0}
-              style={{ flex: 1 }}
+              style={{
+                flex: 1,
+                padding: '14px 32px',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '500',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: order.items.length === 0 ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                background: order.items.length === 0 ? '#9ca3af' : '#000000',
+                color: 'white',
+                opacity: order.items.length === 0 ? 0.6 : 1
+              }}
+              onMouseEnter={(e) => {
+                if (order.items.length > 0) {
+                  e.currentTarget.style.background = '#333333';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(31, 41, 55, 0.2)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (order.items.length > 0) {
+                  e.currentTarget.style.background = '#000000';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                }
+              }}
+              onMouseDown={(e) => {
+                if (order.items.length > 0) {
+                  e.currentTarget.style.background = '#1a1a1a';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(31, 41, 55, 0.15)';
+                }
+              }}
+              onMouseUp={(e) => {
+                if (order.items.length > 0) {
+                  e.currentTarget.style.background = '#333333';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(31, 41, 55, 0.2)';
+                }
+              }}
             >
               <i className="fa-solid fa-rotate-left" style={{ marginRight: '8px' }}></i>
               Reset
-            </RetroButton>
+            </button>
             
-            <RetroButton
+            <button
               onClick={() => setShowSalesSummary(true)}
               disabled={order.items.length === 0}
-              style={{ flex: 2 }}
+              style={{
+                flex: 2,
+                padding: '14px 32px',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '500',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: order.items.length === 0 ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                background: order.items.length === 0 ? '#9ca3af' : '#000000',
+                color: 'white',
+                opacity: order.items.length === 0 ? 0.6 : 1
+              }}
+              onMouseEnter={(e) => {
+                if (order.items.length > 0) {
+                  e.currentTarget.style.background = '#333333';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(31, 41, 55, 0.2)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (order.items.length > 0) {
+                  e.currentTarget.style.background = '#000000';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                }
+              }}
+              onMouseDown={(e) => {
+                if (order.items.length > 0) {
+                  e.currentTarget.style.background = '#1a1a1a';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(31, 41, 55, 0.15)';
+                }
+              }}
+              onMouseUp={(e) => {
+                if (order.items.length > 0) {
+                  e.currentTarget.style.background = '#333333';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(31, 41, 55, 0.2)';
+                }
+              }}
             >
               <i className="fa-solid fa-credit-card" style={{ marginRight: '8px' }}></i>
               Purchase
@@ -2920,7 +3264,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   (Ctrl+Enter)
                 </span>
               )}
-            </RetroButton>
+            </button>
           </div>
         </div>
       </div>
@@ -4107,6 +4451,55 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
         </div>
       )}
 
+      {/* Calculator Modal */}
+      {isCalculatorOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            position: 'relative',
+            backgroundColor: 'transparent',
+            borderRadius: '16px',
+            padding: '0',
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            overflow: 'auto'
+          }}>
+            <button
+              onClick={() => setIsCalculatorOpen(false)}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                background: 'rgba(0, 0, 0, 0.7)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                fontSize: '20px',
+                cursor: 'pointer',
+                color: '#ffffff',
+                zIndex: 1001,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              ×
+            </button>
+            <Calculator />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

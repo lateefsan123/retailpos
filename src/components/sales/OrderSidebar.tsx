@@ -1,8 +1,9 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Order, OrderItem, Product, SideBusinessItem } from '../../types/sales'
 
 interface OrderSidebarProps {
   order: Order
+  orderDetailNumber?: number
   customerName: string
   user: any
   onUpdateQuantity: (itemId: string, newQuantity: number) => void
@@ -17,6 +18,7 @@ interface OrderSidebarProps {
 
 const OrderSidebar: React.FC<OrderSidebarProps> = ({
   order,
+  orderDetailNumber,
   customerName,
   user,
   onUpdateQuantity,
@@ -28,6 +30,8 @@ const OrderSidebar: React.FC<OrderSidebarProps> = ({
   onResetTransaction,
   getCurrentDateTime
 }) => {
+  const displayOrderNumber = useMemo(() => orderDetailNumber ?? Math.floor(Math.random() * 10000000), [orderDetailNumber])
+
   return (
     <div style={{ 
       width: '400px', 
@@ -91,7 +95,7 @@ const OrderSidebar: React.FC<OrderSidebarProps> = ({
           color: '#1f2937',
           margin: '0 0 16px 0'
         }}>
-          Order Detail #{Math.floor(Math.random() * 10000000)}
+          Order Detail #{displayOrderNumber}
         </h3>
 
         {order.items.length === 0 ? (

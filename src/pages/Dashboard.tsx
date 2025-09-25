@@ -107,6 +107,9 @@ const Dashboard = () => {
         lowStockItems
       })
 
+      // Set side business transaction count for pie chart
+      setSideBusinessTransactionCount(todaySideBusinessSales.length)
+
       setLoading(false)
     } else if (businessId == null && !businessLoading) {
       // Reset stats when no business is selected
@@ -119,15 +122,34 @@ const Dashboard = () => {
         todayTransactions: 0,
         lowStockItems: 0
       })
+      setSideBusinessTransactionCount(0)
       setLoading(false)
     }
   }, [businessId, businessLoading, salesData?.sales?.length, productsData?.products?.length])
 
   useEffect(() => {
-    // Data is automatically refreshed from cached sources when activePeriod or selectedDate changes
-    // No need for manual API calls since we're using React Query for data fetching
-  }, [activePeriod, selectedDate, businessId, businessLoading])
+    // If we have cached data but no today's sales, fetch fresh data
+    if (salesData && productsData && !businessLoading && businessId != null && stats.todayTransactions === 0) {
+      const today = new Date()
+      const isToday = selectedDate.toDateString() === today.toDateString()
+      
+      if (isToday && activePeriod === 'today') {
+        // Fetch fresh data for today if cached data shows no sales
+        fetchDashboardStats()
+      }
+    }
+  }, [activePeriod, selectedDate, businessId, businessLoading, salesData, productsData, stats.todayTransactions])
 
+  // Fetch recent transactions when component mounts or when business/date changes
+  useEffect(() => {
+    if (businessId && !businessLoading) {
+      if (activePeriod === 'today') {
+        fetchRecentTransactions(selectedDate)
+      } else {
+        fetchRecentTransactionsForPeriod(activePeriod, selectedDate)
+      }
+    }
+  }, [businessId, businessLoading, selectedDate, activePeriod, selectedBranchId])
 
   const fetchDashboardStats = async () => {
     if (businessLoading) {
@@ -261,7 +283,7 @@ const Dashboard = () => {
       const ymdLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
       const dateString = ymdLocal(targetDate)
 
-      const { data: transactions, error } = await supabase
+      let query = supabase
         .from('sales')
         .select(`
           sale_id,
@@ -279,6 +301,13 @@ const Dashboard = () => {
         .lt('datetime', `${dateString}T23:59:59`)
         .order('datetime', { ascending: false })
         .limit(5)
+
+      // Add branch filtering if branch is selected
+      if (selectedBranchId) {
+        query = query.eq('branch_id', selectedBranchId)
+      }
+
+      const { data: transactions, error } = await query
 
       if (error) {
         console.error('Error fetching recent transactions:', error)
@@ -397,7 +426,7 @@ const Dashboard = () => {
     try {
       const { start, end } = getDateRangeForPeriod(period, baseDate)
 
-      const { data: transactions, error } = await supabase
+      let query = supabase
         .from('sales')
         .select(`
           sale_id,
@@ -415,6 +444,13 @@ const Dashboard = () => {
         .lt('datetime', end)
         .order('datetime', { ascending: false })
         .limit(5)
+
+      // Add branch filtering if branch is selected
+      if (selectedBranchId) {
+        query = query.eq('branch_id', selectedBranchId)
+      }
+
+      const { data: transactions, error } = await query
 
       if (error) {
         console.error('Error fetching recent transactions for period:', error)
@@ -732,7 +768,7 @@ const Dashboard = () => {
     return isToday ? 'No transactions found for today' : `No transactions found for ${formattedDate}`
   }
 
-  const createPieChart = (productCount: number, sideBusinessCount: number, size: number = 100) => {
+  const createPieChart = (productCount: number, sideBusinessCount: number, size: number = 150) => {
     const total = productCount + sideBusinessCount
     if (total === 0) return null
 
@@ -760,13 +796,13 @@ const Dashboard = () => {
     const radius = size * 0.4
 
     return (
-      <svg width={size} height={size} style={{ marginRight: '12px' }}>
+      <svg width={size} height={size} style={{ marginRight: '16px' }}>
         {productCount > 0 && (
           <path
             d={createArcPath(0, productAngle, radius)}
             fill="#dc2626"
             stroke="#ffffff"
-            strokeWidth="2"
+            strokeWidth="3"
           />
         )}
         {sideBusinessCount > 0 && (
@@ -774,7 +810,7 @@ const Dashboard = () => {
             d={createArcPath(productAngle, 360, radius)}
             fill="#f59e0b"
             stroke="#ffffff"
-            strokeWidth="2"
+            strokeWidth="3"
           />
         )}
       </svg>
@@ -1009,7 +1045,7 @@ const Dashboard = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '12px',
+                  gap: '16px',
                   fontSize: '14px', 
                   fontWeight: '500', 
                   color: card.changeColor, 
@@ -1017,15 +1053,15 @@ const Dashboard = () => {
                 }}>
                   {(card as any).pieChart ? (
                     <>
-                      {createPieChart((card as any).pieChart.productCount, (card as any).pieChart.sideBusinessCount)}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#dc2626' }}></div>
-                          <span style={{ fontSize: '13px', fontWeight: '600', color: '#1a1a1a' }}>Products: {(card as any).pieChart.productCount}</span>
+                      {createPieChart((card as any).pieChart.productCount, (card as any).pieChart.sideBusinessCount, 120)}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#dc2626' }}></div>
+                          <span style={{ fontSize: '14px', fontWeight: '600', color: '#1a1a1a' }}>Products: {(card as any).pieChart.productCount}</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#f59e0b' }}></div>
-                          <span style={{ fontSize: '13px', fontWeight: '600', color: '#1a1a1a' }}>Side Business: {(card as any).pieChart.sideBusinessCount}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#f59e0b' }}></div>
+                          <span style={{ fontSize: '14px', fontWeight: '600', color: '#1a1a1a' }}>Side Business: {(card as any).pieChart.sideBusinessCount}</span>
                         </div>
                       </div>
                     </>

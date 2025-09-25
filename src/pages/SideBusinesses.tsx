@@ -378,7 +378,7 @@ const SideBusinesses = () => {
           business_id: parseInt(newItem.business_id),
           name: newItem.name,
           price: newItem.price ? parseFloat(newItem.price) : null,
-          stock_qty: newItem.stock_qty ? parseInt(newItem.stock_qty) : null,
+          stock_quantity: newItem.stock_qty ? parseInt(newItem.stock_qty) : null,
           notes: newItem.notes.trim() || null,
           parent_shop_id: user?.business_id,
           branch_id: selectedBranchId
@@ -397,13 +397,25 @@ const SideBusinesses = () => {
   const handleAddSale = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
+      // Find the selected item to get its business_id and price
+      const selectedItem = items.find(item => item.item_id.toString() === newSale.item_id)
+      if (!selectedItem) {
+        throw new Error('Selected item not found')
+      }
+
+      const totalAmount = parseFloat(newSale.total_amount)
+      const quantity = newSale.quantity
+      const priceEach = quantity > 0 ? totalAmount / quantity : 0
+
       const { error } = await supabase
         .from('side_business_sales')
         .insert({
           item_id: parseInt(newSale.item_id),
-          quantity: newSale.quantity,
-          total_amount: parseFloat(newSale.total_amount),
+          quantity: quantity,
+          price_each: priceEach,
+          total_amount: totalAmount,
           payment_method: newSale.payment_method,
+          business_id: selectedItem.business_id,
           parent_shop_id: user?.business_id,
           branch_id: selectedBranchId
         })
@@ -520,12 +532,12 @@ const SideBusinesses = () => {
       // Get all items for this business
       const { data: businessItems } = await supabase
         .from('side_business_items')
-        .select('item_id, stock_qty')
+        .select('item_id, stock_quantity')
         .eq('business_id', businessId)
 
       // Calculate current stock
       const currentStock = businessItems?.reduce((total, item) => {
-        return total + (item.stock_qty || 0)
+        return total + (item.stock_quantity || 0)
       }, 0) || 0
 
       // Get item IDs for this business
@@ -597,7 +609,7 @@ const SideBusinesses = () => {
       
       const { error } = await supabase
         .from('side_business_items')
-        .update({ stock_qty: newStockQuantity })
+        .update({ stock_quantity: newStockQuantity })
         .eq('item_id', restockItem.item_id)
 
       if (error) throw error

@@ -37,6 +37,9 @@ export interface OrderItem {
   customPrice?: number // For service items with custom pricing
   weight?: number // Weight/quantity for weighted items
   calculatedPrice?: number // Calculated price for weighted items
+  originalQuantity?: number
+  originalWeight?: number
+  originalCalculatedPrice?: number
 }
 
 export interface Order {

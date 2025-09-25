@@ -205,7 +205,7 @@ const LowStockCard = ({ product, onRestock, onQuickRestock }: LowStockCardProps)
                 ) : (
                   <i className="fa-solid fa-bolt"></i>
                 )}
-                Quick Restock
+                Quick Restock (+30)
               </button>
               
               <button

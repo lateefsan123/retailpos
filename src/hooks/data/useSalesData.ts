@@ -40,7 +40,7 @@ export interface Sale {
   }
   shop_staff?: {
     username: string
-  }
+  } | null
   sale_items?: SaleItem[]
   // Transformed fields
   customer_name?: string
@@ -79,7 +79,6 @@ const fetchSalesData = async (businessId: number, branchId: number | null): Prom
     .select(`
       *,
       customers (name),
-      shop_staff!sales_cashier_id_fkey (username),
       sale_items (
         *,
         products (
@@ -144,7 +143,7 @@ const fetchSalesData = async (businessId: number, branchId: number | null): Prom
     return {
       ...sale,
       customer_name: sale.customers?.name || 'Walk-in Customer',
-      cashier_name: sale.shop_staff?.username || 'Unknown',
+      cashier_name: sale.shop_staff?.username || 'System User',
       is_partial_payment: isPartialPayment,
       partial_amount: partialAmount,
       remaining_amount: remainingAmount,
@@ -167,8 +166,8 @@ export const useSalesData = () => {
     queryKey: ['salesData', user?.business_id, selectedBranchId],
     queryFn: () => fetchSalesData(user?.business_id!, selectedBranchId),
     enabled: !!user?.business_id,
-    staleTime: 2 * 60 * 1000, // 2 minutes for sales data
-    refetchOnWindowFocus: false, // Prevent unnecessary refetches
-    refetchOnMount: false, // Prevent refetch on component mount if data is fresh
+    staleTime: 0, // No caching - always fetch fresh data
+    refetchOnWindowFocus: true, // Refetch when window gains focus
+    refetchOnMount: true, // Always refetch on component mount
   })
 }

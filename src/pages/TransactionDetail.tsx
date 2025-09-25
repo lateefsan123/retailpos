@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useBranch } from '../contexts/BranchContext'
 
@@ -37,6 +37,7 @@ interface TransactionItem {
 const TransactionDetail = () => {
   const { transactionId } = useParams<{ transactionId: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const { selectedBranchId } = useBranch()
   const [transaction, setTransaction] = useState<Transaction | null>(null)
   const [items, setItems] = useState<TransactionItem[]>([])
@@ -50,6 +51,7 @@ const TransactionDetail = () => {
   })
   const [customers, setCustomers] = useState<Array<{id: number, name: string}>>([])
   const [editingItems, setEditingItems] = useState<{[key: number]: number}>({})
+  const [lastRefreshTime, setLastRefreshTime] = useState<number>(Date.now())
 
   useEffect(() => {
     if (transactionId) {
@@ -63,9 +65,50 @@ const TransactionDetail = () => {
     fetchCustomers()
   }, [selectedBranchId])
 
+  // Add page visibility listener to refresh data when user returns to the page
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && transactionId) {
+        console.log('Page became visible, refreshing transaction data')
+        // Refresh transaction data when user returns to the page
+        fetchTransactionDetails()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [transactionId])
+
+  // Add focus listener to refresh data when window regains focus
+  useEffect(() => {
+    const handleFocus = () => {
+      if (transactionId) {
+        console.log('Window focused, refreshing transaction data')
+        fetchTransactionDetails()
+      }
+    }
+
+    window.addEventListener('focus', handleFocus)
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [transactionId])
+
+  // Only refresh when transactionId changes
+  useEffect(() => {
+    if (transactionId) {
+      fetchTransactionDetails()
+    }
+  }, [transactionId])
+
   const fetchTransactionDetails = async () => {
     try {
       setLoading(true)
+      setLastRefreshTime(Date.now()) // Update refresh timestamp
       
       // Extract sale_id from transaction ID (e.g., "TXN-000001" -> 1)
       const saleId = parseInt(transactionId?.replace('TXN-', '') || '0')
@@ -76,82 +119,159 @@ const TransactionDetail = () => {
         return
       }
 
-      // Fetch transaction details with customer and cashier info
+      // First try to fetch as a regular sale
       const { data: transactionData, error: transactionError } = await supabase
         .from('sales')
         .select(`
           *,
-          customers (name),
-          users (username)
+          customers (name)
         `)
         .eq('sale_id', saleId)
         .single()
 
+      let isSideBusinessTransaction = false
+      let transformedTransaction: Transaction
+
       if (transactionError) {
-        console.error('Error fetching transaction:', transactionError)
-        navigate('/sales')
-        return
+        console.log('Not a regular sale, checking side business sales...')
+        
+        // Try to fetch as a side business sale
+        const { data: sideBusinessSaleData, error: sideBusinessError } = await supabase
+          .from('side_business_sales')
+          .select(`
+            *,
+            side_business_items (
+              name,
+              side_businesses (name)
+            )
+          `)
+          .eq('sale_id', saleId)
+          .single()
+
+        if (sideBusinessError) {
+          console.error('Error fetching transaction (both regular and side business):', transactionError, sideBusinessError)
+          navigate('/sales')
+          return
+        }
+
+        // Transform side business sale to match Transaction interface
+        isSideBusinessTransaction = true
+        transformedTransaction = {
+          sale_id: sideBusinessSaleData.sale_id,
+          datetime: sideBusinessSaleData.date_time,
+          total_amount: sideBusinessSaleData.total_amount,
+          payment_method: sideBusinessSaleData.payment_method,
+          customer_name: null, // Side business sales don't have customer info in this context
+          cashier_name: 'System User',
+          business_id: sideBusinessSaleData.business_id,
+          branch_id: sideBusinessSaleData.branch_id,
+          notes: null,
+          partial_payment: false,
+          partial_amount: null,
+          remaining_amount: null,
+          partial_notes: null
+        }
+        console.log('Fetched side business transaction data:', transformedTransaction)
+      } else {
+        // Transform regular transaction data
+        transformedTransaction = {
+          ...transactionData,
+          customer_name: transactionData.customers?.name || null,
+          cashier_name: 'System User'
+        }
+        console.log('Fetched regular transaction data:', transformedTransaction)
       }
 
-      // Transform transaction data to include customer and cashier names
-      const transformedTransaction: Transaction = {
-        ...transactionData,
-        customer_name: transactionData.customers?.name || null,
-        cashier_name: transactionData.users?.username || null
-      }
       setTransaction(transformedTransaction)
 
-      // Fetch transaction items
-      const { data: itemsData, error: itemsError } = await supabase
-        .from('sale_items')
-        .select(`
-          *,
-          products (
-            name,
-            category,
-            weight_unit,
-            price_per_unit,
-            is_weighted,
-            image_url
-          )
-        `)
-        .eq('sale_id', saleId)
+      // Fetch transaction items based on transaction type
+      if (isSideBusinessTransaction) {
+        // Fetch side business items
+        const { data: sideBusinessItemsData, error: sideBusinessItemsError } = await supabase
+          .from('side_business_sales')
+          .select(`
+            *,
+            side_business_items (
+              name,
+              side_businesses (name)
+            )
+          `)
+          .eq('sale_id', saleId)
 
-      if (itemsError) {
-        console.error('Error fetching transaction items:', itemsError)
-      } else {
-        const transformedItems: TransactionItem[] = (itemsData || []).map(item => {
-          // Debug logging for weighted items
-          if (item.products?.is_weighted) {
-            console.log('Weighted item data:', {
-              name: item.products.name,
-              weight: item.weight,
-              weight_unit: item.products.weight_unit,
-              price_per_unit: item.products.price_per_unit,
-              calculated_price: item.calculated_price,
-              price_each: item.price_each
-            })
-          }
-          
-          return {
-            sale_item_id: item.sale_item_id,
-            product_id: item.product_id,
+        if (sideBusinessItemsError) {
+          console.error('Error fetching side business transaction items:', sideBusinessItemsError)
+        } else {
+          console.log('Fetched side business items data:', sideBusinessItemsData)
+          const transformedItems: TransactionItem[] = (sideBusinessItemsData || []).map(item => ({
+            sale_item_id: item.sale_id, // Use sale_id as item ID for side business
+            product_id: `sb-${item.item_id}`, // Prefix to identify as side business item
             quantity: item.quantity,
             unit_price: item.price_each,
-            total_price: item.calculated_price || 
-              (item.products?.is_weighted && item.weight && item.products?.price_per_unit 
-                ? item.weight * item.products.price_per_unit 
-                : item.quantity * item.price_each),
-            product_name: item.products?.name || 'Unknown Product',
-            product_category: item.products?.category || 'Unknown Category',
-            product_image: item.products?.image_url || null,
-            weight: item.weight || undefined,
-            weight_unit: item.products?.weight_unit || undefined,
-            price_per_unit: item.products?.price_per_unit || undefined,
-            is_weighted: item.products?.is_weighted || false
-          }
-        })
-        setItems(transformedItems)
+            total_price: item.total_amount,
+            product_name: item.side_business_items?.name || 'Unknown Side Business Item',
+            product_category: item.side_business_items?.side_businesses?.name || 'Side Business',
+            product_image: null,
+            weight: undefined,
+            weight_unit: undefined,
+            price_per_unit: undefined,
+            is_weighted: false
+          }))
+          setItems(transformedItems)
+        }
+      } else {
+        // Fetch regular sale items
+        const { data: itemsData, error: itemsError } = await supabase
+          .from('sale_items')
+          .select(`
+            *,
+            products (
+              name,
+              category,
+              weight_unit,
+              price_per_unit,
+              is_weighted,
+              image_url
+            )
+          `)
+          .eq('sale_id', saleId)
+
+        if (itemsError) {
+          console.error('Error fetching transaction items:', itemsError)
+        } else {
+          console.log('Fetched items data:', itemsData) // Debug logging
+          const transformedItems: TransactionItem[] = (itemsData || []).map(item => {
+            // Debug logging for weighted items
+            if (item.products?.is_weighted) {
+              console.log('Weighted item data:', {
+                name: item.products.name,
+                weight: item.weight,
+                weight_unit: item.products.weight_unit,
+                price_per_unit: item.products.price_per_unit,
+                calculated_price: item.calculated_price,
+                price_each: item.price_each
+              })
+            }
+            
+            return {
+              sale_item_id: item.sale_item_id,
+              product_id: item.product_id,
+              quantity: item.quantity,
+              unit_price: item.price_each,
+              total_price: item.calculated_price || 
+                (item.products?.is_weighted && item.weight && item.products?.price_per_unit 
+                  ? item.weight * item.products.price_per_unit 
+                  : item.quantity * item.price_each),
+              product_name: item.products?.name || 'Unknown Product',
+              product_category: item.products?.category || 'Unknown Category',
+              product_image: item.products?.image_url || null,
+              weight: item.weight || undefined,
+              weight_unit: item.products?.weight_unit || undefined,
+              price_per_unit: item.products?.price_per_unit || undefined,
+              is_weighted: item.products?.is_weighted || false
+            }
+          })
+          setItems(transformedItems)
+        }
       }
     } catch (error) {
       console.error('Error fetching transaction details:', error)
@@ -557,9 +677,26 @@ const TransactionDetail = () => {
               fontSize: '32px',
               fontWeight: 'bold',
               color: '#3e3f29',
-              margin: '0 0 8px 0'
+              margin: '0 0 8px 0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
             }}>
               Transaction #{transactionId}
+              {items.length > 0 && items[0].product_id.startsWith('sb-') && (
+                <span style={{
+                  fontSize: '14px',
+                  fontWeight: 'normal',
+                  background: '#f3f4f6',
+                  color: '#6b7280',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  <i className="fa-solid fa-briefcase" style={{ marginRight: '4px' }}></i>
+                  Side Business
+                </span>
+              )}
             </h1>
             <p style={{
               fontSize: '16px',
@@ -666,32 +803,61 @@ const TransactionDetail = () => {
               </button>
             </>
           ) : (
-            <button
-              onClick={handleEdit}
-              style={{
-                background: '#7d8d86',
-                color: '#f1f0e4',
-                border: 'none',
-                padding: '12px 24px',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.background = '#bca88d'
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = '#7d8d86'
-              }}
-            >
-              <i className="fa-solid fa-edit" style={{ fontSize: '14px' }}></i>
-              Edit
-            </button>
+            <>
+              <button
+                onClick={fetchTransactionDetails}
+                style={{
+                  background: '#3b82f6',
+                  color: '#f1f0e4',
+                  border: 'none',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = '#2563eb'
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = '#3b82f6'
+                }}
+                title={`Last refreshed: ${new Date(lastRefreshTime).toLocaleTimeString()}`}
+              >
+                <i className="fa-solid fa-refresh" style={{ fontSize: '14px' }}></i>
+                Refresh
+              </button>
+              <button
+                onClick={handleEdit}
+                style={{
+                  background: '#7d8d86',
+                  color: '#f1f0e4',
+                  border: 'none',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = '#bca88d'
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = '#7d8d86'
+                }}
+              >
+                <i className="fa-solid fa-edit" style={{ fontSize: '14px' }}></i>
+                Edit
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -1053,11 +1219,29 @@ const TransactionDetail = () => {
 
         {items.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {items.map((item, index) => {
+            {(() => {
+              // Group items by product_id and weight (for weighted items)
+              const groupedItems = items.reduce((acc, item) => {
+                const key = `${item.product_id}-${item.weight || 'no-weight'}`
+                if (!acc[key]) {
+                  acc[key] = {
+                    ...item,
+                    totalQuantity: 0,
+                    totalPrice: 0,
+                    saleItemIds: []
+                  }
+                }
+                acc[key].totalQuantity += item.quantity
+                acc[key].totalPrice += item.total_price || (item.quantity * item.unit_price)
+                acc[key].saleItemIds.push(item.sale_item_id)
+                return acc
+              }, {} as Record<string, any>)
+
+              return Object.values(groupedItems).map((item, index) => {
               const isEditingQuantity = editingItems[item.sale_item_id] !== undefined
-              const currentQuantity = isEditingQuantity ? editingItems[item.sale_item_id] : item.quantity
+              const currentQuantity = isEditingQuantity ? editingItems[item.sale_item_id] : item.totalQuantity
               const currentTotal = item.is_weighted && item.weight
-                ? (item.total_price || (item.weight * (item.price_per_unit || 0))) // Use stored or calculated price
+                ? item.totalPrice // Use the grouped total price
                 : currentQuantity * item.unit_price
               
               return (
@@ -1102,7 +1286,7 @@ const TransactionDetail = () => {
                     }}>
                       {!item.product_image && (
                         <>
-                          {item.is_weighted && item.weight ? `${item.weight}${item.weight_unit}` : item.quantity}
+                          {item.is_weighted && item.weight ? `${item.weight}${item.weight_unit}` : item.totalQuantity}
                           {item.is_weighted && (
                             <div style={{
                               position: 'absolute',
@@ -1257,7 +1441,8 @@ const TransactionDetail = () => {
                   </div>
                 </div>
               )
-            })}
+            })
+            })()}
           </div>
         ) : (
           <div style={{

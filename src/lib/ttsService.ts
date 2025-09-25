@@ -59,7 +59,7 @@ class TTSService {
   }
 
   private loadSettings(): TTSSettings {
-    const envElevenLabsKey = import.meta.env.VITE_ELEVENLABS_KEY || 'sk_337a097ef281682961b7c3db26217470f085fd565c3d711d'
+    const envElevenLabsKey = import.meta.env.VITE_ELEVENLABS_KEY || ''
     const envOpenAIKey = import.meta.env.VITE_OPENAI_API_KEY || ''
     
     console.log('Environment variables loaded:')
@@ -68,11 +68,11 @@ class TTSService {
     
     const defaultSettings: TTSSettings = {
       enabled: true, // Enable TTS by default
-      useElevenLabs: true,
-      selectedVoice: 'HobRzuqtLputbKAXOdTj', // Custom voice specified by user
+      useElevenLabs: !!envElevenLabsKey, // Only enable if API key is present
+      selectedVoice: 'pNInz6obpgDQGcFmaJgB', // Use a standard voice instead of custom
       apiKey: envElevenLabsKey,
-      dailyLimit: 5000, // 5K characters per day (ElevenLabs is more expensive)
-      useOpenAI: true,
+      dailyLimit: 1000, // Reduced daily limit to prevent quota issues
+      useOpenAI: !!envOpenAIKey, // Only enable if API key is present
       openaiApiKey: envOpenAIKey,
       openaiVoice: 'alloy'
     }
@@ -165,6 +165,14 @@ class TTSService {
       return false
     }
 
+    // If no API keys are available, disable TTS gracefully
+    if (!this.settings.apiKey && !this.settings.openaiApiKey) {
+      console.log('No TTS API keys available, disabling TTS')
+      this.settings.enabled = false
+      this.saveSettings()
+      return false
+    }
+
     const characterCount = text.length
     const estimatedCost = this.calculateCost(characterCount)
 
@@ -195,6 +203,12 @@ class TTSService {
         return true
       }
       console.log('OpenAI TTS failed')
+    }
+
+    // If both APIs fail, try browser TTS as final fallback
+    if (this.isBrowserTTSAvailable()) {
+      console.log('Trying browser TTS as final fallback')
+      return this.speakWithBrowserTTS(text)
     }
 
     console.log('No TTS method available')
@@ -389,6 +403,43 @@ class TTSService {
     console.log('Reset to defaults:', this.settings)
   }
 
+  // Browser TTS fallback methods
+  private isBrowserTTSAvailable(): boolean {
+    return 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window
+  }
+
+  private async speakWithBrowserTTS(text: string): Promise<boolean> {
+    if (!this.isBrowserTTSAvailable()) {
+      console.log('Browser TTS not available')
+      return false
+    }
+
+    return new Promise((resolve) => {
+      try {
+        const utterance = new SpeechSynthesisUtterance(text)
+        utterance.rate = 0.9
+        utterance.pitch = 1
+        utterance.volume = 0.8
+
+        utterance.onend = () => {
+          console.log('Browser TTS completed')
+          resolve(true)
+        }
+
+        utterance.onerror = (event) => {
+          console.error('Browser TTS error:', event.error)
+          resolve(false)
+        }
+
+        console.log('Starting browser TTS...')
+        speechSynthesis.speak(utterance)
+      } catch (error) {
+        console.error('Browser TTS failed:', error)
+        resolve(false)
+      }
+    })
+  }
+
   // Test OpenAI connection directly
   async testOpenAI(): Promise<boolean> {
     console.log('Testing OpenAI TTS connection...')
@@ -408,6 +459,12 @@ class TTSService {
       console.error('OpenAI test failed:', error)
       return false
     }
+  }
+
+  // Test browser TTS
+  async testBrowserTTS(): Promise<boolean> {
+    console.log('Testing browser TTS...')
+    return this.speakWithBrowserTTS('Test message')
   }
 }
 
