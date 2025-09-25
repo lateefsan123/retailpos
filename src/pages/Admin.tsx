@@ -4,6 +4,7 @@ import { hashPassword } from '../utils/auth'
 import { useBusinessId } from '../hooks/useBusinessId'
 import { useBranch } from '../contexts/BranchContext'
 import VaultModal from '../components/VaultModal'
+import BranchSelector from '../components/BranchSelector'
 
 interface User {
   user_id: number
@@ -13,6 +14,8 @@ interface User {
   active: boolean
   icon?: string
   business_id: number
+  branch_id?: number
+  branch_name?: string
 }
 
 interface NewUser {
@@ -20,6 +23,7 @@ interface NewUser {
   password: string
   role: string
   icon: string
+  branch_id?: number
 }
 
 interface Branch {
@@ -57,7 +61,8 @@ const Admin = () => {
     username: '',
     password: '',
     role: 'Cashier',
-    icon: 'ryu'
+    icon: 'ryu',
+    branch_id: selectedBranchId || undefined
   })
   const [newBranch, setNewBranch] = useState<NewBranch>({
     branch_name: '',
@@ -99,6 +104,14 @@ const Admin = () => {
     }
   }, [businessId, businessLoading, selectedBranchId])
 
+  // Update newUser branch_id when selectedBranchId changes
+  useEffect(() => {
+    setNewUser(prev => ({
+      ...prev,
+      branch_id: selectedBranchId || undefined
+    }))
+  }, [selectedBranchId])
+
   const fetchUsers = async () => {
     if (!businessId) {
       setUsers([])
@@ -127,7 +140,28 @@ const Admin = () => {
         return
       }
 
-      setUsers(users || [])
+      // Get branch information for users
+      const usersWithBranches = await Promise.all((users || []).map(async (user) => {
+        if (user.branch_id) {
+          const { data: branchData } = await supabase
+            .from('branches')
+            .select('branch_name')
+            .eq('branch_id', user.branch_id)
+            .single();
+          
+          return {
+            ...user,
+            branch_name: branchData?.branch_name || 'Branch Not Found'
+          };
+        }
+        
+        return {
+          ...user,
+          branch_name: 'No Branch Assigned'
+        };
+      }));
+
+      setUsers(usersWithBranches)
     } catch (error) {
       console.error('Error fetching users:', error)
       setError('Failed to fetch users')
@@ -224,7 +258,7 @@ const Admin = () => {
         role: newUser.role,
         active: true,
         business_id: businessId,
-        branch_id: selectedBranchId
+        branch_id: newUser.branch_id
       }
 
       // Only add icon if the column exists (will be handled by database migration)
@@ -330,7 +364,8 @@ const Admin = () => {
       username: user.username,
       password: '', // Don't pre-fill password
       role: user.role,
-      icon: user.icon || 'ryu'
+      icon: user.icon || 'ryu',
+      branch_id: user.branch_id
     })
     setShowEditModal(true)
   }
@@ -346,7 +381,8 @@ const Admin = () => {
       const updateData: any = {
         username: newUser.username,
         role: newUser.role,
-        icon: newUser.icon
+        icon: newUser.icon,
+        branch_id: newUser.branch_id
       }
 
       // Only update password if provided
@@ -656,7 +692,12 @@ const Admin = () => {
           </p>
         </div>
         
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-end' }}>
+          {/* Branch Selector */}
+          <BranchSelector size="sm" />
+          
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', gap: '12px' }}>
           <button
             onClick={() => setShowAddModal(true)}
             style={{
@@ -720,6 +761,7 @@ const Admin = () => {
             <i className="fa-solid fa-user-shield"></i>
             Create Admin Account
           </button>
+          </div>
         </div>
       </div>
 
@@ -1371,6 +1413,38 @@ const Admin = () => {
                 </select>
               </div>
 
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '8px',
+                  fontWeight: '500',
+                  color: '#1a1a1a'
+                }}>
+                  Branch *
+                </label>
+                <select
+                  value={newUser.branch_id || ''}
+                  onChange={(e) => setNewUser({ ...newUser, branch_id: e.target.value ? parseInt(e.target.value) : undefined })}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    boxSizing: 'border-box',
+                    background: '#ffffff'
+                  }}
+                >
+                  <option value="">Select a branch</option>
+                  {branches.map((branch) => (
+                    <option key={branch.branch_id} value={branch.branch_id}>
+                      {branch.branch_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div style={{ marginBottom: '24px' }}>
                 <label style={{
                   display: 'block',
@@ -1654,6 +1728,38 @@ const Admin = () => {
                    <option value="Cashier">Cashier</option>
                    <option value="Manager">Manager</option>
                    <option value="Admin">Admin</option>
+                 </select>
+               </div>
+
+               <div style={{ marginBottom: '20px' }}>
+                 <label style={{
+                   display: 'block',
+                   marginBottom: '8px',
+                   fontWeight: '500',
+                   color: '#1a1a1a'
+                 }}>
+                   Branch *
+                 </label>
+                 <select
+                   value={newUser.branch_id || ''}
+                   onChange={(e) => setNewUser({ ...newUser, branch_id: e.target.value ? parseInt(e.target.value) : undefined })}
+                   required
+                   style={{
+                     width: '100%',
+                     padding: '12px 16px',
+                     border: '2px solid #d1d5db',
+                     borderRadius: '8px',
+                     fontSize: '16px',
+                     boxSizing: 'border-box',
+                     background: '#ffffff'
+                   }}
+                 >
+                   <option value="">Select a branch</option>
+                   {branches.map((branch) => (
+                     <option key={branch.branch_id} value={branch.branch_id}>
+                       {branch.branch_name}
+                     </option>
+                   ))}
                  </select>
                </div>
 

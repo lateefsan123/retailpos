@@ -17,6 +17,10 @@ interface BranchContextType {
   selectedBranchId: number | null
   setSelectedBranch: (branch: Branch | null) => void
   loading: boolean
+  isSwitchingBranch: boolean
+  setSwitchingBranch: (switching: boolean) => void
+  switchingToBranch: string | null
+  setSwitchingToBranch: (branchName: string | null) => void
 }
 
 const BranchContext = createContext<BranchContextType | undefined>(undefined)
@@ -28,6 +32,8 @@ interface BranchProviderProps {
 export const BranchProvider = ({ children }: BranchProviderProps) => {
   const [selectedBranch, setSelectedBranchState] = useState<Branch | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isSwitchingBranch, setIsSwitchingBranch] = useState(false)
+  const [switchingToBranch, setSwitchingToBranch] = useState<string | null>(null)
 
   useEffect(() => {
     // Load selected branch from localStorage on mount
@@ -65,7 +71,11 @@ export const BranchProvider = ({ children }: BranchProviderProps) => {
     selectedBranch,
     selectedBranchId: selectedBranch?.branch_id ?? null,
     setSelectedBranch,
-    loading
+    loading,
+    isSwitchingBranch,
+    setSwitchingBranch: setIsSwitchingBranch,
+    switchingToBranch,
+    setSwitchingToBranch
   }
 
   return (

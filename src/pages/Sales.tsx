@@ -9,6 +9,7 @@ import { useBarcodeScanner, setModalOpen } from '../hooks/useBarcodeScanner'
 import { generateReceiptHTML as generateReceiptHTMLUtil, printReceipt as printReceiptUtil } from '../utils/receiptUtils'
 import { ttsService, TTSSettings } from '../lib/ttsService'
 import { RetroButton } from '../components/ui/RetroButton'
+import BranchSelector from '../components/BranchSelector'
 
 // Helper function to get local time in database format
 const getLocalDateTime = () => {
@@ -1689,15 +1690,18 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
           background: isAddingToTransaction ? '#fef3c7' : '#f9fafb'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h1 style={{ 
-              fontSize: '28px', 
-              fontWeight: '600', 
-              color: '#1f2937',
-              margin: '0 0 8px 0'
-            }}>
-              <i className="fa-solid fa-cash-register" style={{ marginRight: '12px', color: '#7d8d86' }}></i>
-              Point Of Sales
-            </h1>
+            <div>
+              <h1 style={{ 
+                fontSize: '28px', 
+                fontWeight: '600', 
+                color: '#1f2937',
+                margin: '0 0 8px 0'
+              }}>
+                <i className="fa-solid fa-cash-register" style={{ marginRight: '12px', color: '#7d8d86' }}></i>
+                Point Of Sales
+              </h1>
+              <BranchSelector size="sm" showLabel={false} />
+            </div>
             {isAddingToTransaction && (
               <div style={{
                 background: '#f59e0b',

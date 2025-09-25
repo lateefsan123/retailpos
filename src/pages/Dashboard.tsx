@@ -7,6 +7,8 @@ import { useSalesData } from '../hooks/data/useSalesData'
 import { useProductsData } from '../hooks/data/useProductsData'
 import { useAuth } from '../contexts/AuthContext'
 import { useBusiness } from '../contexts/BusinessContext'
+import { useBranch } from '../contexts/BranchContext'
+import BranchSelector from '../components/BranchSelector'
 import LowStockSection from '../components/dashboard/LowStockSection'
 import ProductAnalyticsSection from '../components/dashboard/ProductAnalyticsSection'
 import SalesChart from '../components/dashboard/SalesChart'
@@ -36,6 +38,7 @@ interface RecentTransaction {
 const Dashboard = () => {
   const navigate = useNavigate()
   const { businessId, businessLoading } = useBusinessId()
+  const { selectedBranchId } = useBranch()
   const { data: salesData } = useSalesData()
   const { data: productsData } = useProductsData()
   const { user, switchUser } = useAuth()
@@ -841,8 +844,21 @@ const Dashboard = () => {
 
   return (
     <div style={{ padding: '0' }}>
-      {/* Date and Period Controls */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
+      {/* Header Controls */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'flex-end', 
+        alignItems: 'center', 
+        marginBottom: '32px',
+        position: 'relative'
+      }}>
+        {/* Branch Selector */}
+        <div style={{ position: 'absolute', left: 0 }}>
+          <BranchSelector size="md" />
+        </div>
+        
+        {/* Date and Period Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         {/* Date Range Picker */}
         <div 
           onClick={() => setShowCalendar(true)}
@@ -937,6 +953,7 @@ const Dashboard = () => {
           >
             This Month
           </button>
+        </div>
         </div>
       </div>
       

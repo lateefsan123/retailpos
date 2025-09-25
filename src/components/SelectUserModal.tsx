@@ -11,6 +11,8 @@ interface User {
   business_id: number;
   last_used?: string;
   pin?: string;
+  branch_id?: number;
+  branch_name?: string;
 }
 
 interface SelectUserModalProps {
@@ -65,7 +67,28 @@ const SelectUserModal: React.FC<SelectUserModalProps> = ({ isOpen, onClose, onUs
         return;
       }
 
-      setUsers(data || []);
+      // Get branch information for users
+      const usersWithBranches = await Promise.all((data || []).map(async (user) => {
+        if (user.branch_id) {
+          const { data: branchData } = await supabase
+            .from('branches')
+            .select('branch_name')
+            .eq('branch_id', user.branch_id)
+            .single();
+          
+          return {
+            ...user,
+            branch_name: branchData?.branch_name || 'Branch Not Found'
+          };
+        }
+        
+        return {
+          ...user,
+          branch_name: 'No Branch Assigned'
+        };
+      }));
+
+      setUsers(usersWithBranches);
     } catch (error) {
       console.error('Error fetching users:', error);
     } finally {
@@ -956,6 +979,17 @@ const SelectUserModal: React.FC<SelectUserModalProps> = ({ isOpen, onClose, onUs
                               }}>
                                 {u.role}
                               </span>
+                            </div>
+                            <div style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '8px',
+                              fontSize: 14, 
+                              color: '#7d8d86',
+                              fontWeight: '500'
+                            }}>
+                              <i className="fa-solid fa-building" style={{ fontSize: '12px' }}></i>
+                              <span>{u.branch_name || 'No Branch Assigned'}</span>
                             </div>
                             <div style={{ fontSize: 14, color: '#9ca3af', lineHeight: '1.4' }}>
                               Last login: {formatLastUsed(u.last_used)}

@@ -4,6 +4,7 @@ import { useRole } from '../contexts/RoleContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useBusinessId } from '../hooks/useBusinessId'
 import { useBranch } from '../contexts/BranchContext'
+import BranchSelector from '../components/BranchSelector'
 
 async function uploadProductImage(file: File, productId: string, businessId: number | null) {
   console.log("?? Starting image upload for product:", productId)
@@ -1408,10 +1409,11 @@ const Products = () => {
           <p style={{
             fontSize: '16px',
             color: '#7d8d86',
-            margin: 0
+            margin: '0 0 12px 0'
           }}>
             Manage your product inventory, stock levels, and suppliers.
           </p>
+          <BranchSelector size="sm" showLabel={false} />
         </div>
         
         {hasPermission('canManageProducts') && (

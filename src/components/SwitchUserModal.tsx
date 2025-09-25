@@ -11,6 +11,8 @@ interface User {
   business_id: number
   last_used?: string
   pin?: string
+  branch_id?: number
+  branch_name?: string
 }
 
 interface SwitchUserModalProps {
