@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import SidebarStepper from "./SidebarStepper";
+import SidebarStepper from "./Sidebarstepper";
 import { useAuth } from "../contexts/AuthContext";
 
 const steps = [
