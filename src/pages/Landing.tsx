@@ -27,34 +27,100 @@ const Landing: React.FC = () => {
 
   const features = [
     {
-      icon: "fas fa-barcode",
-      title: "Barcode Scanning",
-      description: "Fast and accurate product scanning with built-in barcode reader support for instant product lookup and checkout."
+      icon: "fas fa-microphone-alt",
+      title: "AI Voice Announcements",
+      description: "ChatGPT-powered voice that announces orders in real-time. Perfect for busy kitchens, drive-thrus, and accessibility. No more shouting across the room."
     },
     {
-      icon: "fas fa-building",
-      title: "Multi-Tenant Architecture",
-      description: "Manage multiple businesses from one system with complete data isolation and role-based access controls."
+      icon: "fas fa-store",
+      title: "Side Businesses Made Simple",
+      description: "Run multiple businesses from one system. Coffee shop + bakery? Restaurant + catering? We've got you covered with separate tracking and reporting."
+    },
+    {
+      icon: "fas fa-weight-hanging",
+      title: "Weighted Products Done Right",
+      description: "Finally, a POS that handles produce, meat, and bulk items properly. Weigh, price, and track everything from apples to deli meats with precision."
+    },
+    {
+      icon: "fas fa-layer-group",
+      title: "Multi-Location Magic",
+      description: "Manage multiple locations from one dashboard. Switch between stores instantly, see consolidated reports, and keep everything organized without the headache."
     },
     {
       icon: "fas fa-credit-card",
-      title: "Partial Payments",
-      description: "Accept split payments, layaway plans, and partial transactions with flexible payment processing options."
+      title: "Partial Payments That Work",
+      description: "Layaway, split payments, store credit - handle any payment scenario your customers throw at you. No more awkward 'I'll pay the rest later' situations."
     },
     {
-      icon: "fas fa-weight",
-      title: "Weighted Products",
-      description: "Handle bulk items, produce, and weighted goods with precise weight-based pricing and inventory tracking."
+      icon: "fas fa-chart-line",
+      title: "Analytics That Actually Help",
+      description: "See what's selling, what's not, and what's making you money. Real insights, not just pretty charts that don't tell you anything useful."
+    }
+  ]
+
+  const pricingPlans = [
+    {
+      name: "Starter",
+      price: "€9",
+      period: "month",
+      description: "Perfect for small businesses and single locations",
+      icon: "fas fa-cube",
+      iconColor: "#FF69B4",
+      features: [
+        "Single Business/Location management",
+        "Basic POS - Sales, products, customers",
+        "Up to 2 staff users (Admin + 1 Cashier)",
+        "Basic inventory management",
+        "Simple reporting (daily/weekly sales)",
+        "Barcode scanning support",
+        "Partial payments handling",
+        "Email support (48-hour response)",
+        "Mobile responsive design"
+      ],
+      popular: false
     },
     {
-      icon: "fas fa-volume-up",
-      title: "Text-to-Speech",
-      description: "AI-powered voice announcements with OpenAI TTS integration for order confirmation and accessibility."
+      name: "Professional",
+      price: "€19",
+      period: "month",
+      description: "Ideal for growing businesses with multiple locations",
+      icon: "fas fa-trophy",
+      iconColor: "#7D8D86",
+      features: [
+        "Multi-location support (up to 3 locations)",
+        "Up to 5 staff users with role-based permissions",
+        "Advanced analytics dashboard with charts",
+        "Side businesses management",
+        "Weighted products support",
+        "Text-to-Speech integration (OpenAI TTS)",
+        "Advanced reporting (monthly, product analytics)",
+        "Customer loyalty points system",
+        "Inventory tracking with reorder levels",
+        "Priority support (24-hour response)"
+      ],
+      popular: true
     },
     {
-      icon: "fas fa-chart-bar",
-      title: "Advanced Analytics",
-      description: "Comprehensive dashboard with sales insights, inventory tracking, and business performance metrics."
+      name: "Enterprise",
+      price: "€49",
+      period: "month",
+      description: "For large businesses and franchises",
+      icon: "fas fa-gift",
+      iconColor: "#6A5ACD",
+      features: [
+        "Unlimited locations and businesses",
+        "Unlimited staff users",
+        "Advanced multi-tenant architecture",
+        "Custom branding options",
+        "API access for integrations",
+        "Advanced vault and password management",
+        "Custom reporting and analytics",
+        "Dedicated account manager",
+        "24/7 phone support (+353 852287083)",
+        "Custom training sessions",
+        "Priority feature requests"
+      ],
+      popular: false
     }
   ]
 
@@ -97,22 +163,38 @@ const Landing: React.FC = () => {
       <section className={styles.heroSection}>
         <div className={styles.heroContent}>
           <h1 className={styles.heroTitle}>
-            Modern Point of Sale
-            <span className={styles.heroTitleHighlight}>Built for Today's Business</span>
+            The POS That Actually
+            <span className={styles.heroTitleHighlight}>Gets Your Business</span>
           </h1>
           
           <p className={styles.heroSubtitle}>
-            TillPoint combines powerful features with intuitive design to streamline your retail operations. 
-            From barcode scanning to advanced analytics, everything you need in one system.
+            Stop wrestling with clunky POS systems. TillPoint is built by retailers, for retailers. 
+            Multi-location support, AI voice announcements, weighted products, and side businesses - 
+            all the features you actually need, none of the bloat you don't.
           </p>
           
-          <div className={styles.heroButtons}>
-            <Link to="/login" className={styles.primaryButton}>
-              Sign In
-            </Link>
-            <button className={styles.secondaryButton}>
-              Watch Demo
-            </button>
+            <div className={styles.heroButtons}>
+              <Link to="/login" className={styles.primaryButton}>
+                <i className="fas fa-play-circle"></i> Try Demo
+              </Link>
+              <Link to="/signup" className={styles.secondaryButton}>
+                <i className="fas fa-rocket"></i> Start Free Trial
+              </Link>
+            </div>
+          
+          <div className={styles.heroStats}>
+            <div className={styles.statItem}>
+              <span className={styles.statNumber}>3</span>
+              <span className={styles.statLabel}>Plans</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statNumber}>€9</span>
+              <span className={styles.statLabel}>Starting</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statNumber}>24/7</span>
+              <span className={styles.statLabel}>Support</span>
+            </div>
           </div>
         </div>
       </section>
@@ -122,10 +204,11 @@ const Landing: React.FC = () => {
         <div className={styles.featuresContent}>
           <div className={styles.featuresHeader}>
             <h2 className={styles.featuresTitle}>
-              Everything You Need to Run Your Business
+              The Features That Actually Matter
             </h2>
             <p className={styles.featuresSubtitle}>
-              Powerful features designed to make your retail operations smooth, efficient, and profitable.
+              We built TillPoint because we were tired of POS systems that promise everything but deliver nothing. 
+              Here's what makes us different.
             </p>
           </div>
           
@@ -147,52 +230,96 @@ const Landing: React.FC = () => {
         </div>
       </section>
 
+      {/* Pricing Section */}
+      <section id="pricing" className={styles.pricingSection}>
+        <div className={styles.pricingContent}>
+          <div className={styles.pricingHeader}>
+            <h2 className={styles.pricingSubtitle}>PRICING PLAN</h2>
+            <h1 className={styles.pricingTitle}>Pricing Table</h1>
+          </div>
+          
+          <div className={styles.pricingGrid}>
+            {pricingPlans.map((plan, index) => (
+              <div key={index} className={`${styles.pricingCard} ${plan.popular ? styles.popularCard : ''}`}>
+                <div className={styles.pricingIcon} style={{ color: plan.iconColor }}>
+                  <i className={plan.icon}></i>
+                </div>
+                
+                <div className={styles.pricingCardHeader}>
+                  <h3 className={styles.pricingPlanName}>{plan.name}</h3>
+                  <div className={styles.pricingPrice}>
+                    <span className={styles.priceAmount}>{plan.price}</span>
+                    <span className={styles.pricePeriod}>/{plan.period}</span>
+                  </div>
+                </div>
+                
+                <div className={styles.pricingFeatures}>
+                  <ul className={styles.featuresList}>
+                    {plan.features.map((feature, featureIndex) => (
+                      <li key={featureIndex} className={styles.featureItem}>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                <div className={styles.pricingAction}>
+                  <Link to="/signup" className={styles.pricingButton} style={{ backgroundColor: plan.iconColor }}>
+                    Get Started
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Benefits Section */}
       <section className={styles.benefitsSection}>
         <div className={styles.benefitsContent}>
           <div className={styles.benefitsGrid}>
             <div>
               <h2 className={styles.benefitsTitle}>
-                Why Choose TillPoint?
+                Built by Retailers, For Retailers
               </h2>
               <div className={styles.benefitItem}>
                 <div className={styles.benefitIcon}>
-                  <i className="fas fa-check"></i>
+                  <i className="fas fa-rocket"></i>
                 </div>
                 <div className={styles.benefitContent}>
-                  <h3>Easy Setup</h3>
-                  <p>Get up and running in minutes with our intuitive setup process.</p>
+                  <h3>No More POS Headaches</h3>
+                  <p>We've been there. Clunky interfaces, missing features, terrible support. TillPoint fixes all of that.</p>
                 </div>
               </div>
               <div className={styles.benefitItem}>
                 <div className={styles.benefitIcon}>
-                  <i className="fas fa-check"></i>
+                  <i className="fas fa-phone"></i>
                 </div>
                 <div className={styles.benefitContent}>
-                  <h3>24/7 Support</h3>
-                  <p>Our dedicated support team is always here to help you succeed.</p>
+                  <h3>Real Support, Real People</h3>
+                  <p>Call us at +353 852287083. We actually answer the phone and know our product inside and out.</p>
                 </div>
               </div>
               <div className={styles.benefitItem}>
                 <div className={styles.benefitIcon}>
-                  <i className="fas fa-check"></i>
+                  <i className="fas fa-shield-alt"></i>
                 </div>
                 <div className={styles.benefitContent}>
-                  <h3>Secure & Reliable</h3>
-                  <p>Enterprise-grade security with 99.9% uptime guarantee.</p>
+                  <h3>Your Data, Your Business</h3>
+                  <p>Multi-tenant architecture means your data is completely isolated. No sharing, no snooping, no BS.</p>
                 </div>
               </div>
             </div>
             <div className={styles.ctaCard}>
               <div className={styles.ctaIcon}>
-                <i className="fas fa-cash-register"></i>
+                <i className="fas fa-play-circle"></i>
               </div>
-              <h3 className={styles.ctaTitle}>Ready to Get Started?</h3>
+              <h3 className={styles.ctaTitle}>Try It Before You Buy It</h3>
               <p className={styles.ctaDescription}>
-                Join thousands of businesses already using TillPoint to streamline their operations.
+                No credit card required. Jump into our demo and see why retailers are switching to TillPoint.
               </p>
               <Link to="/login" className={styles.ctaButton}>
-                Start Your Free Trial
+                <i className="fas fa-play-circle"></i> Try Demo Now
               </Link>
             </div>
           </div>
@@ -203,18 +330,106 @@ const Landing: React.FC = () => {
       <section className={styles.ctaSection}>
         <div className={styles.ctaContent}>
           <h2 className={styles.ctaSectionTitle}>
-            Transform Your Business Today
+            Stop Fighting Your POS System
           </h2>
           <p className={styles.ctaSectionDescription}>
-            Experience the power of modern point-of-sale technology. No setup fees, no long-term contracts.
+            Life's too short for bad software. Try TillPoint risk-free and see why retailers are finally happy with their POS.
           </p>
           <div className={styles.ctaSectionButtons}>
             <Link to="/login" className={styles.ctaSectionPrimaryButton}>
-              Sign In
+              <i className="fas fa-play-circle"></i> Try Demo
             </Link>
-            <button className={styles.ctaSectionSecondaryButton}>
-              Schedule Demo
-            </button>
+            <Link to="/signup" className={styles.ctaSectionSecondaryButton}>
+              <i className="fas fa-rocket"></i> Start Free Trial
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section id="contact" className={styles.contactSection}>
+        <div className={styles.contactContent}>
+          <div className={styles.contactHeader}>
+            <h2 className={styles.contactTitle}>Questions? We've Got Answers</h2>
+            <p className={styles.contactSubtitle}>
+              Not sure if TillPoint is right for you? Drop us a line. We're real people who actually care about your business.
+            </p>
+          </div>
+          
+          <div className={styles.contactGrid}>
+            <div className={styles.contactInfo}>
+              <div className={styles.contactItem}>
+                <div className={styles.contactIcon}>
+                  <i className="fas fa-envelope"></i>
+                </div>
+                <div className={styles.contactDetails}>
+                  <h3>Email Us</h3>
+                  <p>support@tillpoint.com</p>
+                  <p>sales@tillpoint.com</p>
+                </div>
+              </div>
+              
+              <div className={styles.contactItem}>
+                <div className={styles.contactIcon}>
+                  <i className="fas fa-phone"></i>
+                </div>
+                <div className={styles.contactDetails}>
+                  <h3>Call Us</h3>
+                  <p>+353 852287083</p>
+                  <p>Mon-Fri 9AM-6PM GMT</p>
+                </div>
+              </div>
+              
+              <div className={styles.contactItem}>
+                <div className={styles.contactIcon}>
+                  <i className="fas fa-map-marker-alt"></i>
+                </div>
+                <div className={styles.contactDetails}>
+                  <h3>Visit Us</h3>
+                  <p>123 Business Street</p>
+                  <p>Suite 100, City, State 12345</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className={styles.contactForm}>
+              <form className={styles.form}>
+                <div className={styles.formRow}>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="firstName">First Name</label>
+                    <input type="text" id="firstName" name="firstName" required />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="lastName">Last Name</label>
+                    <input type="text" id="lastName" name="lastName" required />
+                  </div>
+                </div>
+                
+                <div className={styles.formGroup}>
+                  <label htmlFor="email">Email Address</label>
+                  <input type="email" id="email" name="email" required />
+                </div>
+                
+                <div className={styles.formGroup}>
+                  <label htmlFor="phone">Phone Number</label>
+                  <input type="tel" id="phone" name="phone" />
+                </div>
+                
+                <div className={styles.formGroup}>
+                  <label htmlFor="company">Company Name</label>
+                  <input type="text" id="company" name="company" />
+                </div>
+                
+                <div className={styles.formGroup}>
+                  <label htmlFor="message">Message</label>
+                  <textarea id="message" name="message" rows={5} required></textarea>
+                </div>
+                
+                <button type="submit" className={styles.submitButton}>
+                  Send Message
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </section>

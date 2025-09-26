@@ -14,18 +14,13 @@ interface User {
   pin?: string
 }
 
-interface AdminCredentials {
-  username: string
-  password: string
-  businessId: number
-}
 
 interface AuthContextType {
   user: User | null
   supabaseUser: SupabaseUser | null
   login: (email: string, password: string) => Promise<boolean>
   authenticate: (email: string, password: string) => Promise<{ success: boolean; businessId?: number }>
-  register: (username: string, password: string, businessName: string) => Promise<{ success: boolean; adminCredentials?: AdminCredentials }>
+  register: (username: string, password: string, businessName: string, firstName?: string, lastName?: string, email?: string, phone?: string, businessType?: string, businessDescription?: string, businessAddress?: string, businessPhone?: string, currency?: string, website?: string, vatNumber?: string, openTime?: string, closeTime?: string) => Promise<{ success: boolean; pendingApproval?: boolean }>
   switchUser: (targetUserId: number, password: string, usePin?: boolean) => Promise<boolean>
   logout: () => void
   loading: boolean
@@ -274,7 +269,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     vatNumber?: string,
     openTime?: string,
     closeTime?: string
-  ): Promise<{ success: boolean; adminCredentials?: AdminCredentials }> => {
+  ): Promise<{ success: boolean; pendingApproval?: boolean }> => {
     try {
       setLoading(true)
       
@@ -299,6 +294,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (existingBusiness) {
         console.error('Business name already exists')
+        return { success: false }
+      }
+
+      // Check if there's already a pending registration for this email
+      const { data: existingPending } = await supabase
+        .from('pending_registrations')
+        .select('id')
+        .eq('email', email || username)
+        .eq('status', 'pending')
+        .maybeSingle()
+
+      if (existingPending) {
+        console.error('Registration already pending for this email')
         return { success: false }
       }
 
@@ -364,7 +372,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           username: username,
           password_hash: hashedPassword,
           role: 'owner',
-          active: true,
+          active: false, // Set to false initially - will be activated after approval
           business_id: businessData.business_id,
           email: email || null,
           full_name: fullName,
@@ -383,50 +391,45 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return { success: false }
       }
 
-      // Automatically create admin account for the business
-      // Each business gets an admin account with username "admin_{business_id}" and password "admin123"
-      try {
-        const adminHashedPassword = hashPassword('admin123')
-        const adminUsername = `admin_${businessData.business_id}` // Make username unique per business
+      // Create pending registration record
+      const { error: pendingError } = await supabase
+        .from('pending_registrations')
+        .insert({
+          user_id: userData.user_id,
+          email: email || username,
+          business_name: businessName,
+          first_name: firstName,
+          last_name: lastName,
+          phone: phone,
+          business_type: businessType,
+          business_description: businessDescription,
+          business_address: businessAddress,
+          business_phone: businessPhone,
+          currency: currency,
+          website: website,
+          vat_number: vatNumber,
+          open_time: openTime,
+          close_time: closeTime,
+          status: 'pending'
+        })
+
+      if (pendingError) {
+        console.error('Error creating pending registration:', pendingError)
+        // Clean up user and business if pending registration creation failed
         await supabase
           .from('users')
-          .insert({
-            username: adminUsername,
-            password_hash: adminHashedPassword,
-            role: 'Admin',
-            active: true,
-            business_id: businessData.business_id,
-            created_at: new Date().toISOString()
-          })
-        console.log('Admin account created successfully for business:', businessData.business_id, 'with username:', adminUsername)
-      } catch (adminError) {
-        console.warn('Failed to create admin account:', adminError)
-        // Don't fail the entire registration if admin creation fails
+          .delete()
+          .eq('user_id', userData.user_id)
+        await supabase
+          .from('business_info')
+          .delete()
+          .eq('business_id', businessData.business_id)
+        return { success: false }
       }
 
-      // Set the user as logged in
-      const newUser: User = {
-        user_id: userData.user_id,
-        username: userData.username,
-        role: userData.role,
-        active: userData.active,
-        icon: userData.icon,
-        business_id: userData.business_id
-      }
-
-      setUser(newUser)
-      localStorage.setItem('pos_user', JSON.stringify(newUser))
-      localStorage.setItem('current_business_id', businessData.business_id.toString())
-      localStorage.setItem('lastLogin', new Date().toLocaleString())
-      
-      // Return admin credentials for display
-      const adminCredentials: AdminCredentials = {
-        username: `admin_${businessData.business_id}`,
-        password: 'admin123',
-        businessId: businessData.business_id
-      }
-      
-      return { success: true, adminCredentials }
+      // Don't log the user in automatically - they need approval first
+      // Return success with pending approval flag
+      return { success: true, pendingApproval: true }
     } catch (error) {
       console.error('Registration error:', error)
       return { success: false }

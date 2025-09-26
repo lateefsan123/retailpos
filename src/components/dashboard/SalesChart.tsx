@@ -14,12 +14,12 @@ interface SalesChartProps {
 }
 
 const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesChartProps) => {
-  const { weeklyData, hourlyData, monthlyData, loading, error, businessHours, businessTimezone, refreshHourlyData, refreshWeeklyData, refreshMonthlyData } = useSalesAnalytics()
-  const { currentBusiness } = useBusiness()
   const [view, setView] = useState<ChartView>('weekly')
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [weekOffset, setWeekOffset] = useState(0) // 0 = current week, -1 = previous week, 1 = next week
   const [monthOffset, setMonthOffset] = useState(0)
+  const { weeklyData, hourlyData, monthlyData, loading, error, businessHours } = useSalesAnalytics(externalSelectedDate, weekOffset, monthOffset)
+  const { currentBusiness } = useBusiness()
   const [tooltip, setTooltip] = useState<{
     visible: boolean
     x: number
@@ -28,9 +28,8 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
   }>({ visible: false, x: 0, y: 0, data: null })
 
 
-  const handleDateChange = async (date: string) => {
+  const handleDateChange = (date: string) => {
     setSelectedDate(date)
-    await refreshHourlyData(date)
   }
 
   // Sync with external selected date (from Dashboard calendar)
@@ -41,7 +40,6 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
     const toYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
     const dateStr = toYMD(externalSelectedDate)
     setSelectedDate(dateStr)
-    refreshHourlyData(dateStr)
 
     // 2) Compute week offset so weekly chart aligns with selected date's week
     const startOfWeek = (d: Date) => {
@@ -60,13 +58,11 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
     const newOffset = Math.round(diffDays / 7)
 
     setWeekOffset(newOffset)
-    refreshWeeklyData(newOffset)
 
     // 3) Compute month offset relative to current month
     const today = new Date()
     const newMonthOffset = (externalSelectedDate.getFullYear() - today.getFullYear()) * 12 + (externalSelectedDate.getMonth() - today.getMonth())
     setMonthOffset(newMonthOffset)
-    refreshMonthlyData(newMonthOffset)
   }, [externalSelectedDate])
 
   // Sync view with global active period
@@ -75,21 +71,18 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
     setView(activePeriod === 'today' ? 'hourly' : activePeriod === 'week' ? 'weekly' : 'monthly')
   }, [activePeriod])
 
-  const handlePreviousWeek = async () => {
+  const handlePreviousWeek = () => {
     const newOffset = weekOffset - 1
     setWeekOffset(newOffset)
-    await refreshWeeklyData(newOffset)
   }
 
-  const handleNextWeek = async () => {
+  const handleNextWeek = () => {
     const newOffset = weekOffset + 1
     setWeekOffset(newOffset)
-    await refreshWeeklyData(newOffset)
   }
 
-  const handleCurrentWeek = async () => {
+  const handleCurrentWeek = () => {
     setWeekOffset(0)
-    await refreshWeeklyData(0)
   }
 
   const getWeekRangeLabel = () => {
@@ -666,7 +659,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           border: '2px solid #d1d5db'
         }}>
           <button
-            onClick={async () => { const o = monthOffset - 1; setMonthOffset(o); await refreshMonthlyData(o) }}
+            onClick={() => { const o = monthOffset - 1; setMonthOffset(o) }}
             style={{
               display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '6px',
               border: '1px solid #d1d5db', background: '#ffffff', color: '#7d8d86', fontSize: '14px', fontWeight: 500, cursor: 'pointer'
@@ -680,14 +673,14 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
               {new Date(new Date().getFullYear(), new Date().getMonth() + monthOffset, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
             </div>
             <button
-              onClick={async () => { setMonthOffset(0); await refreshMonthlyData(0) }}
+              onClick={() => { setMonthOffset(0) }}
               style={{ fontSize: '12px', color: '#7d8d86', background: 'transparent', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
             >
               {monthOffset === 0 ? 'Current Month' : 'Go to Current Month'}
             </button>
           </div>
           <button
-            onClick={async () => { const o = monthOffset + 1; setMonthOffset(o); await refreshMonthlyData(o) }}
+            onClick={() => { const o = monthOffset + 1; setMonthOffset(o) }}
             style={{
               display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '6px',
               border: '1px solid #d1d5db', background: '#ffffff', color: '#7d8d86', fontSize: '14px', fontWeight: 500, cursor: 'pointer'

@@ -171,10 +171,40 @@
   color: #f1f0e4;
 }
 
+.heroStats {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(125, 141, 134, 0.2);
+}
+
+.statItem {
+  text-align: center;
+}
+
+.statNumber {
+  display: block;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #7d8d86;
+  margin-bottom: 0.25rem;
+}
+
+.statLabel {
+  font-size: 0.875rem;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 /* Features Section */
 .featuresSection {
   padding: 5rem 0;
   background-color: white;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .featuresContent {
@@ -212,6 +242,7 @@
   background-color: #f8f9fa;
   padding: 2rem;
   border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
   transition: box-shadow 0.2s ease;
 }
 
@@ -240,6 +271,8 @@
 .benefitsSection {
   padding: 5rem 0;
   background-color: #f8f9fa;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .benefitsContent {
@@ -300,6 +333,7 @@
   background-color: white;
   padding: 2rem;
   border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   text-align: center;
 }
@@ -411,6 +445,305 @@
   color: #7d8d86;
 }
 
+/* Pricing Section */
+.pricingSection {
+  padding: 5rem 0;
+  background-color: white;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.pricingContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.pricingHeader {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.pricingSubtitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pricingTitle {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #111827;
+  margin: 0;
+}
+
+.pricingGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.pricingCard {
+  background-color: white;
+  border-radius: 1rem;
+  padding: 1.5rem 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f3f4f6;
+  transition: all 0.3s ease;
+  position: relative;
+  text-align: center;
+}
+
+.pricingCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.popularCard {
+  transform: scale(1.05);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border: 2px solid #7d8d86;
+}
+
+.popularCard:hover {
+  transform: scale(1.05) translateY(-4px);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+}
+
+.pricingIcon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pricingCardHeader {
+  margin-bottom: 1.25rem;
+}
+
+.pricingPlanName {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #111827;
+  margin-bottom: 0.75rem;
+}
+
+.pricingPrice {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.priceAmount {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #111827;
+}
+
+.pricePeriod {
+  font-size: 1.125rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.pricingFeatures {
+  margin-bottom: 1.5rem;
+}
+
+.featuresList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.featureItem {
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  color: #4b5563;
+  line-height: 1.4;
+  padding: 0.125rem 0;
+}
+
+.pricingAction {
+  text-align: center;
+}
+
+.pricingButton {
+  display: inline-block;
+  width: auto;
+  min-width: 120px;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pricingButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Contact Section */
+.contactSection {
+  padding: 5rem 0;
+  background-color: white;
+  border-top: 1px solid #e5e7eb;
+}
+
+.contactContent {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.contactHeader {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.contactTitle {
+  font-size: 1.875rem;
+  font-weight: bold;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.contactSubtitle {
+  font-size: 1.25rem;
+  color: #4b5563;
+  max-width: 32rem;
+  margin: 0 auto;
+}
+
+.contactGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3rem;
+}
+
+.contactInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.contactItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.contactIcon {
+  width: 3rem;
+  height: 3rem;
+  background-color: #7d8d86;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.contactIcon i {
+  color: #f1f0e4;
+  font-size: 1.25rem;
+}
+
+.contactDetails h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.contactDetails p {
+  color: #4b5563;
+  margin-bottom: 0.25rem;
+}
+
+.contactForm {
+  background-color: #f8f9fa;
+  padding: 2rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formGroup label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.formGroup input,
+.formGroup textarea {
+  padding: 0.75rem;
+  border: 2px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+  background-color: white;
+}
+
+.formGroup input:focus,
+.formGroup textarea:focus {
+  outline: none;
+  border-color: #7d8d86;
+}
+
+.formGroup textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.submitButton {
+  background-color: #7d8d86;
+  color: #f1f0e4;
+  padding: 0.75rem 2rem;
+  border-radius: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  align-self: flex-start;
+}
+
+.submitButton:hover {
+  background-color: #3e3f29;
+}
+
 /* Footer */
 .footer {
   background-color: #3e3f29;
@@ -492,12 +825,25 @@
     flex-direction: row;
   }
   
+  .heroStats {
+    gap: 2rem;
+  }
+  
   .featuresGrid {
     grid-template-columns: repeat(2, 1fr);
   }
   
   .ctaSectionButtons {
     flex-direction: row;
+  }
+  
+  .formRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .pricingGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
   }
 }
 
@@ -512,12 +858,29 @@
     font-size: 4.5rem;
   }
   
+  .heroStats {
+    gap: 4rem;
+  }
+  
   .featuresGrid {
     grid-template-columns: repeat(3, 1fr);
   }
   
   .benefitsGrid {
     grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .contactGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .pricingGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+  
+  .pricingCard {
+    padding: 1.5rem 1rem;
   }
   
   .footerGrid {
@@ -541,6 +904,8 @@
   .featuresContent,
   .benefitsContent,
   .ctaContent,
+  .pricingContent,
+  .contactContent,
   .footerContent {
     padding: 0 2rem;
   }

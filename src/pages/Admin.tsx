@@ -5,6 +5,7 @@ import { useBusinessId } from '../hooks/useBusinessId'
 import { useBranch } from '../contexts/BranchContext'
 import VaultModal from '../components/VaultModal'
 import BranchSelector from '../components/BranchSelector'
+import PendingRegistrations from '../components/PendingRegistrations'
 
 interface User {
   user_id: number
@@ -96,6 +97,7 @@ const Admin = () => {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [showVaultModal, setShowVaultModal] = useState(false)
+  const [showPendingRegistrations, setShowPendingRegistrations] = useState(false)
 
   useEffect(() => {
     if (!businessLoading && businessId) {
@@ -637,6 +639,26 @@ const Admin = () => {
           {/* Action Buttons */}
           <div style={{ display: 'flex', gap: '12px' }}>
           <button
+            onClick={() => setShowPendingRegistrations(!showPendingRegistrations)}
+            style={{
+              background: showPendingRegistrations ? '#7d8d86' : '#e5e7eb',
+              color: showPendingRegistrations ? 'white' : '#3e3f29',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '12px 24px',
+              fontSize: '18px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <i className="fa-solid fa-user-plus"></i>
+            Pending Registrations
+          </button>
+          <button
             onClick={() => setShowAddModal(true)}
             style={{
               background: '#7d8d86',
@@ -697,6 +719,13 @@ const Admin = () => {
         }}>
           <i className="fa-solid fa-triangle-exclamation"></i>
           {error}
+        </div>
+      )}
+
+      {/* Pending Registrations */}
+      {showPendingRegistrations && (
+        <div style={{ marginBottom: '32px' }}>
+          <PendingRegistrations />
         </div>
       )}
 

@@ -81,7 +81,7 @@ const getBusinessHoursRange = (businessHours: string = '9:00 AM - 6:00 PM') => {
           return h * 60 + m // Convert to minutes from midnight
         }
 
-        let startMinutes, endMinutes
+        let startMinutes: number, endMinutes: number
 
         if (pattern === patterns[0]) {
           // Standard format: "9:00 AM - 6:00 PM"
@@ -108,6 +108,10 @@ const getBusinessHoursRange = (businessHours: string = '9:00 AM - 6:00 PM') => {
           const [, startHour, startMin, startPeriod, endHour, endMin, endPeriod] = match
           startMinutes = parseTime(startHour, startMin || '0', startPeriod)
           endMinutes = parseTime(endHour, endMin || '0', endPeriod)
+        } else {
+          // Default values if no pattern matches
+          startMinutes = 9 * 60
+          endMinutes = 18 * 60
         }
 
         // Validate the parsed times
@@ -126,8 +130,8 @@ const getBusinessHoursRange = (businessHours: string = '9:00 AM - 6:00 PM') => {
   return { startMinutes: 9 * 60, endMinutes: 18 * 60 }
 }
 
-const getDateRange = (period: 'today' | 'week' | 'month', timezone: string = 'UTC') => {
-  const now = convertToBusinessTimezone(new Date(), timezone)
+const getDateRange = (period: 'today' | 'week' | 'month', timezone: string = 'UTC', baseDate?: Date) => {
+  const now = baseDate ? convertToBusinessTimezone(baseDate, timezone) : convertToBusinessTimezone(new Date(), timezone)
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   
   switch (period) {
@@ -155,8 +159,8 @@ const getDateRange = (period: 'today' | 'week' | 'month', timezone: string = 'UT
   }
 }
 
-const processWeeklyData = (sales: any[], sideBusinessSales: any[], timezone: string = 'UTC'): WeeklySalesData[] => {
-  const { start, end } = getDateRange('week', timezone)
+const processWeeklyData = (sales: any[], sideBusinessSales: any[], timezone: string = 'UTC', baseDate?: Date): WeeklySalesData[] => {
+  const { start, end } = getDateRange('week', timezone, baseDate)
   const weeklyData: { [key: string]: { totalSales: number, transactionCount: number } } = {}
   
   // Initialize all days of the week
@@ -195,9 +199,22 @@ const processWeeklyData = (sales: any[], sideBusinessSales: any[], timezone: str
   }))
 }
 
-const processHourlyData = (sales: any[], sideBusinessSales: any[], timezone: string = 'UTC', businessHours: string = '9:00 AM - 6:00 PM'): HourlySalesData[] => {
+const processHourlyData = (sales: any[], sideBusinessSales: any[], timezone: string = 'UTC', businessHours: string = '9:00 AM - 6:00 PM', baseDate?: Date): HourlySalesData[] => {
   const hourlyData: { [key: number]: { totalSales: number, transactionCount: number } } = {}
   const { startMinutes, endMinutes } = getBusinessHoursRange(businessHours)
+  
+  // Filter sales by the specific date if provided
+  const filteredSales = baseDate ? sales.filter(sale => {
+    const saleDate = convertToBusinessTimezone(new Date(sale.datetime), timezone)
+    const targetDate = convertToBusinessTimezone(baseDate, timezone)
+    return saleDate.toDateString() === targetDate.toDateString()
+  }) : sales
+  
+  const filteredSideBusinessSales = baseDate ? sideBusinessSales.filter(sale => {
+    const saleDate = convertToBusinessTimezone(new Date(sale.date_time), timezone)
+    const targetDate = convertToBusinessTimezone(baseDate, timezone)
+    return saleDate.toDateString() === targetDate.toDateString()
+  }) : sideBusinessSales
   
   // Calculate start and end hours from business hours
   const startHour = Math.floor(startMinutes / 60)
@@ -209,7 +226,7 @@ const processHourlyData = (sales: any[], sideBusinessSales: any[], timezone: str
   }
   
   // Process main sales
-  sales.forEach(sale => {
+  filteredSales.forEach(sale => {
     const saleDate = convertToBusinessTimezone(new Date(sale.datetime), timezone)
     const hour = saleDate.getHours()
     const minutes = saleDate.getMinutes()
@@ -223,7 +240,7 @@ const processHourlyData = (sales: any[], sideBusinessSales: any[], timezone: str
   })
   
   // Process side business sales
-  sideBusinessSales.forEach(sale => {
+  filteredSideBusinessSales.forEach(sale => {
     const saleDate = convertToBusinessTimezone(new Date(sale.date_time), timezone)
     const hour = saleDate.getHours()
     const minutes = saleDate.getMinutes()
@@ -247,8 +264,8 @@ const processHourlyData = (sales: any[], sideBusinessSales: any[], timezone: str
     .sort((a, b) => a.hour - b.hour)
 }
 
-const processMonthlyData = (sales: any[], sideBusinessSales: any[], timezone: string = 'UTC'): MonthlySalesData[] => {
-  const { start, end } = getDateRange('month', timezone)
+const processMonthlyData = (sales: any[], sideBusinessSales: any[], timezone: string = 'UTC', baseDate?: Date): MonthlySalesData[] => {
+  const { start, end } = getDateRange('month', timezone, baseDate)
   const monthlyData: { [key: string]: { totalSales: number, transactionCount: number } } = {}
   
   // Initialize all days of the month
@@ -288,27 +305,45 @@ const processMonthlyData = (sales: any[], sideBusinessSales: any[], timezone: st
   }))
 }
 
-export const useSalesAnalytics = () => {
+export const useSalesAnalytics = (selectedDate?: Date, weekOffset: number = 0, monthOffset: number = 0) => {
   const { data: salesData, isLoading, error } = useSalesData()
   const { currentBusiness } = useBusiness()
   
   const businessTimezone = currentBusiness?.timezone || 'UTC'
   const businessHours = currentBusiness?.business_hours || '9:00 AM - 6:00 PM'
   
+  // Calculate the base date for weekly and monthly views
+  const weeklyBaseDate = useMemo(() => {
+    if (!selectedDate) return undefined
+    const today = new Date()
+    const currentWeekStart = new Date(today)
+    currentWeekStart.setDate(today.getDate() - today.getDay())
+    const targetWeekStart = new Date(currentWeekStart)
+    targetWeekStart.setDate(currentWeekStart.getDate() + (weekOffset * 7))
+    return targetWeekStart
+  }, [selectedDate, weekOffset])
+  
+  const monthlyBaseDate = useMemo(() => {
+    if (!selectedDate) return undefined
+    const today = new Date()
+    const targetMonth = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1)
+    return targetMonth
+  }, [selectedDate, monthOffset])
+  
   const weeklyData = useMemo(() => {
     if (!salesData) return []
-    return processWeeklyData(salesData.sales, salesData.sideBusinessSales, businessTimezone)
-  }, [salesData, businessTimezone])
+    return processWeeklyData(salesData.sales, salesData.sideBusinessSales, businessTimezone, weeklyBaseDate)
+  }, [salesData, businessTimezone, weeklyBaseDate])
   
   const hourlyData = useMemo(() => {
     if (!salesData) return []
-    return processHourlyData(salesData.sales, salesData.sideBusinessSales, businessTimezone, businessHours)
-  }, [salesData, businessTimezone, businessHours])
+    return processHourlyData(salesData.sales, salesData.sideBusinessSales, businessTimezone, businessHours, selectedDate)
+  }, [salesData, businessTimezone, businessHours, selectedDate])
   
   const monthlyData = useMemo(() => {
     if (!salesData) return []
-    return processMonthlyData(salesData.sales, salesData.sideBusinessSales, businessTimezone)
-  }, [salesData, businessTimezone])
+    return processMonthlyData(salesData.sales, salesData.sideBusinessSales, businessTimezone, monthlyBaseDate)
+  }, [salesData, businessTimezone, monthlyBaseDate])
   
   return {
     weeklyData,

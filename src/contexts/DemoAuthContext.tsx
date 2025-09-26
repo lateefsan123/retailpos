@@ -14,7 +14,7 @@ interface AuthContextType {
   user: User | null
   supabaseUser: SupabaseUser | null
   login: (email: string, password: string) => Promise<boolean>
-  register: (username: string, password: string, businessName: string) => Promise<{ success: boolean; adminCredentials?: AdminCredentials }>
+  register: (username: string, password: string, businessName: string) => Promise<{ success: boolean }>
   logout: () => void
   loading: boolean
   currentUserId: string | undefined
@@ -23,11 +23,6 @@ interface AuthContextType {
   setLoggedInUser: (userData: User) => void
 }
 
-interface AdminCredentials {
-  username: string
-  password: string
-  businessId: number
-}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
@@ -73,19 +68,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return true
   }
 
-  const register = async (username: string, password: string, businessName: string): Promise<{ success: boolean; adminCredentials?: AdminCredentials }> => {
+  const register = async (username: string, password: string, businessName: string): Promise<{ success: boolean }> => {
     setLoading(true)
     // Simulate registration delay
     await new Promise(resolve => setTimeout(resolve, 1000))
     setUser(demoUser)
     setLoading(false)
     return { 
-      success: true, 
-      adminCredentials: {
-        username: 'demo@example.com',
-        password: 'password123',
-        businessId: 1
-      }
+      success: true
     }
   }
 

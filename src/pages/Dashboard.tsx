@@ -12,7 +12,6 @@ import BranchSelector from '../components/BranchSelector'
 import LowStockSection from '../components/dashboard/LowStockSection'
 import ProductAnalyticsSection from '../components/dashboard/ProductAnalyticsSection'
 import SalesChart from '../components/dashboard/SalesChart'
-import BusinessHoursDebug from '../components/debug/BusinessHoursDebug'
 
 interface Transaction {
   transaction_id: string

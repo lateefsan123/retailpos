@@ -398,6 +398,32 @@
   color: #0078d4;
 }
 
+/* Sign Up Link */
+.signUpLink {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-gray);
+}
+
+.signUpLink p {
+  color: var(--medium-gray);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.signUpText {
+  color: var(--sage);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.signUpText:hover {
+  color: var(--dark-olive);
+  text-decoration: underline;
+}
+
 /* Success Messages */
 .successMessage {
   text-align: center;
