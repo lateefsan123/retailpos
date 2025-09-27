@@ -44,7 +44,7 @@ const AppContent = () => {
         backgroundRepeat: 'no-repeat',
         position: 'relative'
       }}>
-        {/* Dark overlay to redeeeewuce brightnessm - covers entire app */}
+        {/* Dark overlay to reduce brightness - covers entire app */}
         <div style={{
           position: 'absolute',
           top: 0,
