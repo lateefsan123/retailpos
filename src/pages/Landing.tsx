@@ -111,31 +111,34 @@ const Landing: React.FC = () => {
     <div className={styles.container}>
       {/* Navigation */}
       <nav className={styles.nav}>
-        <div className={styles.navContent}>
-          <div className={styles.navFlex}>
-            <div className={styles.logoContainer}>
-              <svg 
-                className={styles.logoImage}
-                viewBox="0 0 200 60" 
-                fill="none" 
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                {/* Circle */}
-                <circle cx="25" cy="30" r="14" fill="#7d8d86"/>
-                
-                {/* TillPoint Text */}
-                <text x="45" y="38" fontFamily="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" fontSize="22" fontWeight="600" fill="#f1f0e4">TillPoint</text>
-              </svg>
-            </div>
-            <div className={styles.navLinks}>
-              <a href="#features" className={`${styles.navLink} ${styles.hasDropdown}`}>Features</a>
-              <a href="#pricing" className={`${styles.navLink} ${styles.hasDropdown}`}>Solutions</a>
-              <a href="#contact" className={`${styles.navLink} ${styles.hasDropdown}`}>Resources</a>
-              <a href="#pricing" className={styles.navLink}>Pricing</a>
-              <a href="#contact" className={styles.navLink}>Contact</a>
-              <Link to="/signup" className={styles.navButton}>
-                Get Started
-              </Link>
+        <div className={styles.navWrapper}>
+          <div className={styles.navContent}>
+            <div className={styles.navFlex}>
+              <div className={styles.logoContainer}>
+                <svg 
+                  className={styles.logoImage}
+                  viewBox="0 0 200 60" 
+                  fill="none" 
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  {/* Circle */}
+                  <circle cx="25" cy="30" r="14" fill="#7d8d86"/>
+                  
+                  {/* TillPoint Text */}
+                  <text x="45" y="38" fontFamily="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" fontSize="22" fontWeight="600" fill="#f1f0e4">TillPoint</text>
+                </svg>
+              </div>
+              <div className={styles.navLinks}>
+                <a href="#features" className={`${styles.navLink} ${styles.hasDropdown}`}>Features</a>
+                <a href="#pricing" className={styles.navLink}>Pricing</a>
+                <a href="#contact" className={styles.navLink}>Contact</a>
+                <Link to="/login" className={styles.navLink}>
+                  Sign In
+                </Link>
+                <Link to="/signup" className={styles.navButton}>
+                  Sign Up
+                </Link>
+              </div>
             </div>
           </div>
         </div>

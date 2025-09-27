@@ -24,10 +24,15 @@
   left: 0;
   right: 0;
   z-index: 1000;
+  padding: 1rem 2rem 0 2rem;
+}
+
+.navWrapper {
+  max-width: 1280px;
+  margin: 0 auto;
   background: linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(60, 60, 60, 0.8) 100%);
   backdrop-filter: blur(10px);
-  border-radius: 0 0 1rem 1rem;
-  margin: 1rem 1rem 0 1rem;
+  border-radius: 1rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
