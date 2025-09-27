@@ -576,7 +576,7 @@ const SelectUser: React.FC = () => {
                     }}>
                         {selectedUser?.icon ? (
                           <img 
-                            src={`/retailpos/images/icons/${selectedUser.icon}.png`} 
+                            src={`/images/icons/${selectedUser.icon}.png`} 
                             alt={selectedUser.icon}
                             style={{
                             width: '120px',
@@ -988,7 +988,7 @@ const SelectUser: React.FC = () => {
                                         }}>
                                           {user.icon ? (
                                             <img 
-                                              src={`/retailpos/images/icons/${user.icon}.png`} 
+                                              src={`/images/icons/${user.icon}.png`} 
                                               alt={user.icon}
                                               style={{
                                                 width: '42px',
@@ -1094,7 +1094,7 @@ const SelectUser: React.FC = () => {
                             }}>
                               {u.icon ? (
                                 <img 
-                                  src={`/retailpos/images/icons/${u.icon}.png`} 
+                                  src={`/images/icons/${u.icon}.png`} 
                                   alt={u.icon}
                                   style={{
                                     width: '32px',
@@ -1419,7 +1419,7 @@ const SelectUser: React.FC = () => {
                             }}>
                               {u.icon ? (
                                 <img 
-                                  src={`/retailpos/images/icons/${u.icon}.png`} 
+                                  src={`/images/icons/${u.icon}.png`} 
                                   alt={u.icon}
                                   style={{
                                     width: '40px',

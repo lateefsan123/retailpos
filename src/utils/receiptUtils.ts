@@ -41,7 +41,7 @@ export const generateReceiptHTML = (
   const businessName = businessInfo?.business_name || businessInfo?.name || 'Business'
   const businessAddress = businessInfo?.address || ''
   const businessPhone = businessInfo?.phone_number || ''
-  const businessLogo = businessInfo?.logo_url || '/retailpos/images/backgrounds/logo1.png'
+  const businessLogo = businessInfo?.logo_url || '/images/backgrounds/logo1.png'
   const receiptFooter = businessInfo?.receipt_footer || 'Thank you for shopping with us!'
   
   return `

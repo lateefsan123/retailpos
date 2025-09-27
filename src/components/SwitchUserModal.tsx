@@ -284,7 +284,7 @@ const SwitchUserModal: React.FC<SwitchUserModalProps> = ({ isOpen, onClose, onUs
                   }}>
                     {selectedUser?.icon ? (
                       <img 
-                        src={`/retailpos/images/icons/${selectedUser.icon}.png`} 
+                        src={`/images/icons/${selectedUser.icon}.png`} 
                         alt={selectedUser.icon}
                         style={{
                           width: '44px',
@@ -601,7 +601,7 @@ const SwitchUserModal: React.FC<SwitchUserModalProps> = ({ isOpen, onClose, onUs
                         }}>
                           {user.icon ? (
                             <img 
-                              src={`/retailpos/images/icons/${user.icon}.png`} 
+                              src={`/images/icons/${user.icon}.png`} 
                               alt={user.icon}
                               style={{
                                 width: '44px',

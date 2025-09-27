@@ -369,7 +369,7 @@ const Login: React.FC = () => {
         <div className={styles.imageContainer}>
           <div className={styles.logoOverlay}>
             <img 
-              src="/retailpos/images/tillpointlogo.png" 
+              src="/images/tillpointlogo.png" 
               alt="TillPoint Logo" 
               className={styles.overlayLogo}
             />

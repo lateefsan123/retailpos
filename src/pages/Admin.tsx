@@ -867,7 +867,7 @@ const Admin = () => {
                        }}>
                          {user.icon ? (
                            <img 
-                             src={`/retailpos/images/icons/${user.icon}.png`} 
+                             src={`/images/icons/${user.icon}.png`} 
                              alt={user.icon}
                              style={{
                                width: '40px',
@@ -1446,7 +1446,7 @@ const Admin = () => {
                         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
                       }}>
                         <img 
-                          src={`/retailpos/images/icons/${icon.name}.png`} 
+                          src={`/images/icons/${icon.name}.png`} 
                           alt={icon.label}
                           style={{
                             width: '100%',
@@ -1764,7 +1764,7 @@ const Admin = () => {
                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
                        }}>
                          <img 
-                           src={`/retailpos/images/icons/${icon.name}.png`} 
+                           src={`/images/icons/${icon.name}.png`} 
                            alt={icon.label}
                            style={{
                              width: '100%',

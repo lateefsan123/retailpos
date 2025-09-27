@@ -465,7 +465,7 @@ const SelectUserModal: React.FC<SelectUserModalProps> = ({ isOpen, onClose, onUs
                     }}>
                         {selectedUser?.icon ? (
                           <img 
-                            src={`/retailpos/images/icons/${selectedUser.icon}.png`} 
+                            src={`/images/icons/${selectedUser.icon}.png`} 
                             alt={selectedUser.icon}
                             style={{
                               width: '120px',
@@ -876,7 +876,7 @@ const SelectUserModal: React.FC<SelectUserModalProps> = ({ isOpen, onClose, onUs
                                         }}>
                                           {user.icon ? (
                                             <img 
-                                              src={`/retailpos/images/icons/${user.icon}.png`} 
+                                              src={`/images/icons/${user.icon}.png`} 
                                               alt={user.icon}
                                               style={{
                                                 width: '42px',
@@ -982,7 +982,7 @@ const SelectUserModal: React.FC<SelectUserModalProps> = ({ isOpen, onClose, onUs
                             }}>
                               {u.icon ? (
                                 <img 
-                                  src={`/retailpos/images/icons/${u.icon}.png`} 
+                                  src={`/images/icons/${u.icon}.png`} 
                                   alt={u.icon}
                                   style={{
                                     width: '32px',
@@ -1155,7 +1155,7 @@ const SelectUserModal: React.FC<SelectUserModalProps> = ({ isOpen, onClose, onUs
                             }}>
                               {u.icon ? (
                                 <img 
-                                  src={`/retailpos/images/icons/${u.icon}.png`} 
+                                  src={`/images/icons/${u.icon}.png`} 
                                   alt={u.icon}
                                   style={{
                                     width: '40px',

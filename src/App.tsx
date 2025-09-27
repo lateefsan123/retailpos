@@ -38,7 +38,7 @@ const AppContent = () => {
         color: '#1a1a1a', 
         display: 'flex', 
         overflow: 'hidden',
-        backgroundImage: 'url(/retailpos/images/backgrounds/u2541828551_An_elegant_illustration_of_a_small_African_corner_5e875dd7-e5d8-4655-af92-bb5c9c2865fd_1.png)',
+        backgroundImage: 'url(/images/backgrounds/u2541828551_An_elegant_illustration_of_a_small_African_corner_5e875dd7-e5d8-4655-af92-bb5c9c2865fd_1.png)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',

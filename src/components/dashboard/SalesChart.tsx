@@ -279,9 +279,9 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
             justifyContent: 'center',
             overflow: 'hidden'
           }}>
-          {(currentBusiness?.logo_url || '/retailpos/images/backgrounds/logo1.png') ? (
+          {(currentBusiness?.logo_url || '/images/backgrounds/logo1.png') ? (
             <img 
-              src={currentBusiness?.logo_url || '/retailpos/images/backgrounds/logo1.png'} 
+              src={currentBusiness?.logo_url || '/images/backgrounds/logo1.png'} 
               alt={currentBusiness?.business_name || currentBusiness?.name || 'Business Logo'} 
               style={{
                 width: '100%',
@@ -384,9 +384,9 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           justifyContent: 'center',
           overflow: 'hidden'
         }}>
-          {(currentBusiness?.logo_url || '/retailpos/images/backgrounds/logo1.png') ? (
+          {(currentBusiness?.logo_url || '/images/backgrounds/logo1.png') ? (
             <img 
-              src={currentBusiness?.logo_url || '/retailpos/images/backgrounds/logo1.png'} 
+              src={currentBusiness?.logo_url || '/images/backgrounds/logo1.png'} 
               alt={currentBusiness?.business_name || currentBusiness?.name || 'Business Logo'} 
               style={{
                 width: '100%',

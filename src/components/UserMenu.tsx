@@ -141,7 +141,7 @@ const UserMenu: React.FC = () => {
         }}>
           {user?.icon ? (
             <img 
-              src={`/retailpos/images/icons/${user.icon}.png`} 
+              src={`/images/icons/${user.icon}.png`} 
               alt={user.icon}
               style={{
                 width: '28px',
