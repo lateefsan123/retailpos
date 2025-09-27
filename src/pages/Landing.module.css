@@ -63,7 +63,7 @@
 }
 
 .logoText {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: bold;
   color: #f1f0e4;
   margin: 0;
@@ -79,7 +79,7 @@
   color: #e5e7eb;
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   font-weight: 500;
   text-decoration: none;
   transition: all 0.2s ease;
@@ -105,7 +105,7 @@
   color: #1f2937;
   padding: 0.75rem 1.5rem;
   border-radius: 2rem;
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   font-weight: 600;
   border: none;
   cursor: pointer;
