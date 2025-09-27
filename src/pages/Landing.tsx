@@ -124,18 +124,17 @@ const Landing: React.FC = () => {
                 <circle cx="25" cy="30" r="14" fill="#7d8d86"/>
                 
                 {/* TillPoint Text */}
-                <text x="45" y="38" fontFamily="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" fontSize="22" fontWeight="600" fill="#3e3f29">TillPoint</text>
+                <text x="45" y="38" fontFamily="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" fontSize="22" fontWeight="600" fill="#f1f0e4">TillPoint</text>
               </svg>
             </div>
             <div className={styles.navLinks}>
-              <a href="#features" className={styles.navLink}>Features</a>
+              <a href="#features" className={`${styles.navLink} ${styles.hasDropdown}`}>Features</a>
+              <a href="#pricing" className={`${styles.navLink} ${styles.hasDropdown}`}>Solutions</a>
+              <a href="#contact" className={`${styles.navLink} ${styles.hasDropdown}`}>Resources</a>
               <a href="#pricing" className={styles.navLink}>Pricing</a>
               <a href="#contact" className={styles.navLink}>Contact</a>
-              <Link to="/login" className={styles.navLink}>
-                Sign In
-              </Link>
               <Link to="/signup" className={styles.navButton}>
-                Sign Up
+                Get Started
               </Link>
             </div>
           </div>
