@@ -44,7 +44,7 @@ const AppContent = () => {
         backgroundRepeat: 'no-repeat',
         position: 'relative'
       }}>
-        {/* Dark overlay to reduce brightness - covers entire app */}
+        {/* Dark overlay to reduce brightness - covers entdire app */}
         <div style={{
           position: 'absolute',
           top: 0,
@@ -135,7 +135,7 @@ function App() {
             <RoleProvider>
               <NavProvider>
                 <PinProvider>
-                <Router basename="/retailpos">
+                <Router basename="/">
                   <Routes>
                     <Route path="/" element={<Landing />} />
                     <Route path="/landing" element={<Landing />} />
