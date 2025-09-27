@@ -62,63 +62,46 @@ const Landing: React.FC = () => {
     {
       name: "Starter",
       price: "€9",
-      period: "month",
-      description: "Perfect for small businesses and single locations",
-      icon: "fas fa-cube",
-      iconColor: "#FF69B4",
+      period: "/month",
+      description: "Perfect for small businesses starting out",
       features: [
-        "Single Business/Location management",
-        "Basic POS - Sales, products, customers",
-        "Up to 2 staff users (Admin + 1 Cashier)",
-        "Basic inventory management",
-        "Simple reporting (daily/weekly sales)",
-        "Barcode scanning support",
-        "Partial payments handling",
-        "Email support (48-hour response)",
-        "Mobile responsive design"
+        "Single location",
+        "2 users",
+        "Basic POS functionality",
+        "Email support",
+        "Basic reporting"
       ],
       popular: false
     },
     {
       name: "Professional",
       price: "€19",
-      period: "month",
-      description: "Ideal for growing businesses with multiple locations",
-      icon: "fas fa-trophy",
-      iconColor: "#7D8D86",
+      period: "/month",
+      description: "Most popular choice for growing businesses",
       features: [
-        "Multi-location support (up to 3 locations)",
-        "Up to 5 staff users with role-based permissions",
-        "Advanced analytics dashboard with charts",
-        "Side businesses management",
-        "Weighted products support",
-        "Text-to-Speech integration (OpenAI TTS)",
-        "Advanced reporting (monthly, product analytics)",
-        "Customer loyalty points system",
-        "Inventory tracking with reorder levels",
-        "Priority support (24-hour response)"
+        "Up to 3 locations",
+        "5 users",
+        "Advanced analytics",
+        "Side businesses support",
+        "Weighted products",
+        "AI voice announcements",
+        "Priority support"
       ],
       popular: true
     },
     {
       name: "Enterprise",
       price: "€49",
-      period: "month",
-      description: "For large businesses and franchises",
-      icon: "fas fa-gift",
-      iconColor: "#6A5ACD",
+      period: "/month",
+      description: "Complete solution for large operations",
       features: [
-        "Unlimited locations and businesses",
-        "Unlimited staff users",
-        "Advanced multi-tenant architecture",
-        "Custom branding options",
-        "API access for integrations",
-        "Advanced vault and password management",
-        "Custom reporting and analytics",
-        "Dedicated account manager",
-        "24/7 phone support (+353 852287083)",
-        "Custom training sessions",
-        "Priority feature requests"
+        "Unlimited locations",
+        "Unlimited users",
+        "API access",
+        "Custom branding",
+        "Dedicated support",
+        "Advanced integrations",
+        "Custom training"
       ],
       popular: false
     }
@@ -234,42 +217,59 @@ const Landing: React.FC = () => {
       <section id="pricing" className={styles.pricingSection}>
         <div className={styles.pricingContent}>
           <div className={styles.pricingHeader}>
-            <h2 className={styles.pricingSubtitle}>PRICING PLAN</h2>
-            <h1 className={styles.pricingTitle}>Pricing Table</h1>
+            <h2 className={styles.pricingTitle}>
+              Simple, Transparent
+              <span className={styles.pricingTitleHighlight}> Pricing</span>
+            </h2>
+            <p className={styles.pricingSubtitle}>
+              Choose the plan that fits your business size. All plans include our core POS features 
+              with no hidden fees or setup costs.
+            </p>
           </div>
           
           <div className={styles.pricingGrid}>
             {pricingPlans.map((plan, index) => (
               <div key={index} className={`${styles.pricingCard} ${plan.popular ? styles.popularCard : ''}`}>
-                <div className={styles.pricingIcon} style={{ color: plan.iconColor }}>
-                  <i className={plan.icon}></i>
-                </div>
+                {plan.popular && (
+                  <div className={styles.popularBadge}>
+                    <i className="fas fa-star"></i>
+                    Most Popular
+                  </div>
+                )}
                 
                 <div className={styles.pricingCardHeader}>
                   <h3 className={styles.pricingPlanName}>{plan.name}</h3>
                   <div className={styles.pricingPrice}>
                     <span className={styles.priceAmount}>{plan.price}</span>
-                    <span className={styles.pricePeriod}>/{plan.period}</span>
+                    <span className={styles.pricePeriod}>{plan.period}</span>
                   </div>
+                  <p className={styles.planDescription}>{plan.description}</p>
                 </div>
                 
                 <div className={styles.pricingFeatures}>
                   <ul className={styles.featuresList}>
                     {plan.features.map((feature, featureIndex) => (
                       <li key={featureIndex} className={styles.featureItem}>
-                        {feature}
+                        <i className="fas fa-check-circle"></i>
+                        <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
                 
                 <div className={styles.pricingAction}>
-                  <Link to="/signup" className={styles.pricingButton} style={{ backgroundColor: plan.iconColor }}>
-                    Get Started
+                  <Link to="/signup" className={styles.pricingButton}>
+                    Start Free Trial
                   </Link>
                 </div>
               </div>
             ))}
+          </div>
+          
+          <div className={styles.pricingFooter}>
+            <p className={styles.pricingFooterText}>
+              All plans include 30-day free trial • No setup fees • Cancel anytime
+            </p>
           </div>
         </div>
       </section>

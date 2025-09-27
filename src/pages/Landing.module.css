@@ -447,14 +447,12 @@
 
 /* Pricing Section */
 .pricingSection {
-  padding: 5rem 0;
-  background-color: white;
-  border-top: 1px solid #e5e7eb;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 6rem 0;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e0f2fe 100%);
 }
 
 .pricingContent {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: 0 1rem;
 }
@@ -464,20 +462,23 @@
   margin-bottom: 4rem;
 }
 
-.pricingSubtitle {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #6b7280;
-  margin-bottom: 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
 .pricingTitle {
-  font-size: 2.5rem;
+  font-size: 3rem;
   font-weight: bold;
   color: #111827;
-  margin: 0;
+  margin-bottom: 1.5rem;
+  line-height: 1.1;
+}
+
+.pricingTitleHighlight {
+  color: #7d8d86;
+}
+
+.pricingSubtitle {
+  font-size: 1.25rem;
+  color: #4b5563;
+  max-width: 48rem;
+  margin: 0 auto;
 }
 
 .pricingGrid {
@@ -491,9 +492,9 @@
 .pricingCard {
   background-color: white;
   border-radius: 1rem;
-  padding: 1.5rem 1.25rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid #f3f4f6;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
   transition: all 0.3s ease;
   position: relative;
   text-align: center;
@@ -515,23 +516,36 @@
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
 }
 
-.pricingIcon {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
+.popularBadge {
+  position: absolute;
+  top: -1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #7d8d86;
+  color: #f1f0e4;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
   display: flex;
-  justify-content: center;
   align-items: center;
+  gap: 0.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.popularBadge i {
+  font-size: 0.75rem;
 }
 
 .pricingCardHeader {
-  margin-bottom: 1.25rem;
+  margin-bottom: 2rem;
 }
 
 .pricingPlanName {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: bold;
   color: #111827;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .pricingPrice {
@@ -539,13 +553,13 @@
   align-items: baseline;
   justify-content: center;
   gap: 0.25rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .priceAmount {
-  font-size: 2.5rem;
+  font-size: 3rem;
   font-weight: bold;
-  color: #111827;
+  color: #7d8d86;
 }
 
 .pricePeriod {
@@ -554,8 +568,15 @@
   font-weight: 500;
 }
 
+.planDescription {
+  color: #6b7280;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
 .pricingFeatures {
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
+  text-align: left;
 }
 
 .featuresList {
@@ -565,11 +586,19 @@
 }
 
 .featureItem {
-  margin-bottom: 0.5rem;
-  font-size: 0.8rem;
-  color: #4b5563;
-  line-height: 1.4;
-  padding: 0.125rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.featureItem i {
+  color: #7d8d86;
+  font-size: 1rem;
+  flex-shrink: 0;
 }
 
 .pricingAction {
@@ -578,12 +607,12 @@
 
 .pricingButton {
   display: inline-block;
-  width: auto;
-  min-width: 120px;
-  color: white;
-  padding: 0.75rem 1.5rem;
+  width: 100%;
+  background-color: #7d8d86;
+  color: #f1f0e4;
+  padding: 0.875rem 1.5rem;
   border-radius: 0.5rem;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 600;
   text-decoration: none;
   transition: all 0.2s ease;
@@ -593,8 +622,25 @@
 }
 
 .pricingButton:hover {
+  background-color: #3e3f29;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.popularCard .pricingButton {
+  background-color: #7d8d86;
+  color: #f1f0e4;
+}
+
+.pricingFooter {
+  text-align: center;
+  margin-top: 3rem;
+}
+
+.pricingFooterText {
+  color: #6b7280;
+  font-size: 0.95rem;
+  margin: 0;
 }
 
 /* Contact Section */
@@ -845,6 +891,10 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;
   }
+  
+  .pricingTitle {
+    font-size: 2.5rem;
+  }
 }
 
 @media (min-width: 768px) {
@@ -880,7 +930,11 @@
   }
   
   .pricingCard {
-    padding: 1.5rem 1rem;
+    padding: 2rem 1.5rem;
+  }
+  
+  .pricingTitle {
+    font-size: 3.5rem;
   }
   
   .footerGrid {
