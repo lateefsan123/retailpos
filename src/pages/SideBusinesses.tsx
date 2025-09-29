@@ -535,6 +535,7 @@ const SideBusinesses = () => {
     }
   }
 
+
   const fetchBusinessAnalytics = async (businessId: number) => {
     try {
       // Get current date ranges
@@ -941,6 +942,7 @@ const SideBusinesses = () => {
           </div>
         </div>
       </div>
+
 
       {/* Main Content Grid */}
       <div className={styles.mainContentGrid}>

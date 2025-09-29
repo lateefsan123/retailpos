@@ -238,6 +238,7 @@ export interface Reminder {
   created_at: string
   resolved: boolean
   business_id: number // Multi-tenant support
+  sale_id?: number // Link to transaction for payment reminders
 }
 
 export interface NewReminder {

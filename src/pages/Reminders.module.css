@@ -496,6 +496,15 @@
   opacity: 0.6;
 }
 
+.transactionResolvedBadge {
+  margin-left: 8px;
+  color: #059669;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .noteDate {
   color: #6b7280;
   font-size: 0.75rem;

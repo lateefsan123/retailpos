@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useBusinessId } from '../hooks/useBusinessId'
 import { useBranch } from '../contexts/BranchContext'
 import BranchSelector from '../components/BranchSelector'
+import { formatCurrency } from '../utils/currency'
 
 async function uploadProductImage(file: File, productId: string, businessId: number | null) {
   console.log("?? Starting image upload for product:", productId)
@@ -640,14 +641,6 @@ const Products = () => {
 
       console.log('Fetching insights for product:', product.product_id, product.name)
 
-      const totalSales = product.sales_count || 0
-      const totalRevenue = product.total_revenue || 0
-      const lastSoldDate = product.last_sold_date
-      const averageSalesPerDay = totalSales > 0 ? (totalSales / 30).toFixed(1) : 0
-      const estimatedCost = totalRevenue * 0.6
-      const estimatedProfit = totalRevenue - estimatedCost
-      const profitMargin = totalRevenue > 0 ? (estimatedProfit / totalRevenue) * 100 : 0
-
       const { data: allSalesData, error: allSalesError } = await supabase
         .from('sale_items')
         .select(`
@@ -670,6 +663,20 @@ const Products = () => {
       }
 
       console.log('All sales query result:', { data: allSalesData })
+
+      // Calculate actual sales data from sale_items
+      const actualTotalSales = allSalesData?.length || 0
+      const actualTotalRevenue = allSalesData?.reduce((sum, item) => 
+        sum + (item.calculated_price || (item.price_each * item.quantity)), 0
+      ) || 0
+      
+      const totalSales = actualTotalSales
+      const totalRevenue = actualTotalRevenue
+      const lastSoldDate = product.last_sold_date
+      const averageSalesPerDay = totalSales > 0 ? (totalSales / 30).toFixed(1) : 0
+      const estimatedCost = totalRevenue * 0.6
+      const estimatedProfit = totalRevenue - estimatedCost
+      const profitMargin = totalRevenue > 0 ? (estimatedProfit / totalRevenue) * 100 : 0
 
       const recentSalesData = allSalesData?.slice(0, 10) || []
 
@@ -1798,8 +1805,8 @@ const Products = () => {
                                 <span>?</span>
                                 <span style={{ fontWeight: '500', color: '#059669' }}>
                                   {suggestion.product.is_weighted 
-                                    ? `?${suggestion.product.price_per_unit}/${suggestion.product.weight_unit}`
-                                    : `?${suggestion.product.price}`
+                                    ? `${formatCurrency(suggestion.product.price_per_unit)}/${suggestion.product.weight_unit}`
+                                    : formatCurrency(suggestion.product.price)
                                   }
                                 </span>
                                 {suggestion.product.sku && (
@@ -2083,9 +2090,9 @@ const Products = () => {
                       <td style={{ padding: '16px', borderRight: '2px solid rgba(125, 141, 134, 0.25)' }}>
                         <p style={{ fontSize: '14px', fontWeight: '600', color: '#3e3f29', margin: 0 }}>
                           {product.is_weighted && product.price_per_unit && product.weight_unit ? (
-                            `?${product.price_per_unit.toFixed(2)}/${product.weight_unit}`
+                            `${formatCurrency(product.price_per_unit)}/${product.weight_unit}`
                           ) : (
-                            `?${product.price.toFixed(2)}`
+                            formatCurrency(product.price)
                           )}
                         </p>
                         {product.is_weighted && (
@@ -3906,7 +3913,7 @@ const Products = () => {
                         <i className="fas fa-euro-sign"></i>
                       </div>
                       <div style={{ fontSize: '32px', fontWeight: '700', color: '#166534', marginBottom: '8px' }}>
-                        ?{productInsights.totalRevenue.toFixed(2)}
+                        {formatCurrency(productInsights.totalRevenue)}
                       </div>
                       <div style={{ fontSize: '14px', color: '#166534', fontWeight: '500' }}>Total Revenue</div>
                     </div>
@@ -4203,9 +4210,9 @@ const Products = () => {
                       <div>
                         <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Price</div>
                         <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>
-                          ?{selectedProductForInsights.is_weighted 
-                            ? `${selectedProductForInsights.price_per_unit}/${selectedProductForInsights.weight_unit}`
-                            : selectedProductForInsights.price.toFixed(2)
+                          {selectedProductForInsights.is_weighted 
+                            ? `${formatCurrency(selectedProductForInsights.price_per_unit)}/${selectedProductForInsights.weight_unit}`
+                            : formatCurrency(selectedProductForInsights.price)
                           }
                         </div>
                       </div>
@@ -4231,7 +4238,7 @@ const Products = () => {
                         <strong>Average sales per day:</strong> {productInsights.averageSalesPerDay.toFixed(1)}
                       </div>
                       <div style={{ marginBottom: '8px' }}>
-                        <strong>Estimated profit:</strong> ?{productInsights.estimatedProfit.toFixed(2)}
+                        <strong>Estimated profit:</strong> {formatCurrency(productInsights.estimatedProfit)}
                       </div>
                       <div style={{ marginBottom: '8px' }}>
                         <strong>Last sold:</strong> {productInsights.lastSoldDate 
@@ -4240,9 +4247,9 @@ const Products = () => {
                         }
                       </div>
                       <div>
-                        <strong>Price per unit:</strong> ?{selectedProductForInsights.is_weighted 
-                          ? `${selectedProductForInsights.price_per_unit}/${selectedProductForInsights.weight_unit}`
-                          : selectedProductForInsights.price.toFixed(2)
+                        <strong>Price per unit:</strong> {selectedProductForInsights.is_weighted 
+                          ? `${formatCurrency(selectedProductForInsights.price_per_unit)}/${selectedProductForInsights.weight_unit}`
+                          : formatCurrency(selectedProductForInsights.price)
                         }
                       </div>
                     </div>
@@ -4317,7 +4324,7 @@ const Products = () => {
                                 {sale.quantity} {sale.unit}
                               </td>
                               <td style={{ padding: '8px 0', color: '#3e3f29' }}>
-                                ?{sale.price.toFixed(2)}
+                                {formatCurrency(sale.price)}
                               </td>
                               <td style={{ padding: '8px 0', color: '#3e3f29' }}>
                                 {sale.customer}
@@ -4383,9 +4390,9 @@ const Products = () => {
                       <strong>Reorder Level:</strong> {selectedProductForInsights.reorder_level}
                     </div>
                     <div>
-                      <strong>Price:</strong> ?{selectedProductForInsights.is_weighted 
-                        ? `${selectedProductForInsights.price_per_unit}/${selectedProductForInsights.weight_unit}`
-                        : selectedProductForInsights.price.toFixed(2)
+                      <strong>Price:</strong> {selectedProductForInsights.is_weighted 
+                        ? `${formatCurrency(selectedProductForInsights.price_per_unit)}/${selectedProductForInsights.weight_unit}`
+                        : formatCurrency(selectedProductForInsights.price)
                       }
                     </div>
                     <div>

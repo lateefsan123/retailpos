@@ -12,6 +12,7 @@ export interface LowStockProduct {
   reorder_level: number
   category?: string
   supplier_info?: string
+  image_url?: string
   is_low_stock: boolean
 }
 
@@ -33,6 +34,7 @@ export const useLowStockItems = () => {
         reorder_level: product.reorder_level,
         category: product.category,
         supplier_info: product.supplier_info,
+        image_url: product.image_url,
         is_low_stock: true
       }))
       .sort((a, b) => a.stock_quantity - b.stock_quantity)

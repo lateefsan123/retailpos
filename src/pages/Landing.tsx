@@ -1,31 +1,30 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import styles from './Landing.module.css'
 
 const Landing: React.FC = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  // Fix scrolling for landing page
-  useEffect(() => {
-    // Enable scrolling for landing page
-    document.body.style.overflow = 'auto'
-    document.documentElement.style.overflow = 'auto'
-    const rootElement = document.getElementById('root')
-    if (rootElement) {
-      rootElement.style.overflow = 'auto'
-      rootElement.style.height = 'auto'
+  // Carousel features for the showcase section
+  const carouselFeatures = [
+    {
+      title: "Multi-location Management",
+      description: "Manage multiple branches and users per business with seamless switching between locations and consolidated reporting.",
+      images: ['feature1.1.png', 'feature1.2.png', 'feature1.3.png']
+    },
+    {
+      title: "Dashboard & Analytics",
+      description: "Stay organized with intelligent reminders and get real-time insights from your comprehensive business dashboard.",
+      images: ['feature2.1.png', 'feature2.2.png', 'feature2.3.png']
+    },
+    {
+      title: "Advanced Features",
+      description: "Track and transfer inventory between users and locations with real-time updates and automated stock management.",
+      images: ['feature3.1.png', 'feature3.2.png', 'features3.3.png', 'features3.4.png']
     }
+  ]
 
-    // Cleanup function to restore original styles when component unmounts
-    return () => {
-      document.body.style.overflow = 'hidden'
-      document.documentElement.style.overflow = 'hidden'
-      if (rootElement) {
-        rootElement.style.overflow = 'hidden'
-        rootElement.style.height = '100%'
-      }
-    }
-  }, [])
-
+  // Original 6 features for "The Features That Actually Matter" section
   const features = [
     {
       icon: "fas fa-microphone-alt",
@@ -58,6 +57,126 @@ const Landing: React.FC = () => {
       description: "See what's selling, what's not, and what's making you money. Real insights, not just pretty charts that don't tell you anything useful."
     }
   ]
+
+
+  // FeatureBlock Component
+  const FeatureBlock = ({ feature, delay = 0 }: { feature: (typeof carouselFeatures)[0]; delay?: number }) => {
+    const [activeImage, setActiveImage] = useState(0)
+    const [modalImg, setModalImg] = useState<string | null>(null)
+
+    useEffect(() => {
+      // Different timing for each carousel: 4000ms, 5500ms, 6000ms
+      const timing = 4000 + delay
+      const interval = setInterval(() => {
+        setActiveImage((prev) => (prev + 1 < feature.images.length ? prev + 1 : 0))
+      }, timing)
+      return () => clearInterval(interval)
+    }, [feature, delay])
+
+    return (
+      <div className={styles.featureBlock}>
+        <h3 className={styles.featureBlockTitle}>{feature.title}</h3>
+        <p className={styles.featureBlockDescription}>{feature.description}</p>
+
+        <div className={styles.carouselWrapper}>
+          <div className={styles.carouselContainer}>
+            {feature.images.map((img, i) => (
+              <motion.img
+                key={i}
+                src={`/images/backgrounds/features/${img}`}
+                onClick={() => setModalImg(`/images/backgrounds/features/${img}`)}
+                className={`${styles.carouselImage} ${
+                  i === activeImage ? styles.activeImage : styles.inactiveImage
+                } ${i > activeImage ? styles.rightOffset : styles.leftOffset}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: i === activeImage ? 1 : 0.5 }}
+                transition={{ duration: 0.5 }}
+                onError={(e) => {
+                  console.error('Failed to load image:', img)
+                  e.currentTarget.src = '/images/backgrounds/landingpageleftimage.png'
+                }}
+              />
+            ))}
+
+            {/* Nav arrows */}
+            <button
+              onClick={() => setActiveImage((prev) => (prev > 0 ? prev - 1 : feature.images.length - 1))}
+              className={styles.carouselNavButton}
+              style={{ left: '-50px' }}
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <button
+              onClick={() => setActiveImage((prev) => (prev + 1 < feature.images.length ? prev + 1 : 0))}
+              className={styles.carouselNavButton}
+              style={{ right: '-50px' }}
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+
+          {/* Dot indicators */}
+          <div className={styles.dotIndicators}>
+            {feature.images.map((_, index) => (
+              <button
+                key={index}
+                className={`${styles.dot} ${index === activeImage ? styles.activeDot : ''}`}
+                onClick={() => setActiveImage(index)}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Modal popup */}
+        <AnimatePresence>
+          {modalImg && (
+            <motion.div
+              className={styles.modalOverlay}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setModalImg(null)}
+            >
+              <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                <img src={modalImg} className={styles.modalImage} alt={feature.title} />
+                <button
+                  className={styles.modalClose}
+                  onClick={() => setModalImg(null)}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    )
+  }
+
+  // Fix scrolling for landing page
+  useEffect(() => {
+    // Enable scrolling for landing page
+    document.body.style.overflow = 'auto'
+    document.documentElement.style.overflow = 'auto'
+    const rootElement = document.getElementById('root')
+    if (rootElement) {
+      rootElement.style.overflow = 'auto'
+      rootElement.style.height = 'auto'
+    }
+
+    // Cleanup function to restore original styles when component unmounts
+    return () => {
+      document.body.style.overflow = 'hidden'
+      document.documentElement.style.overflow = 'hidden'
+      if (rootElement) {
+        rootElement.style.overflow = 'hidden'
+        rootElement.style.height = '100%'
+      }
+    }
+  }, [])
+
+
 
   const pricingPlans = [
     {
@@ -261,6 +380,27 @@ const Landing: React.FC = () => {
                   {feature.description}
                 </p>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Feature Showcase Section */}
+      <section className={styles.featureShowcaseSection}>
+        <div className={styles.featureShowcaseContent}>
+          <div className={styles.featureShowcaseHeader}>
+            <h2 className={styles.featureShowcaseTitle}>
+              See TillPoint in Action
+            </h2>
+          </div>
+          
+          <div className={styles.featureShowcaseGrid}>
+            {carouselFeatures.map((feature, idx) => (
+              <FeatureBlock 
+                key={idx} 
+                feature={feature} 
+                delay={idx * 1500} 
+              />
             ))}
           </div>
         </div>
@@ -524,6 +664,7 @@ const Landing: React.FC = () => {
           </div>
         </div>
       </footer>
+
     </div>
   )
 }

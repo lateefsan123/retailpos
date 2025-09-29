@@ -321,15 +321,6 @@
   order: unset !important;
 }
 
-.featureCard {
-  background-color: white !important;
-  border: 1px solid #9ca3af !important;
-  border-radius: 0.75rem !important;
-  padding: 2.5rem !important;
-  text-align: left !important;
-  order: unset !important;
-  position: relative !important;
-}
 
 .featureCardIcon {
   width: 3rem;
@@ -413,70 +404,355 @@
 
 /* Features Section */
 .featuresSection {
-  padding: 5rem 0;
+  padding: 6rem 0;
   background-color: white;
-  border-top: 1px solid #e5e7eb;
-  border-bottom: 1px solid #e5e7eb;
 }
 
 .featuresContent {
-  max-width: 1280px;
+  max-width: 1600px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 2rem;
 }
 
 .featuresHeader {
-  text-align: center;
+  text-align: left;
   margin-bottom: 4rem;
 }
 
 .featuresTitle {
-  font-size: 1.875rem;
-  font-weight: bold;
+  font-size: 4.5rem;
+  font-weight: 700;
   color: #111827;
-  margin-bottom: 1rem;
+  margin-bottom: 0;
+  line-height: 1.1;
 }
 
 .featuresSubtitle {
-  font-size: 1.25rem;
-  color: #4b5563;
-  max-width: 32rem;
-  margin: 0 auto;
+  display: none;
 }
 
 .featuresGrid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 2rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3rem 2rem;
 }
 
 .featureCard {
-  background-color: #f8f9fa;
-  padding: 2rem;
-  border-radius: 0.75rem;
-  border: 1px solid #e5e7eb;
-  transition: box-shadow 0.2s ease;
+  background-color: transparent;
+  padding: 0;
+  border: none;
+  transition: none;
 }
 
 .featureCard:hover {
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
 }
 
 .featureIcon {
-  color: #7d8d86;
-  font-size: 3rem;
-  margin-bottom: 1rem;
+  width: 3rem;
+  height: 3rem;
+  background-color: #fed7aa;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.featureIcon i {
+  font-size: 1.25rem;
+  color: #000000;
 }
 
 .featureTitle {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 700;
   color: #111827;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
+  line-height: 1.3;
 }
 
 .featureDescription {
-  color: #4b5563;
+  color: #374151;
+  font-size: 1.125rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Feature Showcase Section */
+.featureShowcaseSection {
+  padding: 6rem 0;
+  background-color: white;
+}
+
+.featureShowcaseContent {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.featureShowcaseHeader {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.featureShowcaseTitle {
+  font-size: 4.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1rem;
+  line-height: 1.1;
+}
+
+.featureShowcaseSubtitle {
+  font-size: 1.25rem;
+  color: #6b7280;
+  max-width: 48rem;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+.featureShowcaseGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4rem;
+}
+
+/* Feature Block Styles */
+.featureBlock {
+  margin-bottom: 4rem;
+}
+
+.featureBlockTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #111827;
+  text-align: center;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+
+.featureBlockDescription {
+  font-size: 1.125rem;
+  color: #374151;
+  text-align: center;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+  max-width: 48rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.carouselWrapper {
+  position: relative;
+  overflow: visible;
+  border-radius: 2rem;
+  background-color: transparent;
+  padding: 2rem 4rem;
+  max-width: 70rem;
+  margin: 0 auto;
+}
+
+.carouselContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 20rem;
+}
+
+.carouselImage {
+  position: absolute;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.5s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 4px solid #e5e7eb;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.activeImage {
+  z-index: 20;
+  transform: scale(1);
+  opacity: 1;
+  border: 6px solid #111827;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.inactiveImage {
+  z-index: 10;
+  transform: scale(0.9);
+  opacity: 0.7;
+}
+
+.leftOffset {
+  transform: translateX(-3rem) scale(0.9);
+}
+
+.rightOffset {
+  transform: translateX(3rem) scale(0.9);
+}
+
+.carouselNavButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.4);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 30;
+}
+
+.carouselNavButton:hover {
+  background: rgba(0, 0, 0, 0.6);
+  transform: translateY(-50%) scale(1.1);
+}
+
+/* Dot Indicators */
+.dotIndicators {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  border: none;
+  background-color: #d1d5db;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.dot:hover {
+  background-color: #9ca3af;
+  transform: scale(1.2);
+}
+
+.activeDot {
+  background-color: #111827;
+  transform: scale(1.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  cursor: pointer;
+}
+
+.modalContent {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  cursor: default;
+}
+
+.modalImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 0.5rem;
+  border: 6px solid #111827;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  max-height: 80vh;
+  max-width: 90vw;
+}
+
+.modalClose {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.modalClose:hover {
+  background: rgba(0, 0, 0, 0.8);
+  transform: scale(1.1);
+}
+
+
+.featureShowcaseContent {
+  flex: 1;
+  padding: 2rem 0;
+}
+
+.featureShowcaseCardTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+}
+
+.featureShowcaseCardDescription {
+  font-size: 1.125rem;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.businessSolutionImage {
+  width: 100%;
+  height: 300px;
+  margin-bottom: 1.5rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.solutionImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.businessSolutionTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1rem;
+  line-height: 1.3;
+}
+
+.businessSolutionDescription {
+  color: #374151;
+  font-size: 1.125rem;
+  line-height: 1.6;
+  margin: 0;
 }
 
 /* Benefits Section */
@@ -1096,7 +1372,52 @@
   }
   
   .featuresGrid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .featuresTitle {
+    font-size: 2.5rem;
+  }
+  
+  .featureShowcaseTitle {
+    font-size: 2.5rem;
+  }
+  
+  .featureShowcaseGrid {
+    gap: 3rem;
+  }
+  
+  .featureShowcaseCard {
+    flex-direction: column !important;
+    text-align: center;
+  }
+  
+  .featureShowcaseCard:nth-child(even) {
+    flex-direction: column !important;
+  }
+  
+  .carouselContainer {
+    height: 350px;
+  }
+  
+  .featureShowcaseNavigation {
+    left: -60px;
+    right: -60px;
+  }
+  
+  .carouselWrapper {
+    max-width: 60rem;
+    padding: 1.5rem 3rem;
+  }
+  
+  .carouselContainer {
+    height: 16rem;
+  }
+  
+  .carouselNavButton {
+    width: 2.5rem;
+    height: 2.5rem;
   }
   
   .featuresCardsGrid {
@@ -1161,6 +1482,42 @@
   
   .featuresGrid {
     grid-template-columns: repeat(3, 1fr);
+    gap: 3rem 2rem;
+  }
+  
+  .featuresTitle {
+    font-size: 4.5rem;
+  }
+  
+  .featureShowcaseTitle {
+    font-size: 3.5rem;
+  }
+  
+  .featureShowcaseCard {
+    flex-direction: column !important;
+    text-align: center;
+  }
+  
+  .featureShowcaseCard:nth-child(even) {
+    flex-direction: column !important;
+  }
+  
+  .carouselContainer {
+    height: 400px;
+  }
+  
+  .carouselWrapper {
+    max-width: 70rem;
+    padding: 2rem 4rem;
+  }
+  
+  .carouselContainer {
+    height: 20rem;
+  }
+  
+  .carouselNavButton {
+    width: 3rem;
+    height: 3rem;
   }
   
   .featuresCardsGrid {

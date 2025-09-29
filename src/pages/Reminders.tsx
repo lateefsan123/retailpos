@@ -15,6 +15,8 @@ interface Reminder {
   x?: number;
   y?: number;
   rotation?: number;
+  sale_id?: number; // Link to transaction for payment reminders
+  transactionResolved?: boolean; // Whether the linked transaction has been resolved
   isEditing?: boolean;
   color?: string;
 }
@@ -214,7 +216,7 @@ export default function Reminders() {
       reminderDate.setHours(0, 0, 0, 0);
 
       const dateMatches = reminderDate.getTime() === current.getTime();
-      const resolvedFilter = showResolved || !reminder.resolved;
+      const resolvedFilter = showResolved || (!reminder.resolved && !reminder.transactionResolved);
 
       return dateMatches && resolvedFilter;
     });
@@ -258,7 +260,10 @@ export default function Reminders() {
       
       let query = supabase
         .from('reminders')
-        .select('*')
+        .select(`
+          *,
+          sales!left(partial_payment, remaining_amount)
+        `)
         .eq('business_id', user.business_id);
 
       if (selectedBranchId) {
@@ -274,15 +279,23 @@ export default function Reminders() {
 
       console.log('Fetched reminders from database:', data);
 
-      // Add UI properties to each reminder
-      const remindersWithUI = data?.map((reminder, index) => ({
-        ...reminder,
-        x: Math.random() * 400 + 50,
-        y: Math.random() * 300 + 50,
-        rotation: (Math.random() - 0.5) * 6,
-        isEditing: false,
-        color: Object.keys(colors)[index % Object.keys(colors).length]
-      })) || [];
+      // Add UI properties to each reminder and check transaction status
+      const remindersWithUI = data?.map((reminder, index) => {
+        // Check if this reminder is linked to a transaction and if the transaction is resolved
+        const linkedSale = reminder.sales;
+        const isTransactionResolved = linkedSale && reminder.sale_id ? 
+          !linkedSale.partial_payment || linkedSale.remaining_amount === 0 : false;
+        
+        return {
+          ...reminder,
+          x: Math.random() * 400 + 50,
+          y: Math.random() * 300 + 50,
+          rotation: (Math.random() - 0.5) * 6,
+          isEditing: false,
+          color: Object.keys(colors)[index % Object.keys(colors).length],
+          transactionResolved: isTransactionResolved
+        };
+      }) || [];
 
       console.log('Reminders with UI properties:', remindersWithUI);
       setReminders(remindersWithUI);
@@ -688,9 +701,14 @@ export default function Reminders() {
                 className={styles.noteDisplay}
               >
                 <div className={styles.noteTitle}>
-                  <span className={reminder.resolved ? styles.noteTitleResolved : ''}>
+                  <span className={reminder.resolved || reminder.transactionResolved ? styles.noteTitleResolved : ''}>
                     {reminder.title}
                   </span>
+                  {reminder.transactionResolved && !reminder.resolved && (
+                    <span className={styles.transactionResolvedBadge} title="Transaction has been resolved">
+                      <i className="fa-solid fa-check-circle"></i>
+                    </span>
+                  )}
                 </div>
                 <div className={`${styles.noteDate} ${isOverdue ? styles.noteDateOverdue : isDueToday ? styles.noteDateToday : ''}`}>
                   <i className="fa-solid fa-calendar" style={{ marginRight: '0.25rem' }}></i>
@@ -699,10 +717,21 @@ export default function Reminders() {
                   {isDueToday && !isOverdue && <span style={{ color: '#d97706', marginLeft: '0.5rem', fontWeight: '700' }}>TODAY</span>}
                 </div>
                 <div
-                  className={`${styles.noteBody} ${reminder.resolved ? styles.noteBodyResolved : ''}`}
+                  className={`${styles.noteBody} ${reminder.resolved || reminder.transactionResolved ? styles.noteBodyResolved : ''}`}
                   style={{ fontFamily: 'Comic Sans MS, cursive, sans-serif' }}
                 >
                   {reminder.body}
+                  {reminder.transactionResolved && !reminder.resolved && (
+                    <div style={{ 
+                      fontSize: '10px', 
+                      color: '#059669', 
+                      marginTop: '4px', 
+                      fontStyle: 'italic',
+                      fontWeight: 'bold'
+                    }}>
+                      ✓ Transaction resolved
+                    </div>
+                  )}
                 </div>
               </div>
             )}
