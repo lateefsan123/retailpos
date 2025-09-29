@@ -73,18 +73,37 @@ const Admin = () => {
     shop_image: 'shop1'
   })
 
-  // Available character icons
-  const availableIcons = [
-    { name: 'lily', label: 'Lily' },
-    { name: 'chunli', label: 'Chun-Li' },
-    { name: 'ken', label: 'Ken' },
-    { name: 'kimberly', label: 'Kimberly' },
-    { name: 'mai', label: 'Mai' },
-    { name: 'manon', label: 'Manon' },
-    { name: 'rashid', label: 'Rashid' },
-    { name: 'ryu', label: 'Ryu' },
-    { name: 'zangief', label: 'Zangief' }
-  ]
+  // Icon packs
+  const iconPacks = {
+    'default': {
+      name: 'Default Pack',
+      icons: [
+        { name: 'lily', label: 'Lily' },
+        { name: 'chunli', label: 'Chun-Li' },
+        { name: 'ken', label: 'Ken' },
+        { name: 'kimberly', label: 'Kimberly' },
+        { name: 'mai', label: 'Mai' },
+        { name: 'manon', label: 'Manon' },
+        { name: 'rashid', label: 'Rashid' },
+        { name: 'ryu', label: 'Ryu' },
+        { name: 'zangief', label: 'Zangief' }
+      ]
+    },
+    'modern': {
+      name: 'Modern Pack',
+      icons: [
+        { name: 'icon10', label: 'Icon 10' },
+        { name: 'icon11', label: 'Icon 11' },
+        { name: 'icon12', label: 'Icon 12' },
+        { name: 'icon13', label: 'Icon 13' },
+        { name: 'icon14', label: 'Icon 14' },
+        { name: 'icon15', label: 'Icon 15' }
+      ]
+    }
+  }
+
+  const [selectedIconPack, setSelectedIconPack] = useState('default')
+  const availableIcons = iconPacks[selectedIconPack as keyof typeof iconPacks].icons
 
   // Available shop images
   const availableShopImages = [
@@ -1401,6 +1420,48 @@ const Admin = () => {
                 }}>
                   Character Icon *
                 </label>
+                
+                {/* Icon Pack Selector */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '8px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    fontSize: '14px'
+                  }}>
+                    Icon Pack
+                  </label>
+                  <select
+                    value={selectedIconPack}
+                    onChange={(e) => setSelectedIconPack(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '8px',
+                      backgroundColor: '#ffffff',
+                      fontSize: '14px',
+                      color: '#1a1a1a',
+                      cursor: 'pointer',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#7d8d86'
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#e5e7eb'
+                    }}
+                  >
+                    {Object.entries(iconPacks).map(([key, pack]) => (
+                      <option key={key} value={key}>
+                        {pack.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(3, 1fr)',
@@ -1719,6 +1780,48 @@ const Admin = () => {
                  }}>
                    Character Icon *
                  </label>
+                 
+                 {/* Icon Pack Selector */}
+                 <div style={{ marginBottom: '16px' }}>
+                   <label style={{
+                     display: 'block',
+                     marginBottom: '8px',
+                     fontWeight: '500',
+                     color: '#374151',
+                     fontSize: '14px'
+                   }}>
+                     Icon Pack
+                   </label>
+                   <select
+                     value={selectedIconPack}
+                     onChange={(e) => setSelectedIconPack(e.target.value)}
+                     style={{
+                       width: '100%',
+                       padding: '12px 16px',
+                       border: '2px solid #e5e7eb',
+                       borderRadius: '8px',
+                       backgroundColor: '#ffffff',
+                       fontSize: '14px',
+                       color: '#1a1a1a',
+                       cursor: 'pointer',
+                       outline: 'none',
+                       transition: 'border-color 0.2s ease'
+                     }}
+                     onFocus={(e) => {
+                       e.target.style.borderColor = '#7d8d86'
+                     }}
+                     onBlur={(e) => {
+                       e.target.style.borderColor = '#e5e7eb'
+                     }}
+                   >
+                     {Object.entries(iconPacks).map(([key, pack]) => (
+                       <option key={key} value={key}>
+                         {pack.name}
+                       </option>
+                     ))}
+                   </select>
+                 </div>
+
                  <div style={{
                    display: 'grid',
                    gridTemplateColumns: 'repeat(3, 1fr)',

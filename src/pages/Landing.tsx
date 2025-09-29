@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import styles from './Landing.module.css'
 
 const Landing: React.FC = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   // Fix scrolling for landing page
   useEffect(() => {
     // Enable scrolling for landing page
@@ -71,7 +72,9 @@ const Landing: React.FC = () => {
         "Email support",
         "Basic reporting"
       ],
-      popular: false
+      popular: false,
+      iconColor: "#10B981",
+      icon: "fas fa-seedling"
     },
     {
       name: "Professional",
@@ -87,7 +90,9 @@ const Landing: React.FC = () => {
         "AI voice announcements",
         "Priority support"
       ],
-      popular: true
+      popular: true,
+      iconColor: "#3B82F6",
+      icon: "fas fa-rocket"
     },
     {
       name: "Enterprise",
@@ -103,7 +108,9 @@ const Landing: React.FC = () => {
         "Advanced integrations",
         "Custom training"
       ],
-      popular: false
+      popular: false,
+      iconColor: "#8B5CF6",
+      icon: "fas fa-crown"
     }
   ]
 
@@ -115,28 +122,11 @@ const Landing: React.FC = () => {
           <div className={styles.navContent}>
             <div className={styles.navFlex}>
               <div className={styles.logoContainer}>
-                <svg 
-                  className={styles.logoImage}
-                  viewBox="0 0 200 60" 
-                  fill="none" 
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  {/* Circle */}
-                  <circle cx="25" cy="30" r="14" fill="#7d8d86"/>
-                  
-                  {/* TillPoint Text */}
-                  <text x="45" y="38" fontFamily="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" fontSize="22" fontWeight="600" fill="#f1f0e4">TillPoint</text>
-                </svg>
+                <h1 className={styles.logoText}>TillPoint</h1>
               </div>
               <div className={styles.navLinks}>
-                <a href="#features" className={`${styles.navLink} ${styles.hasDropdown}`}>Features</a>
-                <a href="#pricing" className={styles.navLink}>Pricing</a>
-                <a href="#contact" className={styles.navLink}>Contact</a>
-                <Link to="/login" className={styles.navLink}>
-                  Sign In
-                </Link>
                 <Link to="/signup" className={styles.navButton}>
-                  Sign Up
+                  Get Started
                 </Link>
               </div>
             </div>
@@ -149,21 +139,16 @@ const Landing: React.FC = () => {
         <div className={styles.heroContent}>
           <h1 className={styles.heroTitle}>
             The POS That Actually
-            <span className={styles.heroTitleHighlight}>Gets Your Business</span>
+            <span className={styles.heroTitleBlack}>Gets Your Business</span>
           </h1>
           
           <p className={styles.heroSubtitle}>
-            Stop wrestling with clunky POS systems. TillPoint is built by retailers, for retailers. 
-            Multi-location support, AI voice announcements, weighted products, and side businesses - 
-            all the features you actually need, none of the bloat you don't.
+            Built by retailers, for retailers. All the features you actually need, none of the bloat you don't.
           </p>
           
             <div className={styles.heroButtons}>
               <Link to="/login" className={styles.primaryButton}>
-                <i className="fas fa-play-circle"></i> Try Demo
-              </Link>
-              <Link to="/signup" className={styles.secondaryButton}>
-                <i className="fas fa-rocket"></i> Start Free Trial
+                Get Started
               </Link>
             </div>
           
@@ -179,6 +164,72 @@ const Landing: React.FC = () => {
             <div className={styles.statItem}>
               <span className={styles.statNumber}>24/7</span>
               <span className={styles.statLabel}>Support</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Cards Section */}
+      <section className={styles.featuresCardsSection}>
+        <div className={styles.featuresCardsContent}>
+          <div className={styles.featuresCardsGrid}>
+            <div className={styles.featureCard}>
+              <div className={styles.featureCardIcon}>
+                <i className="fas fa-store"></i>
+              </div>
+              <h3 className={styles.featureCardTitle}>Multi-location management</h3>
+              <p className={styles.featureCardDescription}>
+                Consolidate your entire business with one system for managing multiple stores, locations, and side businesses.
+              </p>
+            </div>
+            
+            <div className={styles.featureCard}>
+              <div className={styles.featureCardIcon}>
+                <i className="fas fa-microphone-alt"></i>
+              </div>
+              <h3 className={styles.featureCardTitle}>AI-powered operations</h3>
+              <p className={styles.featureCardDescription}>
+                Build seamless experiences with AI voice announcements, smart inventory tracking, and automated workflows.
+              </p>
+            </div>
+            
+            <div className={styles.featureCard}>
+              <div className={styles.featureCardIcon}>
+                <i className="fas fa-chart-line"></i>
+              </div>
+              <h3 className={styles.featureCardTitle}>Retail-focused innovation</h3>
+              <p className={styles.featureCardDescription}>
+                Built by retailers, for retailers. Weighted products, partial payments, and features that actually work for your business.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Product Showcase Section */}
+      <section className={styles.productShowcaseSection}>
+        <div className={styles.productShowcaseContent}>
+          <div className={styles.productShowcaseGrid}>
+            {/* Left Side - Retail Store Checkout Scene */}
+            <div className={styles.productShowcaseLeft}>
+              <div className={styles.productShowcaseImage}>
+                <img 
+                  src="images/backgrounds/landingpageleftimage.png" 
+                  alt="TillPoint POS in action at retail checkout" 
+                  className={styles.showcaseImage}
+                />
+              </div>
+            </div>
+            
+            {/* Right Side - Payment Methods and Terminal Image */}
+            <div className={styles.productShowcaseRight}>
+              <div className={styles.productShowcaseImage}>
+                <img 
+                  src="/images/backgrounds/landingpagerightimage.png" 
+                  alt="TillPoint Payment Methods and Terminal" 
+                  className={styles.showcaseImage}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -239,6 +290,10 @@ const Landing: React.FC = () => {
                   </div>
                 )}
                 
+                <div className={styles.pricingIcon} style={{ color: plan.iconColor }}>
+                  <i className={plan.icon}></i>
+                </div>
+                
                 <div className={styles.pricingCardHeader}>
                   <h3 className={styles.pricingPlanName}>{plan.name}</h3>
                   <div className={styles.pricingPrice}>
@@ -260,7 +315,7 @@ const Landing: React.FC = () => {
                 </div>
                 
                 <div className={styles.pricingAction}>
-                  <Link to="/signup" className={styles.pricingButton}>
+                  <Link to="/signup" className={styles.pricingButton} style={{ backgroundColor: plan.iconColor }}>
                     Start Free Trial
                   </Link>
                 </div>

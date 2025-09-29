@@ -24,30 +24,30 @@
   left: 0;
   right: 0;
   z-index: 1000;
-  padding: 1rem 2rem 0 2rem;
+  padding: 1.5rem 2rem;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .navWrapper {
-  max-width: 1280px;
+  max-width: 1600px;
   margin: 0 auto;
-  background: linear-gradient(135deg, rgba(30, 30, 30, 0.3) 0%, rgba(60, 60, 60, 0.2) 100%);
-  backdrop-filter: blur(20px);
-  border-radius: 2rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .navContent {
-  max-width: 1280px;
+  max-width: 1600px;
   margin: 0 auto;
-  padding: 0 2rem;
 }
 
 .navFlex {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 4.5rem;
+  height: auto;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 4rem;
 }
 
 .logoContainer {
@@ -57,29 +57,88 @@
 }
 
 .logoImage {
-  height: 50px;
+  height: 60px;
   width: auto;
   object-fit: contain;
 }
 
 .logoText {
-  font-size: 1.75rem;
-  font-weight: bold;
-  color: #f1f0e4;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
   margin: 0;
+  text-decoration: none;
 }
 
 .navLinks {
-  display: none;
+  display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
+.mobileMenuButton {
+  display: block;
+  background: none;
+  border: none;
+  color: #f1f0e4;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.mobileMenuButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.mobileMenu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, rgba(20, 20, 20, 0.95) 0%, rgba(40, 40, 40, 0.9) 100%);
+  backdrop-filter: blur(20px);
+  border-radius: 0 0 1.5rem 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-top: none;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  padding: 1rem 2rem 2rem 2rem;
+  margin: 0 2rem;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mobileMenu.open {
+  display: flex;
+}
+
+.mobileMenuLink {
+  color: #e5e7eb;
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  text-align: center;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mobileMenuLink:hover {
+  color: #f1f0e4;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+
 .navLink {
   color: #e5e7eb;
-  padding: 0.75rem 1rem;
+  padding: 0.875rem 1.25rem;
   border-radius: 0.5rem;
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 500;
   text-decoration: none;
   transition: all 0.2s ease;
@@ -101,29 +160,33 @@
 }
 
 .navButton {
-  background-color: #f1f0e4;
-  color: #1f2937;
+  background-color: #111827;
+  color: #ffffff;
   padding: 0.75rem 1.5rem;
-  border-radius: 2rem;
-  font-size: 1.1rem;
-  font-weight: 600;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  text-decoration: none;
+  display: inline-block;
 }
 
 .navButton:hover {
-  background-color: #ffffff;
+  background-color: #374151;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* Hero Section */
 .heroSection {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e0f2fe 100%);
+  background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('/images/backgrounds/landingpagebg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   padding: 8rem 0 5rem 0;
   margin-top: 2rem;
+  position: relative;
 }
 
 .heroContent {
@@ -131,14 +194,17 @@
   margin: 0 auto;
   padding: 0 1rem;
   text-align: center;
+  position: relative;
+  z-index: 1;
 }
 
 .heroTitle {
   font-size: 2.25rem;
   font-weight: bold;
-  color: #111827;
+  color: #f1f0e4;
   margin-bottom: 1.5rem;
   line-height: 1.1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .heroTitleHighlight {
@@ -146,13 +212,20 @@
   display: block;
 }
 
+.heroTitleBlack {
+  color: #111827;
+  display: block;
+}
+
 .heroSubtitle {
   font-size: 1.25rem;
-  color: #4b5563;
+  color: #ffffff;
   margin-bottom: 2rem;
   max-width: 48rem;
   margin-left: auto;
   margin-right: auto;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  font-weight: 500;
 }
 
 .heroButtons {
@@ -164,8 +237,8 @@
 }
 
 .primaryButton {
-  background-color: #7d8d86;
-  color: #f1f0e4;
+  background-color: #111827;
+  color: #ffffff;
   padding: 0.75rem 2rem;
   border-radius: 0.5rem;
   font-size: 1.125rem;
@@ -179,7 +252,7 @@
 }
 
 .primaryButton:hover {
-  background-color: #3e3f29;
+  background-color: #374151;
 }
 
 .secondaryButton {
@@ -227,6 +300,115 @@
   color: #4b5563;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+/* Features Cards Section */
+.featuresCardsSection {
+  padding: 4rem 0;
+  background-color: white;
+}
+
+.featuresCardsContent {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.featuresCardsGrid {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 2rem !important;
+  order: unset !important;
+}
+
+.featureCard {
+  background-color: white !important;
+  border: 1px solid #9ca3af !important;
+  border-radius: 0.75rem !important;
+  padding: 2.5rem !important;
+  text-align: left !important;
+  order: unset !important;
+  position: relative !important;
+}
+
+.featureCardIcon {
+  width: 3rem;
+  height: 3rem;
+  background-color: #fed7aa;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.featureCardIcon i {
+  font-size: 1.25rem;
+  color: #000000;
+}
+
+.featureCardTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.75rem;
+}
+
+.featureCardDescription {
+  color: #374151;
+  font-weight: 500;
+  line-height: 1.6;
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+/* Product Showcase Section */
+.productShowcaseSection {
+  padding: 0;
+  background-color: white;
+  position: relative;
+  min-height: 1100px;
+}
+
+.productShowcaseContent {
+  max-width: 2000px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.productShowcaseGrid {
+  display: flex;
+  gap: 0;
+  align-items: flex-start;
+  justify-content: center;
+  flex-wrap: nowrap;
+}
+
+.productShowcaseLeft {
+  width: 60%;
+  height: 800px;
+}
+
+.productShowcaseRight {
+  width: 35%;
+  height: 700px;
+  margin-left: -10%;
+  margin-top: 400px;
+  z-index: 2;
+}
+
+.productShowcaseImage {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.showcaseImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 1rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
 }
 
 /* Features Section */
@@ -515,7 +697,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 2rem;
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -565,6 +747,12 @@
 
 .popularBadge i {
   font-size: 0.75rem;
+}
+
+.pricingIcon {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-size: 2.5rem;
 }
 
 .pricingCardHeader {
@@ -637,10 +825,10 @@
 
 .pricingButton {
   display: inline-block;
-  width: 100%;
+  width: auto;
   background-color: #7d8d86;
   color: #f1f0e4;
-  padding: 1rem 2rem;
+  padding: 1rem 2.5rem;
   border-radius: 0.5rem;
   font-size: 1.125rem;
   font-weight: 700;
@@ -911,6 +1099,25 @@
     grid-template-columns: repeat(2, 1fr);
   }
   
+  .featuresCardsGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .productShowcaseGrid {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .productShowcaseLeft {
+    width: 100%;
+    height: 500px;
+  }
+  
+  .productShowcaseRight {
+    width: 100%;
+    height: 400px;
+  }
+  
   .ctaSectionButtons {
     flex-direction: row;
   }
@@ -936,6 +1143,14 @@
     gap: 0.5rem;
   }
   
+  .mobileMenuButton {
+    display: none;
+  }
+  
+  .mobileMenu {
+    display: none !important;
+  }
+  
   .heroTitle {
     font-size: 4.5rem;
   }
@@ -946,6 +1161,28 @@
   
   .featuresGrid {
     grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .featuresCardsGrid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  
+  .productShowcaseGrid {
+    flex-direction: row;
+    gap: 0;
+  }
+  
+  .productShowcaseLeft {
+    width: 60%;
+    height: 800px;
+  }
+  
+  .productShowcaseRight {
+    width: 35%;
+    height: 700px;
+    margin-left: -10%;
+    margin-top: 400px;
+    z-index: 2;
   }
   
   .benefitsGrid {
