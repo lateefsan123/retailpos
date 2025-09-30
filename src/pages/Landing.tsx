@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+// Removed framer-motion imports - using CSS transitions only
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import styles from './Landing.module.css'
 
@@ -60,37 +60,58 @@ const Landing: React.FC = () => {
 
 
   // FeatureBlock Component
-  const FeatureBlock = ({ feature, delay = 0 }: { feature: (typeof carouselFeatures)[0]; delay?: number }) => {
+  const FeatureBlock = ({ feature, delay = 0, isReversed = false }: { feature: (typeof carouselFeatures)[0]; delay?: number; isReversed?: boolean }) => {
     const [activeImage, setActiveImage] = useState(0)
     const [modalImg, setModalImg] = useState<string | null>(null)
+    const [intervalRef, setIntervalRef] = useState<NodeJS.Timeout | null>(null)
 
-    useEffect(() => {
-      // Different timing for each carousel: 4000ms, 5500ms, 6000ms
+    const startTimer = () => {
+      if (intervalRef) {
+        clearInterval(intervalRef)
+      }
       const timing = 4000 + delay
       const interval = setInterval(() => {
         setActiveImage((prev) => (prev + 1 < feature.images.length ? prev + 1 : 0))
       }, timing)
-      return () => clearInterval(interval)
+      setIntervalRef(interval)
+    }
+
+    useEffect(() => {
+      startTimer()
+      return () => {
+        if (intervalRef) {
+          clearInterval(intervalRef)
+        }
+      }
     }, [feature, delay])
 
+    const handleArrowClick = (direction: 'prev' | 'next') => {
+      if (direction === 'prev') {
+        setActiveImage((prev) => (prev > 0 ? prev - 1 : feature.images.length - 1))
+      } else {
+        setActiveImage((prev) => (prev + 1 < feature.images.length ? prev + 1 : 0))
+      }
+      // Reset timer when arrow is clicked
+      startTimer()
+    }
+
     return (
-      <div className={styles.featureBlock}>
-        <h3 className={styles.featureBlockTitle}>{feature.title}</h3>
-        <p className={styles.featureBlockDescription}>{feature.description}</p>
+      <div className={`${styles.featureBlock} ${isReversed ? styles.featureBlockReversed : ''}`}>
+        <div className={styles.featureContent}>
+          <h3 className={styles.featureBlockTitle}>{feature.title}</h3>
+          <p className={styles.featureBlockDescription}>{feature.description}</p>
+        </div>
 
         <div className={styles.carouselWrapper}>
           <div className={styles.carouselContainer}>
             {feature.images.map((img, i) => (
-              <motion.img
+              <img
                 key={i}
                 src={`/images/backgrounds/features/${img}`}
                 onClick={() => setModalImg(`/images/backgrounds/features/${img}`)}
                 className={`${styles.carouselImage} ${
                   i === activeImage ? styles.activeImage : styles.inactiveImage
                 } ${i > activeImage ? styles.rightOffset : styles.leftOffset}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: i === activeImage ? 1 : 0.5 }}
-                transition={{ duration: 0.5 }}
                 onError={(e) => {
                   console.error('Failed to load image:', img)
                   e.currentTarget.src = '/images/backgrounds/landingpageleftimage.png'
@@ -100,16 +121,16 @@ const Landing: React.FC = () => {
 
             {/* Nav arrows */}
             <button
-              onClick={() => setActiveImage((prev) => (prev > 0 ? prev - 1 : feature.images.length - 1))}
+              onClick={() => handleArrowClick('prev')}
               className={styles.carouselNavButton}
-              style={{ left: '-50px' }}
+              style={{ left: '-70px' }}
             >
               <ChevronLeft size={20} />
             </button>
             <button
-              onClick={() => setActiveImage((prev) => (prev + 1 < feature.images.length ? prev + 1 : 0))}
+              onClick={() => handleArrowClick('next')}
               className={styles.carouselNavButton}
-              style={{ right: '-50px' }}
+              style={{ right: '-70px' }}
             >
               <ChevronRight size={20} />
             </button>
@@ -121,7 +142,10 @@ const Landing: React.FC = () => {
               <button
                 key={index}
                 className={`${styles.dot} ${index === activeImage ? styles.activeDot : ''}`}
-                onClick={() => setActiveImage(index)}
+                onClick={() => {
+                  setActiveImage(index)
+                  startTimer() // Reset timer when dot is clicked
+                }}
                 aria-label={`Go to slide ${index + 1}`}
               />
             ))}
@@ -129,27 +153,22 @@ const Landing: React.FC = () => {
         </div>
 
         {/* Modal popup */}
-        <AnimatePresence>
-          {modalImg && (
-            <motion.div
-              className={styles.modalOverlay}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setModalImg(null)}
-            >
-              <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-                <img src={modalImg} className={styles.modalImage} alt={feature.title} />
-                <button
-                  className={styles.modalClose}
-                  onClick={() => setModalImg(null)}
-                >
-                  <X size={18} />
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {modalImg && (
+          <div
+            className={styles.modalOverlay}
+            onClick={() => setModalImg(null)}
+          >
+            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+              <img src={modalImg} className={styles.modalImage} alt={feature.title} />
+              <button
+                className={styles.modalClose}
+                onClick={() => setModalImg(null)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -244,6 +263,9 @@ const Landing: React.FC = () => {
                 <h1 className={styles.logoText}>TillPoint</h1>
               </div>
               <div className={styles.navLinks}>
+                <Link to="/login" className={styles.navButton}>
+                  Sign In
+                </Link>
                 <Link to="/signup" className={styles.navButton}>
                   Get Started
                 </Link>
@@ -399,7 +421,8 @@ const Landing: React.FC = () => {
               <FeatureBlock 
                 key={idx} 
                 feature={feature} 
-                delay={idx * 1500} 
+                delay={idx * 1500}
+                isReversed={idx % 2 === 1} // Alternate layout: odd index = reversed (text left, image right)
               />
             ))}
           </div>

@@ -291,13 +291,13 @@
   display: block;
   font-size: 2rem;
   font-weight: bold;
-  color: #7d8d86;
+  color: white;
   margin-bottom: 0.25rem;
 }
 
 .statLabel {
   font-size: 0.875rem;
-  color: #4b5563;
+  color: white;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -473,7 +473,7 @@
 }
 
 .featureDescription {
-  color: #374151;
+  color: #111827;
   font-size: 1.125rem;
   line-height: 1.6;
   margin: 0;
@@ -521,36 +521,56 @@
 /* Feature Block Styles */
 .featureBlock {
   margin-bottom: 4rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5rem;
+  align-items: center;
+  min-height: 650px;
+}
+
+.featureBlockReversed .featureContent {
+  order: 1;
+}
+
+.featureBlockReversed .carouselWrapper {
+  order: 2;
+}
+
+.featureContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2rem;
+  order: 1;
 }
 
 .featureBlockTitle {
   font-size: 2.5rem;
   font-weight: 700;
   color: #111827;
-  text-align: center;
+  text-align: left;
   margin-bottom: 1rem;
   line-height: 1.2;
 }
 
 .featureBlockDescription {
   font-size: 1.125rem;
-  color: #374151;
-  text-align: center;
-  margin-bottom: 2rem;
+  color: #111827;
+  text-align: left;
+  margin-bottom: 0;
   line-height: 1.6;
-  max-width: 48rem;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .carouselWrapper {
   position: relative;
   overflow: visible;
-  border-radius: 2rem;
+  border-radius: 0;
   background-color: transparent;
-  padding: 2rem 4rem;
-  max-width: 70rem;
-  margin: 0 auto;
+  padding: 0;
+  max-width: 100%;
+  margin: 0;
+  box-shadow: none;
+  width: 100%;
 }
 
 .carouselContainer {
@@ -558,50 +578,42 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 20rem;
+  height: 600px;
+  border-radius: 0.5rem;
+  overflow: visible;
 }
 
 .carouselImage {
   position: absolute;
-  border-radius: 1rem;
+  border-radius: 0.5rem;
   cursor: pointer;
-  transition: all 0.5s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border: 4px solid #e5e7eb;
+  transition: opacity 0.3s ease;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border: 2px solid #e5e7eb;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+  width: auto;
+  height: auto;
 }
 
 .activeImage {
   z-index: 20;
-  transform: scale(1);
   opacity: 1;
-  border: 6px solid #111827;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
 .inactiveImage {
   z-index: 10;
-  transform: scale(0.9);
-  opacity: 0.7;
-}
-
-.leftOffset {
-  transform: translateX(-3rem) scale(0.9);
-}
-
-.rightOffset {
-  transform: translateX(3rem) scale(0.9);
+  opacity: 0;
 }
 
 .carouselNavButton {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(0, 0, 0, 0.4);
-  color: white;
-  border: none;
+  background: #111827;
+  color: #ffffff;
+  border: 2px solid #111827;
   border-radius: 50%;
   width: 3rem;
   height: 3rem;
@@ -611,11 +623,15 @@
   cursor: pointer;
   transition: all 0.3s ease;
   z-index: 30;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .carouselNavButton:hover {
-  background: rgba(0, 0, 0, 0.6);
+  background: #374151;
+  color: #ffffff;
   transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  border-color: #374151;
 }
 
 /* Dot Indicators */
@@ -624,7 +640,7 @@
   justify-content: center;
   align-items: center;
   gap: 0.75rem;
-  margin-top: 1.5rem;
+  margin-top: 0.5rem;
 }
 
 .dot {
@@ -632,21 +648,21 @@
   height: 0.75rem;
   border-radius: 50%;
   border: none;
-  background-color: #d1d5db;
+  background-color: #fed7aa;
   cursor: pointer;
   transition: all 0.3s ease;
   padding: 0;
 }
 
 .dot:hover {
-  background-color: #9ca3af;
+  background-color: #fdba74;
   transform: scale(1.2);
 }
 
 .activeDot {
-  background-color: #111827;
-  transform: scale(1.3);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  background-color: #fb923c;
+  transform: scale(1.4);
+  box-shadow: 0 2px 8px rgba(251, 146, 60, 0.3);
 }
 
 /* Modal Styles */
@@ -1407,12 +1423,12 @@
   }
   
   .carouselWrapper {
-    max-width: 60rem;
-    padding: 1.5rem 3rem;
+    max-width: 70rem;
+    padding: 0;
   }
   
   .carouselContainer {
-    height: 16rem;
+    height: 25rem;
   }
   
   .carouselNavButton {
@@ -1507,12 +1523,12 @@
   }
   
   .carouselWrapper {
-    max-width: 70rem;
-    padding: 2rem 4rem;
+    max-width: 80rem;
+    padding: 0;
   }
   
   .carouselContainer {
-    height: 20rem;
+    height: 35rem;
   }
   
   .carouselNavButton {
@@ -1588,5 +1604,45 @@
   .contactContent,
   .footerContent {
     padding: 0 2rem;
+  }
+}
+
+/* Responsive Design for Alternating Features */
+@media (max-width: 768px) {
+  .featureBlock {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    min-height: auto;
+  }
+  
+  .featureBlockReversed .featureContent {
+    order: 1;
+  }
+  
+  .featureBlockReversed .carouselWrapper {
+    order: 2;
+  }
+  
+  .featureContent {
+    padding: 1rem;
+    order: 1;
+  }
+  
+  .carouselWrapper {
+    order: 2;
+    padding: 0;
+  }
+  
+  .featureBlockTitle {
+    text-align: center;
+    font-size: 2rem;
+  }
+  
+  .featureBlockDescription {
+    text-align: center;
+  }
+  
+  .carouselContainer {
+    height: 450px;
   }
 }
