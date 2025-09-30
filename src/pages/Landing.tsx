@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-// Removed framer-motion imports - using CSS transitions only
+import { motion } from 'framer-motion'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import styles from './Landing.module.css'
 
@@ -211,7 +211,7 @@ const Landing: React.FC = () => {
         "Basic reporting"
       ],
       popular: false,
-      iconColor: "#10B981",
+      iconColor: "#7d8d86",
       icon: "fas fa-seedling"
     },
     {
@@ -229,8 +229,8 @@ const Landing: React.FC = () => {
         "Priority support"
       ],
       popular: true,
-      iconColor: "#3B82F6",
-      icon: "fas fa-rocket"
+      iconColor: "#3e3f29",
+      icon: "fas fa-tree"
     },
     {
       name: "Enterprise",
@@ -247,8 +247,8 @@ const Landing: React.FC = () => {
         "Custom training"
       ],
       popular: false,
-      iconColor: "#8B5CF6",
-      icon: "fas fa-crown"
+      iconColor: "#111827",
+      icon: "fas fa-building"
     }
   ]
 
@@ -314,7 +314,13 @@ const Landing: React.FC = () => {
       <section className={styles.featuresCardsSection}>
         <div className={styles.featuresCardsContent}>
           <div className={styles.featuresCardsGrid}>
-            <div className={styles.featureCard}>
+            <motion.div 
+              className={styles.featureCard}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              viewport={{ once: true }}
+            >
               <div className={styles.featureCardIcon}>
                 <i className="fas fa-store"></i>
               </div>
@@ -322,9 +328,15 @@ const Landing: React.FC = () => {
               <p className={styles.featureCardDescription}>
                 Consolidate your entire business with one system for managing multiple stores, locations, and side businesses.
               </p>
-            </div>
+            </motion.div>
             
-            <div className={styles.featureCard}>
+            <motion.div 
+              className={styles.featureCard}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true }}
+            >
               <div className={styles.featureCardIcon}>
                 <i className="fas fa-microphone-alt"></i>
               </div>
@@ -332,9 +344,15 @@ const Landing: React.FC = () => {
               <p className={styles.featureCardDescription}>
                 Build seamless experiences with AI voice announcements, smart inventory tracking, and automated workflows.
               </p>
-            </div>
+            </motion.div>
             
-            <div className={styles.featureCard}>
+            <motion.div 
+              className={styles.featureCard}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              viewport={{ once: true }}
+            >
               <div className={styles.featureCardIcon}>
                 <i className="fas fa-chart-line"></i>
               </div>
@@ -342,7 +360,7 @@ const Landing: React.FC = () => {
               <p className={styles.featureCardDescription}>
                 Built by retailers, for retailers. Weighted products, partial payments, and features that actually work for your business.
               </p>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -410,20 +428,33 @@ const Landing: React.FC = () => {
       {/* Feature Showcase Section */}
       <section className={styles.featureShowcaseSection}>
         <div className={styles.featureShowcaseContent}>
-          <div className={styles.featureShowcaseHeader}>
+          <motion.div 
+            className={styles.featureShowcaseHeader}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
             <h2 className={styles.featureShowcaseTitle}>
               See TillPoint in Action
             </h2>
-          </div>
+          </motion.div>
           
           <div className={styles.featureShowcaseGrid}>
             {carouselFeatures.map((feature, idx) => (
-              <FeatureBlock 
-                key={idx} 
-                feature={feature} 
-                delay={idx * 1500}
-                isReversed={idx % 2 === 1} // Alternate layout: odd index = reversed (text left, image right)
-              />
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: idx * 0.3 }}
+                viewport={{ once: true }}
+              >
+                <FeatureBlock 
+                  feature={feature} 
+                  delay={idx * 1500}
+                  isReversed={idx % 2 === 1} // Alternate layout: odd index = reversed (text left, image right)
+                />
+              </motion.div>
             ))}
           </div>
         </div>
@@ -432,7 +463,13 @@ const Landing: React.FC = () => {
       {/* Pricing Section */}
       <section id="pricing" className={styles.pricingSection}>
         <div className={styles.pricingContent}>
-          <div className={styles.pricingHeader}>
+          <motion.div 
+            className={styles.pricingHeader}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
             <h2 className={styles.pricingTitle}>
               Simple, Transparent
               <span className={styles.pricingTitleHighlight}> Pricing</span>
@@ -441,11 +478,18 @@ const Landing: React.FC = () => {
               Choose the plan that fits your business size. All plans include our core POS features 
               with no hidden fees or setup costs.
             </p>
-          </div>
+          </motion.div>
           
           <div className={styles.pricingGrid}>
             {pricingPlans.map((plan, index) => (
-              <div key={index} className={`${styles.pricingCard} ${plan.popular ? styles.popularCard : ''}`}>
+              <motion.div 
+                key={index} 
+                className={`${styles.pricingCard} ${plan.popular ? styles.popularCard : ''}`}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.2 }}
+                viewport={{ once: true }}
+              >
                 {plan.popular && (
                   <div className={styles.popularBadge}>
                     <i className="fas fa-star"></i>
@@ -482,69 +526,18 @@ const Landing: React.FC = () => {
                     Start Free Trial
                   </Link>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
           
           <div className={styles.pricingFooter}>
             <p className={styles.pricingFooterText}>
-              All plans include 30-day free trial • No setup fees • Cancel anytime
+              All plans include 3-day free trial • No setup fees • Cancel anytime
             </p>
           </div>
         </div>
       </section>
 
-      {/* Benefits Section */}
-      <section className={styles.benefitsSection}>
-        <div className={styles.benefitsContent}>
-          <div className={styles.benefitsGrid}>
-            <div>
-              <h2 className={styles.benefitsTitle}>
-                Built by Retailers, For Retailers
-              </h2>
-              <div className={styles.benefitItem}>
-                <div className={styles.benefitIcon}>
-                  <i className="fas fa-rocket"></i>
-                </div>
-                <div className={styles.benefitContent}>
-                  <h3>No More POS Headaches</h3>
-                  <p>We've been there. Clunky interfaces, missing features, terrible support. TillPoint fixes all of that.</p>
-                </div>
-              </div>
-              <div className={styles.benefitItem}>
-                <div className={styles.benefitIcon}>
-                  <i className="fas fa-phone"></i>
-                </div>
-                <div className={styles.benefitContent}>
-                  <h3>Real Support, Real People</h3>
-                  <p>Call us at +353 852287083. We actually answer the phone and know our product inside and out.</p>
-                </div>
-              </div>
-              <div className={styles.benefitItem}>
-                <div className={styles.benefitIcon}>
-                  <i className="fas fa-shield-alt"></i>
-                </div>
-                <div className={styles.benefitContent}>
-                  <h3>Your Data, Your Business</h3>
-                  <p>Multi-tenant architecture means your data is completely isolated. No sharing, no snooping, no BS.</p>
-                </div>
-              </div>
-            </div>
-            <div className={styles.ctaCard}>
-              <div className={styles.ctaIcon}>
-                <i className="fas fa-play-circle"></i>
-              </div>
-              <h3 className={styles.ctaTitle}>Try It Before You Buy It</h3>
-              <p className={styles.ctaDescription}>
-                No credit card required. Jump into our demo and see why retailers are switching to TillPoint.
-              </p>
-              <Link to="/login" className={styles.ctaButton}>
-                <i className="fas fa-play-circle"></i> Try Demo Now
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* CTA Section */}
       <section className={styles.ctaSection}>
@@ -557,10 +550,10 @@ const Landing: React.FC = () => {
           </p>
           <div className={styles.ctaSectionButtons}>
             <Link to="/login" className={styles.ctaSectionPrimaryButton}>
-              <i className="fas fa-play-circle"></i> Try Demo
+              Sign In
             </Link>
             <Link to="/signup" className={styles.ctaSectionSecondaryButton}>
-              <i className="fas fa-rocket"></i> Start Free Trial
+              Sign Up
             </Link>
           </div>
         </div>
@@ -660,30 +653,24 @@ const Landing: React.FC = () => {
           <div className={styles.footerGrid}>
             <div className={styles.footerBrand}>
               <h3 className={styles.footerBrandTitle}>TillPoint</h3>
-              <p className={styles.footerBrandDescription}>
-                The modern point-of-sale system designed for today's businesses. 
-                Powerful, intuitive, and built to grow with you.
-              </p>
             </div>
             <div className={styles.footerSection}>
               <h4>Product</h4>
               <ul className={styles.footerLinks}>
-                <li><a href="#" className={styles.footerLink}>Features</a></li>
-                <li><a href="#" className={styles.footerLink}>Pricing</a></li>
-                <li><a href="#" className={styles.footerLink}>Integrations</a></li>
+                <li><a href="#features" className={styles.footerLink}>Features</a></li>
+                <li><a href="#pricing" className={styles.footerLink}>Pricing</a></li>
               </ul>
             </div>
             <div className={styles.footerSection}>
               <h4>Support</h4>
               <ul className={styles.footerLinks}>
-                <li><a href="#" className={styles.footerLink}>Help Center</a></li>
-                <li><a href="#" className={styles.footerLink}>Contact Us</a></li>
+                <li><a href="#contact" className={styles.footerLink}>Contact Us</a></li>
                 <li><a href="#" className={styles.footerLink}>Documentation</a></li>
               </ul>
             </div>
           </div>
           <div className={styles.footerDivider}>
-            <p>&copy; 2024 TillPoint. All rights reserved.</p>
+            <p>&copy; 2025 TillPoint. All rights reserved.</p>
           </div>
         </div>
       </footer>

@@ -304,7 +304,7 @@
 
 /* Features Cards Section */
 .featuresCardsSection {
-  padding: 4rem 0;
+  padding: 3rem 0;
   background-color: white;
 }
 
@@ -316,8 +316,8 @@
 
 .featuresCardsGrid {
   display: grid !important;
-  grid-template-columns: repeat(3, 1fr) !important;
-  gap: 2rem !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 3rem !important;
   order: unset !important;
 }
 
@@ -879,7 +879,7 @@
 /* CTA Section */
 .ctaSection {
   padding: 5rem 0;
-  background-color: #7d8d86;
+  background-color: #111827;
   text-align: center;
 }
 
@@ -951,8 +951,8 @@
 
 /* Pricing Section */
 .pricingSection {
-  padding: 6rem 0;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e0f2fe 100%);
+  padding: 4rem 0;
+  background-color: white;
 }
 
 .pricingContent {
@@ -989,56 +989,53 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 2rem;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
 .pricingCard {
   background-color: white;
   border-radius: 1rem;
-  padding: 2rem;
+  padding: 1.5rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e5e7eb;
-  transition: all 0.3s ease;
+  border: 5px solid #111827;
   position: relative;
   text-align: center;
+  min-height: 500px;
 }
 
-.pricingCard:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-}
+/* Removed hover effects */
 
 .popularCard {
   transform: scale(1.05);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-  border: 2px solid #7d8d86;
+  border: 6px solid #111827;
 }
 
-.popularCard:hover {
-  transform: scale(1.05) translateY(-4px);
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
-}
+/* Removed popular card hover effects */
 
 .popularBadge {
   position: absolute;
-  top: -1rem;
+  top: -2.25rem;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #7d8d86;
-  color: #f1f0e4;
+  background-color: #111827;
+  color: #ffffff;
   padding: 0.5rem 1rem;
   border-radius: 9999px;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  border: 2px solid #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .popularBadge i {
-  font-size: 0.75rem;
+  font-size: 1rem;
 }
 
 .pricingIcon {
@@ -1069,7 +1066,7 @@
 .priceAmount {
   font-size: 3.5rem;
   font-weight: bold;
-  color: #7d8d86;
+  color: #111827;
 }
 
 .pricePeriod {
@@ -1106,7 +1103,7 @@
 }
 
 .featureItem i {
-  color: #7d8d86;
+  color: #111827;
   font-size: 1rem;
   flex-shrink: 0;
 }
@@ -1118,14 +1115,13 @@
 .pricingButton {
   display: inline-block;
   width: auto;
-  background-color: #7d8d86;
-  color: #f1f0e4;
+  background-color: #111827;
+  color: #ffffff;
   padding: 1rem 2.5rem;
   border-radius: 0.5rem;
   font-size: 1.125rem;
   font-weight: 700;
   text-decoration: none;
-  transition: all 0.2s ease;
   border: none;
   cursor: pointer;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -1134,14 +1130,14 @@
 }
 
 .pricingButton:hover {
-  background-color: #3e3f29;
+  background-color: #374151;
   transform: translateY(-2px);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
 .popularCard .pricingButton {
-  background-color: #7d8d86;
-  color: #f1f0e4;
+  background-color: #111827;
+  color: #ffffff;
 }
 
 .pricingFooter {
@@ -1150,14 +1146,14 @@
 }
 
 .pricingFooterText {
-  color: #6b7280;
+  color: #111827;
   font-size: 1.125rem;
   margin: 0;
 }
 
 /* Contact Section */
 .contactSection {
-  padding: 5rem 0;
+  padding: 2rem 0;
   background-color: white;
   border-top: 1px solid #e5e7eb;
 }
@@ -1170,7 +1166,7 @@
 
 .contactHeader {
   text-align: center;
-  margin-bottom: 4rem;
+  margin-bottom: 2rem;
 }
 
 .contactTitle {
@@ -1189,27 +1185,29 @@
 
 .contactGrid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 3rem;
+  align-items: start;
 }
 
 .contactInfo {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 2.5rem;
 }
 
 .contactItem {
   display: flex;
   align-items: flex-start;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .contactIcon {
-  width: 3rem;
-  height: 3rem;
-  background-color: #7d8d86;
+  width: 4rem;
+  height: 4rem;
+  background-color: #fed7aa;
   border-radius: 0.5rem;
+  border: 2px solid #111827;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1217,8 +1215,8 @@
 }
 
 .contactIcon i {
-  color: #f1f0e4;
-  font-size: 1.25rem;
+  color: #111827;
+  font-size: 1.5rem;
 }
 
 .contactDetails h3 {
@@ -1237,7 +1235,7 @@
   background-color: #f8f9fa;
   padding: 2rem;
   border-radius: 0.75rem;
-  border: 1px solid #e5e7eb;
+  border: 2px solid #111827;
 }
 
 .form {
@@ -1267,7 +1265,7 @@
 .formGroup input,
 .formGroup textarea {
   padding: 0.75rem;
-  border: 2px solid #d1d5db;
+  border: 2px solid #6b7280;
   border-radius: 0.5rem;
   font-size: 1rem;
   transition: border-color 0.2s ease;
@@ -1286,8 +1284,8 @@
 }
 
 .submitButton {
-  background-color: #7d8d86;
-  color: #f1f0e4;
+  background-color: #111827;
+  color: #ffffff;
   padding: 0.75rem 2rem;
   border-radius: 0.5rem;
   font-size: 1.125rem;
@@ -1299,14 +1297,14 @@
 }
 
 .submitButton:hover {
-  background-color: #3e3f29;
+  background-color: #374151;
 }
 
 /* Footer */
 .footer {
-  background-color: #3e3f29;
+  background-color: #000000;
   color: #f1f0e4;
-  padding: 3rem 0;
+  padding: 1.5rem 0;
 }
 
 .footerContent {
@@ -1318,8 +1316,8 @@
 .footerGrid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 2rem;
-  margin-bottom: 2rem;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .footerBrand {
@@ -1329,19 +1327,19 @@
 .footerBrandTitle {
   font-size: 1.5rem;
   font-weight: bold;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .footerBrandDescription {
   color: #f1f0e4;
   opacity: 0.8;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .footerSection h4 {
   font-size: 1.125rem;
   font-weight: 600;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .footerLinks {
@@ -1351,7 +1349,7 @@
 }
 
 .footerLinks li {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .footerLink {
@@ -1367,7 +1365,7 @@
 
 .footerDivider {
   border-top: 1px solid #7d8d86;
-  padding-top: 2rem;
+  padding-top: 1rem;
   text-align: center;
   color: #f1f0e4;
   opacity: 0.6;
@@ -1580,11 +1578,12 @@
   }
   
   .footerGrid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
   }
   
   .footerBrand {
-    grid-column: span 2;
+    grid-column: span 1;
   }
 }
 
@@ -1644,5 +1643,14 @@
   
   .carouselContainer {
     height: 450px;
+  }
+  
+  .contactGrid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .featuresCardsGrid {
+    grid-template-columns: 1fr !important;
   }
 }
