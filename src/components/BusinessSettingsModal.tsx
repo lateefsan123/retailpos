@@ -31,6 +31,7 @@ const SECTION_IDS = [
   { id: "contact", label: "Contact" },
   { id: "biz", label: "Business Settings" },
   { id: "receipt", label: "Receipt" },
+  { id: "manual", label: "User Manual" },
 ] as const;
 
 
@@ -524,6 +525,38 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
                   multiline 
                   placeholder="Thank you for your business! Visit us again soon."
                 />
+              </SectionCard>
+
+              {/* User Manual */}
+              <SectionCard id="manual" ref={sectionRefs.manual} title="User Manual">
+                <a
+                  href="/documentation/TillPoint POS – Onboarding Guide (Workflows Addendum).pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '16px 20px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    color: '#ffffff',
+                    textDecoration: 'none',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    fontWeight: '500',
+                    transition: 'background-color 0.2s ease',
+                    border: '1px solid rgba(255, 255, 255, 0.1)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'
+                  }}
+                >
+                  <i className="fa-solid fa-book" style={{ fontSize: '20px', color: '#7d8d86' }}></i>
+                  <span>Open User Manual</span>
+                </a>
               </SectionCard>
 
               <div className={styles.spacer} />

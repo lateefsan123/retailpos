@@ -211,7 +211,7 @@ const Landing: React.FC = () => {
         "Basic reporting"
       ],
       popular: false,
-      iconColor: "#7d8d86",
+      iconColor: "#374151",
       icon: "fas fa-seedling"
     },
     {
@@ -263,6 +263,15 @@ const Landing: React.FC = () => {
                 <h1 className={styles.logoText}>TillPoint</h1>
               </div>
               <div className={styles.navLinks}>
+                <a 
+                  href="/documentation/TillPoint POS – Onboarding Guide (Workflows Addendum).pdf" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className={styles.navButton}
+                  style={{ backgroundColor: 'transparent', border: '2px solid #111827', color: '#111827' }}
+                >
+                  Documentation
+                </a>
                 <Link to="/login" className={styles.navButton}>
                   Sign In
                 </Link>
@@ -665,7 +674,7 @@ const Landing: React.FC = () => {
               <h4>Support</h4>
               <ul className={styles.footerLinks}>
                 <li><a href="#contact" className={styles.footerLink}>Contact Us</a></li>
-                <li><a href="#" className={styles.footerLink}>Documentation</a></li>
+                <li><a href="/documentation/TillPoint POS – Onboarding Guide (Workflows Addendum).pdf" target="_blank" rel="noopener noreferrer" className={styles.footerLink}>Documentation</a></li>
               </ul>
             </div>
           </div>

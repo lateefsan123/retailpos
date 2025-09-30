@@ -1002,6 +1002,8 @@
   position: relative;
   text-align: center;
   min-height: 500px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Removed hover effects */
@@ -1110,6 +1112,7 @@
 
 .pricingAction {
   text-align: center;
+  margin-top: auto;
 }
 
 .pricingButton {
