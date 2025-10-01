@@ -48,6 +48,8 @@ const Dashboard = () => {
     totalSales: 0,
     totalCustomers: 0,
     todayRevenue: 0,
+    todayNetRevenue: 0,
+    todayRefunds: 0,
     todaySideBusinessRevenue: 0,
     todayTransactions: 0,
     lowStockItems: 0
@@ -92,6 +94,11 @@ const Dashboard = () => {
       const todayRevenue = todaySales.reduce((sum, sale) => sum + (parseFloat(sale.total_amount.toString()) || 0), 0)
       const todaySideBusinessRevenue = todaySideBusinessSales.reduce((sum, sale) => sum + (parseFloat(sale.total_amount.toString()) || 0), 0)
 
+      // Note: For cached data, we don't have refund data available, so we'll show gross revenue only
+      // Net revenue calculation requires a separate API call to fetch refunds
+      const todayNetRevenue = todayRevenue // Will be updated when fetchDashboardStats is called
+      const todayRefunds = 0 // Will be updated when fetchDashboardStats is called
+
       // Calculate low stock items from cached products data
       const lowStockItems = productsData.products.filter(product => 
         product.stock_quantity <= product.reorder_level
@@ -102,6 +109,8 @@ const Dashboard = () => {
         totalSales: salesData.sales.length,
         totalCustomers: 0, // We'll need to add customers data to the cache later
         todayRevenue,
+        todayNetRevenue,
+        todayRefunds,
         todaySideBusinessRevenue,
         todayTransactions: todaySales.length,
         lowStockItems
@@ -118,6 +127,8 @@ const Dashboard = () => {
         totalSales: 0,
         totalCustomers: 0,
         todayRevenue: 0,
+        todayNetRevenue: 0,
+        todayRefunds: 0,
         todaySideBusinessRevenue: 0,
         todayTransactions: 0,
         lowStockItems: 0
@@ -162,6 +173,8 @@ const Dashboard = () => {
         totalSales: 0,
         totalCustomers: 0,
         todayRevenue: 0,
+        todayNetRevenue: 0,
+        todayRefunds: 0,
         todaySideBusinessRevenue: 0,
         todayTransactions: 0,
         lowStockItems: 0
@@ -203,6 +216,23 @@ const Dashboard = () => {
       const { data: todaySales, count: todayTransactionsCount } = await todaySalesQuery
 
       const todayRevenue = todaySales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
+
+      // Fetch today's refunds
+      let todayRefundsQuery = supabase
+        .from('refunds')
+        .select('refund_amount')
+        .eq('business_id', businessId)
+        .gte('created_at', `${today}T00:00:00`)
+        .lt('created_at', `${today}T23:59:59`)
+      
+      // Filter by branch if selected
+      if (selectedBranchId) {
+        todayRefundsQuery = todayRefundsQuery.eq('branch_id', selectedBranchId)
+      }
+      
+      const { data: todayRefunds } = await todayRefundsQuery
+      const todayRefundsTotal = todayRefunds?.reduce((sum, refund) => sum + (refund.refund_amount || 0), 0) || 0
+      const todayNetRevenue = todayRevenue - todayRefundsTotal
 
       // Fetch previous day's transaction count for percentage calculation
       const yesterday = new Date()
@@ -285,6 +315,8 @@ const Dashboard = () => {
         totalSales: salesResult.count || 0,
         totalCustomers: customersResult.count || 0,
         todayRevenue,
+        todayNetRevenue,
+        todayRefunds: todayRefundsTotal,
         todaySideBusinessRevenue,
         todayTransactions: todayTransactionsCount || 0,
         lowStockItems: lowStockCount || 0
@@ -385,6 +417,23 @@ const Dashboard = () => {
 
       const periodRevenue = periodSales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
 
+      // Fetch period's refunds
+      let periodRefundsQuery = supabase
+        .from('refunds')
+        .select('refund_amount')
+        .eq('business_id', businessId)
+        .gte('created_at', start)
+        .lt('created_at', end)
+      
+      // Filter by branch if selected
+      if (selectedBranchId) {
+        periodRefundsQuery = periodRefundsQuery.eq('branch_id', selectedBranchId)
+      }
+      
+      const { data: periodRefunds } = await periodRefundsQuery
+      const periodRefundsTotal = periodRefunds?.reduce((sum, refund) => sum + (refund.refund_amount || 0), 0) || 0
+      const periodNetRevenue = periodRevenue - periodRefundsTotal
+
       // Fetch side business data for the period
       const { data: periodSideBusinessSales, count: periodSideBusinessTransactionCount } = await supabase
         .from('side_business_sales')
@@ -440,6 +489,8 @@ const Dashboard = () => {
         totalSales: 0, // Not period-specific
         totalCustomers: 0, // Not period-specific
         todayRevenue: periodRevenue,
+        todayNetRevenue: periodNetRevenue,
+        todayRefunds: periodRefundsTotal,
         todaySideBusinessRevenue: periodSideBusinessRevenue,
         todayTransactions: periodTransactionsCount || 0,
         lowStockItems: lowStockCount || 0
@@ -610,6 +661,22 @@ const Dashboard = () => {
 
       const dayRevenue = daySales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
 
+      // Fetch refunds for selected date
+      let dayRefundsQuery = supabase
+        .from('refunds')
+        .select('refund_amount')
+        .eq('business_id', businessId)
+        .gte('created_at', `${dateString}T00:00:00`)
+        .lt('created_at', `${dateString}T23:59:59`)
+      
+      if (selectedBranchId) {
+        dayRefundsQuery = dayRefundsQuery.eq('branch_id', selectedBranchId)
+      }
+      
+      const { data: dayRefunds } = await dayRefundsQuery
+      const dayRefundsTotal = dayRefunds?.reduce((sum, refund) => sum + (refund.refund_amount || 0), 0) || 0
+      const dayNetRevenue = dayRevenue - dayRefundsTotal
+
       // Fetch previous day's transaction count for percentage calculation
       const previousDay = new Date(date)
       previousDay.setDate(previousDay.getDate() - 1)
@@ -682,6 +749,8 @@ const Dashboard = () => {
         totalSales: salesResult.count || 0,
         totalCustomers: customersResult.count || 0,
         todayRevenue: dayRevenue,
+        todayNetRevenue: dayNetRevenue,
+        todayRefunds: dayRefundsTotal,
         todaySideBusinessRevenue: daySideBusinessRevenue,
         todayTransactions: dayTransactionsCount || 0,
         lowStockItems: lowStockCount || 0
@@ -874,8 +943,8 @@ const Dashboard = () => {
   const statCards = [
     {
       title: getSalesCardTitle(),
-      value: formatCurrency(stats.todayRevenue + stats.todaySideBusinessRevenue, {}, currentBusiness?.currency),
-      change: `Products: ${formatCurrency(stats.todayRevenue, {}, currentBusiness?.currency)} | Side Business: ${formatCurrency(stats.todaySideBusinessRevenue, {}, currentBusiness?.currency)}`,
+      value: formatCurrency(stats.todayNetRevenue + stats.todaySideBusinessRevenue),
+      change: `Net Sales: ${formatCurrency(stats.todayNetRevenue)} | Side Business: ${formatCurrency(stats.todaySideBusinessRevenue)}${stats.todayRefunds > 0 ? ` | Refunds: -${formatCurrency(stats.todayRefunds)}` : ''}`,
       changeColor: '#1a1a1a',
       icon: 'fa-solid fa-euro-sign',
       bgColor: '#1a1a1a',
@@ -1206,7 +1275,7 @@ const Dashboard = () => {
                               fontWeight: '600',
                               margin: 0
                             }}>
-                              {formatCurrency(business.total_amount, {}, currentBusiness?.currency)}
+                              {formatCurrency(business.total_amount)}
                             </p>
                           </div>
                         </div>
@@ -1411,7 +1480,7 @@ const Dashboard = () => {
                             color: '#10b981', 
                             margin: '0 0 2px 0' 
                           }}>
-                            {formatCurrency(transaction.partial_amount || 0, {}, currentBusiness?.currency)}
+                            {formatCurrency(transaction.partial_amount || 0)}
                           </p>
                           <p style={{ 
                             fontSize: '11px', 
@@ -1419,7 +1488,7 @@ const Dashboard = () => {
                             margin: '0 0 2px 0',
                             fontWeight: '500'
                           }}>
-                            of {formatCurrency((transaction.partial_amount || 0) + (transaction.remaining_amount || 0), {}, currentBusiness?.currency)}
+                            of {formatCurrency((transaction.partial_amount || 0) + (transaction.remaining_amount || 0))}
                           </p>
                           <p style={{ 
                             fontSize: '10px', 
@@ -1427,7 +1496,7 @@ const Dashboard = () => {
                             margin: 0,
                             fontWeight: '600'
                           }}>
-                            OWES: {formatCurrency(transaction.remaining_amount || 0, {}, currentBusiness?.currency)}
+                            OWES: {formatCurrency(transaction.remaining_amount || 0)}
                           </p>
                         </div>
                       ) : (
@@ -1437,7 +1506,7 @@ const Dashboard = () => {
                           color: '#1a1a1a', 
                           margin: 0 
                         }}>
-                          {formatCurrency(transaction.total_amount, {}, currentBusiness?.currency)}
+                          {formatCurrency(transaction.total_amount)}
                         </p>
                       )}
                     </div>
@@ -1611,7 +1680,7 @@ const Dashboard = () => {
                       fontWeight: '600',
                       color: '#1a1a1a'
                     }}>
-                      {formatCurrency(transaction.total_amount, {}, currentBusiness?.currency)}
+                      {formatCurrency(transaction.total_amount)}
                     </div>
                   </div>
                 ))}

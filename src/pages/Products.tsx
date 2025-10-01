@@ -6,6 +6,7 @@ import { useBusinessId } from '../hooks/useBusinessId'
 import { useBranch } from '../contexts/BranchContext'
 import BranchSelector from '../components/BranchSelector'
 import { formatCurrency } from '../utils/currency'
+import { useSuppliers } from '../hooks/useSuppliers'
 
 async function uploadProductImage(file: File, productId: string, businessId: number | null) {
   console.log("?? Starting image upload for product:", productId)
@@ -93,6 +94,7 @@ const Products = () => {
   const { user } = useAuth()
   const { businessId, businessLoading } = useBusinessId()
   const { selectedBranchId } = useBranch()
+  const { suppliers } = useSuppliers(businessId, selectedBranchId)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -128,6 +130,7 @@ const Products = () => {
     stock_quantity: '100',
     reorder_level: '10',
     supplier_info: '',
+    supplier_id: '',
     tax_rate: '',
     description: '',
     sku: '',
@@ -179,6 +182,7 @@ const Products = () => {
         price: 0,
         stock_quantity: 0,
         supplier_info: '',
+    supplier_id: '',
         reorder_level: 0,
         image_url: null,
         created_at: '',
@@ -211,6 +215,7 @@ const Products = () => {
         price: 0,
         stock_quantity: 0,
         supplier_info: '',
+    supplier_id: '',
         reorder_level: 0,
         image_url: null,
         created_at: '',
@@ -912,6 +917,7 @@ const Products = () => {
       price: formData.is_weighted ? 0 : validateNumericField(formData.price, 'Price', !isEdit),
       stock_quantity: validateIntegerField(formData.stock_quantity, 'Stock quantity', !isEdit),
       supplier_info: formData.supplier_info?.trim() || '',
+      supplier_id: formData.supplier_id ? parseInt(formData.supplier_id) : undefined,
       reorder_level: validateIntegerField(formData.reorder_level, 'Reorder level', !isEdit),
       tax_rate: formData.tax_rate ? validateNumericField(formData.tax_rate, 'Tax rate', false) : 0,
       last_updated: new Date().toISOString(),
@@ -1014,6 +1020,7 @@ const Products = () => {
         stock_quantity: '100',
         reorder_level: '10',
         supplier_info: '',
+    supplier_id: '',
         tax_rate: '',
         description: '',
         sku: '',
@@ -1173,6 +1180,7 @@ const Products = () => {
       stock_quantity: '100',
       reorder_level: '10',
       supplier_info: '',
+    supplier_id: '',
       tax_rate: '',
       description: '',
       sku: '',
@@ -1198,6 +1206,7 @@ const Products = () => {
       stock_quantity: product.stock_quantity.toString(),
       reorder_level: product.reorder_level.toString(),
       supplier_info: product.supplier_info || '',
+      supplier_id: product.supplier_id?.toString() || '',
       tax_rate: product.tax_rate?.toString() || '',
       description: product.description || '',
       sku: product.sku || '',
@@ -2702,7 +2711,33 @@ const Products = () => {
 
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
-                  Supplier Information
+                  Supplier
+                </label>
+                <select
+                  value={newProduct.supplier_id}
+                  onChange={(e) => setNewProduct({...newProduct, supplier_id: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '2px solid #bca88d',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    background: '#f8fafc',
+                    color: '#3e3f29'
+                  }}
+                >
+                  <option value="">Select a supplier...</option>
+                  {suppliers.map(supplier => (
+                    <option key={supplier.supplier_id} value={supplier.supplier_id}>
+                      {supplier.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                  Supplier Information (Legacy)
                 </label>
                 <input
                   type="text"
@@ -2717,7 +2752,7 @@ const Products = () => {
                     background: '#f8fafc',
                     color: '#3e3f29'
                   }}
-                  placeholder="e.g., African Foods Ltd, +234-xxx-xxxx"
+                  placeholder="Legacy supplier info (optional)"
                 />
               </div>
 
@@ -3300,7 +3335,33 @@ const Products = () => {
 
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
-                  Supplier Information
+                  Supplier
+                </label>
+                <select
+                  value={newProduct.supplier_id}
+                  onChange={(e) => setNewProduct({...newProduct, supplier_id: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '2px solid #bca88d',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    background: '#f8fafc',
+                    color: '#3e3f29'
+                  }}
+                >
+                  <option value="">Select a supplier...</option>
+                  {suppliers.map(supplier => (
+                    <option key={supplier.supplier_id} value={supplier.supplier_id}>
+                      {supplier.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                  Supplier Information (Legacy)
                 </label>
                 <input
                   type="text"
@@ -3315,7 +3376,7 @@ const Products = () => {
                     background: '#f8fafc',
                     color: '#3e3f29'
                   }}
-                  placeholder="e.g., African Foods Ltd, +234-xxx-xxxx"
+                  placeholder="Legacy supplier info (optional)"
                 />
               </div>
 

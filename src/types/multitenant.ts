@@ -16,6 +16,8 @@ export interface BusinessInfo {
   phone_number?: string
   vat_number?: string
   receipt_footer?: string
+  opening_time?: string
+  closing_time?: string
   updated_at: string
 }
 
@@ -42,6 +44,7 @@ export interface Product {
   price: number
   stock_quantity: number
   supplier_info?: string
+  supplier_id?: number
   reorder_level: number
   tax_rate: number
   last_updated: string
@@ -64,6 +67,7 @@ export interface NewProduct {
   stock_quantity: string
   reorder_level: string
   supplier_info: string
+  supplier_id: string
   tax_rate: string
   description: string
   sku: string
@@ -277,10 +281,49 @@ export interface InventoryMovement {
   movement_id: number
   product_id: string
   quantity_change: number
-  movement_type: 'sale' | 'purchase' | 'adjustment' | 'return'
+  movement_type: 'sale' | 'purchase' | 'adjustment' | 'return' | 'Restock' | 'Transaction Deletion'
   datetime: string
   reference_id?: number
   business_id: number
+  branch_id?: number
+  notes?: string
+  created_by?: number
+}
+
+// =====================================================
+// REFUND TYPES (New)
+// =====================================================
+
+export interface Refund {
+  refund_id: number
+  original_sale_id: number
+  sale_item_id?: number
+  customer_id?: number
+  cashier_id?: number
+  refund_amount: number
+  refund_method: 'cash' | 'card' | 'store_credit' | 'gift_card'
+  reason?: string
+  notes?: string
+  quantity_refunded?: number
+  restock?: boolean
+  created_at: string
+  business_id: number
+  branch_id: number
+}
+
+export interface RefundRequest {
+  original_sale_id: number
+  sale_item_id?: number
+  customer_id?: number
+  cashier_id?: number
+  refund_amount: number
+  refund_method: 'cash' | 'card' | 'store_credit' | 'gift_card'
+  reason?: string
+  notes?: string
+  quantity_refunded?: number
+  restock?: boolean
+  business_id: number
+  branch_id: number
 }
 
 // =====================================================
@@ -392,4 +435,107 @@ export interface MultiTenantAuthContextType {
   switchBusiness: (businessId: number) => void
   loading: boolean
   error: string | null
+}
+
+// =====================================================
+// SUPPLIER MANAGEMENT TYPES
+// =====================================================
+
+export interface Supplier {
+  supplier_id: number
+  business_id: number
+  branch_id?: number
+  name: string
+  contact_name?: string
+  email?: string
+  phone?: string
+  address?: string
+  notes?: string
+  image_url?: string
+  created_at: string
+  active: boolean
+}
+
+export interface SupplierRequest {
+  business_id: number
+  branch_id?: number
+  name: string
+  contact_name?: string
+  email?: string
+  phone?: string
+  address?: string
+  notes?: string
+  image_url?: string
+  active?: boolean
+}
+
+export interface PurchaseOrder {
+  po_id: number
+  supplier_id: number
+  business_id: number
+  branch_id?: number
+  order_date: string
+  expected_date?: string
+  status: 'pending' | 'received' | 'cancelled'
+  total_amount: number
+  created_by?: number
+  notes?: string
+  supplier?: Supplier
+  items?: PurchaseOrderItem[]
+}
+
+export interface PurchaseOrderItem {
+  poi_id: number
+  po_id: number
+  product_id: string
+  quantity: number
+  unit_price: number
+  received_quantity: number
+  product?: Product
+}
+
+export interface PurchaseOrderRequest {
+  supplier_id: number
+  business_id: number
+  branch_id?: number
+  expected_date?: string
+  notes?: string
+  items: PurchaseOrderItemRequest[]
+}
+
+export interface PurchaseOrderItemRequest {
+  product_id: string
+  quantity: number
+  unit_price: number
+}
+
+// =====================================================
+// SUPPLIER VISITS TYPES
+// =====================================================
+
+export interface SupplierVisit {
+  visit_id: number
+  supplier_id: number
+  business_id: number
+  branch_id?: number
+  visit_date: string
+  start_time?: string
+  end_time?: string
+  visit_type: 'delivery' | 'meeting' | 'inspection' | 'other'
+  notes?: string
+  created_at: string
+  created_by?: number
+  supplier?: Supplier
+}
+
+export interface SupplierVisitRequest {
+  supplier_id: number
+  business_id: number
+  branch_id?: number
+  visit_date: string
+  start_time?: string
+  end_time?: string
+  visit_type: 'delivery' | 'meeting' | 'inspection' | 'other'
+  notes?: string
+  created_by?: number
 }

@@ -2,6 +2,11 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useBranch } from '../contexts/BranchContext'
+import { useAuth } from '../contexts/AuthContext'
+import { useBusiness } from '../contexts/BusinessContext'
+import RefundModal from '../components/sales/RefundModal'
+import { useRefunds } from '../hooks/useRefunds'
+import { RefundRequest } from '../types/multitenant'
 
 interface Transaction {
   sale_id: number
@@ -39,11 +44,15 @@ const TransactionDetail = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { selectedBranchId } = useBranch()
+  const { user } = useAuth()
+  const { currentBusiness } = useBusiness()
+  const { processRefund, loading: refundLoading } = useRefunds()
   const [transaction, setTransaction] = useState<Transaction | null>(null)
   const [items, setItems] = useState<TransactionItem[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [showRefundModal, setShowRefundModal] = useState(false)
   const [editForm, setEditForm] = useState({
     payment_method: '',
     customer_id: null as number | null,
@@ -504,6 +513,50 @@ const TransactionDetail = () => {
     }
   }
 
+  const handleProcessRefund = async (refundRequests: RefundRequest[]) => {
+    if (!currentBusiness?.business_id || !selectedBranchId) {
+      alert('Business and branch information is required for refunds')
+      return
+    }
+
+    try {
+      let successCount = 0
+      let totalAmount = 0
+      const errors: string[] = []
+
+      for (const refundRequest of refundRequests) {
+        const { data, error } = await processRefund(refundRequest)
+        
+        if (error) {
+          errors.push(`Item refund failed: ${error}`)
+        } else if (data) {
+          successCount++
+          totalAmount += data.refund_amount
+        }
+      }
+
+      if (successCount > 0) {
+        const message = successCount === refundRequests.length 
+          ? `All refunds processed successfully!\nTotal Amount: €${totalAmount.toFixed(2)}`
+          : `${successCount}/${refundRequests.length} refunds processed successfully.\nTotal Amount: €${totalAmount.toFixed(2)}`
+        
+        alert(message)
+        
+        if (errors.length > 0) {
+          console.error('Some refunds failed:', errors)
+        }
+        
+        // Refresh transaction data to show updated information
+        fetchTransactionDetails()
+      } else {
+        alert(`Failed to process refunds:\n${errors.join('\n')}`)
+      }
+    } catch (err) {
+      console.error('Error processing refunds:', err)
+      alert('An unexpected error occurred while processing the refunds')
+    }
+  }
+
   const handleDeleteTransaction = async () => {
     if (!transaction) return
 
@@ -732,6 +785,37 @@ const TransactionDetail = () => {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={() => setShowRefundModal(true)}
+            disabled={refundLoading || !currentBusiness?.business_id || !selectedBranchId}
+            style={{
+              background: refundLoading || !currentBusiness?.business_id || !selectedBranchId ? '#d1d5db' : '#f59e0b',
+              color: refundLoading || !currentBusiness?.business_id || !selectedBranchId ? '#9ca3af' : '#ffffff',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: refundLoading || !currentBusiness?.business_id || !selectedBranchId ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+            onMouseEnter={(e) => {
+              if (!refundLoading && currentBusiness?.business_id && selectedBranchId) {
+                e.target.style.background = '#d97706'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!refundLoading && currentBusiness?.business_id && selectedBranchId) {
+                e.target.style.background = '#f59e0b'
+              }
+            }}
+          >
+            <i className="fa-solid fa-undo" style={{ fontSize: '14px' }}></i>
+            {refundLoading ? 'Processing...' : 'Process Refund'}
+          </button>
           <button
             onClick={handleDeleteTransaction}
             style={{
@@ -1485,6 +1569,20 @@ const TransactionDetail = () => {
           </div>
         )}
       </div>
+
+      {/* Refund Modal */}
+      {transaction && currentBusiness?.business_id && selectedBranchId && (
+        <RefundModal
+          isOpen={showRefundModal}
+          onClose={() => setShowRefundModal(false)}
+          onConfirm={handleProcessRefund}
+          transaction={transaction}
+          items={items}
+          businessId={currentBusiness.business_id}
+          branchId={selectedBranchId}
+          currentUserId={user?.user_id}
+        />
+      )}
     </div>
   )
 }

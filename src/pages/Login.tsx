@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './Login.module.css';
 
@@ -287,7 +287,7 @@ const Login: React.FC = () => {
 
                 {/* Sign Up Link */}
                 <div className={styles.signUpLink}>
-                  <p>Don't have an account? <a href="/retailpos/signup" className={styles.signUpText}>Sign up here</a></p>
+                  <p>Don't have an account? <Link to="/signup" className={styles.signUpText}>Sign up here</Link></p>
                 </div>
               </>
             )}
@@ -367,13 +367,6 @@ const Login: React.FC = () => {
 
         {/* Right Side - Image */}
         <div className={styles.imageContainer}>
-          <div className={styles.logoOverlay}>
-            <img 
-              src="/images/tillpointlogo.png" 
-              alt="TillPoint Logo" 
-              className={styles.overlayLogo}
-            />
-          </div>
         </div>
       </div>
     </div>

@@ -12,6 +12,8 @@ const Navigation = () => {
     { path: '/products', label: 'Products', icon: 'fas fa-box' },
     { path: '/sales', label: 'Sales', icon: 'fas fa-dollar-sign' },
     { path: '/transactions', label: 'Transactions', icon: 'fas fa-receipt' },
+    { path: '/suppliers', label: 'Suppliers', icon: 'fas fa-truck' },
+    { path: '/supplier-calendar', label: 'Supplier Calendar', icon: 'fas fa-calendar-week' },
     { path: '/side-businesses', label: 'Side Businesses', icon: 'fas fa-briefcase' },
     { path: '/reminders', label: 'Reminders', icon: 'fas fa-sticky-note' },
     { path: '/admin', label: 'Admin', icon: 'fas fa-users-cog' },

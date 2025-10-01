@@ -13,5 +13,6 @@ export const T = {
   sideBusinessItems: 'side_business_items',
   sideBusinessSales: 'side_business_sales',
   inventoryMovements: 'inventory_movements',
+  refunds: 'refunds',
   users: 'users',
 } as const;

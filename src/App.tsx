@@ -24,6 +24,8 @@ import TransactionDetail from './pages/TransactionDetail'
 import Admin from './pages/Admin'
 import Reminders from './pages/Reminders'
 import SelectUser from './pages/SelectUser'
+import Suppliers from './pages/Suppliers'
+import SupplierCalendar from './components/SupplierCalendar'
 
 const AppContent = () => {
   const { isCollapsed } = useNav()
@@ -100,6 +102,16 @@ const AppContent = () => {
                 </RoleProtectedRoute>
               } />
               <Route path="/reminders" element={<Reminders />} />
+              <Route path="/suppliers" element={
+                <RoleProtectedRoute requiredPermission="canManageProducts">
+                  <Suppliers />
+                </RoleProtectedRoute>
+              } />
+              <Route path="/supplier-calendar" element={
+                <RoleProtectedRoute requiredPermission="canManageProducts">
+                  <SupplierCalendar />
+                </RoleProtectedRoute>
+              } />
               <Route path="/transaction/:transactionId" element={<TransactionDetail />} />
             </Routes>
           </div>
