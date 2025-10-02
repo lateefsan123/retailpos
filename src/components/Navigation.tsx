@@ -14,6 +14,7 @@ const Navigation = () => {
     { path: '/transactions', label: 'Transactions', icon: 'fas fa-receipt' },
     { path: '/suppliers', label: 'Suppliers', icon: 'fas fa-truck' },
     { path: '/supplier-calendar', label: 'Supplier Calendar', icon: 'fas fa-calendar-week' },
+    { path: '/promotions', label: 'Promotions', icon: 'fas fa-tags' },
     { path: '/side-businesses', label: 'Side Businesses', icon: 'fas fa-briefcase' },
     { path: '/reminders', label: 'Reminders', icon: 'fas fa-sticky-note' },
     { path: '/admin', label: 'Admin', icon: 'fas fa-users-cog' },
@@ -128,7 +129,7 @@ const Navigation = () => {
               }
             }}
           >
-            <i className={item.icon} style={{ fontSize: '16px', width: '20px' }}></i>
+            <i className={item.icon} style={{ fontSize: '20px', width: '24px' }}></i>
             {!isCollapsed && (
               <span style={{ 
                 fontSize: '13px', 

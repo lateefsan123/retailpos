@@ -91,7 +91,8 @@ export const RoleProvider = ({ children }: RoleProviderProps) => {
         return hasPermission('canManageProducts') || hasPermission('canLookupProducts')
       case '/suppliers':
       case '/supplier-calendar':
-        return hasPermission('canManageProducts') // Suppliers are part of product/inventory management
+      case '/promotions':
+        return hasPermission('canManageProducts') // Suppliers and promotions are part of product/inventory management
       case '/sales':
         return hasPermission('canProcessSales')
       case '/transactions':

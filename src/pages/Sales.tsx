@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useBusinessId } from '../hooks/useBusinessId'
 import { useBranch } from '../contexts/BranchContext'
 import { useBusiness } from '../contexts/BusinessContext'
+import { usePromotions } from '../hooks/usePromotions'
 import { useNav } from '../contexts/NavContext'
 import { useBarcodeScanner, setModalOpen } from '../hooks/useBarcodeScanner'
 import { generateReceiptHTML as generateReceiptHTMLUtil, printReceipt as printReceiptUtil } from '../utils/receiptUtils'
@@ -26,6 +27,42 @@ const getLocalDateTime = () => {
 }
 
 const generateOrderDetailNumber = () => Math.floor(Math.random() * 10000000)
+
+// Local storage functions for cart persistence
+const getCartStorageKey = (branchId: number | null) => {
+  return branchId ? `sales_cart_branch_${branchId}` : 'sales_cart_no_branch'
+}
+
+const saveCartToStorage = (order: Order, branchId: number | null) => {
+  try {
+    const storageKey = getCartStorageKey(branchId)
+    localStorage.setItem(storageKey, JSON.stringify(order))
+  } catch (error) {
+    console.error('Error saving cart to localStorage:', error)
+  }
+}
+
+const loadCartFromStorage = (branchId: number | null): Order | null => {
+  try {
+    const storageKey = getCartStorageKey(branchId)
+    const savedCart = localStorage.getItem(storageKey)
+    if (savedCart) {
+      return JSON.parse(savedCart)
+    }
+  } catch (error) {
+    console.error('Error loading cart from localStorage:', error)
+  }
+  return null
+}
+
+const clearCartFromStorage = (branchId: number | null) => {
+  try {
+    const storageKey = getCartStorageKey(branchId)
+    localStorage.removeItem(storageKey)
+  } catch (error) {
+    console.error('Error clearing cart from localStorage:', error)
+  }
+}
 
 // TTS functionality now handled by ttsService
 
@@ -175,6 +212,7 @@ const Sales = () => {
   const { selectedBranchId } = useBranch()
   const { currentBusiness } = useBusiness()
   const { isCollapsed } = useNav()
+  const { calculatePromotions } = usePromotions(businessId || null, selectedBranchId || null)
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [products, setProducts] = useState<Product[]>([])
@@ -196,6 +234,7 @@ const Sales = () => {
     discount: 0,
     total: 0
   })
+  const [promotionsEnabled, setPromotionsEnabled] = useState(true)
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [loading, setLoading] = useState(true)
@@ -321,6 +360,30 @@ const Sales = () => {
   useEffect(() => {
     calculateOrderTotal()
   }, [order.items])
+
+  // Save cart to localStorage whenever order changes
+  useEffect(() => {
+    if (order.items.length > 0) {
+      saveCartToStorage(order, selectedBranchId || null)
+    }
+  }, [order, selectedBranchId])
+
+  // Load cart from localStorage on component mount and when branch changes
+  useEffect(() => {
+    const savedCart = loadCartFromStorage(selectedBranchId || null)
+    if (savedCart && savedCart.items.length > 0) {
+      setOrder(savedCart)
+    } else {
+      // Clear cart if no saved cart for this branch
+      setOrder({
+        items: [],
+        subtotal: 0,
+        tax: 0,
+        discount: 0,
+        total: 0
+      })
+    }
+  }, [selectedBranchId])
 
   useEffect(() => {
     const amount = parseFloat(amountEntered) || 0
@@ -782,15 +845,36 @@ const Sales = () => {
       }
       return sum
     }, 0)
+    
     const tax = 0 // No tax
-    const discount = 0 // Can be implemented later
-    const total = subtotal - discount
+    
+    // Calculate promotion discounts (only if promotions are enabled)
+    let totalDiscount = 0
+    if (promotionsEnabled && calculatePromotions && order.items.length > 0) {
+      // Convert order items to the format expected by calculatePromotions
+      const itemsForPromotion = order.items
+        .filter(item => item.product) // Only include products, not side business items
+        .map(item => ({
+          product_id: item.product!.product_id,
+          quantity: item.quantity,
+          price: item.weight && item.calculatedPrice 
+            ? item.calculatedPrice / item.quantity 
+            : item.product!.price
+        }))
+      
+      if (itemsForPromotion.length > 0) {
+        const applicablePromotions = calculatePromotions(itemsForPromotion, subtotal)
+        totalDiscount = applicablePromotions.reduce((sum, promo) => sum + promo.discount, 0)
+      }
+    }
+    
+    const total = subtotal - totalDiscount
 
     setOrder(prev => ({
       ...prev,
       subtotal,
       tax,
-      discount,
+      discount: totalDiscount,
       total
     }))
   }
@@ -1257,6 +1341,7 @@ const Sales = () => {
       setAmountEntered('')
       setChange(0)
       setReceiptNotes('')
+      clearCartFromStorage(selectedBranchId || null) // Clear cart from localStorage
       
       // Show success message
       const successMsg = document.createElement('div')
@@ -1736,6 +1821,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
       setAmountEntered('')
       setChange(0)
       setReceiptNotes('')
+      clearCartFromStorage(selectedBranchId || null) // Clear cart from localStorage
       
       // Create reminder for partial payment if applicable
       if (allowPartialPayment && remainingAmount > 0 && saleData?.sale_id) {
@@ -3107,6 +3193,59 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
           )}
         </div>
 
+        {/* Promotion Toggle */}
+        {order.items.length > 0 && (
+          <div style={{
+            background: '#ffffff',
+            border: '1px solid #d1d5db',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            marginBottom: '8px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <i className="fa-solid fa-tags" style={{ 
+                fontSize: '16px', 
+                color: promotionsEnabled ? '#10b981' : '#6b7280' 
+              }}></i>
+              <span style={{ 
+                fontSize: '14px', 
+                fontWeight: '500',
+                color: '#1f2937'
+              }}>
+                Promotions
+              </span>
+            </div>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              cursor: 'pointer',
+              gap: '8px'
+            }}>
+              <input
+                type="checkbox"
+                checked={promotionsEnabled}
+                onChange={(e) => setPromotionsEnabled(e.target.checked)}
+                style={{
+                  width: '18px',
+                  height: '18px',
+                  accentColor: '#10b981',
+                  cursor: 'pointer'
+                }}
+              />
+              <span style={{ 
+                fontSize: '13px', 
+                color: '#6b7280',
+                fontWeight: '500'
+              }}>
+                {promotionsEnabled ? 'Enabled' : 'Disabled'}
+              </span>
+            </label>
+          </div>
+        )}
+
         {/* Order Total Display */}
         {order.items.length > 0 && (
           <div style={{
@@ -3133,6 +3272,15 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               }}>
                 Subtotal: €{order.subtotal.toFixed(2)}
               </div>
+              {order.discount > 0 && (
+                <div style={{
+                  fontSize: '12px',
+                  color: '#10b981',
+                  fontWeight: '500'
+                }}>
+                  Discount: -€{order.discount.toFixed(2)}
+                </div>
+              )}
             </div>
             <div style={{
               textAlign: 'right'
@@ -3217,7 +3365,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               onClick={async () => {
                 if (order.items.length === 0) return
                 
-                if (isTtsPlaying) {
+                if (isTtsPlaying || ttsService.isPlaying()) {
                   // Stop TTS
                   console.log('Stopping TTS...')
                   ttsService.stop()
@@ -3304,10 +3452,10 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               }}
             >
               <i 
-                className={isTtsPlaying ? "fa-solid fa-stop" : "fa-solid fa-play"} 
+                className={(isTtsPlaying || ttsService.isPlaying()) ? "fa-solid fa-stop" : "fa-solid fa-play"} 
                 style={{ marginRight: '8px', fontSize: '14px' }}
               ></i>
-              {isTtsPlaying ? 'Stop' : 'Play'}
+              {(isTtsPlaying || ttsService.isPlaying()) ? 'Stop' : 'Play'}
             </button>
             
             <button

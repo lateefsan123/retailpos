@@ -51,6 +51,8 @@ class TTSService {
   private settings: TTSSettings
   private usage: TTSUsage
   private isInitialized = false
+  private currentAudio: HTMLAudioElement | null = null
+  private currentUtterance: SpeechSynthesisUtterance | null = null
 
   constructor() {
     this.settings = this.loadSettings()
@@ -262,15 +264,20 @@ class TTSService {
       const audioUrl = URL.createObjectURL(audioBlob)
       const audio = new Audio(audioUrl)
       
+      // Store current audio for stop functionality
+      this.currentAudio = audio
+      
       return new Promise((resolve) => {
         audio.onended = () => {
           console.log('ElevenLabs audio playback ended')
           URL.revokeObjectURL(audioUrl)
+          this.currentAudio = null
           resolve(true)
         }
         audio.onerror = (e) => {
           console.error('ElevenLabs audio playback error:', e)
           URL.revokeObjectURL(audioUrl)
+          this.currentAudio = null
           resolve(false)
         }
         audio.onloadstart = () => console.log('ElevenLabs audio started loading')
@@ -319,15 +326,20 @@ class TTSService {
       const audioUrl = URL.createObjectURL(audioBlob)
       const audio = new Audio(audioUrl)
       
+      // Store current audio for stop functionality
+      this.currentAudio = audio
+      
       return new Promise((resolve) => {
         audio.onended = () => {
           console.log('OpenAI audio playback ended')
           URL.revokeObjectURL(audioUrl)
+          this.currentAudio = null
           resolve(true)
         }
         audio.onerror = (e) => {
           console.error('OpenAI audio playback error:', e)
           URL.revokeObjectURL(audioUrl)
+          this.currentAudio = null
           resolve(false)
         }
         audio.onloadstart = () => console.log('OpenAI audio started loading')
@@ -364,8 +376,39 @@ class TTSService {
   }
 
   stop() {
-    // TTS service stop method - no browser TTS to stop
     console.log('TTS service stop called')
+    
+    // Stop current audio if playing
+    if (this.currentAudio) {
+      this.currentAudio.pause()
+      this.currentAudio.currentTime = 0
+      this.currentAudio = null
+    }
+    
+    // Stop current browser TTS utterance if speaking
+    if (this.currentUtterance) {
+      speechSynthesis.cancel()
+      this.currentUtterance = null
+    }
+    
+    // Cancel any ongoing speech synthesis
+    if ('speechSynthesis' in window) {
+      speechSynthesis.cancel()
+    }
+  }
+
+  isPlaying(): boolean {
+    // Check if audio is playing
+    if (this.currentAudio && !this.currentAudio.paused && !this.currentAudio.ended) {
+      return true
+    }
+    
+    // Check if browser TTS is speaking
+    if ('speechSynthesis' in window && speechSynthesis.speaking) {
+      return true
+    }
+    
+    return false
   }
 
   getAvailableVoices(): TTSVoice[] {
@@ -421,13 +464,18 @@ class TTSService {
         utterance.pitch = 1
         utterance.volume = 0.8
 
+        // Store current utterance for stop functionality
+        this.currentUtterance = utterance
+
         utterance.onend = () => {
           console.log('Browser TTS completed')
+          this.currentUtterance = null
           resolve(true)
         }
 
         utterance.onerror = (event) => {
           console.error('Browser TTS error:', event.error)
+          this.currentUtterance = null
           resolve(false)
         }
 
@@ -435,6 +483,7 @@ class TTSService {
         speechSynthesis.speak(utterance)
       } catch (error) {
         console.error('Browser TTS failed:', error)
+        this.currentUtterance = null
         resolve(false)
       }
     })

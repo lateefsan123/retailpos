@@ -523,6 +523,7 @@ export interface SupplierVisit {
   end_time?: string
   visit_type: 'delivery' | 'meeting' | 'inspection' | 'other'
   notes?: string
+  paid?: boolean
   created_at: string
   created_by?: number
   supplier?: Supplier
@@ -537,5 +538,81 @@ export interface SupplierVisitRequest {
   end_time?: string
   visit_type: 'delivery' | 'meeting' | 'inspection' | 'other'
   notes?: string
+  paid?: boolean
   created_by?: number
+}
+
+// =====================================================
+// PROMOTIONS & DISCOUNTS TYPES
+// =====================================================
+
+export interface Promotion {
+  promotion_id: number
+  business_id: number
+  branch_id?: number
+  name: string
+  description?: string
+  discount_type: 'percentage' | 'fixed_amount'
+  discount_value: number
+  start_date: string
+  end_date: string
+  active: boolean
+  applies_to: 'all' | 'specific'
+  min_purchase_amount: number
+  max_discount_amount?: number
+  usage_limit?: number
+  usage_count: number
+  created_at: string
+  created_by?: number
+  updated_at: string
+  products?: Product[] // For specific promotions
+}
+
+export interface PromotionRequest {
+  business_id: number
+  branch_id?: number
+  name: string
+  description?: string
+  discount_type: 'percentage' | 'fixed_amount'
+  discount_value: number
+  start_date: string
+  end_date: string
+  active?: boolean
+  applies_to: 'all' | 'specific'
+  min_purchase_amount?: number
+  max_discount_amount?: number
+  usage_limit?: number
+  product_ids?: string[] // For specific promotions
+}
+
+export interface PromotionProduct {
+  promo_product_id: number
+  promotion_id: number
+  product_id: string
+  created_at: string
+  product?: Product
+}
+
+export interface PromotionApplication {
+  application_id: number
+  promotion_id: number
+  sale_id: number
+  sale_item_id?: number
+  discount_amount: number
+  applied_at: string
+  promotion?: Promotion
+}
+
+export interface PromotionStats {
+  promotion_id: number
+  total_applications: number
+  total_discount_given: number
+  total_sales: number
+  avg_discount_per_sale: number
+}
+
+export interface AppliedPromotion {
+  promotion: Promotion
+  discount_amount: number
+  items_affected: string[] // product_ids
 }

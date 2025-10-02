@@ -126,13 +126,13 @@
 .timeGrid {
   display: grid;
   grid-template-columns: 80px repeat(7, 1fr);
-  border-top: 2px solid #e5e7eb;
+  border-top: 2px solid #d1d5db;
 }
 
 .timeGridHeader {
   display: grid;
   grid-template-columns: 80px repeat(7, 1fr);
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 2px solid #d1d5db;
   background: #f9fafb;
   position: sticky;
   top: 0;
@@ -143,16 +143,16 @@
   padding: 12px;
   text-align: right;
   font-size: 12px;
-  color: #6b7280;
+  color: #374151;
   font-weight: 600;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid #d1d5db;
   background: #f9fafb;
 }
 
 .dayHeader {
   padding: 16px 12px;
   text-align: center;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid #d1d5db;
   background: #f9fafb;
 }
 
@@ -193,29 +193,31 @@
 
 .timeSlot {
   min-height: 60px;
-  border-right: 1px solid #e5e7eb;
-  border-bottom: 1px solid #e5e7eb;
+  border-right: 1px solid #d1d5db;
+  border-bottom: 1px solid #d1d5db;
   position: relative;
   cursor: pointer;
   transition: background 0.2s ease;
 }
 
-/* Day column colors - very subtle */
-.timeSlot.day0 { background: #fef2f2; } /* Sunday */
-.timeSlot.day1 { background: #fefce8; } /* Monday */
-.timeSlot.day2 { background: #f0fdf4; } /* Tuesday */
-.timeSlot.day3 { background: #eff6ff; } /* Wednesday */
-.timeSlot.day4 { background: #faf5ff; } /* Thursday */
-.timeSlot.day5 { background: #fef3c7; } /* Friday */
-.timeSlot.day6 { background: #f5f3ff; } /* Saturday */
+/* Day column colors - uniform white background */
+.timeSlot {
+  background: #ffffff;
+}
 
 .timeSlot:hover {
-  filter: brightness(0.95);
+  background: rgba(59, 130, 246, 0.05) !important;
 }
 
 .timeSlot.empty {
   background: #ffffff;
 }
+
+.timeSlot.hasVisits {
+  position: relative;
+  border-left: 4px solid #1a1a1a !important;
+}
+
 
 .dayColumn {
   position: relative;
@@ -226,37 +228,75 @@
 .eventBlock {
   position: absolute;
   left: 4px;
-  right: 4px;
-  padding: 6px 8px;
-  border-radius: 4px;
+  right: 40px;
+  padding: 2px;
   font-size: 12px;
   cursor: pointer;
   overflow: hidden;
-  border-left: 3px solid;
-  transition: all 0.2s ease;
   z-index: 1;
+  background: none;
+  color: #1a1a1a;
+  pointer-events: none;
 }
 
 .eventBlock:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  z-index: 2;
+  background: none;
 }
 
 .eventName {
   font-weight: 600;
-  margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #1f2937;
 }
 
-.eventTime {
+.supplierImage {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.eventName i {
   font-size: 10px;
-  opacity: 0.9;
+  color: #4b5563;
+  margin-right: 2px;
+}
+
+.eventAmount {
+  font-size: 10px;
+  color: #059669;
+  margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+.eventNotes {
+  font-size: 10px;
+  color: #374151;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 400;
+}
+
+
+.eventTime {
+  font-size: 12px;
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
 }
 
 .deleteEventButton {
@@ -274,6 +314,7 @@
   display: none;
   align-items: center;
   justify-content: center;
+  pointer-events: auto;
 }
 
 .eventBlock:hover .deleteEventButton {
@@ -320,6 +361,96 @@
 .legendLabel {
   font-size: 14px;
   color: #374151;
+}
+
+/* Visits Modal Styles */
+.visitsList {
+  max-height: 400px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+}
+
+.visitItem {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+}
+
+.visitItem:hover {
+  background: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.visitHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.visitSupplier {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  color: #1a1a1a;
+  font-weight: 700;
+  gap: 12px;
+}
+
+.visitSupplier .supplierImage {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.visitSupplier i {
+  font-size: 18px;
+  color: #6b7280;
+  margin-right: 8px;
+}
+
+.visitDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.visitTime,
+.visitType,
+.visitNotes {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.deleteVisitButton {
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.deleteVisitButton:hover {
+  background: #b91c1c;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
 }
 
 /* Modal Styles */
@@ -462,4 +593,51 @@
 
 .submitButton:hover {
   background: #374151;
+}
+
+/* Visit Detail Modal Styles */
+.visitDetailContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.detailRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.detailLabel {
+  font-weight: 600;
+  color: #374151;
+  min-width: 100px;
+  font-size: 14px;
+}
+
+.detailValue {
+  display: flex;
+  align-items: center;
+  color: #1a1a1a;
+  font-size: 14px;
+  flex: 1;
+}
+
+.detailImage {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  object-fit: cover;
+  margin-right: 8px;
+}
+
+.detailValue i {
+  color: #6b7280;
+  margin-right: 8px;
+  width: 16px;
+  text-align: center;
 }
