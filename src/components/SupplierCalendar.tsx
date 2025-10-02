@@ -189,7 +189,7 @@ const SupplierCalendar = () => {
         end_time: endTime,
         visit_type: visitType,
         notes: notes || undefined,
-        // amount: amount ? parseFloat(amount) : undefined
+        amount: amount ? parseFloat(amount) : undefined
       }
 
       await createVisit(visitData)
@@ -454,11 +454,11 @@ const SupplierCalendar = () => {
                               )}
                               {visit.supplier?.name}
                             </div>
-                            {/* {visit.amount && (
+                            {visit.amount && (
                               <div className={styles.eventAmount}>
                                 ${visit.amount.toFixed(2)}
                               </div>
-                            )} */}
+                            )}
                             {visit.notes && (
                               <div className={styles.eventNotes}>
                                 {visit.notes}
@@ -680,6 +680,32 @@ const SupplierCalendar = () => {
                       <i className="fa-solid fa-trash"></i>
                     </button>
                   </div>
+                  
+                  <div className={styles.visitDetails}>
+                    <div className={styles.visitTime}>
+                      <i className="fa-solid fa-clock" style={{ marginRight: '8px' }}></i>
+                      {formatTimeDisplay(visit.start_time)} - {formatTimeDisplay(visit.end_time)}
+                    </div>
+                    
+                    <div className={styles.visitType}>
+                      <i className="fa-solid fa-tag" style={{ marginRight: '8px' }}></i>
+                      {visit.visit_type.charAt(0).toUpperCase() + visit.visit_type.slice(1)}
+                    </div>
+                    
+                    {visit.amount && (
+                      <div className={styles.visitAmount}>
+                        <i className="fa-solid fa-dollar-sign" style={{ marginRight: '8px' }}></i>
+                        ${visit.amount.toFixed(2)}
+                      </div>
+                    )}
+                    
+                    {visit.notes && (
+                      <div className={styles.visitNotes}>
+                        <i className="fa-solid fa-note-sticky" style={{ marginRight: '8px' }}></i>
+                        {visit.notes}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -754,7 +780,7 @@ const SupplierCalendar = () => {
                 </div>
               </div>
 
-              {/* {selectedVisit.amount && (
+              {selectedVisit.amount && (
                 <div className={styles.detailRow}>
                   <div className={styles.detailLabel}>Amount:</div>
                   <div className={styles.detailValue}>
@@ -762,7 +788,7 @@ const SupplierCalendar = () => {
                     ${selectedVisit.amount.toFixed(2)}
                   </div>
                 </div>
-              )} */}
+              )}
 
               {selectedVisit.notes && (
                 <div className={styles.detailRow}>

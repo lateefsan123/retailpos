@@ -422,12 +422,18 @@
 
 .visitTime,
 .visitType,
+.visitAmount,
 .visitNotes {
   display: flex;
   align-items: center;
   font-size: 14px;
   color: #6b7280;
   font-weight: 500;
+}
+
+.visitAmount {
+  color: #059669;
+  font-weight: 600;
 }
 
 .deleteVisitButton {

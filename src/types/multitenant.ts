@@ -523,6 +523,7 @@ export interface SupplierVisit {
   end_time?: string
   visit_type: 'delivery' | 'meeting' | 'inspection' | 'other'
   notes?: string
+  amount?: number
   paid?: boolean
   created_at: string
   created_by?: number
@@ -538,6 +539,7 @@ export interface SupplierVisitRequest {
   end_time?: string
   visit_type: 'delivery' | 'meeting' | 'inspection' | 'other'
   notes?: string
+  amount?: number
   paid?: boolean
   created_by?: number
 }

@@ -92,8 +92,8 @@ export const useProductsData = () => {
     queryKey: ['productsData', user?.business_id, selectedBranchId],
     queryFn: () => fetchProductsData(user?.business_id!, selectedBranchId),
     enabled: !!user?.business_id,
-    staleTime: 0, // No caching - always fetch fresh data
-    refetchOnWindowFocus: true, // Refetch when window gains focus
-    refetchOnMount: true, // Always refetch on component mount
+    staleTime: 3 * 60 * 1000, // Consider data fresh for 3 minutes (products change moderately)
+    refetchOnWindowFocus: false, // Don't refetch on window focus to prevent infinite calls
+    refetchOnMount: false, // Don't refetch on mount if data is fresh
   })
 }

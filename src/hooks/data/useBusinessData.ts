@@ -40,8 +40,8 @@ export const useBusinessData = () => {
     queryKey: ['businessData', user?.business_id],
     queryFn: () => fetchBusinessData(user?.business_id),
     enabled: !!user?.business_id,
-    staleTime: 0, // No caching - always fetch fresh data
-    refetchOnWindowFocus: true, // Refetch when window gains focus
-    refetchOnMount: true, // Always refetch on component mount
+    staleTime: 10 * 60 * 1000, // Consider data fresh for 10 minutes (business data changes less frequently)
+    refetchOnWindowFocus: false, // Don't refetch on window focus to prevent infinite calls
+    refetchOnMount: false, // Don't refetch on mount if data is fresh
   })
 }

@@ -104,8 +104,12 @@ const RefundModal: React.FC<RefundModalProps> = ({
         refund_quantity: item.quantity,
         restock: true
       })))
-    } else {
-      // Calculate amount for selected items with their refund quantities
+    }
+  }, [refundType, transaction.total_amount, items])
+
+  // Calculate refund amount for partial refunds (separate effect to avoid infinite loop)
+  useEffect(() => {
+    if (refundType === 'partial') {
       const selectedAmount = refundItems.reduce((total, item) => {
         if (item.refund_quantity > 0) {
           const pricePerUnit = item.is_weighted && item.weight && item.price_per_unit 
@@ -117,7 +121,7 @@ const RefundModal: React.FC<RefundModalProps> = ({
       }, 0)
       setRefundAmount(selectedAmount.toString())
     }
-  }, [refundType, refundItems, transaction.total_amount, items])
+  }, [refundType, refundItems])
 
   if (!isOpen) return null
 

@@ -5,6 +5,7 @@ import { useRole } from '../contexts/RoleContext'
 import { usePromotions } from '../hooks/usePromotions'
 import { useProducts } from '../hooks/derived/useProducts'
 import { Promotion, PromotionRequest, Product } from '../types/multitenant'
+import styles from './Promotions.module.css'
 
 const Promotions: React.FC = () => {
   const { businessId } = useBusinessId()
@@ -18,6 +19,7 @@ const Promotions: React.FC = () => {
   const [statsPromotion, setStatsPromotion] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'expired'>('all')
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false)
 
   const [formData, setFormData] = useState<PromotionRequest>({
     business_id: businessId || 0,
@@ -164,7 +166,7 @@ const Promotions: React.FC = () => {
 
   if (!canManagePromotions) {
     return (
-      <div style={{ padding: '24px', textAlign: 'center' }}>
+      <div className={styles.accessDenied}>
         <h2>Access Denied</h2>
         <p>You don't have permission to manage promotions.</p>
       </div>
@@ -172,7 +174,7 @@ const Promotions: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: '32px', background: '#f8f9fa', minHeight: '100vh' }}>
+    <div className={styles.promotionsContainer}>
       {/* Page Header */}
       <div style={{
         marginBottom: '40px'
@@ -370,91 +372,60 @@ const Promotions: React.FC = () => {
         </div>
       </div>
 
-      {/* Filters Section */}
-      <div style={{ marginBottom: '32px' }}>
-        <h2 style={{
-          fontSize: '20px',
-          fontWeight: '600',
-          color: '#1a1a1a',
-          margin: '0 0 16px 0',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <i className="fas fa-filter" style={{ fontSize: '16px', color: '#7d8d86' }}></i>
-          Filter & Search
-        </h2>
-        <div style={{
-          background: '#ffffff',
-          padding: '24px',
-          borderRadius: '16px',
-          boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-          border: '2px solid #d1d5db'
-        }}>
-          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
-            <div style={{ flex: 1, minWidth: '300px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#1a1a1a',
-                marginBottom: '8px'
-              }}>
-                Search Promotions
-              </label>
+      {/* Search & Filter Section */}
+      <div className={styles.searchFilterSection}>
+        <div className={styles.searchFilterContainer}>
+          <div className={styles.searchContainer}>
+            <div className={styles.searchWrapper}>
               <input
                 type="text"
-                placeholder="Search by name, description..."
+                placeholder="Search promotions by name, description..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '2px solid #1a1a1a',
-                  borderRadius: '8px',
-                  fontSize: '15px',
-                  background: '#ffffff',
-                  color: '#1a1a1a'
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#3b82f6'
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = '#1a1a1a'
-                }}
+                className={styles.searchInput}
               />
-            </div>
-            <div style={{ minWidth: '200px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#1a1a1a',
-                marginBottom: '8px'
-              }}>
-                Filter by Status
-              </label>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as any)}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '2px solid #1a1a1a',
-                  borderRadius: '8px',
-                  fontSize: '15px',
-                  cursor: 'pointer',
-                  background: '#ffffff',
-                  color: '#1a1a1a'
-                }}
+              <i className={`fas fa-search ${styles.searchIcon}`}></i>
+              <button
+                onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                className={styles.filterButton}
               >
-                <option value="all">All Promotions</option>
-                <option value="active">Active Now</option>
-                <option value="inactive">Inactive</option>
-                <option value="expired">Expired</option>
-              </select>
+                <i className={`fas fa-sliders-h ${styles.filterIcon}`}></i>
+                {filterStatus !== 'all' && (
+                  <span className={styles.filterNotification}>
+                    !
+                  </span>
+                )}
+              </button>
             </div>
           </div>
+          
+          {/* Filter Dropdown */}
+          {showFilterDropdown && (
+            <div className={styles.filterDropdown}>
+              <div className={styles.filterContent}>
+                <label className={styles.filterLabel}>
+                  Status:
+                </label>
+                <div className={styles.filterOptions}>
+                  {[
+                    { value: 'all', label: 'All', icon: 'fas fa-list' },
+                    { value: 'active', label: 'Active', icon: 'fas fa-play' },
+                    { value: 'inactive', label: 'Inactive', icon: 'fas fa-pause' },
+                    { value: 'expired', label: 'Expired', icon: 'fas fa-clock' }
+                  ].map(option => (
+                    <button
+                      key={option.value}
+                      onClick={() => setFilterStatus(option.value as any)}
+                      className={`${styles.filterOption} ${filterStatus === option.value ? styles.filterOptionActive : ''}`}
+                    >
+                      <i className={`${option.icon} ${styles.filterOptionIcon}`}></i>
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

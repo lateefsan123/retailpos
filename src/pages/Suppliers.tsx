@@ -7,6 +7,7 @@ import { useRole } from '../contexts/RoleContext'
 import BranchSelector from '../components/BranchSelector'
 import { Supplier, SupplierRequest } from '../types/multitenant'
 import { formatCurrency } from '../utils/currency'
+import styles from './Suppliers.module.css'
 
 // Vehicle icon colors and types
 const VEHICLE_COLORS = [
@@ -523,67 +524,31 @@ const Suppliers = () => {
 
   if (businessLoading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        background: '#f9fafb'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ 
-            width: '40px', 
-            height: '40px', 
-            border: '4px solid #e5e7eb', 
-            borderTop: '4px solid #1a1a1a', 
-            borderRadius: '50%', 
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 16px'
-          }}></div>
-          <p style={{ color: '#6b7280', fontSize: '16px' }}>Loading suppliers...</p>
+      <div className={styles.loadingContainer}>
+        <div className={styles.loadingContent}>
+          <div className={styles.loadingSpinner}></div>
+          <p className={styles.loadingText}>Loading suppliers...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      background: '#f9fafb',
-      padding: '24px'
-    }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+    <div className={styles.suppliersContainer}>
+      <div className={styles.suppliersContent}>
         {/* Header */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          marginBottom: '32px',
-          background: '#ffffff',
-          padding: '24px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-        }}>
-          <div>
-            <h1 style={{ 
-              margin: '0 0 8px 0', 
-              fontSize: '28px', 
-              fontWeight: '700',
-              color: '#1a1a1a'
-            }}>
-              <i className="fa-solid fa-truck" style={{ marginRight: '12px', color: '#1a1a1a' }}></i>
+        <div className={styles.header}>
+          <div className={styles.headerContent}>
+            <h1 className={styles.headerTitle}>
+              <i className={`fa-solid fa-truck ${styles.headerTitleIcon}`}></i>
               Suppliers
             </h1>
-            <p style={{ 
-              margin: '0', 
-              color: '#6b7280', 
-              fontSize: '16px' 
-            }}>
+            <p className={styles.headerSubtitle}>
               Manage your supplier relationships and contact information
             </p>
           </div>
           
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div className={styles.headerActions}>
             <BranchSelector />
             {canManageSuppliers && (
               <button
@@ -592,28 +557,9 @@ const Suppliers = () => {
                   setEditingSupplier(null)
                   setShowAddModal(true)
                 }}
-                style={{
-                  background: '#1a1a1a',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '12px 24px',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = '#374151'
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = '#1a1a1a'
-                }}
+                className={styles.addButton}
               >
-                <i className="fa-solid fa-plus"></i>
+                <i className={`fa-solid fa-plus ${styles.addButtonIcon}`}></i>
                 Add Supplier
               </button>
             )}
@@ -621,103 +567,47 @@ const Suppliers = () => {
         </div>
 
         {/* Filters */}
-        <div style={{ 
-          background: '#ffffff',
-          padding: '20px',
-          borderRadius: '12px',
-          marginBottom: '24px',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-            <div style={{ flex: '1', minWidth: '250px', maxWidth: '400px' }}>
+        <div className={styles.filtersContainer}>
+          <div className={styles.filtersContent}>
+            <div className={styles.searchContainer}>
               <input
                 type="text"
                 placeholder="Search suppliers..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '2px solid #e5e7eb',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  background: '#ffffff'
-                }}
+                className={styles.searchInput}
               />
             </div>
             
-            <label style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px',
-              cursor: 'pointer',
-              fontSize: '16px',
-              color: '#374151',
-              whiteSpace: 'nowrap',
-              minWidth: 'fit-content'
-            }}>
+            <label className={styles.inactiveToggle}>
               <input
                 type="checkbox"
                 checked={showInactive}
                 onChange={(e) => setShowInactive(e.target.checked)}
-                style={{
-                  width: '18px',
-                  height: '18px',
-                  accentColor: '#1a1a1a'
-                }}
               />
               Show inactive suppliers
             </label>
           </div>
           
           {/* Vehicle Legend */}
-          <div style={{ 
-            marginTop: '16px', 
-            padding: '12px', 
-            background: '#f9fafb', 
-            borderRadius: '8px',
-            border: '1px solid #e5e7eb'
-          }}>
-            <div style={{ 
-              fontSize: '14px', 
-              fontWeight: '600', 
-                                color: '#1f2937',
-              marginBottom: '8px' 
-            }}>
+          <div className={styles.vehicleLegend}>
+            <div className={styles.legendTitle}>
               Vehicle Types:
             </div>
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: '6px',
-                  background: '#f3f4f6',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: '2px solid #1a1a1a'
-                }}>
-                  <i className="fa-solid fa-truck" style={{ color: '#1a1a1a', fontSize: '12px' }}></i>
+            <div className={styles.legendContent}>
+              <div className={styles.legendItem}>
+                <div className={`${styles.legendIcon} ${styles.legendIconTruck}`}>
+                  <i className="fa-solid fa-truck"></i>
                 </div>
-                <span style={{ fontSize: '13px', color: '#6b7280' }}>Truck</span>
+                <span className={styles.legendLabel}>Truck</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: '6px',
-                  background: '#f3f4f6',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: '2px solid #dc2626'
-                }}>
-                  <i className="fa-solid fa-van-shuttle" style={{ color: '#dc2626', fontSize: '12px' }}></i>
+              <div className={styles.legendItem}>
+                <div className={`${styles.legendIcon} ${styles.legendIconVan}`}>
+                  <i className="fa-solid fa-van-shuttle"></i>
                 </div>
-                <span style={{ fontSize: '13px', color: '#6b7280' }}>Van</span>
+                <span className={styles.legendLabel}>Van</span>
               </div>
-              <div style={{ fontSize: '13px', color: '#6b7280', fontStyle: 'italic' }}>
+              <div className={styles.legendNote}>
                 Each supplier gets a unique colored vehicle icon
               </div>
             </div>
@@ -726,123 +616,51 @@ const Suppliers = () => {
 
         {/* Error Message */}
         {error && (
-          <div style={{
-            background: '#fef2f2',
-            border: '1px solid #fecaca',
-            color: '#dc2626',
-            padding: '16px',
-            borderRadius: '8px',
-            marginBottom: '24px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px'
-          }}>
-            <i className="fa-solid fa-exclamation-triangle"></i>
+          <div className={styles.errorMessage}>
+            <i className={`fa-solid fa-exclamation-triangle ${styles.errorIcon}`}></i>
             {error}
           </div>
         )}
 
         {/* Suppliers List */}
-        <div style={{ 
-          background: '#ffffff',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-          overflow: 'hidden'
-        }}>
+        <div className={styles.suppliersList}>
           {loading ? (
-            <div style={{ 
-              padding: '60px', 
-              textAlign: 'center',
-              color: '#6b7280'
-            }}>
-              <div style={{ 
-                width: '40px', 
-                height: '40px', 
-                border: '4px solid #e5e7eb', 
-                borderTop: '4px solid #1a1a1a', 
-                borderRadius: '50%', 
-                animation: 'spin 1s linear infinite',
-                margin: '0 auto 16px'
-              }}></div>
+            <div className={styles.listLoading}>
+              <div className={styles.listSpinner}></div>
               Loading suppliers...
             </div>
           ) : filteredSuppliers.length === 0 ? (
-            <div style={{ 
-              padding: '60px', 
-              textAlign: 'center',
-              color: '#6b7280'
-            }}>
-              <i className="fa-solid fa-truck" style={{ 
-                fontSize: '48px', 
-                marginBottom: '16px',
-                color: '#d1d5db'
-              }}></i>
-              <h3 style={{ margin: '0 0 8px 0', fontSize: '20px' }}>
+            <div className={styles.emptyState}>
+              <i className={`fa-solid fa-truck ${styles.emptyIcon}`}></i>
+              <h3 className={styles.emptyTitle}>
                 No suppliers found
               </h3>
-              <p style={{ margin: '0' }}>
+              <p className={styles.emptyText}>
                 {searchTerm ? 'Try adjusting your search terms' : 'Add your first supplier to get started'}
               </p>
             </div>
           ) : (
             <div style={{ overflow: 'auto' }}>
-              <table style={{ 
-                width: '100%', 
-                borderCollapse: 'collapse',
-                fontSize: '15px'
-              }}>
-                <thead>
-                  <tr style={{ 
-                    background: '#f9fafb',
-                    borderBottom: '2px solid #d1d5db'
-                  }}>
-                    <th style={{ 
-                      padding: '16px', 
-                      textAlign: 'left', 
-                      fontWeight: '600',
-                      color: '#1f2937'
-                    }}>
+              <table className={styles.suppliersTable}>
+                <thead className={styles.tableHeader}>
+                  <tr>
+                    <th className={styles.tableHeaderCell}>
                       Supplier
                     </th>
-                    <th style={{ 
-                      padding: '16px', 
-                      textAlign: 'left', 
-                      fontWeight: '600',
-                      color: '#1f2937'
-                    }}>
+                    <th className={styles.tableHeaderCell}>
                       Contact
                     </th>
-                    <th style={{ 
-                      padding: '16px', 
-                      textAlign: 'left', 
-                      fontWeight: '600',
-                      color: '#1f2937'
-                    }}>
+                    <th className={styles.tableHeaderCell}>
                       Contact Info
                     </th>
-                    <th style={{ 
-                      padding: '16px', 
-                      textAlign: 'left', 
-                      fontWeight: '600',
-                      color: '#1f2937'
-                    }}>
+                    <th className={styles.tableHeaderCell}>
                       Status
                     </th>
-                    <th style={{ 
-                      padding: '16px', 
-                      textAlign: 'left', 
-                      fontWeight: '600',
-                      color: '#1f2937'
-                    }}>
+                    <th className={styles.tableHeaderCell}>
                       Created
                     </th>
                     {canManageSuppliers && (
-                      <th style={{ 
-                        padding: '16px', 
-                        textAlign: 'center', 
-                        fontWeight: '600',
-                        color: '#1f2937'
-                      }}>
+                      <th className={`${styles.tableHeaderCell} ${styles.tableHeaderCellCenter}`}>
                         Actions
                       </th>
                     )}
@@ -852,44 +670,20 @@ const Suppliers = () => {
                   {filteredSuppliers.map((supplier) => (
                     <tr 
                       key={supplier.supplier_id}
-                      style={{ 
-                        borderBottom: '1px solid #e5e7eb',
-                        transition: 'background 0.2s ease',
-                        cursor: 'pointer'
-                      }}
+                      className={styles.tableRow}
                       onClick={() => handleSupplierRowClick(supplier)}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.background = '#f9fafb'
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.background = '#ffffff'
-                      }}
                     >
-                      <td style={{ padding: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <td className={styles.tableCell}>
+                        <div className={styles.supplierInfo}>
                           {/* Supplier Image or Vehicle Icon */}
-                          <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '8px',
-                            background: '#f3f4f6',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            border: `2px solid ${getSupplierVehicleIcon(supplier.supplier_id).color}`,
-                            flexShrink: 0,
-                            overflow: 'hidden'
-                          }}>
+                          <div 
+                            className={styles.supplierImage}
+                            style={{ borderColor: getSupplierVehicleIcon(supplier.supplier_id).color }}
+                          >
                             {supplier.image_url ? (
                               <img 
                                 src={supplier.image_url} 
                                 alt={supplier.name}
-                                style={{
-                                  width: '100%',
-                                  height: '100%',
-                                  objectFit: 'cover',
-                                  borderRadius: '6px'
-                                }}
                                 onError={(e) => {
                                   // Fallback to vehicle icon if image fails to load
                                   const target = e.target as HTMLImageElement
@@ -912,33 +706,12 @@ const Suppliers = () => {
                           </div>
                           
                           {/* Supplier Info */}
-                          <div style={{ flex: 1 }}>
-                            <div style={{ 
-                              fontWeight: '600', 
-                              color: '#111827',
-                              marginBottom: '4px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px'
-                            }}>
+                          <div className={styles.supplierDetails}>
+                            <div className={styles.supplierName}>
                               {supplier.name}
                               {supplierUnpaidCounts[supplier.supplier_id] > 0 && (
                                 <div 
-                                  style={{
-                                    background: '#ef4444',
-                                    color: '#ffffff',
-                                    borderRadius: '10px',
-                                    padding: '2px 6px',
-                                    fontSize: '10px',
-                                    fontWeight: '600',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '2px',
-                                    minWidth: '16px',
-                                    height: '16px',
-                                    justifyContent: 'center',
-                                    cursor: 'help'
-                                  }}
+                                  className={styles.unpaidBadge}
                                   title={`${supplierUnpaidCounts[supplier.supplier_id]} unpaid visit${supplierUnpaidCounts[supplier.supplier_id] !== 1 ? 's' : ''}`}
                                 >
                                   {supplierUnpaidCounts[supplier.supplier_id]}
@@ -946,85 +719,46 @@ const Suppliers = () => {
                               )}
                             </div>
                             {supplier.address && (
-                              <div style={{ 
-                                fontSize: '13px', 
-                                color: '#6b7280',
-                                lineHeight: '1.4'
-                              }}>
+                              <div className={styles.supplierAddress}>
                                 {supplier.address}
                               </div>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td style={{ padding: '16px' }}>
+                      <td className={styles.tableCell}>
                         <div>
                           {supplier.contact_name && (
-                            <div style={{ 
-                              fontWeight: '500', 
-                              color: '#1f2937',
-                              marginBottom: '4px',
-                              fontSize: '15px'
-                            }}>
+                            <div className={styles.contactName}>
                               {supplier.contact_name}
                             </div>
                           )}
                           {supplier.notes && (
-                            <div style={{ 
-                              fontSize: '13px', 
-                              color: '#6b7280',
-                              fontStyle: 'italic',
-                              lineHeight: '1.4'
-                            }}>
+                            <div className={styles.contactNotes}>
                               {supplier.notes}
                             </div>
                           )}
                         </div>
                       </td>
-                      <td style={{ padding: '16px' }}>
+                      <td className={styles.tableCell}>
                         <div>
                           {supplier.email && (
-                            <div style={{ 
-                              marginBottom: '4px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px'
-                            }}>
-                              <i className="fa-solid fa-envelope" style={{ 
-                                color: '#6b7280', 
-                                fontSize: '12px',
-                                width: '12px'
-                              }}></i>
+                            <div className={styles.contactDetail}>
+                              <i className={`fa-solid fa-envelope ${styles.contactIcon}`}></i>
                               <a 
                                 href={`mailto:${supplier.email}`}
-                                style={{ 
-                                  color: '#111827',
-                                  textDecoration: 'none',
-                                  fontSize: '14px'
-                                }}
+                                className={styles.contactLink}
                               >
                                 {supplier.email}
                               </a>
                             </div>
                           )}
                           {supplier.phone && (
-                            <div style={{ 
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px'
-                            }}>
-                              <i className="fa-solid fa-phone" style={{ 
-                                color: '#6b7280', 
-                                fontSize: '12px',
-                                width: '12px'
-                              }}></i>
+                            <div className={styles.contactDetail}>
+                              <i className={`fa-solid fa-phone ${styles.contactIcon}`}></i>
                               <a 
                                 href={`tel:${supplier.phone}`}
-                                style={{ 
-                                  color: '#111827',
-                                  textDecoration: 'none',
-                                  fontSize: '14px'
-                                }}
+                                className={styles.contactLink}
                               >
                                 {supplier.phone}
                               </a>
@@ -1032,48 +766,23 @@ const Suppliers = () => {
                           )}
                         </div>
                       </td>
-                      <td style={{ padding: '16px' }}>
-                        <span style={{
-                          padding: '4px 12px',
-                          borderRadius: '20px',
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          background: supplier.active ? '#dcfce7' : '#fee2e2',
-                          color: supplier.active ? '#166534' : '#dc2626'
-                        }}>
+                      <td className={styles.tableCell}>
+                        <span className={`${styles.statusBadge} ${supplier.active ? styles.statusActive : styles.statusInactive}`}>
                           {supplier.active ? 'Active' : 'Inactive'}
                         </span>
                       </td>
-                      <td style={{ padding: '16px', color: '#374151', fontSize: '14px' }}>
+                      <td className={`${styles.tableCell} ${styles.createdDate}`}>
                         {new Date(supplier.created_at).toLocaleDateString()}
                       </td>
                       {canManageSuppliers && (
-                        <td style={{ padding: '16px', textAlign: 'center' }}>
-                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                        <td className={styles.tableCell}>
+                          <div className={styles.actionButtons}>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
                                 handleEdit(supplier)
                               }}
-                              style={{
-                                background: 'none',
-                                border: '1px solid #d1d5db',
-                                borderRadius: '6px',
-                                padding: '6px 12px',
-                                cursor: 'pointer',
-                                color: '#1f2937',
-                                fontSize: '12px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                transition: 'all 0.2s ease'
-                              }}
-                              onMouseOver={(e) => {
-                                e.currentTarget.style.background = '#f3f4f6'
-                              }}
-                              onMouseOut={(e) => {
-                                e.currentTarget.style.background = 'none'
-                              }}
+                              className={`${styles.actionButton} ${styles.actionButtonEdit}`}
                             >
                               <i className="fa-solid fa-edit"></i>
                               Edit
@@ -1083,25 +792,7 @@ const Suppliers = () => {
                                 e.stopPropagation()
                                 handleDelete(supplier)
                               }}
-                              style={{
-                                background: 'none',
-                                border: '1px solid #fecaca',
-                                borderRadius: '6px',
-                                padding: '6px 12px',
-                                cursor: 'pointer',
-                                color: '#dc2626',
-                                fontSize: '12px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                transition: 'all 0.2s ease'
-                              }}
-                              onMouseOver={(e) => {
-                                e.currentTarget.style.background = '#fef2f2'
-                              }}
-                              onMouseOut={(e) => {
-                                e.currentTarget.style.background = 'none'
-                              }}
+                              className={`${styles.actionButton} ${styles.actionButtonDelete}`}
                             >
                               <i className="fa-solid fa-trash"></i>
                               Delete
@@ -1734,6 +1425,17 @@ const Suppliers = () => {
                             }}>
                               <i className="fa-solid fa-clock" style={{ marginRight: '6px' }}></i>
                               {visit.start_time} - {visit.end_time}
+                            </div>
+                          )}
+                          {visit.amount && (
+                            <div style={{ 
+                              fontSize: '14px', 
+                              color: '#059669',
+                              fontWeight: '600',
+                              marginBottom: '8px'
+                            }}>
+                              <i className="fa-solid fa-dollar-sign" style={{ marginRight: '6px' }}></i>
+                              ${visit.amount.toFixed(2)}
                             </div>
                           )}
                           {visit.notes && (
