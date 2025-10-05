@@ -76,7 +76,6 @@ export const demoCustomers = [
     phone_number: '+1 (555) 123-4567',
     email: 'john.smith@email.com',
     loyalty_points: 150,
-    credit_balance: 0,
     business_id: 1
   },
   {
@@ -85,7 +84,6 @@ export const demoCustomers = [
     phone_number: '+1 (555) 234-5678',
     email: 'sarah.johnson@email.com',
     loyalty_points: 75,
-    credit_balance: 25.50,
     business_id: 1
   },
   {
@@ -94,7 +92,6 @@ export const demoCustomers = [
     phone_number: '+1 (555) 345-6789',
     email: 'mike.wilson@email.com',
     loyalty_points: 200,
-    credit_balance: 0,
     business_id: 1
   }
 ];

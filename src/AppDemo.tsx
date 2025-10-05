@@ -85,7 +85,7 @@ DEMO MODE - All data is simulated for demonstration purposes
       <Navigation />
       <main style={{
         flex: 1,
-        marginLeft: isCollapsed ? '70px' : '200px',
+        marginLeft: '264px',
         padding: '24px',
         height: '100vh',
         overflow: 'auto',

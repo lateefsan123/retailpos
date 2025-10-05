@@ -13,6 +13,7 @@ import { ttsService, TTSSettings } from '../lib/ttsService'
 import { RetroButton } from '../components/ui/RetroButton'
 import BranchSelector from '../components/BranchSelector'
 import Calculator from '../components/Calculator'
+import CustomerAutocomplete from '../components/CustomerAutocomplete'
 
 // Helper function to get local time in database format
 const getLocalDateTime = () => {
@@ -237,6 +238,7 @@ const Sales = () => {
   const [promotionsEnabled, setPromotionsEnabled] = useState(true)
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [showSalesSummary, setShowSalesSummary] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('cash')
@@ -1337,6 +1339,7 @@ const Sales = () => {
       setOrderDetailNumber(generateOrderDetailNumber())
       setCustomerName('')
       setCustomerPhone('')
+      setSelectedCustomer(null)
       setPaymentMethod('cash')
       setAmountEntered('')
       setChange(0)
@@ -1438,22 +1441,26 @@ const Sales = () => {
         // Handle customer if name is provided
         let customerId = null
         if (customerName.trim()) {
-          // Check if customer exists
-          let customerQuery = supabase
-            .from('customers')
-            .select('customer_id')
-            .eq('business_id', businessId)
-            .eq('name', customerName.trim())
-
-          if (selectedBranchId) {
-            customerQuery = customerQuery.eq('branch_id', selectedBranchId)
-          }
-
-          const { data: existingCustomer, error: lookupError } = await customerQuery.single()
-
-          if (existingCustomer && !lookupError) {
-            customerId = existingCustomer.customer_id
+          if (selectedCustomer) {
+            // Use the selected customer's ID
+            customerId = selectedCustomer.customer_id
           } else {
+            // Check if customer exists
+            let customerQuery = supabase
+              .from('customers')
+              .select('customer_id')
+              .eq('business_id', businessId)
+              .eq('name', customerName.trim())
+
+            if (selectedBranchId) {
+              customerQuery = customerQuery.eq('branch_id', selectedBranchId)
+            }
+
+            const { data: existingCustomer, error: lookupError } = await customerQuery.single()
+
+            if (existingCustomer && !lookupError) {
+              customerId = existingCustomer.customer_id
+            } else {
             // Create new customer
             const { data: newCustomer, error: customerError } = await supabase
               .from('customers')
@@ -1473,6 +1480,7 @@ const Sales = () => {
               customerId = null
             } else {
               customerId = newCustomer.customer_id
+            }
             }
           }
         }
@@ -1817,6 +1825,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
       setOrderDetailNumber(generateOrderDetailNumber())
       setCustomerName('')
       setCustomerPhone('')
+      setSelectedCustomer(null)
       setPaymentMethod('cash')
       setAmountEntered('')
       setChange(0)
@@ -1858,6 +1867,37 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
       setTimeout(() => {
         document.body.removeChild(successMsg)
       }, 3000)
+
+      // Award loyalty points if customer exists
+      if (customerId && order.total > 0) {
+        try {
+          // Calculate points: 1 euro = 1 point
+          const pointsToAward = Math.floor(order.total)
+          
+          // Get current customer points
+          const { data: currentCustomer } = await supabase
+            .from('customers')
+            .select('loyalty_points')
+            .eq('customer_id', customerId)
+            .single()
+
+          if (currentCustomer) {
+            // Update customer with new points
+            const newPoints = currentCustomer.loyalty_points + pointsToAward
+            const { error: pointsError } = await supabase
+              .from('customers')
+              .update({ loyalty_points: newPoints })
+              .eq('customer_id', customerId)
+
+            if (pointsError) {
+              console.error('Error updating loyalty points:', pointsError)
+            }
+          }
+        } catch (error) {
+          console.error('Error awarding loyalty points:', error)
+          // Don't fail the sale if loyalty points fail
+        }
+      }
 
       // Announce order total
       speakOrderTotal(order.total)
@@ -1959,15 +1999,14 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
     <div style={{ 
       position: 'fixed',
       top: 0,
-      left: isCollapsed ? '70px' : '200px', // Dynamic based on nav state
+      left: '286px', // Slightly wider reveal for sidebar
       right: 0,
       bottom: 0,
       display: 'flex', 
       height: '100vh', 
       background: 'linear-gradient(135deg, #7d8d86, #3e3f29)',
       fontFamily: 'Poppins, sans-serif',
-      zIndex: 1000,
-      transition: 'left 0.3s ease' // Smooth transition when nav collapses
+      zIndex: 1000
     }}>
       {/* Main Content Area */}
       <div style={{ 
@@ -1978,7 +2017,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        borderRight: '2px solid #e5e7eb'
+        borderRight: '4px solid #9ca3af'
       }}>
         {/* Header */}
         <div style={{ 
@@ -3597,18 +3636,18 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               }}>
                 Customer Name (Optional)
               </label>
-              <input
-                type="text"
+              <CustomerAutocomplete
                 value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
+                onChange={setCustomerName}
+                onSelectCustomer={(customer) => {
+                  setSelectedCustomer(customer)
+                  if (customer) {
+                    setCustomerPhone(customer.phone_number)
+                  }
+                }}
                 placeholder="Enter customer name (optional)"
                 style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '1px solid #6b7280',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  outline: 'none'
+                  fontSize: '16px'
                 }}
               />
             </div>

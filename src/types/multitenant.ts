@@ -86,7 +86,6 @@ export interface Customer {
   phone_number: string
   email?: string
   loyalty_points: number
-  credit_balance: number
   business_id: number // Multi-tenant support
   branch_id?: number // Branch support
 }
@@ -96,7 +95,6 @@ export interface NewCustomer {
   phone_number: string
   email?: string
   loyalty_points?: number
-  credit_balance?: number
 }
 
 // =====================================================
@@ -618,4 +616,49 @@ export interface AppliedPromotion {
   promotion: Promotion
   discount_amount: number
   items_affected: string[] // product_ids
+}
+
+// =====================================================
+// LOYALTY PRIZES TYPES
+// =====================================================
+
+export interface LoyaltyPrize {
+  prize_id: number
+  business_id: number
+  branch_id?: number
+  product_id: string
+  points_required: number
+  is_active: boolean
+  created_at: string
+  created_by?: number
+  updated_at: string
+  product?: Product // Joined from products table
+}
+
+export interface NewLoyaltyPrize {
+  product_id: string
+  points_required: number
+  is_active?: boolean
+}
+
+export interface LoyaltyRedemption {
+  redemption_id: number
+  customer_id: number
+  prize_id: number
+  points_used: number
+  quantity: number
+  redeemed_at: string
+  redeemed_by?: number
+  business_id: number
+  branch_id?: number
+  notes?: string
+  customer?: Customer // Joined from customers table
+  prize?: LoyaltyPrize // Joined from loyalty_prizes table
+}
+
+export interface NewLoyaltyRedemption {
+  customer_id: number
+  prize_id: number
+  quantity?: number
+  notes?: string
 }

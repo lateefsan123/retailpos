@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useBusinessId } from '../hooks/useBusinessId'
 import { useBranch } from '../contexts/BranchContext'
 import { useRole } from '../contexts/RoleContext'
 import BranchSelector from '../components/BranchSelector'
-import { Customer } from '../types/multitenant'
+import { Customer, LoyaltyPrize, Product, NewLoyaltyPrize } from '../types/multitenant'
 import { formatCurrency } from '../utils/currency'
 import styles from './CustomerLoyalty.module.css'
 
@@ -15,7 +16,6 @@ interface CustomerRequest {
   phone_number: string
   email?: string
   loyalty_points?: number
-  credit_balance?: number
 }
 
 interface CustomerWithStats extends Customer {
@@ -25,6 +25,7 @@ interface CustomerWithStats extends Customer {
 }
 
 const CustomerLoyalty = () => {
+  const navigate = useNavigate()
   const { businessId, businessLoading } = useBusinessId()
   const { selectedBranchId } = useBranch()
   const { hasPermission } = useRole()
@@ -39,9 +40,21 @@ const CustomerLoyalty = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [pointsToAdd, setPointsToAdd] = useState('')
   const [pointsToRedeem, setPointsToRedeem] = useState('')
-  const [creditToAdd, setCreditToAdd] = useState('')
-  const [creditToDeduct, setCreditToDeduct] = useState('')
   const [activeDropdown, setActiveDropdown] = useState<number | null>(null)
+  const [customerTransactions, setCustomerTransactions] = useState<any[]>([])
+  const [loadingTransactions, setLoadingTransactions] = useState(false)
+
+  // New state for loyalty prizes
+  const [activeTab, setActiveTab] = useState<'customers' | 'prizes'>('customers')
+  const [loyaltyPrizes, setLoyaltyPrizes] = useState<LoyaltyPrize[]>([])
+  const [products, setProducts] = useState<Product[]>([])
+  const [showPrizeModal, setShowPrizeModal] = useState(false)
+  const [editingPrize, setEditingPrize] = useState<LoyaltyPrize | null>(null)
+  const [prizeFormData, setPrizeFormData] = useState<NewLoyaltyPrize>({
+    product_id: '',
+    points_required: 0,
+    is_active: true
+  })
 
   // Form state
   const [formData, setFormData] = useState<CustomerRequest>({
@@ -50,8 +63,7 @@ const CustomerLoyalty = () => {
     name: '',
     phone_number: '',
     email: '',
-    loyalty_points: 0,
-    credit_balance: 0
+    loyalty_points: 0
   })
 
   // Check permissions
@@ -60,8 +72,12 @@ const CustomerLoyalty = () => {
   useEffect(() => {
     if (!businessLoading && businessId) {
       fetchCustomers()
+      if (activeTab === 'prizes') {
+        fetchLoyaltyPrizes()
+        fetchProducts()
+      }
     }
-  }, [businessId, businessLoading, selectedBranchId])
+  }, [businessId, businessLoading, selectedBranchId, activeTab])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -191,8 +207,7 @@ const CustomerLoyalty = () => {
       name: customer.name,
       phone_number: customer.phone_number,
       email: customer.email || '',
-      loyalty_points: customer.loyalty_points,
-      credit_balance: customer.credit_balance
+      loyalty_points: customer.loyalty_points
     })
     setShowAddModal(true)
   }
@@ -204,8 +219,7 @@ const CustomerLoyalty = () => {
       name: '',
       phone_number: '',
       email: '',
-      loyalty_points: 0,
-      credit_balance: 0
+      loyalty_points: 0
     })
   }
 
@@ -247,41 +261,234 @@ const CustomerLoyalty = () => {
     }
   }
 
-  const handleCreditUpdate = async (type: 'add' | 'deduct') => {
-    if (!selectedCustomer || !canManageCustomers) return
-
-    const credit = type === 'add' ? parseFloat(creditToAdd) : -parseFloat(creditToDeduct)
-    if (isNaN(credit) || credit === 0) return
+  // Loyalty Prizes Functions
+  const fetchLoyaltyPrizes = async () => {
+    if (!businessId) return
 
     try {
-      const newCredit = selectedCustomer.credit_balance + credit
-      if (newCredit < 0) {
-        setError('Cannot deduct more credit than customer has')
+      let query = supabase
+        .from('loyalty_prizes')
+        .select(`
+          *,
+          product:products(*)
+        `)
+        .eq('business_id', businessId)
+        .order('points_required', { ascending: true })
+
+      if (selectedBranchId) {
+        query = query.eq('branch_id', selectedBranchId)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+      setLoyaltyPrizes(data || [])
+    } catch (err) {
+      console.error('Error fetching loyalty prizes:', err)
+      setError(err instanceof Error ? err.message : 'Failed to fetch loyalty prizes')
+    }
+  }
+
+  const fetchProducts = async () => {
+    if (!businessId) return
+
+    try {
+      let query = supabase
+        .from('products')
+        .select('*')
+        .eq('business_id', businessId)
+        .gt('stock_quantity', 0) // Only products with stock
+        .order('name')
+
+      if (selectedBranchId) {
+        query = query.eq('branch_id', selectedBranchId)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+      setProducts(data || [])
+    } catch (err) {
+      console.error('Error fetching products:', err)
+      setError(err instanceof Error ? err.message : 'Failed to fetch products')
+    }
+  }
+
+  const handlePrizeSubmit = async () => {
+    if (!canManageCustomers || !businessId) return
+
+    try {
+      const prizeData = {
+        ...prizeFormData,
+        business_id: businessId,
+        branch_id: selectedBranchId || null
+      }
+
+      if (editingPrize) {
+        const { error } = await supabase
+          .from('loyalty_prizes')
+          .update({
+            product_id: prizeData.product_id,
+            points_required: prizeData.points_required,
+            is_active: prizeData.is_active,
+            updated_at: new Date().toISOString()
+          })
+          .eq('prize_id', editingPrize.prize_id)
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('loyalty_prizes')
+          .insert([prizeData])
+
+        if (error) throw error
+      }
+
+      setShowPrizeModal(false)
+      setEditingPrize(null)
+      setPrizeFormData({
+        product_id: '',
+        points_required: 0,
+        is_active: true
+      })
+      fetchLoyaltyPrizes()
+    } catch (err) {
+      console.error('Error saving prize:', err)
+      setError(err instanceof Error ? err.message : 'Failed to save prize')
+    }
+  }
+
+  const handleDeletePrize = async (prizeId: number) => {
+    if (!canManageCustomers || !confirm('Are you sure you want to delete this prize?')) return
+
+    try {
+      const { error } = await supabase
+        .from('loyalty_prizes')
+        .delete()
+        .eq('prize_id', prizeId)
+
+      if (error) throw error
+      fetchLoyaltyPrizes()
+    } catch (err) {
+      console.error('Error deleting prize:', err)
+      setError(err instanceof Error ? err.message : 'Failed to delete prize')
+    }
+  }
+
+  const resetPrizeForm = () => {
+    setPrizeFormData({
+      product_id: '',
+      points_required: 0,
+      is_active: true
+    })
+    setEditingPrize(null)
+  }
+
+  const handleTransactionClick = (saleId: number) => {
+    navigate(`/transaction/${saleId}`)
+  }
+
+  const fetchCustomerTransactions = async (customerId: number) => {
+    if (!businessId) return
+
+    try {
+      setLoadingTransactions(true)
+      const { data: transactions, error } = await supabase
+        .from('sales')
+        .select(`
+          sale_id,
+          datetime,
+          total_amount,
+          sale_items (
+            quantity,
+            price_each,
+            products (
+              name
+            )
+          )
+        `)
+        .eq('customer_id', customerId)
+        .eq('business_id', businessId)
+        .order('datetime', { ascending: false })
+
+      if (error) throw error
+      setCustomerTransactions(transactions || [])
+    } catch (err) {
+      console.error('Error fetching transactions:', err)
+      setError(err instanceof Error ? err.message : 'Failed to fetch transactions')
+    } finally {
+      setLoadingTransactions(false)
+    }
+  }
+
+  const handlePrizeRedemption = async (prize: LoyaltyPrize) => {
+    if (!selectedCustomer || !canManageCustomers) return
+
+    try {
+      // Check if customer has enough points
+      if (selectedCustomer.loyalty_points < prize.points_required) {
+        setError('Customer does not have enough points for this prize')
         return
       }
 
-      const { error } = await supabase
+      // Check if product has stock
+      if (!prize.product || prize.product.stock_quantity <= 0) {
+        setError('This prize is out of stock')
+        return
+      }
+
+      // Deduct points from customer
+      const newPoints = selectedCustomer.loyalty_points - prize.points_required
+      const { error: pointsError } = await supabase
         .from('customers')
-        .update({ credit_balance: newCredit })
+        .update({ loyalty_points: newPoints })
         .eq('customer_id', selectedCustomer.customer_id)
 
-      if (error) throw error
+      if (pointsError) throw pointsError
+
+      // Create redemption record
+      const { error: redemptionError } = await supabase
+        .from('loyalty_redemptions')
+        .insert([{
+          customer_id: selectedCustomer.customer_id,
+          prize_id: prize.prize_id,
+          points_used: prize.points_required,
+          quantity: 1,
+          business_id: businessId,
+          branch_id: selectedBranchId || null,
+          notes: `Redeemed ${prize.product.name} for ${prize.points_required} points`
+        }])
+
+      if (redemptionError) throw redemptionError
+
+      // Update product stock
+      const { error: stockError } = await supabase
+        .from('products')
+        .update({ 
+          stock_quantity: prize.product.stock_quantity - 1,
+          last_updated: new Date().toISOString()
+        })
+        .eq('product_id', prize.product_id)
+
+      if (stockError) throw stockError
 
       // Update local state
       setCustomers(prev => 
         prev.map(c => 
           c.customer_id === selectedCustomer.customer_id 
-            ? { ...c, credit_balance: newCredit }
+            ? { ...c, loyalty_points: newPoints }
             : c
         )
       )
 
-      // Reset form
-      setCreditToAdd('')
-      setCreditToDeduct('')
+      // Refresh data
+      fetchLoyaltyPrizes()
+      fetchProducts()
+
+      alert(`Successfully redeemed ${prize.product.name} for ${prize.points_required} points!`)
     } catch (err) {
-      console.error('Error updating credit:', err)
-      setError(err instanceof Error ? err.message : 'Failed to update credit')
+      console.error('Error redeeming prize:', err)
+      setError(err instanceof Error ? err.message : 'Failed to redeem prize')
     }
   }
 
@@ -315,7 +522,7 @@ const CustomerLoyalty = () => {
               Customer Loyalty
             </h1>
             <p className={styles.headerSubtitle}>
-              Manage customer information, loyalty points, and credit balances
+              Manage customer information, loyalty points, and rewards
             </p>
             <div className={styles.branchSelectorContainer}>
               <BranchSelector />
@@ -323,34 +530,53 @@ const CustomerLoyalty = () => {
           </div>
           
           <div className={styles.headerActions}>
-            {canManageCustomers && (
+            {/* Tab Navigation */}
+            <div className={styles.tabNavigation}>
               <button
-                onClick={() => {
-                  resetForm()
-                  setEditingCustomer(null)
-                  setShowAddModal(true)
-                }}
-                className={styles.addButton}
+                className={`${styles.tabButton} ${activeTab === 'customers' ? styles.tabButtonActive : ''}`}
+                onClick={() => setActiveTab('customers')}
               >
-                <i className={`fa-solid fa-plus ${styles.addButtonIcon}`}></i>
-                Add Customer
+                <i className="fa-solid fa-users"></i>
+                Customers
               </button>
-            )}
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className={styles.filtersContainer}>
-          <div className={styles.filtersContent}>
-            <div className={styles.searchContainer}>
-              <input
-                type="text"
-                placeholder="Search by name, phone, email, or transaction amount..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={styles.searchInput}
-              />
+              <button
+                className={`${styles.tabButton} ${activeTab === 'prizes' ? styles.tabButtonActive : ''}`}
+                onClick={() => setActiveTab('prizes')}
+              >
+                <i className="fa-solid fa-gift"></i>
+                Loyalty Prizes
+              </button>
             </div>
+
+            {canManageCustomers && (
+              <>
+                {activeTab === 'customers' && (
+                  <button
+                    onClick={() => {
+                      resetForm()
+                      setEditingCustomer(null)
+                      setShowAddModal(true)
+                    }}
+                    className={styles.addButton}
+                  >
+                    <i className={`fa-solid fa-plus ${styles.addButtonIcon}`}></i>
+                    Add Customer
+                  </button>
+                )}
+                {activeTab === 'prizes' && (
+                  <button
+                    onClick={() => {
+                      resetPrizeForm()
+                      setShowPrizeModal(true)
+                    }}
+                    className={styles.addButton}
+                  >
+                    <i className={`fa-solid fa-plus ${styles.addButtonIcon}`}></i>
+                    Add Prize
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </div>
 
@@ -362,7 +588,25 @@ const CustomerLoyalty = () => {
           </div>
         )}
 
-        {/* Customers List */}
+        {/* Tab Content */}
+        {activeTab === 'customers' ? (
+          <>
+            {/* Filters */}
+            <div className={styles.filtersContainer}>
+              <div className={styles.filtersContent}>
+                <div className={styles.searchContainer}>
+                  <input
+                    type="text"
+                    placeholder="Search by name, phone, email, or transaction amount..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className={styles.searchInput}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Customers List */}
         <div className={styles.customersList}>
           {loading ? (
             <div className={styles.listLoading}>
@@ -386,15 +630,9 @@ const CustomerLoyalty = () => {
                   <tr>
                     <th className={styles.tableHeaderCell}>Customer</th>
                     <th className={styles.tableHeaderCell}>Contact Info</th>
-                    <th className={styles.tableHeaderCell}>Last Transaction</th>
-                    <th className={styles.tableHeaderCell}>Total Spent</th>
-                    <th className={styles.tableHeaderCell}>Loyalty Points</th>
-                    <th className={styles.tableHeaderCell}>Credit Balance</th>
-                    {canManageCustomers && (
-                      <th className={`${styles.tableHeaderCell} ${styles.tableHeaderCellCenter}`}>
-                        Actions
-                      </th>
-                    )}
+                    <th className={`${styles.tableHeaderCell} ${styles.tableHeaderCellCenter}`}>Last Transaction</th>
+                    <th className={`${styles.tableHeaderCell} ${styles.tableHeaderCellCenter}`}>Total Spent</th>
+                    <th className={`${styles.tableHeaderCell} ${styles.tableHeaderCellCenter}`}>Loyalty Points</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -405,6 +643,7 @@ const CustomerLoyalty = () => {
                       onClick={() => {
                         setSelectedCustomer(customer)
                         setShowPointsModal(true)
+                        fetchCustomerTransactions(customer.customer_id)
                       }}
                     >
                       <td className={styles.tableCell}>
@@ -478,76 +717,8 @@ const CustomerLoyalty = () => {
                           <span className={`${styles.pointsValue} ${customer.loyalty_points === 0 ? styles.pointsValueZero : ''}`}>
                             {customer.loyalty_points.toLocaleString()}
                           </span>
-                          <span className={styles.pointsLabel}>points</span>
-                          {customer.loyalty_points === 0 && (
-                            <span className={styles.pointsMotivation}>
-                              No points yet - reward this customer for their next purchase!
-                            </span>
-                          )}
                         </div>
                       </td>
-                      <td className={`${styles.tableCell} ${styles.tableCellCenter}`}>
-                        <div className={styles.creditContainer}>
-                          <span className={styles.creditValue}>
-                            {formatCurrency(customer.credit_balance)}
-                          </span>
-                        </div>
-                      </td>
-                      {canManageCustomers && (
-                        <td className={styles.tableCell}>
-                          <div className={styles.actionButtons}>
-                            <div className={styles.dropdownContainer}>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setActiveDropdown(activeDropdown === customer.customer_id ? null : customer.customer_id)
-                                }}
-                                className={styles.dropdownButton}
-                              >
-                                <i className="fa-solid fa-ellipsis-vertical"></i>
-                              </button>
-                              {activeDropdown === customer.customer_id && (
-                                <div className={styles.dropdownMenu}>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleEdit(customer)
-                                      setActiveDropdown(null)
-                                    }}
-                                    className={styles.dropdownItem}
-                                  >
-                                    <i className="fa-solid fa-cog"></i>
-                                    Manage
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      setSelectedCustomer(customer)
-                                      setShowPointsModal(true)
-                                      setActiveDropdown(null)
-                                    }}
-                                    className={styles.dropdownItem}
-                                  >
-                                    <i className="fa-solid fa-star"></i>
-                                    Award Points
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      // TODO: Implement view history
-                                      setActiveDropdown(null)
-                                    }}
-                                    className={styles.dropdownItem}
-                                  >
-                                    <i className="fa-solid fa-history"></i>
-                                    View History
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -555,8 +726,101 @@ const CustomerLoyalty = () => {
             </div>
           )}
         </div>
+          </>
+        ) : (
+          /* Loyalty Prizes Tab */
+          <div className={styles.prizesList}>
+            {loading ? (
+              <div className={styles.listLoading}>
+                <div className={styles.listSpinner}></div>
+                Loading prizes...
+              </div>
+            ) : loyaltyPrizes.length === 0 ? (
+              <div className={styles.emptyState}>
+                <i className={`fa-solid fa-gift ${styles.emptyIcon}`}></i>
+                <h3 className={styles.emptyTitle}>
+                  No loyalty prizes set up
+                </h3>
+                <p className={styles.emptyText}>
+                  Create your first loyalty prize to reward customers with points
+                </p>
+              </div>
+            ) : (
+              <div className={styles.prizesGrid}>
+                {loyaltyPrizes.map((prize) => (
+                  <div key={prize.prize_id} className={styles.prizeCard}>
+                    <div className={styles.prizeHeader}>
+                      <div className={styles.prizeInfo}>
+                        <h3 className={styles.prizeName}>
+                          {prize.product?.name || 'Unknown Product'}
+                        </h3>
+                        <div className={styles.prizePoints}>
+                          <i className="fa-solid fa-coins"></i>
+                          {prize.points_required.toLocaleString()} points
+                        </div>
+                      </div>
+                      <div className={styles.prizeStatus}>
+                        <span className={`${styles.statusBadge} ${prize.is_active ? styles.statusActive : styles.statusInactive}`}>
+                          {prize.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className={styles.prizeDetails}>
+                      <div className={styles.prizeDetail}>
+                        <span className={styles.prizeDetailLabel}>Price:</span>
+                        <span className={styles.prizeDetailValue}>
+                          {formatCurrency(prize.product?.price || 0)}
+                        </span>
+                      </div>
+                      <div className={styles.prizeDetail}>
+                        <span className={styles.prizeDetailLabel}>Stock:</span>
+                        <span className={styles.prizeDetailValue}>
+                          {prize.product?.stock_quantity || 0} units
+                        </span>
+                      </div>
+                      <div className={styles.prizeDetail}>
+                        <span className={styles.prizeDetailLabel}>Category:</span>
+                        <span className={styles.prizeDetailValue}>
+                          {prize.product?.category || 'N/A'}
+                        </span>
+                      </div>
+                    </div>
 
-        {/* Add/Edit Modal */}
+                    {canManageCustomers && (
+                      <div className={styles.prizeActions}>
+                        <button
+                          className={styles.prizeActionButton}
+                          onClick={() => {
+                            setEditingPrize(prize)
+                            setPrizeFormData({
+                              product_id: prize.product_id,
+                              points_required: prize.points_required,
+                              is_active: prize.is_active
+                            })
+                            setShowPrizeModal(true)
+                          }}
+                        >
+                          <i className="fa-solid fa-edit"></i>
+                          Edit
+                        </button>
+                        <button
+                          className={`${styles.prizeActionButton} ${styles.prizeActionButtonDanger}`}
+                          onClick={() => handleDeletePrize(prize.prize_id)}
+                        >
+                          <i className="fa-solid fa-trash"></i>
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Add/Edit Customer Modal */}
         {showAddModal && (
           <div className={styles.modalOverlay}>
             <div className={styles.modalContent}>
@@ -622,33 +886,17 @@ const CustomerLoyalty = () => {
                 </div>
 
                 {editingCustomer && (
-                  <div className={styles.formGrid}>
-                    <div>
-                      <label className={styles.formLabel}>
-                        Loyalty Points
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.loyalty_points}
-                        onChange={(e) => setFormData(prev => ({ ...prev, loyalty_points: parseInt(e.target.value) || 0 }))}
-                        min="0"
-                        className={styles.formInput}
-                      />
-                    </div>
-
-                    <div>
-                      <label className={styles.formLabel}>
-                        Credit Balance
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={formData.credit_balance}
-                        onChange={(e) => setFormData(prev => ({ ...prev, credit_balance: parseFloat(e.target.value) || 0 }))}
-                        min="0"
-                        className={styles.formInput}
-                      />
-                    </div>
+                  <div className={styles.formGridSingle}>
+                    <label className={styles.formLabel}>
+                      Loyalty Points
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.loyalty_points}
+                      onChange={(e) => setFormData(prev => ({ ...prev, loyalty_points: parseInt(e.target.value) || 0 }))}
+                      min="0"
+                      className={styles.formInput}
+                    />
                   </div>
                 )}
 
@@ -677,7 +925,101 @@ const CustomerLoyalty = () => {
           </div>
         )}
 
-        {/* Points & Credit Management Modal */}
+        {/* Add/Edit Prize Modal */}
+        {showPrizeModal && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modalContent}>
+              <div className={styles.modalHeader}>
+                <h2 className={styles.modalTitle}>
+                  <i className="fa-solid fa-gift" style={{ marginRight: '12px', color: '#f59e0b' }}></i>
+                  {editingPrize ? 'Edit Loyalty Prize' : 'Add New Loyalty Prize'}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowPrizeModal(false)
+                    setEditingPrize(null)
+                    resetPrizeForm()
+                  }}
+                  className={styles.modalCloseButton}
+                >
+                  <i className="fa-solid fa-times"></i>
+                </button>
+              </div>
+
+              <form onSubmit={(e) => { e.preventDefault(); handlePrizeSubmit(); }}>
+                <div className={styles.formGrid}>
+                  <div>
+                    <label className={styles.formLabel}>
+                      Product *
+                    </label>
+                    <select
+                      required
+                      value={prizeFormData.product_id}
+                      onChange={(e) => setPrizeFormData(prev => ({ ...prev, product_id: e.target.value }))}
+                      className={styles.formInput}
+                    >
+                      <option value="">Select a product</option>
+                      {products.map((product) => (
+                        <option key={product.product_id} value={product.product_id}>
+                          {product.name} - {formatCurrency(product.price)} (Stock: {product.stock_quantity})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className={styles.formLabel}>
+                      Points Required *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      value={prizeFormData.points_required}
+                      onChange={(e) => setPrizeFormData(prev => ({ ...prev, points_required: parseInt(e.target.value) || 0 }))}
+                      placeholder="e.g., 250"
+                      min="1"
+                      className={styles.formInput}
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.formGridSingle}>
+                  <label className={styles.formCheckboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={prizeFormData.is_active}
+                      onChange={(e) => setPrizeFormData(prev => ({ ...prev, is_active: e.target.checked }))}
+                    />
+                    <span className={styles.formCheckboxText}>Active (available for redemption)</span>
+                  </label>
+                </div>
+
+                <div className={styles.modalActions}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPrizeModal(false)
+                      setEditingPrize(null)
+                      resetPrizeForm()
+                    }}
+                    className={styles.cancelButton}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className={styles.submitButton}
+                  >
+                    <i className="fa-solid fa-save"></i>
+                    {editingPrize ? 'Update Prize' : 'Add Prize'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Loyalty Management Modal */}
         {showPointsModal && selectedCustomer && (
           <div className={styles.modalOverlay}>
             <div className={styles.pointsModalContent}>
@@ -692,8 +1034,7 @@ const CustomerLoyalty = () => {
                     setSelectedCustomer(null)
                     setPointsToAdd('')
                     setPointsToRedeem('')
-                    setCreditToAdd('')
-                    setCreditToDeduct('')
+                    setCustomerTransactions([])
                   }}
                   className={styles.modalCloseButton}
                 >
@@ -709,14 +1050,6 @@ const CustomerLoyalty = () => {
                   </div>
                   <div className={styles.statusLabel}>
                     Loyalty Points
-                  </div>
-                </div>
-                <div className={styles.statusItem}>
-                  <div className={`${styles.statusValue} ${styles.statusValueCredit}`}>
-                    {formatCurrency(selectedCustomer.credit_balance)}
-                  </div>
-                  <div className={styles.statusLabel}>
-                    Credit Balance
                   </div>
                 </div>
               </div>
@@ -778,63 +1111,90 @@ const CustomerLoyalty = () => {
                 </div>
               </div>
 
-              {/* Credit Management */}
-              <div>
+              {/* Available Prizes */}
+              {loyaltyPrizes.length > 0 && (
+                <div style={{ marginTop: '32px' }}>
+                  <h3 className={styles.sectionTitle}>
+                    <i className="fa-solid fa-gift" style={{ color: '#8b5cf6' }}></i>
+                    Available Prizes
+                  </h3>
+                  
+                  <div className={styles.availablePrizesList}>
+                    {loyaltyPrizes
+                      .filter(prize => prize.is_active && prize.points_required <= selectedCustomer.loyalty_points)
+                      .map((prize) => (
+                        <div key={prize.prize_id} className={styles.availablePrize}>
+                          <div className={styles.availablePrizeInfo}>
+                            <div className={styles.availablePrizeName}>
+                              {prize.product?.name}
+                            </div>
+                            <div className={styles.availablePrizeDetails}>
+                              <span className={styles.availablePrizePrice}>
+                                {formatCurrency(prize.product?.price || 0)}
+                              </span>
+                              <span className={styles.availablePrizePoints}>
+                                {prize.points_required} points
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            className={styles.redeemButton}
+                            onClick={() => handlePrizeRedemption(prize)}
+                            disabled={!prize.product || prize.product.stock_quantity <= 0}
+                          >
+                            {!prize.product || prize.product.stock_quantity <= 0 ? 'Out of Stock' : 'Redeem'}
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                  
+                  {loyaltyPrizes.filter(prize => prize.is_active && prize.points_required <= selectedCustomer.loyalty_points).length === 0 && (
+                    <div className={styles.noAvailablePrizes}>
+                      <i className="fa-solid fa-gift"></i>
+                      <p>No prizes available with current points</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Transaction History Section */}
+              <div style={{ marginTop: '32px' }}>
                 <h3 className={styles.sectionTitle}>
-                  <i className="fa-solid fa-credit-card" style={{ color: '#10b981' }}></i>
-                  Credit Balance Management
+                  <i className="fa-solid fa-history" style={{ color: '#6b7280' }}></i>
+                  Transaction History
                 </h3>
                 
-                <div className={styles.sectionGrid}>
-                  <div className={styles.sectionItem}>
-                    <label className={styles.sectionLabel}>
-                      Add Credit
-                    </label>
-                    <div className={styles.sectionInputGroup}>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={creditToAdd}
-                        onChange={(e) => setCreditToAdd(e.target.value)}
-                        placeholder="0.00"
-                        min="0"
-                        className={styles.sectionInput}
-                      />
-                      <button
-                        onClick={() => handleCreditUpdate('add')}
-                        disabled={!creditToAdd || parseFloat(creditToAdd) <= 0}
-                        className={`${styles.sectionButton} ${styles.sectionButtonAdd}`}
-                      >
-                        Add
-                      </button>
-                    </div>
+                {loadingTransactions ? (
+                  <div className={styles.transactionLoading}>
+                    <div className={styles.listSpinner}></div>
+                    Loading transactions...
                   </div>
-
-                  <div className={styles.sectionItem}>
-                    <label className={styles.sectionLabel}>
-                      Deduct Credit
-                    </label>
-                    <div className={styles.sectionInputGroup}>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={creditToDeduct}
-                        onChange={(e) => setCreditToDeduct(e.target.value)}
-                        placeholder="0.00"
-                        min="0"
-                        max={selectedCustomer.credit_balance}
-                        className={styles.sectionInput}
-                      />
-                      <button
-                        onClick={() => handleCreditUpdate('deduct')}
-                        disabled={!creditToDeduct || parseFloat(creditToDeduct) <= 0 || parseFloat(creditToDeduct) > selectedCustomer.credit_balance}
-                        className={`${styles.sectionButton} ${styles.sectionButtonRedeem}`}
-                      >
-                        Deduct
-                      </button>
-                    </div>
+                ) : customerTransactions.length === 0 ? (
+                  <div className={styles.noTransactionsFound}>
+                    <i className="fa-solid fa-receipt"></i>
+                    <p>No transactions found for this customer</p>
                   </div>
-                </div>
+                ) : (
+                  <div className={styles.transactionHistory}>
+                    {customerTransactions.map((transaction) => (
+                      <div 
+                        key={transaction.sale_id} 
+                        className={styles.transactionItem}
+                        onClick={() => handleTransactionClick(transaction.sale_id)}
+                      >
+                        <div className={styles.transactionSimple}>
+                          <div className={styles.transactionDate}>
+                            {new Date(transaction.datetime).toLocaleDateString()} at {new Date(transaction.datetime).toLocaleTimeString()}
+                          </div>
+                          <div className={styles.transactionTotal}>
+                            {formatCurrency(transaction.total_amount)}
+                            <i className="fa-solid fa-chevron-right" style={{ marginLeft: '8px', fontSize: '12px', color: '#6b7280' }}></i>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

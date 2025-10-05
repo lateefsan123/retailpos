@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './contexts/AuthContext'
 import { BusinessProvider } from './contexts/BusinessContext'
 import { BranchProvider, useBranch } from './contexts/BranchContext'
-import { NavProvider, useNav } from './contexts/NavContext'
+import { NavProvider } from './contexts/NavContext'
 import { RoleProvider } from './contexts/RoleContext'
 import { PinProvider } from './contexts/PinContext'
 import { useNavCollapse } from './hooks/useNavCollapse'
@@ -31,7 +31,6 @@ import VerificationAdmin from './pages/VerificationAdmin'
 import CustomerLoyalty from './pages/CustomerLoyalty'
 
 const AppContent = () => {
-  const { isCollapsed } = useNav()
   const { isSwitchingBranch, switchingToBranch } = useBranch()
   useNavCollapse()
 
@@ -60,23 +59,31 @@ const AppContent = () => {
           zIndex: 0
         }}></div>
         <Navigation />
-        <UserMenu />
-        <main style={{
+        <div style={{
           flex: 1,
-          marginLeft: isCollapsed ? '70px' : '200px',
-          padding: '24px',
-          height: '100vh',
-          overflow: 'auto',
-          transition: 'margin-left 0.3s ease',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: '100vh',
           position: 'relative',
           zIndex: 1
         }}>
-          <div style={{
-            maxWidth: '1400px',
-            margin: '0 auto',
+          <UserMenu />
+          <main style={{
+            flex: 1,
+            padding: '32px',
+            overflowY: 'auto',
             position: 'relative',
-            zIndex: 1
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'flex-start'
           }}>
+            <div style={{
+              width: '100%',
+              maxWidth: '1400px',
+              margin: '0 auto',
+              position: 'relative',
+              zIndex: 1
+            }}>
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/products" element={
@@ -130,6 +137,7 @@ const AppContent = () => {
             </Routes>
           </div>
         </main>
+      </div>
       </div>
       
       {/* Loading Screen */}

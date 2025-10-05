@@ -1,7 +1,7 @@
 /* Customer Loyalty Page Styles */
 .customersContainer {
   min-height: 100vh;
-  background: #f8f9fa;
+  background: transparent;
   padding: 0;
   margin: 0;
 }
@@ -275,6 +275,10 @@
   text-align: center;
 }
 
+.tableHeaderCellRight {
+  text-align: right;
+}
+
 .tableRow {
   border-bottom: 1px solid #e5e7eb;
   transition: all 0.3s ease;
@@ -303,6 +307,10 @@
 
 .tableCellCenter {
   text-align: center;
+}
+
+.tableCellRight {
+  text-align: right;
 }
 
 /* Customer Info */
@@ -375,7 +383,7 @@
 .pointsValue {
   font-size: 18px;
   font-weight: 600;
-  color: #f59e0b;
+  color: #d97706;
   text-align: center;
 }
 
@@ -449,30 +457,13 @@
 .totalSpentValue {
   font-size: 20px;
   font-weight: 700;
-  color: #059669;
+  color: #1a1a1a;
 }
 
 .averageSpent {
   font-size: 11px;
   color: #6b7280;
   font-weight: 500;
-}
-
-.creditContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  text-align: center;
-}
-
-.creditValue {
-  font-size: 24px;
-  font-weight: 800;
-  color: #059669;
-  text-align: center;
-  line-height: 1.1;
 }
 
 /* Action Buttons */
@@ -780,12 +771,6 @@
   font-weight: 600;
 }
 
-.statusValueCredit {
-  color: #059669;
-  font-size: 36px;
-  font-weight: 800;
-}
-
 .statusLabel {
   font-size: 14px;
   color: #6b7280;
@@ -859,6 +844,416 @@
   cursor: not-allowed;
 }
 
+/* Tab Navigation Styles */
+.tabNavigation {
+  display: flex;
+  gap: 8px;
+  margin-right: 16px;
+}
+
+.tabButton {
+  background: #f8f9fa;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tabButton:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.tabButtonActive {
+  background: #3b82f6;
+  color: #ffffff;
+  border-color: #3b82f6;
+}
+
+.tabButtonActive:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+/* Loyalty Prizes Styles */
+.prizesList {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.prizesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.prizeCard {
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.prizeCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.prizeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.prizeInfo {
+  flex: 1;
+}
+
+.prizeName {
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+}
+
+.prizePoints {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #f59e0b;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.prizePoints i {
+  font-size: 14px;
+}
+
+.prizeStatus {
+  margin-left: 12px;
+}
+
+.statusBadge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statusActive {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.statusInactive {
+  background: #6b7280;
+  color: #ffffff;
+}
+
+.prizeDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.prizeDetail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.prizeDetailLabel {
+  color: #9ca3af;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.prizeDetailValue {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.prizeActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.prizeActionButton {
+  background: #374151;
+  color: #ffffff;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.prizeActionButton:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+.prizeActionButtonDanger {
+  background: #dc2626;
+  border-color: #ef4444;
+}
+
+.prizeActionButtonDanger:hover {
+  background: #ef4444;
+  border-color: #f87171;
+}
+
+/* Available Prizes in Points Modal */
+.availablePrizesList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.availablePrize {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #f8f9fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.availablePrize:hover {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+.availablePrizeInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.availablePrizeName {
+  font-weight: 600;
+  color: #1a1a1a;
+  font-size: 16px;
+}
+
+.availablePrizeDetails {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.availablePrizePrice {
+  color: #059669;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.availablePrizePoints {
+  color: #f59e0b;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.redeemButton {
+  background: #10b981;
+  color: #ffffff;
+  border: 1px solid #10b981;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.redeemButton:hover:not(:disabled) {
+  background: #059669;
+  border-color: #059669;
+}
+
+.redeemButton:disabled {
+  background: #9ca3af;
+  border-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.noAvailablePrizes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.noAvailablePrizes i {
+  font-size: 24px;
+  color: #9ca3af;
+}
+
+/* Transaction History Styles */
+.transactionLoading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.noTransactionsFound {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.noTransactionsFound i {
+  font-size: 24px;
+  color: #9ca3af;
+}
+
+.transactionHistory {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.transactionItem {
+  background: #f8f9fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.transactionItem:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.transactionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.transactionSimple {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.transactionDate {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.transactionTotal {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.transactionItems {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.transactionItemDetail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #ffffff;
+  border-radius: 6px;
+  border: 1px solid #f3f4f6;
+}
+
+.itemQuantity {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 4px;
+  min-width: 32px;
+  text-align: center;
+}
+
+.itemName {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin: 0 12px;
+}
+
+.itemPrice {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  min-width: 60px;
+  text-align: right;
+}
+
+/* Form Checkbox Styles */
+.formCheckboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.formCheckboxText {
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .header {
@@ -922,6 +1317,37 @@
   .statusGrid {
     grid-template-columns: 1fr;
   }
+
+  .tabNavigation {
+    flex-direction: column;
+    gap: 4px;
+    margin-right: 0;
+    margin-bottom: 16px;
+  }
+  
+  .tabButton {
+    justify-content: center;
+  }
+  
+  .prizesGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .availablePrize {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .availablePrizeDetails {
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+  }
+  
+  .redeemButton {
+    width: 100%;
+  }
 }
 
 @media (max-width: 480px) {
@@ -961,9 +1387,6 @@
     font-size: 16px;
   }
   
-  .creditValue {
-    font-size: 20px;
-  }
 
   .modalContent,
   .pointsModalContent {
