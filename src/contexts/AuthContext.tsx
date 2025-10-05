@@ -54,16 +54,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     }, 30000)
 
-    // Check for existing session (using localStorage since we don't use Supabase Auth)
+    // Check for existing Supabase session
     const checkSession = async () => {
       try {
-        // Since we use custom authentication, just restore from localStorage
-        const savedUser = localStorage.getItem('pos_user')
-        if (savedUser) {
-          setUser(JSON.parse(savedUser))
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session?.user) {
+          setSupabaseUser(session.user)
+          await loadUserProfile(session.user.id)
+        } else {
+          // Fallback to localStorage for backward compatibility
+          const savedUser = localStorage.getItem('pos_user')
+          if (savedUser) {
+            setUser(JSON.parse(savedUser))
+          }
         }
-      } catch (error) {
-        console.error('Error restoring session:', error)
+      } catch {
+        // If there's an error, still set loading to false to prevent infinite loading
       } finally {
         setLoading(false)
       }
@@ -71,13 +78,63 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     checkSession()
 
-    // No need for Supabase Auth listener since we use custom authentication
-    
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        setSupabaseUser(session.user)
+        try {
+          await loadUserProfile(session.user.id)
+        } catch (error) {
+          // Silent error handling
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setSupabaseUser(null)
+        setUser(null)
+        localStorage.removeItem('pos_user')
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        setSupabaseUser(session.user)
+        // Don't reload profile on token refresh to avoid unnecessary calls
+      }
+    })
+
     return () => {
       clearTimeout(loadingTimeout)
+      subscription.unsubscribe()
     }
   }, [])
 
+  const loadUserProfile = async (userId: string) => {
+    try {
+      // Get the user from users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('user_id', parseInt(userId))
+        .single()
+
+      if (userError) {
+        console.error('Error loading user:', userError)
+        setUser(null)
+        return
+      }
+
+      const userProfile: User = {
+        user_id: userData.user_id,
+        username: userData.username,
+        role: userData.role,
+        active: userData.active,
+        icon: userData.icon,
+        business_id: userData.business_id ?? null
+      }
+
+      setUser(userProfile)
+      localStorage.setItem('pos_user', JSON.stringify(userProfile))
+      
+    } catch (error) {
+      console.error('Error in loadUserProfile:', error)
+      setUser(null)
+    }
+  }
 
   const authenticate = async (email: string, password: string): Promise<{ success: boolean; businessId?: number }> => {
     try {
@@ -550,6 +607,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const logout = async () => {
     try {
+      if (supabaseUser) {
+        await supabase.auth.signOut()
+      }
       setUser(null)
       setSupabaseUser(null)
       localStorage.removeItem('pos_user')
@@ -558,7 +618,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Redirect to login page
       window.location.href = '/retailpos/login'
     } catch (error) {
-      console.error('Logout error:', error)
+      // console.error('Logout error:', error)
       // Even if there's an error, still redirect to login
       window.location.href = '/retailpos/login'
     }
