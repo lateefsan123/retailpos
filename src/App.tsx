@@ -27,6 +27,8 @@ import SelectUser from './pages/SelectUser'
 import Suppliers from './pages/Suppliers'
 import SupplierCalendar from './components/SupplierCalendar'
 import Promotions from './pages/Promotions'
+import VerificationAdmin from './pages/VerificationAdmin'
+import CustomerLoyalty from './pages/CustomerLoyalty'
 
 const AppContent = () => {
   const { isCollapsed } = useNav()
@@ -97,11 +99,17 @@ const AppContent = () => {
                   <Transactions />
                 </RoleProtectedRoute>
               } />
+              <Route path="/customer-loyalty" element={
+                <RoleProtectedRoute requiredPermission="canProcessSales">
+                  <CustomerLoyalty />
+                </RoleProtectedRoute>
+              } />
               <Route path="/admin" element={
                 <RoleProtectedRoute requiredPermission="canManageUsers">
                   <Admin />
                 </RoleProtectedRoute>
               } />
+              <Route path="/verification-admin" element={<VerificationAdmin />} />
               <Route path="/reminders" element={<Reminders />} />
               <Route path="/suppliers" element={
                 <RoleProtectedRoute requiredPermission="canManageProducts">

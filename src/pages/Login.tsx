@@ -96,8 +96,14 @@ const Login: React.FC = () => {
       // Use full login functionality
       const success = await login(formData.email, formData.password);
       if (success) {
-        // Redirect to select user page after successful login
-        navigate('/select-user');
+        // Check if this is the verification admin
+        if (formData.email === 'lateefsanusi67@gmail.com') {
+          // Redirect verification admin directly to their page
+          navigate('/verification-admin');
+        } else {
+          // Redirect to select user page after successful login
+          navigate('/select-user');
+        }
       } else {
         setErrors({ general: 'Invalid email or password' });
       }

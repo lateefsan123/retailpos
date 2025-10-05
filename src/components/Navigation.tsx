@@ -12,6 +12,7 @@ const Navigation = () => {
     { path: '/products', label: 'Products', icon: 'fas fa-box' },
     { path: '/sales', label: 'Sales', icon: 'fas fa-dollar-sign' },
     { path: '/transactions', label: 'Transactions', icon: 'fas fa-receipt' },
+    { path: '/customer-loyalty', label: 'Customer Loyalty', icon: 'fas fa-users' },
     { path: '/suppliers', label: 'Suppliers', icon: 'fas fa-truck' },
     { path: '/supplier-calendar', label: 'Supplier Calendar', icon: 'fas fa-calendar-week' },
     { path: '/promotions', label: 'Promotions', icon: 'fas fa-tags' },

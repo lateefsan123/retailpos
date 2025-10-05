@@ -88,6 +88,7 @@ export interface Customer {
   loyalty_points: number
   credit_balance: number
   business_id: number // Multi-tenant support
+  branch_id?: number // Branch support
 }
 
 export interface NewCustomer {

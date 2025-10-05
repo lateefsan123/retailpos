@@ -54,23 +54,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     }, 30000)
 
-    // Check for existing Supabase session
+    // Check for existing session (using localStorage since we don't use Supabase Auth)
     const checkSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (session?.user) {
-          setSupabaseUser(session.user)
-          await loadUserProfile(session.user.id)
-        } else {
-          // Fallback to localStorage for backward compatibility
-          const savedUser = localStorage.getItem('pos_user')
-          if (savedUser) {
-            setUser(JSON.parse(savedUser))
-          }
+        // Since we use custom authentication, just restore from localStorage
+        const savedUser = localStorage.getItem('pos_user')
+        if (savedUser) {
+          setUser(JSON.parse(savedUser))
         }
-      } catch {
-        // If there's an error, still set loading to false to prevent infinite loading
+      } catch (error) {
+        console.error('Error restoring session:', error)
       } finally {
         setLoading(false)
       }
@@ -78,63 +71,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     checkSession()
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        setSupabaseUser(session.user)
-        try {
-          await loadUserProfile(session.user.id)
-        } catch (error) {
-          // Silent error handling
-        }
-      } else if (event === 'SIGNED_OUT') {
-        setSupabaseUser(null)
-        setUser(null)
-        localStorage.removeItem('pos_user')
-      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-        setSupabaseUser(session.user)
-        // Don't reload profile on token refresh to avoid unnecessary calls
-      }
-    })
-
+    // No need for Supabase Auth listener since we use custom authentication
+    
     return () => {
       clearTimeout(loadingTimeout)
-      subscription.unsubscribe()
     }
   }, [])
 
-  const loadUserProfile = async (userId: string) => {
-    try {
-      // Get the user from users table
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('user_id', parseInt(userId))
-        .single()
-
-      if (userError) {
-        console.error('Error loading user:', userError)
-        setUser(null)
-        return
-      }
-
-      const userProfile: User = {
-        user_id: userData.user_id,
-        username: userData.username,
-        role: userData.role,
-        active: userData.active,
-        icon: userData.icon,
-        business_id: userData.business_id ?? null
-      }
-
-      setUser(userProfile)
-      localStorage.setItem('pos_user', JSON.stringify(userProfile))
-      
-    } catch (error) {
-      console.error('Error in loadUserProfile:', error)
-      setUser(null)
-    }
-  }
 
   const authenticate = async (email: string, password: string): Promise<{ success: boolean; businessId?: number }> => {
     try {
@@ -271,6 +214,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     closeTime?: string
   ): Promise<{ success: boolean; pendingApproval?: boolean }> => {
     try {
+      console.log('=== REGISTRATION STARTED ===')
+      console.log('Registration data:', {
+        username,
+        businessName,
+        firstName,
+        lastName,
+        email,
+        phone,
+        businessType,
+        businessAddress
+      })
       setLoading(true)
       
       // Check if username already exists
@@ -392,26 +346,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       // Create pending registration record
-      const { error: pendingError } = await supabase
+      console.log('Creating pending registration for user_id:', userData.user_id)
+      const pendingRegistrationData = {
+        user_id: userData.user_id,
+        email: email || username,
+        business_name: businessName,
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone,
+        business_type: businessType,
+        business_description: businessDescription,
+        business_address: businessAddress,
+        business_phone: businessPhone,
+        currency: currency,
+        website: website,
+        vat_number: vatNumber,
+        open_time: openTime,
+        close_time: closeTime,
+        status: 'pending'
+      }
+      console.log('Pending registration data:', pendingRegistrationData)
+      
+      const { data: pendingData, error: pendingError } = await supabase
         .from('pending_registrations')
-        .insert({
-          user_id: userData.user_id,
-          email: email || username,
-          business_name: businessName,
-          first_name: firstName,
-          last_name: lastName,
-          phone: phone,
-          business_type: businessType,
-          business_description: businessDescription,
-          business_address: businessAddress,
-          business_phone: businessPhone,
-          currency: currency,
-          website: website,
-          vat_number: vatNumber,
-          open_time: openTime,
-          close_time: closeTime,
-          status: 'pending'
-        })
+        .insert(pendingRegistrationData)
+        .select()
 
       if (pendingError) {
         console.error('Error creating pending registration:', pendingError)
@@ -426,11 +385,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           .eq('business_id', businessData.business_id)
         return { success: false }
       }
+      
+      console.log('Pending registration created successfully:', pendingData)
 
       // Don't log the user in automatically - they need approval first
       // Return success with pending approval flag
+      console.log('=== REGISTRATION COMPLETED SUCCESSFULLY ===')
+      console.log('User created with ID:', userData.user_id)
+      console.log('Business created with ID:', businessData.business_id)
+      console.log('Pending registration created:', pendingData)
       return { success: true, pendingApproval: true }
     } catch (error) {
+      console.error('=== REGISTRATION FAILED ===')
       console.error('Registration error:', error)
       return { success: false }
     } finally {
@@ -584,9 +550,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const logout = async () => {
     try {
-      if (supabaseUser) {
-        await supabase.auth.signOut()
-      }
       setUser(null)
       setSupabaseUser(null)
       localStorage.removeItem('pos_user')
@@ -595,7 +558,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Redirect to login page
       window.location.href = '/retailpos/login'
     } catch (error) {
-      // console.error('Logout error:', error)
+      console.error('Logout error:', error)
       // Even if there's an error, still redirect to login
       window.location.href = '/retailpos/login'
     }
