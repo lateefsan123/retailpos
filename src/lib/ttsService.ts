@@ -64,9 +64,7 @@ class TTSService {
     const envElevenLabsKey = import.meta.env.VITE_ELEVENLABS_KEY || ''
     const envOpenAIKey = import.meta.env.VITE_OPENAI_API_KEY || ''
     
-    console.log('Environment variables loaded:')
-    console.log('VITE_ELEVENLABS_KEY:', envElevenLabsKey ? 'Present' : 'Missing')
-    console.log('VITE_OPENAI_API_KEY:', envOpenAIKey ? 'Present' : 'Missing')
+    // Environment variables loaded
     
     const defaultSettings: TTSSettings = {
       enabled: true, // Enable TTS by default
@@ -94,10 +92,8 @@ class TTSService {
           merged.apiKey = String(envElevenLabsKey).trim()
           merged.useElevenLabs = true
         }
-        console.log('Loaded TTS settings from localStorage:', merged)
         return merged
       }
-      console.log('No saved TTS settings, using defaults:', defaultSettings)
       return defaultSettings
     } catch (error) {
       console.error('Error loading TTS settings:', error)
@@ -164,21 +160,12 @@ class TTSService {
   }
 
   async speak(text: string): Promise<boolean> {
-    console.log('TTS Service speak called with:', text)
-    console.log('TTS Settings:', this.settings)
-    console.log('useElevenLabs:', this.settings.useElevenLabs)
-    console.log('useOpenAI:', this.settings.useOpenAI)
-    console.log('openaiApiKey present:', !!this.settings.openaiApiKey)
-    console.log('openaiApiKey length:', this.settings.openaiApiKey?.length || 0)
-    
     if (!this.settings.enabled) {
-      console.log('TTS not enabled')
       return false
     }
 
     // If no API keys are available, disable TTS gracefully
     if (!this.settings.apiKey && !this.settings.openaiApiKey) {
-      console.log('No TTS API keys available, disabling TTS')
       this.settings.enabled = false
       this.saveSettings()
       return false
@@ -189,40 +176,33 @@ class TTSService {
 
     // Check daily limit
     if (this.usage.dailyUsage + characterCount > this.settings.dailyLimit) {
-      console.log('Daily limit exceeded, trying OpenAI fallback')
       // Skip ElevenLabs and go directly to OpenAI
     }
 
     // Try ElevenLabs TTS first if enabled and configured (and not over daily limit)
     if (this.settings.useElevenLabs && this.settings.apiKey && this.usage.dailyUsage + characterCount <= this.settings.dailyLimit) {
-      console.log('Trying ElevenLabs TTS with voice:', this.settings.selectedVoice)
       const success = await this.speakWithElevenLabs(text)
       if (success) {
         this.updateUsage(characterCount, estimatedCost)
         return true
       }
-      console.log('ElevenLabs failed, trying OpenAI fallback...')
     }
 
     // Try OpenAI TTS as fallback if enabled and configured
     if (this.settings.useOpenAI && this.settings.openaiApiKey) {
-      console.log('Trying OpenAI TTS with voice:', this.settings.openaiVoice)
       const openaiCost = this.calculateOpenAICost(characterCount)
       const success = await this.speakWithOpenAI(text)
       if (success) {
         this.updateUsage(characterCount, openaiCost)
         return true
       }
-      console.log('OpenAI TTS failed')
     }
 
     // If both APIs fail, try browser TTS as final fallback
     if (this.isBrowserTTSAvailable()) {
-      console.log('Trying browser TTS as final fallback')
       return this.speakWithBrowserTTS(text)
     }
 
-    console.log('No TTS method available')
     return false
   }
 
@@ -238,9 +218,6 @@ class TTSService {
 
   private async speakWithElevenLabs(text: string): Promise<boolean> {
     try {
-      console.log('Making ElevenLabs API call...')
-      console.log('Voice ID:', this.settings.selectedVoice)
-      console.log('API Key:', this.settings.apiKey.substring(0, 10) + '...')
       
       const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${this.settings.selectedVoice}`, {
         method: 'POST',
@@ -259,16 +236,12 @@ class TTSService {
         })
       })
 
-      console.log('ElevenLabs response status:', response.status)
-      
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('ElevenLabs API error response:', errorText)
         throw new Error(`ElevenLabs API error: ${response.status} - ${errorText}`)
       }
 
       const audioBlob = await response.blob()
-      console.log('Audio blob received, size:', audioBlob.size)
       
       const audioUrl = URL.createObjectURL(audioBlob)
       const audio = new Audio(audioUrl)
@@ -278,21 +251,15 @@ class TTSService {
       
       return new Promise((resolve) => {
         audio.onended = () => {
-          console.log('ElevenLabs audio playback ended')
           URL.revokeObjectURL(audioUrl)
           this.currentAudio = null
           resolve(true)
         }
         audio.onerror = (e) => {
-          console.error('ElevenLabs audio playback error:', e)
           URL.revokeObjectURL(audioUrl)
           this.currentAudio = null
           resolve(false)
         }
-        audio.onloadstart = () => console.log('ElevenLabs audio started loading')
-        audio.oncanplay = () => console.log('ElevenLabs audio can play')
-        
-        console.log('Starting ElevenLabs audio playback...')
         audio.play()
       })
     } catch (error) {
@@ -303,9 +270,6 @@ class TTSService {
 
   private async speakWithOpenAI(text: string): Promise<boolean> {
     try {
-      console.log('Making OpenAI TTS API call...')
-      console.log('Voice:', this.settings.openaiVoice)
-      console.log('API Key:', this.settings.openaiApiKey.substring(0, 10) + '...')
       
       const response = await fetch('https://api.openai.com/v1/audio/speech', {
         method: 'POST',
@@ -321,7 +285,6 @@ class TTSService {
         })
       })
 
-      console.log('OpenAI response status:', response.status)
       
       if (!response.ok) {
         const errorText = await response.text()
@@ -330,7 +293,6 @@ class TTSService {
       }
 
       const audioBlob = await response.blob()
-      console.log('OpenAI audio blob received, size:', audioBlob.size)
       
       const audioUrl = URL.createObjectURL(audioBlob)
       const audio = new Audio(audioUrl)
@@ -340,21 +302,15 @@ class TTSService {
       
       return new Promise((resolve) => {
         audio.onended = () => {
-          console.log('OpenAI audio playback ended')
           URL.revokeObjectURL(audioUrl)
           this.currentAudio = null
           resolve(true)
         }
         audio.onerror = (e) => {
-          console.error('OpenAI audio playback error:', e)
           URL.revokeObjectURL(audioUrl)
           this.currentAudio = null
           resolve(false)
         }
-        audio.onloadstart = () => console.log('OpenAI audio started loading')
-        audio.oncanplay = () => console.log('OpenAI audio can play')
-        
-        console.log('Starting OpenAI audio playback...')
         audio.play()
       })
     } catch (error) {
@@ -385,7 +341,6 @@ class TTSService {
   }
 
   stop() {
-    console.log('TTS service stop called')
     
     // Stop current audio if playing
     if (this.currentAudio) {
@@ -437,22 +392,17 @@ class TTSService {
 
   // Force refresh settings from environment variables
   refreshSettings() {
-    console.log('Refreshing TTS settings from environment...')
     this.settings = this.loadSettings()
-    console.log('New settings loaded:', this.settings)
   }
 
   // Clear all settings and reload from environment
   resetToDefaults() {
-    console.log('Clearing all TTS settings and reloading from environment...')
     try {
       localStorage.removeItem('tts-settings')
-      console.log('Cleared localStorage settings')
     } catch (error) {
       console.error('Error clearing settings:', error)
     }
     this.settings = this.loadSettings()
-    console.log('Reset to defaults:', this.settings)
   }
 
   // Browser TTS fallback methods
@@ -462,7 +412,6 @@ class TTSService {
 
   private async speakWithBrowserTTS(text: string): Promise<boolean> {
     if (!this.isBrowserTTSAvailable()) {
-      console.log('Browser TTS not available')
       return false
     }
 
@@ -477,7 +426,6 @@ class TTSService {
         this.currentUtterance = utterance
 
         utterance.onend = () => {
-          console.log('Browser TTS completed')
           this.currentUtterance = null
           resolve(true)
         }
@@ -488,7 +436,6 @@ class TTSService {
           resolve(false)
         }
 
-        console.log('Starting browser TTS...')
         speechSynthesis.speak(utterance)
       } catch (error) {
         console.error('Browser TTS failed:', error)
@@ -500,9 +447,6 @@ class TTSService {
 
   // Test OpenAI connection directly
   async testOpenAI(): Promise<boolean> {
-    console.log('Testing OpenAI TTS connection...')
-    console.log('OpenAI API Key present:', !!this.settings.openaiApiKey)
-    console.log('OpenAI Voice:', this.settings.openaiVoice)
     
     if (!this.settings.openaiApiKey) {
       console.error('No OpenAI API key found')
@@ -511,17 +455,14 @@ class TTSService {
 
     try {
       const success = await this.speakWithOpenAI('Test message')
-      console.log('OpenAI test result:', success)
       return success
     } catch (error) {
-      console.error('OpenAI test failed:', error)
       return false
     }
   }
 
   // Test browser TTS
   async testBrowserTTS(): Promise<boolean> {
-    console.log('Testing browser TTS...')
     return this.speakWithBrowserTTS('Test message')
   }
 }

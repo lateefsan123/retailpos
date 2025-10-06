@@ -479,9 +479,12 @@ const TransactionDetail = () => {
       const saleId = parseInt(transactionId?.replace('TXN-', '') || '0')
       
       // Update the transaction to mark it as fully paid
+      const fullAmount = (transaction.partial_amount || 0) + (transaction.remaining_amount || 0)
+
       const { error } = await supabase
         .from('sales')
         .update({
+          total_amount: fullAmount > 0 ? fullAmount : transaction.total_amount,
           partial_payment: false,
           partial_amount: null,
           remaining_amount: null,

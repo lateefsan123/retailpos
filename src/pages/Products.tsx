@@ -2166,12 +2166,12 @@ const Products = () => {
                     onClick={isPrintMode ? undefined : () => handleProductClick(product)}
                     onMouseEnter={(e) => {
                       if (!isPrintMode) {
-                        (e.target as HTMLTableRowElement).style.background = 'rgba(125, 141, 134, 0.05)'
+                        (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(125, 141, 134, 0.05)'
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!isPrintMode) {
-                        (e.target as HTMLTableRowElement).style.background = 'transparent'
+                        (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'
                       }
                     }}
                     >
@@ -2296,23 +2296,13 @@ const Products = () => {
                               e.stopPropagation()
                               handlePrintIndividualLabel(product)
                             }}
-                            style={{
-                              background: '#111827',
-                              color: '#f1f0e4',
-                              border: 'none',
-                              padding: '6px 12px',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              transition: 'background 0.2s ease'
-                            }}
-                            onMouseEnter={(e) => {
-                              (e.target as HTMLButtonElement).style.background = '#374151'
+                            className={styles.actionButton}
+                            style={{ background: '#111827', border: '2px solid #000000' }}
+                            onMouseEnter={() => {
                               setLilyMessage(`Click to print a label for "${product.name}". This will open a print dialog with a formatted product label!`)
                               setShowLilyMessage(true)
                             }}
-                            onMouseLeave={(e) => {
-                              (e.target as HTMLButtonElement).style.background = '#111827'
+                            onMouseLeave={() => {
                               setShowLilyMessage(false)
                             }}
                           >
@@ -2325,23 +2315,13 @@ const Products = () => {
                                 e.stopPropagation()
                                 startEditProduct(product)
                               }}
-                              style={{
-                                background: '#111827',
-                                color: '#f1f0e4',
-                                border: 'none',
-                                padding: '6px 12px',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '12px',
-                                transition: 'background 0.2s ease'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.target.style.background = '#374151'
+                              className={styles.actionButton}
+                              style={{ background: '#111827', border: '2px solid #000000' }}
+                              onMouseEnter={() => {
                                 setLilyMessage(`Click to edit "${product.name}". You can update the price, stock quantity, reorder level, and other details!`)
                                 setShowLilyMessage(true)
                               }}
-                              onMouseLeave={(e) => {
-                                e.target.style.background = '#111827'
+                              onMouseLeave={() => {
                                 setShowLilyMessage(false)
                               }}
                             >
@@ -2354,18 +2334,8 @@ const Products = () => {
                               e.stopPropagation()
                               setProductToDelete(product)
                             }}
-                            style={{
-                              background: '#6b7280',
-                              color: 'white',
-                              border: 'none',
-                              padding: '6px 12px',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              transition: 'background 0.2s ease'
-                            }}
-                            onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = '#4b5563'}
-                            onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = '#6b7280'}
+                            className={styles.deleteButton}
+                            style={{ background: '#6b7280', border: '2px solid #000000' }}
                           >
                             <i className="fa-solid fa-trash-can" style={{ marginRight: '4px' }}></i>
                             Delete
@@ -2644,7 +2614,7 @@ const Products = () => {
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
                     Product Name *
                   </label>
                   <input
@@ -2654,18 +2624,20 @@ const Products = () => {
                     onChange={(e) => setNewProduct({...newProduct, product_name: e.target.value})}
                     style={{
                       width: '100%',
-                      padding: '10px 12px',
+                      padding: '12px 16px',
                       border: '2px solid #000000',
                       borderRadius: '8px',
-                      fontSize: '14px',
-                      color: '#3e3f29'
+                      fontSize: '16px',
+                      background: '#f8fafc',
+                      color: '#1a1a1a',
+                      boxSizing: 'border-box'
                     }}
                     placeholder="e.g., Plantain Chips, Jollof Rice Mix"
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
                     Category *
                   </label>
                   <div style={{ position: 'relative' }}>
@@ -2757,7 +2729,7 @@ const Products = () => {
                 {newProduct.is_weighted && (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
                         Weight Unit *
                       </label>
                       <select
@@ -2782,7 +2754,7 @@ const Products = () => {
                       </select>
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
                         Price per {newProduct.weight_unit || 'unit'} *
                       </label>
                       <input
@@ -2808,7 +2780,7 @@ const Products = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
                     Price {newProduct.is_weighted ? '(Auto-set to 0 for weighted items)' : '*'}
                   </label>
                   <input
@@ -2837,7 +2809,7 @@ const Products = () => {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
                     Stock Quantity *
                   </label>
                   <input
@@ -2847,11 +2819,13 @@ const Products = () => {
                     onChange={(e) => setNewProduct({...newProduct, stock_quantity: e.target.value})}
                     style={{
                       width: '100%',
-                      padding: '10px 12px',
+                      padding: '12px 16px',
                       border: '2px solid #000000',
                       borderRadius: '8px',
-                      fontSize: '14px',
-                      color: '#3e3f29'
+                      fontSize: '16px',
+                      background: '#f8fafc',
+                      color: '#1a1a1a',
+                      boxSizing: 'border-box'
                     }}
                     placeholder="0"
                   />
@@ -2860,7 +2834,7 @@ const Products = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
                     Reorder Level *
                   </label>
                   <input
@@ -2870,18 +2844,20 @@ const Products = () => {
                     onChange={(e) => setNewProduct({...newProduct, reorder_level: e.target.value})}
                     style={{
                       width: '100%',
-                      padding: '10px 12px',
+                      padding: '12px 16px',
                       border: '2px solid #000000',
                       borderRadius: '8px',
-                      fontSize: '14px',
-                      color: '#3e3f29'
+                      fontSize: '16px',
+                      background: '#f8fafc',
+                      color: '#1a1a1a',
+                      boxSizing: 'border-box'
                     }}
                     placeholder="10"
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
                     Tax Rate (%)
                   </label>
                   <input
@@ -2891,11 +2867,13 @@ const Products = () => {
                     onChange={(e) => setNewProduct({...newProduct, tax_rate: e.target.value})}
                     style={{
                       width: '100%',
-                      padding: '10px 12px',
+                      padding: '12px 16px',
                       border: '2px solid #000000',
                       borderRadius: '8px',
-                      fontSize: '14px',
-                      color: '#3e3f29'
+                      fontSize: '16px',
+                      background: '#f8fafc',
+                      color: '#1a1a1a',
+                      boxSizing: 'border-box'
                     }}
                     placeholder="0.00"
                   />
@@ -3200,16 +3178,18 @@ const Products = () => {
           padding: '20px'
         }}>
           <div style={{
+            background: 'white',
             borderRadius: '12px',
-            padding: '32px',
+            padding: '24px',
             width: '100%',
             maxWidth: '600px',
             maxHeight: '90vh',
             overflow: 'auto',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            position: 'relative'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#3e3f29', margin: 0 }}>
+              <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a1a', margin: 0 }}>
                 Edit Product
               </h2>
               <button
@@ -3256,7 +3236,7 @@ const Products = () => {
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
                     Product Name *
                   </label>
                   <input
@@ -3266,18 +3246,20 @@ const Products = () => {
                     onChange={(e) => setNewProduct({...newProduct, product_name: e.target.value})}
                     style={{
                       width: '100%',
-                      padding: '10px 12px',
+                      padding: '12px 16px',
                       border: '2px solid #000000',
                       borderRadius: '8px',
-                      fontSize: '14px',
-                      color: '#3e3f29'
+                      fontSize: '16px',
+                      background: '#f8fafc',
+                      color: '#1a1a1a',
+                      boxSizing: 'border-box'
                     }}
                     placeholder="e.g., Plantain Chips, Jollof Rice Mix"
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
                     Category *
                   </label>
                   <div style={{ position: 'relative' }}>
@@ -3369,7 +3351,7 @@ const Products = () => {
                 {newProduct.is_weighted && (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
                         Weight Unit *
                       </label>
                       <select
@@ -3394,7 +3376,7 @@ const Products = () => {
                       </select>
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
                         Price per {newProduct.weight_unit || 'unit'} *
                       </label>
                       <input
@@ -3420,7 +3402,7 @@ const Products = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
                     Price {newProduct.is_weighted ? '(Auto-set to 0 for weighted items)' : '*'}
                   </label>
                   <input
@@ -3449,7 +3431,7 @@ const Products = () => {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
                     Stock Quantity *
                   </label>
                   <input
@@ -3459,11 +3441,13 @@ const Products = () => {
                     onChange={(e) => setNewProduct({...newProduct, stock_quantity: e.target.value})}
                     style={{
                       width: '100%',
-                      padding: '10px 12px',
+                      padding: '12px 16px',
                       border: '2px solid #000000',
                       borderRadius: '8px',
-                      fontSize: '14px',
-                      color: '#3e3f29'
+                      fontSize: '16px',
+                      background: '#f8fafc',
+                      color: '#1a1a1a',
+                      boxSizing: 'border-box'
                     }}
                     placeholder="0"
                   />
@@ -3472,7 +3456,7 @@ const Products = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
                     Reorder Level *
                   </label>
                   <input
@@ -3482,18 +3466,20 @@ const Products = () => {
                     onChange={(e) => setNewProduct({...newProduct, reorder_level: e.target.value})}
                     style={{
                       width: '100%',
-                      padding: '10px 12px',
+                      padding: '12px 16px',
                       border: '2px solid #000000',
                       borderRadius: '8px',
-                      fontSize: '14px',
-                      color: '#3e3f29'
+                      fontSize: '16px',
+                      background: '#f8fafc',
+                      color: '#1a1a1a',
+                      boxSizing: 'border-box'
                     }}
                     placeholder="10"
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#3e3f29', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
                     Tax Rate (%)
                   </label>
                   <input
@@ -3503,11 +3489,13 @@ const Products = () => {
                     onChange={(e) => setNewProduct({...newProduct, tax_rate: e.target.value})}
                     style={{
                       width: '100%',
-                      padding: '10px 12px',
+                      padding: '12px 16px',
                       border: '2px solid #000000',
                       borderRadius: '8px',
-                      fontSize: '14px',
-                      color: '#3e3f29'
+                      fontSize: '16px',
+                      background: '#f8fafc',
+                      color: '#1a1a1a',
+                      boxSizing: 'border-box'
                     }}
                     placeholder="0.00"
                   />
@@ -3970,6 +3958,7 @@ const Products = () => {
         onClick={() => setShowInsightsModal(false)}
         >
           <div style={{
+            background: '#ffffff',
             borderRadius: '16px',
             padding: '32px',
             maxWidth: '800px',

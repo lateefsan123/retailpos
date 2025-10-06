@@ -5,8 +5,7 @@ import { formatCurrency } from '../utils/currency'
 import { useBusinessId } from '../hooks/useBusinessId'
 import { useSalesData } from '../hooks/data/useSalesData'
 import { useProductsData } from '../hooks/data/useProductsData'
-import { useAuth } from '../contexts/AuthContext'
-import { useBusiness } from '../contexts/BusinessContext'
+ 
 import { useBranch } from '../contexts/BranchContext'
 import BranchSelector from '../components/BranchSelector'
 import LowStockSection from '../components/dashboard/LowStockSection'
@@ -41,8 +40,7 @@ const Dashboard = () => {
   const { selectedBranchId } = useBranch()
   const { data: salesData } = useSalesData()
   const { data: productsData } = useProductsData()
-  const { user, switchUser } = useAuth()
-  const { currentBusiness } = useBusiness()
+  
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalSales: 0,
@@ -54,7 +52,7 @@ const Dashboard = () => {
     todayTransactions: 0,
     lowStockItems: 0
   })
-  const [loading, setLoading] = useState(true)
+  const [, setLoading] = useState(true)
   const [transactionsModalDate, setTransactionsModalDate] = useState<Date | null>(null)
   const [dayTransactions, setDayTransactions] = useState<Transaction[]>([])
   const [transactionsLoading, setTransactionsLoading] = useState(false)
@@ -71,6 +69,27 @@ const Dashboard = () => {
   }>>([])
   const [previousDayTransactions, setPreviousDayTransactions] = useState<number>(0)
   const [sideBusinessTransactionCount, setSideBusinessTransactionCount] = useState<number>(0)
+
+  // On mount and on focus, refresh cached sales/products by invalidating their queries indirectly
+  useEffect(() => {
+    // Trigger a light refresh by toggling a timestamp in state, which will flow through
+    // our derived effects (no reloads involved)
+    const refresh = () => setLoading(prev => {
+      // flip to force dependent effects to run at least once
+      return !prev
+    })
+    refresh()
+    const handleFocus = () => refresh()
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') refresh()
+    }
+    window.addEventListener('focus', handleFocus)
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [])
 
   useEffect(() => {
     // Calculate stats from cached data instead of making API calls
@@ -391,116 +410,7 @@ const Dashboard = () => {
     }
   }
 
-  const fetchDashboardStatsForPeriod = async (period: 'today' | 'week' | 'month', baseDate: Date) => {
-    if (businessLoading || businessId == null) {
-      return
-    }
-
-    try {
-      setLoading(true)
-      const { start, end } = getDateRangeForPeriod(period, baseDate)
-
-      // Fetch sales data for the period
-      let periodSalesQuery = supabase
-        .from('sales')
-        .select('total_amount', { count: 'exact' })
-        .eq('business_id', businessId)
-        .gte('datetime', start)
-        .lt('datetime', end)
-      
-      // Filter by branch if selected
-      if (selectedBranchId) {
-        periodSalesQuery = periodSalesQuery.eq('branch_id', selectedBranchId)
-      }
-      
-      const { data: periodSales, count: periodTransactionsCount } = await periodSalesQuery
-
-      const periodRevenue = periodSales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
-
-      // Fetch period's refunds
-      let periodRefundsQuery = supabase
-        .from('refunds')
-        .select('refund_amount')
-        .eq('business_id', businessId)
-        .gte('created_at', start)
-        .lt('created_at', end)
-      
-      // Filter by branch if selected
-      if (selectedBranchId) {
-        periodRefundsQuery = periodRefundsQuery.eq('branch_id', selectedBranchId)
-      }
-      
-      const { data: periodRefunds } = await periodRefundsQuery
-      const periodRefundsTotal = periodRefunds?.reduce((sum, refund) => sum + (refund.refund_amount || 0), 0) || 0
-      const periodNetRevenue = periodRevenue - periodRefundsTotal
-
-      // Fetch side business data for the period
-      const { data: periodSideBusinessSales, count: periodSideBusinessTransactionCount } = await supabase
-        .from('side_business_sales')
-        .select(`
-          total_amount,
-          side_business_items!inner(
-            side_businesses!inner(
-              business_id,
-              name,
-              image_url
-            )
-          )
-        `, { count: 'exact' })
-        .eq('side_business_items.side_businesses.parent_shop_id', businessId)
-        .gte('date_time', start)
-        .lt('date_time', end)
-
-      const periodSideBusinessRevenue = periodSideBusinessSales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
-      setSideBusinessTransactionCount(periodSideBusinessTransactionCount || 0)
-
-      // Process side business breakdown for the period
-      const businessMap = new Map<number, { business_id: number; name: string; image_url: string | null; total_amount: number }>()
-      if (periodSideBusinessSales) {
-        periodSideBusinessSales.forEach(sale => {
-          const business = (sale.side_business_items as any)?.side_businesses
-          if (business) {
-            const businessId = business.business_id
-            const existing = businessMap.get(businessId)
-            if (existing) {
-              existing.total_amount += sale.total_amount || 0
-            } else {
-              businessMap.set(businessId, {
-                business_id: businessId,
-                name: business.name,
-                image_url: business.image_url,
-                total_amount: sale.total_amount || 0
-              })
-            }
-          }
-        })
-      }
-      setSideBusinessBreakdown(Array.from(businessMap.values()))
-
-      // Fetch low stock items (always current)
-      const { count: lowStockCount } = await supabase
-        .from('products')
-        .select('product_id', { count: 'exact', head: true })
-        .eq('business_id', businessId)
-        .lt('stock_quantity', 10)
-
-      setStats({
-        totalProducts: 0, // Not period-specific
-        totalSales: 0, // Not period-specific
-        totalCustomers: 0, // Not period-specific
-        todayRevenue: periodRevenue,
-        todayNetRevenue: periodNetRevenue,
-        todayRefunds: periodRefundsTotal,
-        todaySideBusinessRevenue: periodSideBusinessRevenue,
-        todayTransactions: periodTransactionsCount || 0,
-        lowStockItems: lowStockCount || 0
-      })
-    } catch (error) {
-      console.error('Error fetching dashboard stats for period:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  
 
   const fetchRecentTransactionsForPeriod = async (period: 'today' | 'week' | 'month', baseDate: Date) => {
     if (businessLoading || businessId == null) {

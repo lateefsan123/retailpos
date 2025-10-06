@@ -161,13 +161,13 @@ const OrderSidebar: React.FC<OrderSidebarProps> = ({
             color: '#374151',
             marginBottom: '8px'
           }}>
-            Customer Name
+            Customer Name (Optional)
           </label>
           <input
             type="text"
             value={customerName}
             onChange={(e) => onSetCustomerName(e.target.value)}
-            placeholder="Enter customer name"
+            placeholder="Enter customer name (optional)"
             style={{
               width: '100%',
               padding: '8px 12px',

@@ -95,6 +95,22 @@ nav button {
   appearance: none !important;
 }
 
+/* Global button fix to prevent transparency issues - only for nav buttons */
+nav button {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  opacity: 1 !important;
+}
+
+nav button:active {
+  opacity: 1 !important;
+}
+
+nav button:focus {
+  opacity: 1 !important;
+}
+
 /* Only reset link styles that might interfere, but preserve visibility */
 nav a {
   box-sizing: border-box !important;

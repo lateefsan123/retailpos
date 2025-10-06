@@ -367,7 +367,7 @@
 .actionButton {
   background: #111827;
   color: #f1f0e4;
-  border: none;
+  border: 2px solid #000000;
   padding: 6px 12px;
   border-radius: 4px;
   cursor: pointer;
@@ -380,6 +380,75 @@
 
 .actionButton:hover {
   background: #374151;
+}
+
+.actionButton:active {
+  background: #000000 !important;
+  border: 2px solid #000000 !important;
+  color: #ffffff !important;
+}
+
+.actionButton:focus {
+  background: #374151 !important;
+  border: 2px solid #000000 !important;
+  outline: none !important;
+}
+
+.actionButton:focus:not(:hover) {
+  background: #111827 !important;
+  border: 2px solid #000000 !important;
+}
+
+.deleteButton {
+  background: #6b7280;
+  color: white;
+  border: 2px solid #000000;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.deleteButton:hover {
+  background: #4b5563;
+}
+
+.deleteButton:active {
+  background: #000000 !important;
+  border: 2px solid #000000 !important;
+  color: #ffffff !important;
+}
+
+.deleteButton:focus {
+  background: #4b5563 !important;
+  border: 2px solid #000000 !important;
+  outline: none !important;
+}
+
+.deleteButton:focus:not(:hover) {
+  background: #6b7280 !important;
+  border: 2px solid #000000 !important;
+}
+
+/* Override inline styles from table row hover effects with maximum specificity */
+tr td button.actionButton:active,
+tr button.actionButton:active,
+button.actionButton:active {
+  background: #000000 !important;
+  border: 2px solid #000000 !important;
+  color: #ffffff !important;
+}
+
+tr td button.deleteButton:active,
+tr button.deleteButton:active,
+button.deleteButton:active {
+  background: #000000 !important;
+  border: 2px solid #000000 !important;
+  color: #ffffff !important;
 }
 
 .emptyState {

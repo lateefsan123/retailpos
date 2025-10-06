@@ -8,15 +8,36 @@ export const useTransactions = () => {
 
   const resolvePartialPayment = useMutation({
     mutationFn: async (saleId: number) => {
-      const { error } = await supabase
+      // Fetch current partial values to compute the full amount
+      const { data: sale, error: fetchError } = await supabase
         .from('sales')
-        .update({ 
+        .select('partial_amount, remaining_amount, total_amount, notes')
+        .eq('sale_id', saleId)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      const partialAmount = Number(sale?.partial_amount || 0)
+      const remainingAmount = Number(sale?.remaining_amount || 0)
+      const computedFullAmount = partialAmount + remainingAmount
+
+      const completionNote = sale?.notes
+        ? `${sale.notes}\n\nPayment completed on ${new Date().toLocaleString()}`
+        : `Payment completed on ${new Date().toLocaleString()}`
+
+      const { error: updateError } = await supabase
+        .from('sales')
+        .update({
+          total_amount: computedFullAmount > 0 ? computedFullAmount : sale?.total_amount || 0,
           partial_payment: false,
-          notes: null
+          partial_amount: null,
+          remaining_amount: null,
+          partial_notes: null,
+          notes: completionNote
         })
         .eq('sale_id', saleId)
 
-      if (error) throw error
+      if (updateError) throw updateError
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['salesData'] })

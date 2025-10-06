@@ -17,6 +17,7 @@ export interface SaleItem {
     is_weighted: boolean
     price_per_unit?: number
     weight_unit?: string
+    image_url?: string
   }
 }
 
@@ -71,7 +72,6 @@ interface SalesData {
 }
 
 const fetchSalesData = async (businessId: number, branchId: number | null): Promise<SalesData> => {
-  console.log('[fetchSalesData] fetching sales data for business:', businessId, 'branch:', branchId)
   
   // Build queries with branch filtering
   let salesQuery = supabase
@@ -86,7 +86,8 @@ const fetchSalesData = async (businessId: number, branchId: number | null): Prom
           price,
           is_weighted,
           price_per_unit,
-          weight_unit
+          weight_unit,
+          image_url
         )
       )
     `)

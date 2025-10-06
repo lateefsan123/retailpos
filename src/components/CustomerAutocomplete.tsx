@@ -23,7 +23,7 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
   value,
   onChange,
   onSelectCustomer,
-  placeholder = "Enter customer name",
+  placeholder = "Enter customer name (optional)",
   style
 }) => {
   const { businessId } = useBusinessId()

@@ -54,6 +54,7 @@ const Navigation = () => {
   const location = useLocation()
   const { isCollapsed, setIsCollapsed } = useNav()
   const { canAccessRoute } = useRole()
+  const isSalesPage = location.pathname.startsWith('/sales')
   const [openSections, setOpenSections] = useState<Record<NavSectionKey, boolean>>({
     core: true,
     management: true
@@ -99,6 +100,8 @@ const Navigation = () => {
       boxShadow: isActive ? '0 12px 30px rgba(0, 0, 0, 0.35)' : 'none',
       transition: 'all 0.25s ease',
       width: '100%',
+      maxWidth: '100%',
+      alignSelf: 'stretch',
       position: 'relative'
     }
 
@@ -229,21 +232,24 @@ const Navigation = () => {
     )
   }
 
+  const navWidth = 264
   const asideStyle: CSSProperties = {
     position: 'relative',
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',
-    width: '264px',
+    width: `${navWidth}px`,
     flexShrink: 0,
     padding: '26px 24px 30px',
     gap: '28px',
     background: '#08080b',
     color: '#f9fafc',
+    boxSizing: 'border-box',
     borderRight: '1px solid rgba(255, 255, 255, 0.05)',
     boxShadow: '10px 0 40px rgba(0, 0, 0, 0.45)',
     transition: 'all 0.3s ease',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    zIndex: 10
   }
 
   const brandContainerStyle: CSSProperties = {
@@ -252,7 +258,11 @@ const Navigation = () => {
     alignItems: 'flex-start',
     gap: '6px',
     position: 'relative',
-    zIndex: 2
+    zIndex: 2,
+    paddingRight: '16px',
+    paddingLeft: '0',
+    marginLeft: '-10px',
+    width: '100%'
   }
 
   const footerStyle: CSSProperties = {
@@ -307,7 +317,8 @@ const Navigation = () => {
     fontWeight: 300,
     letterSpacing: '0.06em',
     margin: 0,
-    color: '#ffffff'
+    color: '#ffffff',
+    whiteSpace: 'nowrap'
   }
 
   const navContainerStyle: CSSProperties = {
@@ -409,3 +420,8 @@ const Navigation = () => {
 }
 
 export default Navigation
+
+
+
+
+

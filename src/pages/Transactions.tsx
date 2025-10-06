@@ -15,7 +15,7 @@ const Transactions: React.FC = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { selectedBranchId } = useBranch()
-  const { transactions, loading, error, deleteTransaction, resolvePartialPayment } = useTransactions()
+  const { transactions, loading, error, deleteTransaction, resolvePartialPayment, fetchTransactions } = useTransactions()
   
   // Filter and search statesa
   const [searchTerm, setSearchTerm] = useState('')
@@ -40,6 +40,21 @@ const Transactions: React.FC = () => {
   const [sortBy] = useState('datetime')
   const [sortOrder] = useState<'asc' | 'desc'>('desc')
   
+  // Refresh latest transactions on mount and when window/tab regains focus
+  useEffect(() => {
+    fetchTransactions()
+    const handleFocus = () => fetchTransactions()
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') fetchTransactions()
+    }
+    window.addEventListener('focus', handleFocus)
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [fetchTransactions])
+
 
   // Filter transactions based on search, payment method, and date
   const filterTransactions = (transactions: any[]) => {

@@ -52,26 +52,30 @@ export const generateReceiptHTML = (
       <style>
         body { 
           font-family: 'Courier New', monospace; 
-          font-size: 12px; 
-          line-height: 1.4; 
+          font-size: 14px; 
+          line-height: 1.55; 
           margin: 0; 
-          padding: 10px; 
-          background: white;
-          color: black;
+          padding: 12px; 
+          background: #ffffff;
+          color: #111111;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+          font-variant-numeric: tabular-nums; 
         }
         .receipt { 
-          width: 100%; 
-          max-width: 400px; 
+          width: 90%; 
+          max-width: 700px; 
           margin: 0 auto; 
-          border: 1px solid #ccc; 
-          padding: 20px; 
-          background: white;
+          border: 1px solid #d1d5db; 
+          padding: 24px; 
+          background: #ffffff;
+          height: 90%;
         }
         .header { 
           text-align: center; 
-          margin-bottom: 15px; 
-          border-bottom: 1px dashed #333; 
-          padding-bottom: 10px; 
+          margin-bottom: 16px; 
+          border-bottom: 1.5px dashed #333; 
+          padding-bottom: 12px; 
         }
         .logo-fallback {
           display: none;
@@ -83,46 +87,64 @@ export const generateReceiptHTML = (
           margin-bottom: 10px;
         }
         .business-info { 
-          font-size: 10px; 
+          font-size: 12px; 
           margin: 8px 0; 
         }
         .divider { 
-          border-top: 1px dashed #333; 
-          margin: 10px 0; 
+          border-top: 1.5px dashed #333; 
+          margin: 12px 0; 
         }
         .item-row { 
           display: flex; 
           justify-content: space-between; 
-          margin: 3px 0; 
+          align-items: baseline;
+          margin: 4px 0; 
+          gap: 12px;
+        }
+        .item-row span:last-child {
+          min-width: 120px;
+          text-align: right;
+          white-space: nowrap;
         }
         .total-row { 
           font-weight: bold; 
           border-top: 1px solid #333; 
-          padding-top: 5px; 
-          margin-top: 8px; 
+          padding-top: 6px; 
+          margin-top: 10px; 
+        }
+        .total-row span:last-child {
+          font-size: 16px;
+        }
+        .grand-total {
+          background: #f8fafc;
+          border: 1px solid #e5e7eb;
+          border-left: 4px solid #111111;
+          padding: 8px 10px;
+          border-radius: 4px;
+          margin-top: 10px;
         }
         .payment-info { 
-          margin: 10px 0; 
+          margin: 12px 0; 
         }
         .partial-payment-info {
-          margin: 10px 0;
-          padding: 8px;
+          margin: 12px 0;
+          padding: 10px;
           background: #fef3c7;
           border: 1px solid #f59e0b;
           border-radius: 4px;
         }
         .notes-section {
-          margin: 10px 0;
-          padding: 8px;
-          background: #f5f5f5;
+          margin: 12px 0;
+          padding: 10px;
+          background: #f3f4f6;
           border-radius: 4px;
         }
         .footer { 
           text-align: center; 
-          margin-top: 15px; 
-          font-size: 10px; 
+          margin-top: 16px; 
+          font-size: 12px; 
           border-top: 1px dashed #333; 
-          padding-top: 10px; 
+          padding-top: 12px; 
         }
         .warning {
           color: #dc2626;
@@ -137,7 +159,7 @@ export const generateReceiptHTML = (
     <body>
       <div class="receipt">
         <div class="header">
-          <img src="${businessLogo}" alt="${businessName}" style="max-width: 80px; height: auto; display: block; margin: 0 auto 10px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+          <img src="${businessLogo}" alt="${businessName}" style="max-width: 110px; height: auto; display: block; margin: 0 auto 10px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
           <div class="logo-fallback" style="display: none; font-size: 24px; font-weight: bold; margin-bottom: 8px; color: #3e3f29;">${businessName}</div>
           <div class="business-info">
             ${businessAddress ? `<div>${businessAddress}</div>` : ''}
@@ -181,7 +203,7 @@ export const generateReceiptHTML = (
           <span>SUBTOTAL:</span>
           <span>${currencySymbol}${order.subtotal.toFixed(2)}</span>
         </div>
-        <div class="item-row total-row">
+        <div class="item-row total-row grand-total">
           <span>GRAND TOTAL:</span>
           <span>${currencySymbol}${order.total.toFixed(2)}</span>
         </div>

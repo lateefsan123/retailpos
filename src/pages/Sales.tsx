@@ -322,12 +322,7 @@ const Sales = () => {
     const isSideBusinessCategory = selectedCategory !== 'All' && 
       sideBusinessItems.some(item => item.side_businesses?.name === selectedCategory)
     
-    // Debug logging
-    console.log('=== FILTERING DEBUG ===')
-    console.log('Selected category:', selectedCategory)
-    console.log('Is side business category:', isSideBusinessCategory)
-    console.log('Side business items:', sideBusinessItems.map(item => ({ name: item.name, business: item.side_businesses?.name })))
-    console.log('Top products:', topProducts.map(p => ({ name: p.name, category: p.category })))
+    // Debug logging removed per user preference
     
     // Filter the cached top products client-side
     let filteredProducts = topProducts
@@ -377,10 +372,7 @@ const Sales = () => {
 
     setFilteredSideBusinessItems(filteredSideBusiness)
     
-    // Debug logging
-    console.log('Filtered products count:', filteredProducts.length)
-    console.log('Filtered side business items count:', filteredSideBusiness.length)
-    console.log('=== END FILTERING DEBUG ===')
+    // Debug logging removed per user preference
   }, [selectedCategory, searchTerm, sideBusinessItems, topProducts])
 
   // Separate effect for filtering products when category or search changes
@@ -966,9 +958,6 @@ const Sales = () => {
         }
       }
     })
-    
-    // Announce item added
-    speakItemAdded(product.name, product.price)
   }
 
   const addWeightedProductToOrder = (product: Product, weight: number) => {
@@ -1040,10 +1029,6 @@ const Sales = () => {
         }
       })
       
-      // Announce item added
-      const itemName = sideBusinessItem.name
-      const price = sideBusinessItem.price || 0
-      speakItemAdded(itemName, price)
     }
   }
 
@@ -1122,9 +1107,6 @@ const Sales = () => {
         ...prev,
         items: [...prev.items, { sideBusinessItem: tempServiceItem, quantity: 1, customPrice: price, originalQuantity: 0 }]
       }))
-
-      // Announce service created
-      speakItemAdded(quickServiceName.trim(), price)
 
       // Reset form and close modal
       setQuickServiceName('')
@@ -1463,6 +1445,8 @@ const Sales = () => {
 
     try {
       let saleData
+      // Ensure customerId is visible across the entire function and in all branches
+      let customerId: number | null = null
       
       if (isAddingToTransaction && existingTransactionId) {
         // Adding to existing transaction
@@ -1485,7 +1469,6 @@ const Sales = () => {
       } else {
         // Create new sale record
         // Handle customer if name is provided
-        let customerId = null
         if (customerName.trim()) {
           if (selectedCustomer) {
             // Use the selected customer's ID
@@ -1945,9 +1928,6 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
         }
       }
 
-      // Announce order total
-      speakOrderTotal(order.total)
-
       // Close the sales summary modal
       setShowSalesSummary(false)
       
@@ -2044,14 +2024,15 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
     <div style={{ 
       position: 'fixed',
       top: 0,
-      left: '286px', // Slightly wider reveal for sidebar
+      left: '264px', // Match standard navbar width
       right: 0,
       bottom: 0,
+      paddingRight: '16px',
       display: 'flex', 
       height: '100vh', 
       background: 'linear-gradient(135deg, #7d8d86, #3e3f29)',
       fontFamily: 'Poppins, sans-serif',
-      zIndex: 1000
+      zIndex: 2
     }}>
       {/* Main Content Area */}
       <div style={{ 
@@ -4177,10 +4158,15 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             background: '#ffffff',
             borderRadius: '12px',
             padding: '24px',
-            width: '95vw',
-            height: '95vh',
-            overflow: 'auto',
-            position: 'relative'
+            width: '90vw',
+            maxWidth: '1200px',
+            height: '90vh',
+            maxHeight: '90vh',
+            overflow: 'hidden',
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center'
           }}>
             {/* Close Button */}
             <button
@@ -4208,7 +4194,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             </button>
 
             {/* Receipt Preview */}
-            <div style={{ marginBottom: '20px' }}>
+            <div style={{ width: '100%', flex: 1, overflow: 'auto', marginBottom: '16px', display: 'flex', justifyContent: 'center' }}>
               <h2 style={{ 
                 fontSize: '20px', 
                 fontWeight: '600', 
@@ -4223,13 +4209,16 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 style={{
                   border: '1px solid #e5e7eb',
                   borderRadius: '8px',
-                  padding: '30px',
+                  padding: '24px',
                   background: '#ffffff',
                   fontFamily: 'Courier New, monospace',
                   fontSize: '16px',
-                  lineHeight: '1.6',
-                  maxWidth: '600px',
-                  margin: '0 auto'
+                  lineHeight: '1.7',
+                  width: '100%',
+                  maxWidth: '700px',
+                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
+                  margin: '0 auto 16px',
+                  boxSizing: 'border-box'
                 }}
               />
             </div>
