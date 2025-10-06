@@ -50,7 +50,11 @@ const NAV_SECTIONS: Record<NavSectionKey, { title: string; items: NavItemConfig[
   }
 }
 
-const Navigation = () => {
+type NavigationProps = {
+  allowedPaths?: string[]
+}
+
+const Navigation = ({ allowedPaths }: NavigationProps) => {
   const location = useLocation()
   const { isCollapsed, setIsCollapsed } = useNav()
   const { canAccessRoute } = useRole()
@@ -60,9 +64,14 @@ const Navigation = () => {
     management: true
   })
 
+  const filterByAllowed = (item: NavItemConfig) => {
+    if (!allowedPaths || allowedPaths.length === 0) return true
+    return allowedPaths.includes(item.path)
+  }
+
   const filteredSections: Record<NavSectionKey, NavItemConfig[]> = {
-    core: NAV_SECTIONS.core.items.filter(item => canAccessRoute(item.path)),
-    management: NAV_SECTIONS.management.items.filter(item => canAccessRoute(item.path))
+    core: NAV_SECTIONS.core.items.filter(item => canAccessRoute(item.path)).filter(filterByAllowed),
+    management: NAV_SECTIONS.management.items.filter(item => canAccessRoute(item.path)).filter(filterByAllowed)
   }
 
   const flattenedItems: NavItemConfig[] = [...filteredSections.core, ...filteredSections.management]

@@ -241,7 +241,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   if (!isOpen) return null
 
   return (
-    <div className={styles.modalOverlay}>
+    <div className={`${styles.modalOverlay} ${styles.open}`}>
       <div className={styles.modal}>
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>Add New Product</h2>

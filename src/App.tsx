@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './contexts/AuthContext'
 import { BusinessProvider } from './contexts/BusinessContext'
@@ -16,7 +16,9 @@ import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
+import DashboardMobile from './pages/DashboardMobile'
 import Products from './pages/Products'
+import ProductsMobile from './pages/ProductsMobile'
 import Sales from './pages/Sales'
 import SideBusinesses from './pages/SideBusinesses'
 import Transactions from './pages/Transactions'
@@ -28,10 +30,28 @@ import Suppliers from './pages/Suppliers'
 import Promotions from './pages/Promotions'
 import VerificationAdmin from './pages/VerificationAdmin'
 import CustomerLoyalty from './pages/CustomerLoyalty'
+import TransactionsMobile from './pages/TransactionsMobile'
 
 const AppContent = () => {
+  const location = useLocation()
   const { isSwitchingBranch, switchingToBranch } = useBranch()
+  const isMobileDashboard = location.pathname.startsWith('/dashboard-mobile') || location.pathname.startsWith('/products-mobile') || location.pathname.startsWith('/transactions-mobile')
   useNavCollapse()
+
+  // Render mobile pages separately without the main app layout
+  if (isMobileDashboard) {
+    return (
+      <>
+        {location.pathname.startsWith('/dashboard-mobile') && <DashboardMobile />}
+        {location.pathname.startsWith('/products-mobile') && <ProductsMobile />}
+        {location.pathname.startsWith('/transactions-mobile') && <TransactionsMobile />}
+        <LoadingScreen 
+          isVisible={isSwitchingBranch} 
+          message={switchingToBranch ? `Switching to ${switchingToBranch}...` : "Switching Branch..."} 
+        />
+      </>
+    )
+  }
 
   return (
     <>
@@ -58,7 +78,9 @@ const AppContent = () => {
           backgroundColor: 'rgba(0, 0, 0, 0.3)',
           zIndex: 0
         }}></div>
-        <Navigation />
+        {!isMobileDashboard && <Navigation />}
+
+
         <div style={{
           flex: 1,
           display: 'flex',
@@ -91,6 +113,11 @@ const AppContent = () => {
                   <Products />
                 </RoleProtectedRoute>
               } />
+              <Route path="/products-mobile" element={
+                <RoleProtectedRoute>
+                  <ProductsMobile />
+                </RoleProtectedRoute>
+              } />
               <Route path="/sales" element={
                 <RoleProtectedRoute requiredPermission="canProcessSales">
                   <Sales />
@@ -104,6 +131,11 @@ const AppContent = () => {
               <Route path="/transactions" element={
                 <RoleProtectedRoute>
                   <Transactions />
+                </RoleProtectedRoute>
+              } />
+              <Route path="/transactions-mobile" element={
+                <RoleProtectedRoute>
+                  <TransactionsMobile />
                 </RoleProtectedRoute>
               } />
               <Route path="/customer-loyalty" element={

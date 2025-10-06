@@ -20,12 +20,14 @@ interface BranchSelectorProps {
   className?: string
   showLabel?: boolean
   size?: 'sm' | 'md' | 'lg'
+  onSelectBranch?: () => void
 }
 
 const BranchSelector: React.FC<BranchSelectorProps> = ({ 
   className = '', 
   showLabel = true, 
-  size = 'md' 
+  size = 'md',
+  onSelectBranch
 }) => {
   const { selectedBranch, selectedBranchId, setSelectedBranch, setSwitchingBranch, setSwitchingToBranch } = useBranch()
   const { businessId } = useBusinessId()
@@ -34,8 +36,12 @@ const BranchSelector: React.FC<BranchSelectorProps> = ({
   const [loading, setLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
 
+  // Debug logging
+  console.log('BranchSelector - User role:', user?.role, 'Lowercase:', user?.role?.toLowerCase(), 'Is owner?', user?.role?.toLowerCase() === 'owner')
+  
   // Only show branch selector for owners
   if (user?.role?.toLowerCase() !== 'owner') {
+    console.log('BranchSelector - Not rendering because user is not owner. Current role:', user?.role)
     return null
   }
 
@@ -104,10 +110,16 @@ const BranchSelector: React.FC<BranchSelectorProps> = ({
       setTimeout(() => {
         toast.style.animation = 'slideOut 0.3s ease-in'
         setTimeout(() => {
-          document.body.removeChild(toast)
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast)
+          }
         }, 300)
       }, 2000)
     }, 1500) // 1.5 seconds
+
+    if (onSelectBranch) {
+      onSelectBranch()
+    }
   }
 
   // Don't render if there's only one branch or no branches
@@ -119,18 +131,66 @@ const BranchSelector: React.FC<BranchSelectorProps> = ({
   const sizeConfig = {
     sm: {
       fontSize: '14px',
-      padding: '6px 12px',
-      iconSize: '16px'
+      padding: '10px 16px',
+      iconSize: '16px',
+      height: '48px',
+      background: '#ffffff',
+      borderColor: '#d1d5db',
+      textColor: '#111827',
+      hoverBorder: '#9ca3af',
+      focusBorder: '#3b82f6',
+      focusShadow: '0 0 0 2px rgba(59, 130, 246, 0.2)',
+      badgeColor: '#10b981',
+      chevronColor: '#9ca3af',
+      dropdownBackground: '#ffffff',
+      dropdownBorder: '#d1d5db',
+      dropdownShadow: '0 20px 40px -15px rgba(15, 23, 42, 0.12)',
+      hoverBackground: '#f9fafb',
+      activeBackground: '#eff6ff',
+      activeBorder: '#60a5fa',
+      addressColor: '#6b7280'
     },
     md: {
       fontSize: '16px',
-      padding: '8px 16px',
-      iconSize: '20px'
+      padding: '12px 18px',
+      iconSize: '20px',
+      height: '52px',
+      background: '#ffffff',
+      borderColor: '#d1d5db',
+      textColor: '#111827',
+      hoverBorder: '#9ca3af',
+      focusBorder: '#3b82f6',
+      focusShadow: '0 0 0 2px rgba(59, 130, 246, 0.2)',
+      badgeColor: '#10b981',
+      chevronColor: '#9ca3af',
+      dropdownBackground: '#ffffff',
+      dropdownBorder: '#d1d5db',
+      dropdownShadow: '0 20px 40px -15px rgba(15, 23, 42, 0.12)',
+      hoverBackground: '#f9fafb',
+      activeBackground: '#eff6ff',
+      activeBorder: '#60a5fa',
+      addressColor: '#6b7280'
     },
     lg: {
       fontSize: '18px',
-      padding: '12px 20px',
-      iconSize: '24px'
+      padding: '14px 22px',
+      iconSize: '24px',
+      height: '56px',
+      background: '#ffffff',
+      borderColor: '#d1d5db',
+      textColor: '#111827',
+      hoverBorder: '#9ca3af',
+      focusBorder: '#3b82f6',
+      focusShadow: '0 0 0 2px rgba(59, 130, 246, 0.2)',
+      badgeColor: '#10b981',
+      chevronColor: '#9ca3af',
+      dropdownBackground: '#ffffff',
+      dropdownBorder: '#d1d5db',
+      dropdownShadow: '0 24px 48px -18px rgba(15, 23, 42, 0.15)',
+      hoverBackground: '#f9fafb',
+      activeBackground: '#eff6ff',
+      activeBorder: '#60a5fa',
+      addressColor: '#6b7280'
     }
   }
 
@@ -161,9 +221,11 @@ const BranchSelector: React.FC<BranchSelectorProps> = ({
             justifyContent: 'space-between',
             fontSize: config.fontSize,
             padding: config.padding,
-            backgroundColor: '#ffffff',
-            border: '1px solid #d1d5db',
-            borderRadius: '8px',
+            height: config.height,
+            backgroundColor: config.background,
+            border: `1px solid ${config.borderColor}`,
+            borderRadius: '14px',
+            color: config.textColor,
             cursor: loading ? 'not-allowed' : 'pointer',
             opacity: loading ? 0.5 : 1,
             transition: 'all 0.2s ease',
@@ -171,20 +233,20 @@ const BranchSelector: React.FC<BranchSelectorProps> = ({
           }}
           onMouseEnter={(e) => {
             if (!loading) {
-              e.currentTarget.style.borderColor = '#9ca3af'
+              e.currentTarget.style.borderColor = config.hoverBorder
             }
           }}
           onMouseLeave={(e) => {
             if (!loading) {
-              e.currentTarget.style.borderColor = '#d1d5db'
+              e.currentTarget.style.borderColor = config.borderColor
             }
           }}
           onFocus={(e) => {
-            e.currentTarget.style.borderColor = '#3b82f6'
-            e.currentTarget.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.5)'
+            e.currentTarget.style.borderColor = config.focusBorder
+            e.currentTarget.style.boxShadow = config.focusShadow
           }}
           onBlur={(e) => {
-            e.currentTarget.style.borderColor = '#d1d5db'
+            e.currentTarget.style.borderColor = config.borderColor
             e.currentTarget.style.boxShadow = 'none'
           }}
         >
@@ -196,12 +258,12 @@ const BranchSelector: React.FC<BranchSelectorProps> = ({
             <div style={{
               width: '8px',
               height: '8px',
-              backgroundColor: '#10b981',
+              backgroundColor: config.badgeColor,
               borderRadius: '50%'
             }}></div>
             <span style={{
               fontWeight: '500',
-              color: '#111827',
+              color: config.textColor,
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis'
@@ -214,7 +276,7 @@ const BranchSelector: React.FC<BranchSelectorProps> = ({
             style={{
               width: config.iconSize,
               height: config.iconSize,
-              color: '#9ca3af',
+              color: config.chevronColor,
               transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
               transition: 'transform 0.2s ease'
             }}
@@ -253,10 +315,10 @@ const BranchSelector: React.FC<BranchSelectorProps> = ({
               left: 0,
               right: 0,
               marginTop: '4px',
-              backgroundColor: '#ffffff',
-              border: '1px solid #d1d5db',
-              borderRadius: '8px',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+              backgroundColor: config.dropdownBackground,
+              border: `1px solid ${config.dropdownBorder}`,
+              borderRadius: '16px',
+              boxShadow: config.dropdownShadow,
               zIndex: 20,
               maxHeight: '240px',
               overflowY: 'auto'
@@ -272,20 +334,27 @@ const BranchSelector: React.FC<BranchSelectorProps> = ({
                     gap: '12px',
                     padding: '12px 16px',
                     textAlign: 'left',
-                    backgroundColor: branch.branch_id === selectedBranchId ? '#eff6ff' : 'transparent',
-                    borderLeft: branch.branch_id === selectedBranchId ? '4px solid #3b82f6' : '4px solid transparent',
+                    backgroundColor: branch.branch_id === selectedBranchId
+                      ? config.activeBackground
+                      : 'transparent',
+                    borderLeft: branch.branch_id === selectedBranchId
+                      ? `4px solid ${config.activeBorder}`
+                      : '4px solid transparent',
                     border: 'none',
                     cursor: 'pointer',
-                    transition: 'background-color 0.15s ease'
+                    transition: 'background-color 0.15s ease, color 0.15s ease',
+                    color: branch.branch_id === selectedBranchId ? config.textColor : '#111827'
                   }}
                   onMouseEnter={(e) => {
                     if (branch.branch_id !== selectedBranchId) {
-                      e.currentTarget.style.backgroundColor = '#f9fafb'
+                      e.currentTarget.style.backgroundColor = config.hoverBackground
+                      e.currentTarget.style.color = '#111827'
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (branch.branch_id !== selectedBranchId) {
                       e.currentTarget.style.backgroundColor = 'transparent'
+                      e.currentTarget.style.color = config.textColor
                     }
                   }}
                 >
@@ -293,7 +362,9 @@ const BranchSelector: React.FC<BranchSelectorProps> = ({
                     width: '8px',
                     height: '8px',
                     borderRadius: '50%',
-                    backgroundColor: branch.branch_id === selectedBranchId ? '#3b82f6' : '#d1d5db'
+                    backgroundColor: branch.branch_id === selectedBranchId
+                      ? config.activeBorder
+                      : '#d1d5db'
                   }}></div>
                   
                   <div style={{
@@ -302,7 +373,7 @@ const BranchSelector: React.FC<BranchSelectorProps> = ({
                   }}>
                     <div style={{
                       fontWeight: '500',
-                      color: '#111827',
+                      color: config.textColor,
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis'
@@ -312,7 +383,7 @@ const BranchSelector: React.FC<BranchSelectorProps> = ({
                     {branch.address && (
                       <div style={{
                         fontSize: '14px',
-                        color: '#6b7280',
+                        color: config.addressColor,
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis'
@@ -327,7 +398,7 @@ const BranchSelector: React.FC<BranchSelectorProps> = ({
                       style={{
                         width: '16px',
                         height: '16px',
-                        color: '#3b82f6',
+                        color: config.activeBorder,
                         flexShrink: 0
                       }} 
                       fill="currentColor" 
