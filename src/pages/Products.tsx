@@ -1319,7 +1319,6 @@ const Products = () => {
       {/* Speech Bubble */}
       {showLilyMessage && (
         <div style={{
-          background: '#f8fafc',
           border: '2px solid #7d8d86',
           borderRadius: '16px',
           padding: '12px 16px',
@@ -1353,7 +1352,6 @@ const Products = () => {
           width: '60px',
           height: '60px',
           borderRadius: '50%',
-          background: '#f8fafc',
           border: '3px solid #7d8d86',
           display: 'flex',
           alignItems: 'center',
@@ -1410,10 +1408,7 @@ const Products = () => {
   return (
     <div style={{ 
       padding: '24px',
-      background: '#f8fafc',
-      minHeight: '100vh',
-      border: '1px solid rgba(125, 141, 134, 0.1)',
-      borderRadius: '16px'
+      minHeight: '100vh'
     }}>
       {/* Header */}
       <div style={{ 
@@ -1421,25 +1416,22 @@ const Products = () => {
         justifyContent: 'space-between', 
         alignItems: 'flex-start',
         marginBottom: '32px',
-        padding: '20px',
-        background: '#f8fafc',
-        borderRadius: '12px',
-        boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
-        border: '1px solid rgba(125, 141, 134, 0.2)'
+        padding: '20px'
       }}>
         <div>
           <h1 style={{
             fontSize: '32px',
-            fontWeight: 'bold',
-            color: '#3e3f29',
+            fontWeight: '900',
+            color: '#000000',
             margin: '0 0 8px 0'
           }}>
             Inventory Management
           </h1>
           <p style={{
             fontSize: '16px',
-            color: '#7d8d86',
-            margin: '0 0 12px 0'
+            color: '#000000',
+            margin: '0 0 12px 0',
+            fontWeight: '800'
           }}>
             Manage your product inventory, stock levels, and suppliers.
           </p>
@@ -1589,10 +1581,11 @@ const Products = () => {
         gap: '20px',
         marginBottom: '32px',
         padding: '20px',
-        background: '#f8fafc',
+        background: 'rgba(248, 250, 252, 0.9)',
         borderRadius: '12px',
         boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
-        border: '1px solid rgba(125, 141, 134, 0.2)'
+        border: '1px solid rgba(125, 141, 134, 0.2)',
+        backdropFilter: 'blur(10px)'
       }}>
         <div 
           onClick={() => handleSummaryCardClick('totalProducts')}
@@ -1629,10 +1622,10 @@ const Products = () => {
               <i className="fa-solid fa-boxes-stacked" style={{ fontSize: '18px', color: '#f1f0e4' }}></i>
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#3e3f29', margin: '0 0 4px 0' }}>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#000000', margin: '0 0 4px 0' }}>
                 {summaryStats.totalProducts}
               </p>
-              <p style={{ fontSize: '12px', color: '#7d8d86', margin: 0 }}>Total Products</p>
+              <p style={{ fontSize: '12px', color: '#000000', margin: 0, fontWeight: '700' }}>Total Products</p>
             </div>
           </div>
         </div>
@@ -1672,10 +1665,10 @@ const Products = () => {
               <i className="fa-solid fa-circle-check" style={{ fontSize: '18px', color: 'white' }}></i>
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#3e3f29', margin: '0 0 4px 0' }}>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#000000', margin: '0 0 4px 0' }}>
                 {summaryStats.inStock}
               </p>
-              <p style={{ fontSize: '12px', color: '#7d8d86', margin: 0 }}>In Stock</p>
+              <p style={{ fontSize: '12px', color: '#000000', margin: 0, fontWeight: '700' }}>In Stock</p>
             </div>
           </div>
         </div>
@@ -1715,10 +1708,10 @@ const Products = () => {
               <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: '18px', color: 'white' }}></i>
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#3e3f29', margin: '0 0 4px 0' }}>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#000000', margin: '0 0 4px 0' }}>
                 {summaryStats.lowStock}
               </p>
-              <p style={{ fontSize: '12px', color: '#7d8d86', margin: 0 }}>Low Stock</p>
+              <p style={{ fontSize: '12px', color: '#000000', margin: 0, fontWeight: '700' }}>Low Stock</p>
             </div>
           </div>
         </div>
@@ -1758,10 +1751,10 @@ const Products = () => {
               <i className="fa-solid fa-circle-xmark" style={{ fontSize: '18px', color: 'white' }}></i>
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#3e3f29', margin: '0 0 4px 0' }}>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#000000', margin: '0 0 4px 0' }}>
                 {summaryStats.outOfStock}
               </p>
-              <p style={{ fontSize: '12px', color: '#7d8d86', margin: 0 }}>Out of Stock</p>
+              <p style={{ fontSize: '12px', color: '#000000', margin: 0, fontWeight: '700' }}>Out of Stock</p>
             </div>
           </div>
         </div>
@@ -1769,12 +1762,13 @@ const Products = () => {
 
         {/* Filters */}
         <div style={{
-          background: '#f8fafc',
+          background: 'rgba(248, 250, 252, 0.9)',
           borderRadius: '12px',
           padding: '20px',
           marginBottom: '24px',
           boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
-          border: '2px solid rgba(125, 141, 134, 0.3)'
+          border: '2px solid rgba(125, 141, 134, 0.3)',
+          backdropFilter: 'blur(10px)'
         }}>
         <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ flex: '1', minWidth: '250px', maxWidth: '400px' }}>
@@ -1810,7 +1804,6 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    background: '#f8fafc',
                     color: '#3e3f29',
                     boxSizing: 'border-box'
                   }}
@@ -2024,7 +2017,6 @@ const Products = () => {
                       border: '2px solid #000000',
                 borderRadius: '8px',
                 fontSize: '14px',
-                background: '#f8fafc',
                 color: '#3e3f29',
                 cursor: 'pointer'
               }}
@@ -2041,11 +2033,12 @@ const Products = () => {
 
         {/* Products Table */}
         <div style={{
-          background: '#f8fafc',
+          background: 'rgba(248, 250, 252, 0.9)',
           borderRadius: '12px',
           overflow: 'hidden',
           boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-          border: '2px solid rgba(125, 141, 134, 0.3)'
+          border: '2px solid rgba(125, 141, 134, 0.3)',
+          backdropFilter: 'blur(10px)'
         }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -2241,7 +2234,7 @@ const Products = () => {
                             <p style={{ fontSize: '14px', fontWeight: '600', margin: '0 0 4px 0' }}>
                               {highlightSizeKeywords(product.name)}
                             </p>
-                            <p style={{ fontSize: '12px', color: '#7d8d86', margin: 0 }}>
+                            <p style={{ fontSize: '12px', color: '#000000', margin: 0, fontWeight: '700' }}>
                               ID: {product.product_id}
                             </p>
                           </div>
@@ -2250,11 +2243,11 @@ const Products = () => {
                       <td style={{ padding: '16px', borderRight: '2px solid rgba(125, 141, 134, 0.25)' }}>
                         <span style={{
                           background: '#f3f4f6',
-                          color: getCategoryColor(product.category),
+                          color: '#000000',
                           padding: '4px 8px',
                           borderRadius: '4px',
                           fontSize: '12px',
-                          fontWeight: '500',
+                          fontWeight: '700',
                           border: `1px solid ${getCategoryColor(product.category)}`
                         }}>
                           {product.category}
@@ -2278,7 +2271,7 @@ const Products = () => {
                         <p style={{ fontSize: '14px', fontWeight: '600', color: '#3e3f29', margin: 0 }}>
                           {product.stock_quantity}
                         </p>
-                        <p style={{ fontSize: '12px', color: '#7d8d86', margin: 0 }}>
+                        <p style={{ fontSize: '12px', color: '#000000', margin: 0, fontWeight: '700' }}>
                           Reorder: {product.reorder_level}
                         </p>
                       </td>
@@ -2395,7 +2388,6 @@ const Products = () => {
         color: '#7d8d86',
         textAlign: 'center',
         padding: '12px',
-        background: '#f8fafc',
         borderRadius: '8px',
         border: '1px solid rgba(125, 141, 134, 0.2)',
         marginBottom: '16px'
@@ -2421,7 +2413,6 @@ const Products = () => {
           justifyContent: 'space-between',
           alignItems: 'center',
           padding: '16px',
-          background: '#f8fafc',
           borderRadius: '12px',
           boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
           border: '1px solid rgba(125, 141, 134, 0.2)',
@@ -2440,7 +2431,6 @@ const Products = () => {
                       border: '2px solid #000000',
                 borderRadius: '6px',
                 fontSize: '14px',
-                background: '#f8fafc',
                 color: '#3e3f29',
                 cursor: 'pointer'
               }}
@@ -2598,7 +2588,6 @@ const Products = () => {
           zIndex: 9999
         }}>
           <div style={{
-            background: '#f8fafc',
             borderRadius: '16px',
             padding: '32px',
             width: '90%',
@@ -2669,7 +2658,6 @@ const Products = () => {
                       border: '2px solid #000000',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      background: '#f8fafc',
                       color: '#3e3f29'
                     }}
                     placeholder="e.g., Plantain Chips, Jollof Rice Mix"
@@ -2701,7 +2689,6 @@ const Products = () => {
                         border: '2px solid #000000',
                         borderRadius: '8px',
                         fontSize: '14px',
-                        background: '#f8fafc',
                         color: '#3e3f29'
                       }}
                       placeholder="e.g., Grains, Spices, Beverages"
@@ -2714,7 +2701,6 @@ const Products = () => {
                         top: '100%',
                         left: 0,
                         right: 0,
-                        background: '#f8fafc',
                         border: '2px solid #000000',
                         borderTop: 'none',
                         borderRadius: '0 0 8px 8px',
@@ -2783,7 +2769,6 @@ const Products = () => {
                           border: '2px solid #000000',
                           borderRadius: '8px',
                           fontSize: '14px',
-                          background: '#f8fafc',
                           color: '#3e3f29'
                         }}
                       >
@@ -2812,7 +2797,6 @@ const Products = () => {
                           border: '2px solid #000000',
                           borderRadius: '8px',
                           fontSize: '14px',
-                          background: '#f8fafc',
                           color: '#3e3f29'
                         }}
                         placeholder="0.00"
@@ -2867,7 +2851,6 @@ const Products = () => {
                       border: '2px solid #000000',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      background: '#f8fafc',
                       color: '#3e3f29'
                     }}
                     placeholder="0"
@@ -2891,7 +2874,6 @@ const Products = () => {
                       border: '2px solid #000000',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      background: '#f8fafc',
                       color: '#3e3f29'
                     }}
                     placeholder="10"
@@ -2913,7 +2895,6 @@ const Products = () => {
                       border: '2px solid #000000',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      background: '#f8fafc',
                       color: '#3e3f29'
                     }}
                     placeholder="0.00"
@@ -2934,7 +2915,6 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    background: '#f8fafc',
                     color: '#3e3f29'
                   }}
                 >
@@ -2961,7 +2941,6 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    background: '#f8fafc',
                     color: '#3e3f29'
                   }}
                   placeholder="Legacy supplier info (optional)"
@@ -2982,7 +2961,6 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    background: '#f8fafc',
                     color: '#3e3f29'
                   }}
                   placeholder="Leave empty for auto-generation"
@@ -3003,7 +2981,6 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    background: '#f8fafc',
                     color: '#3e3f29'
                   }}
                   placeholder="Scan or enter barcode"
@@ -3126,7 +3103,6 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    background: '#f8fafc',
                     color: '#3e3f29',
                     resize: 'vertical'
                   }}
@@ -3224,7 +3200,6 @@ const Products = () => {
           padding: '20px'
         }}>
           <div style={{
-            background: '#f8fafc',
             borderRadius: '12px',
             padding: '32px',
             width: '100%',
@@ -3295,7 +3270,6 @@ const Products = () => {
                       border: '2px solid #000000',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      background: '#f8fafc',
                       color: '#3e3f29'
                     }}
                     placeholder="e.g., Plantain Chips, Jollof Rice Mix"
@@ -3327,7 +3301,6 @@ const Products = () => {
                         border: '2px solid #000000',
                         borderRadius: '8px',
                         fontSize: '14px',
-                        background: '#f8fafc',
                         color: '#3e3f29'
                       }}
                       placeholder="e.g., Grains, Spices, Beverages"
@@ -3340,7 +3313,6 @@ const Products = () => {
                         top: '100%',
                         left: 0,
                         right: 0,
-                        background: '#f8fafc',
                         border: '2px solid #000000',
                         borderTop: 'none',
                         borderRadius: '0 0 8px 8px',
@@ -3409,7 +3381,6 @@ const Products = () => {
                           border: '2px solid #000000',
                           borderRadius: '8px',
                           fontSize: '14px',
-                          background: '#f8fafc',
                           color: '#3e3f29'
                         }}
                       >
@@ -3438,7 +3409,6 @@ const Products = () => {
                           border: '2px solid #000000',
                           borderRadius: '8px',
                           fontSize: '14px',
-                          background: '#f8fafc',
                           color: '#3e3f29'
                         }}
                         placeholder="0.00"
@@ -3493,7 +3463,6 @@ const Products = () => {
                       border: '2px solid #000000',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      background: '#f8fafc',
                       color: '#3e3f29'
                     }}
                     placeholder="0"
@@ -3517,7 +3486,6 @@ const Products = () => {
                       border: '2px solid #000000',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      background: '#f8fafc',
                       color: '#3e3f29'
                     }}
                     placeholder="10"
@@ -3539,7 +3507,6 @@ const Products = () => {
                       border: '2px solid #000000',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      background: '#f8fafc',
                       color: '#3e3f29'
                     }}
                     placeholder="0.00"
@@ -3560,7 +3527,6 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    background: '#f8fafc',
                     color: '#3e3f29'
                   }}
                 >
@@ -3587,7 +3553,6 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    background: '#f8fafc',
                     color: '#3e3f29'
                   }}
                   placeholder="Legacy supplier info (optional)"
@@ -3608,7 +3573,6 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    background: '#f8fafc',
                     color: '#3e3f29'
                   }}
                   placeholder="Update SKU"
@@ -3629,7 +3593,6 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    background: '#f8fafc',
                     color: '#3e3f29'
                   }}
                   placeholder="Scan or enter barcode"
@@ -3752,7 +3715,6 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    background: '#f8fafc',
                     color: '#3e3f29',
                     resize: 'vertical'
                   }}
@@ -4008,7 +3970,6 @@ const Products = () => {
         onClick={() => setShowInsightsModal(false)}
         >
           <div style={{
-            background: '#f8fafc',
             borderRadius: '16px',
             padding: '32px',
             maxWidth: '800px',
@@ -4089,7 +4050,6 @@ const Products = () => {
                   width: '40px',
                   height: '40px',
                   borderRadius: '50%',
-                  background: '#f8fafc',
                   border: '2px solid #e2e8f0',
                   color: '#6b7280',
                   cursor: 'pointer',
@@ -4123,7 +4083,6 @@ const Products = () => {
                   gap: '12px', 
                   fontSize: '18px', 
                   color: '#7d8d86',
-                  background: '#f8fafc',
                   padding: '20px 32px',
                   borderRadius: '12px',
                   border: '1px solid #e2e8f0'
@@ -4326,7 +4285,6 @@ const Products = () => {
 
                     {/* Chart Display */}
                     <div style={{ 
-                      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', 
                       padding: '24px', 
                       borderRadius: '16px', 
                       minHeight: '220px',
@@ -4440,7 +4398,6 @@ const Products = () => {
 
                 {/* Product Info Section */}
                 <div style={{ 
-                  background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', 
                   padding: '24px', 
                   borderRadius: '16px', 
                   marginBottom: '32px',
@@ -4506,7 +4463,7 @@ const Products = () => {
 
                 {/* Additional Stats */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '32px' }}>
-                  <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px' }}>
+                  <div style={{ padding: '20px', borderRadius: '12px' }}>
                     <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: '#3e3f29' }}>
                       Sales Performance
                     </h3>
@@ -4532,7 +4489,7 @@ const Products = () => {
                     </div>
                   </div>
 
-                  <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px' }}>
+                  <div style={{ padding: '20px', borderRadius: '12px' }}>
                     <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: '#3e3f29' }}>
                       Top Selling Days (Last 30 Days)
                     </h3>
@@ -4552,7 +4509,6 @@ const Products = () => {
 
                 {/* Recent Sales */}
                 <div style={{ 
-                  background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', 
                   padding: '24px', 
                   borderRadius: '16px',
                   border: '1px solid #e2e8f0',

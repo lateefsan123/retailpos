@@ -16,8 +16,8 @@
 
 .pageTitle {
   font-size: 36px;
-  font-weight: 600;
-  color: #3e3f29;
+  font-weight: 800;
+  color: #1a1a1a;
   margin: 0;
   display: flex;
   align-items: center;
@@ -25,17 +25,17 @@
 }
 
 .pageTitle i {
-  color: #7d8d86;
+  color: #1a1a1a;
 }
 
 .primaryButton {
-  background: linear-gradient(135deg, #7d8d86, #3e3f29);
-  color: #f1f0e4;
+  background: #1a1a1a;
+  color: #ffffff;
   border: none;
   border-radius: 12px;
   padding: 12px 24px;
   font-size: 18px;
-  font-weight: 500;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -69,8 +69,7 @@
 }
 
 .statisticsCard:hover {
-  border-color: #7d8d86;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: #f9f9f9;
 }
 
 .statisticsCardContent {
@@ -85,15 +84,15 @@
 
 .statisticsLabel {
   font-size: 16px;
-  color: #6b7280;
+  color: #1a1a1a;
   margin: 0 0 4px 0;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .statisticsValue {
   font-size: 28px;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: 800;
+  color: #1a1a1a;
   margin: 0;
 }
 
@@ -136,8 +135,7 @@
 }
 
 .contentPanel:hover {
-  border-color: #7d8d86;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: #f9f9f9;
 }
 
 .contentPanelHeader {
@@ -151,8 +149,8 @@
 
 .contentPanelTitle {
   font-size: 20px;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: 700;
+  color: #1a1a1a;
   margin: 0;
 }
 
@@ -194,18 +192,15 @@
 .listItemCard {
   padding: 16px;
   background: white;
-  border: 1px solid #f3f4f6;
+  border: 2px solid #1a1a1a;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  transition: all 0.2s ease;
   cursor: pointer;
 }
 
 .listItemCard:hover {
-  border-color: #7d8d86;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
+  background: #f9f9f9;
 }
 
 .listItemCardContent {
@@ -238,15 +233,16 @@
 
 .listItemCardTitle {
   font-size: 16px;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: 700;
+  color: #1a1a1a;
   margin: 0 0 4px 0;
 }
 
 .listItemCardSubtitle {
   font-size: 14px;
-  color: #6b7280;
+  color: #1a1a1a;
   margin: 0 0 4px 0;
+  font-weight: 600;
 }
 
 .listItemCardMeta {
@@ -283,12 +279,12 @@
 }
 
 .actionButton {
-  background: #7d8d86;
-  color: #f1f0e4;
+  background: #1a1a1a;
+  color: #ffffff;
   padding: 8px 12px;
   border-radius: 8px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 700;
   transition: all 0.2s ease;
   border: none;
   cursor: pointer;
@@ -497,12 +493,12 @@
 
 /* Danger Button Variant */
 .actionButtonDanger {
-  background: #dc2626 !important;
+  background: #1a1a1a !important;
   color: white !important;
 }
 
 .actionButtonDanger:hover {
-  opacity: 0.8;
+  background: #000000 !important;
 }
 
 /* Standard Button Components */

@@ -339,6 +339,45 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
         role="dialog"
         aria-modal="true"
       >
+        {/* Gradient overlays to match navbar */}
+        <div style={{ pointerEvents: 'none', position: 'absolute', inset: 0 }}>
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              border: '1px solid rgba(255, 255, 255, 0.05)'
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              width: '220px',
+              height: '220px',
+              top: '-120px',
+              left: '-120px',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle at center, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 70%)'
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              width: '260px',
+              height: '260px',
+              bottom: '-80px',
+              right: '-140px',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle at center, rgba(255, 150, 0, 0.12) 0%, rgba(255, 150, 0, 0) 70%)'
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.25) 45%, rgba(0, 0, 0, 0.6) 100%)'
+            }}
+          />
+        </div>
         {/* Header */}
         <div className={styles.header}>
           <div className={styles.headerLeft}>
@@ -554,7 +593,7 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
                     e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'
                   }}
                 >
-                  <i className="fa-solid fa-book" style={{ fontSize: '20px', color: '#7d8d86' }}></i>
+                  <i className="fa-solid fa-book" style={{ fontSize: '20px', color: '#ffffff' }}></i>
                   <span>Open User Manual</span>
                 </a>
               </SectionCard>

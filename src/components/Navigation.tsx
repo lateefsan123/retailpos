@@ -352,7 +352,10 @@ const Navigation = () => {
   return (
     <aside style={asideStyle}>
       <div style={brandContainerStyle}>
-        <h1 style={brandSecondaryTextStyle}>Tillpoint POS</h1>
+        <h1 style={brandSecondaryTextStyle}>
+          <i className="fa-kit fa-test fa-3x" style={{ color: '#B197FC', marginRight: '8px', verticalAlign: 'middle' }}></i>
+          Tillpoint POS
+        </h1>
       </div>
 
       <nav style={navContainerStyle}>
@@ -368,7 +371,6 @@ const Navigation = () => {
           style={{
             position: 'absolute',
             inset: 0,
-            borderRadius: '28px',
             border: '1px solid rgba(255, 255, 255, 0.05)'
           }}
         />

@@ -1001,7 +1001,6 @@ const SideBusinesses = () => {
                           className={`${styles.actionButton} ${styles.actionButtonDanger}`}
                           title="Delete Business"
                         >
-                          <i className={`fas fa-trash ${styles.actionButtonIcon}`}></i>
                           Delete
                         </button>
                       </div>
@@ -1127,7 +1126,6 @@ const SideBusinesses = () => {
                           className={`${styles.actionButton} ${styles.actionButtonDanger}`}
                           title="Delete Sale"
                         >
-                          <i className={`fas fa-trash ${styles.actionButtonIcon}`}></i>
                           Delete
                         </button>
                       </div>

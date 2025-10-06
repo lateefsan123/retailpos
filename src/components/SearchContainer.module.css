@@ -40,7 +40,7 @@
 .searchIcon {
   position: absolute;
   left: 12px;
-  color: #7d8d86;
+  color: #1a1a1a;
   font-size: 14px;
   pointer-events: none;
   z-index: 1;
@@ -51,15 +51,16 @@
   padding: 10px 12px 10px 36px;
   border: none;
   background: transparent;
-  color: #374151;
+  color: #1a1a1a;
   font-size: 14px;
+  font-weight: 600;
   outline: none;
   font-family: inherit;
 }
 
 .searchInput::placeholder {
-  color: #9ca3af;
-  font-weight: 400;
+  color: #1a1a1a;
+  font-weight: 500;
 }
 
 .clearButton {

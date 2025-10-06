@@ -24,15 +24,16 @@
   height: 100vh;
   width: 100%;
   max-width: 720px;
-  background: #0b0f14;
+  background: #08080b;
   color: white;
-  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
-  border-left: 1px solid #374151;
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.45);
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
   transform: translateX(100%);
   transition: transform 0.3s ease;
   z-index: 9999;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .drawer.open {
@@ -47,9 +48,10 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid #374151;
-  background: rgba(11, 15, 20, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(8, 8, 11, 0.95);
   backdrop-filter: blur(8px);
+  position: relative;
 }
 
 .headerLeft {
@@ -64,7 +66,7 @@
   font-weight: bold;
   font-size: 18px;
   letter-spacing: 0.1em;
-  color: #7d8d86;
+  color: #ffffff;
 }
 
 .closeButton {
@@ -109,10 +111,12 @@
   display: grid;
   grid-template-columns: 220px 1fr;
   min-height: 0;
+  position: relative;
+  z-index: 2;
 }
 
 .nav {
-  border-right: 1px solid #374151;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
   padding: 16px;
   overflow-y: auto;
 }
@@ -123,16 +127,16 @@
 }
 
 .nav::-webkit-scrollbar-track {
-  background: #0b0f14;
+  background: #08080b;
 }
 
 .nav::-webkit-scrollbar-thumb {
-  background: #374151;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
 }
 
 .nav::-webkit-scrollbar-thumb:hover {
-  background: #4b5563;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .navList {
@@ -147,30 +151,35 @@
 .navButton {
   width: 100%;
   text-align: left;
-  padding: 10px 14px;
-  border-radius: 6px;
-  font-size: 16px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   background: none;
-  border: none;
+  border: 1px solid transparent;
   color: #d1d5db;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
 }
 
 .navButton:hover {
-  color: white;
-  background: #0f141c;
+  color: #f8fafc;
+  background: rgba(0, 0, 0, 0.65);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .navButton.active {
-  background: #1e293b;
-  color: white;
-  border: 1px solid #334155;
+  background: rgba(0, 0, 0, 0.85);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
 }
 
 .content {
   position: relative;
   min-height: 0;
+  z-index: 2;
 }
 
 .mobileTabs {
@@ -178,8 +187,8 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  background: #0b0f14;
-  border-bottom: 1px solid #374151;
+  background: #08080b;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   padding: 12px;
   overflow-x: auto;
 }
@@ -191,21 +200,30 @@
 }
 
 .mobileTabButton {
-  padding: 10px 14px;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   white-space: nowrap;
   border: 1px solid transparent;
-  background: #0f141c;
+  background: transparent;
   color: #d1d5db;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
+}
+
+.mobileTabButton:hover {
+  color: #f8fafc;
+  background: rgba(0, 0, 0, 0.65);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .mobileTabButton.active {
-  background: #1e293b;
-  color: white;
-  border-color: #334155;
+  background: rgba(0, 0, 0, 0.85);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
 }
 
 .scrollContent {
@@ -223,16 +241,16 @@
 }
 
 .scrollContent::-webkit-scrollbar-track {
-  background: #0b0f14;
+  background: #08080b;
 }
 
 .scrollContent::-webkit-scrollbar-thumb {
-  background: #374151;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
 }
 
 .scrollContent::-webkit-scrollbar-thumb:hover {
-  background: #4b5563;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .section {
@@ -248,13 +266,14 @@
 
 .sectionCard {
   border-radius: 12px;
-  border: 1px solid #334155;
-  background: #0f141c;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.85);
   padding: 24px;
-  box-shadow: inset 0 0 100px rgba(125, 141, 134, 0.06);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
   width: 100%;
   box-sizing: border-box;
   overflow: hidden;
+  backdrop-filter: blur(8px);
 }
 
 .grid {
@@ -300,13 +319,14 @@
   max-width: 100%;
   padding: 12px 16px;
   border-radius: 8px;
-  border: 1px solid #334155;
-  background: #0b0f14;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.5);
   color: #f3f4f6;
   font-size: 16px;
   transition: all 0.2s ease;
   box-sizing: border-box;
   margin-bottom: 4px;
+  backdrop-filter: blur(8px);
 }
 
 .fieldInput:focus {
@@ -324,8 +344,8 @@
   max-width: 100%;
   padding: 12px 16px;
   border-radius: 8px;
-  border: 1px solid #334155;
-  background: #0b0f14;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.5);
   color: #f3f4f6;
   font-size: 16px;
   font-family: inherit;
@@ -334,6 +354,7 @@
   transition: all 0.2s ease;
   box-sizing: border-box;
   margin-bottom: 4px;
+  backdrop-filter: blur(8px);
 }
 
 .fieldTextarea:focus {
@@ -351,14 +372,15 @@
   max-width: 100%;
   padding: 12px 16px;
   border-radius: 8px;
-  border: 1px solid #334155;
-  background: #0b0f14;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.5);
   color: #f3f4f6;
   font-size: 16px;
   cursor: pointer;
   transition: all 0.2s ease;
   box-sizing: border-box;
   margin-bottom: 4px;
+  backdrop-filter: blur(8px);
 }
 
 .fieldSelect:focus {
@@ -368,7 +390,7 @@
 }
 
 .fieldSelect option {
-  background: #0b0f14;
+  background: #08080b;
   color: #f3f4f6;
 }
 
@@ -383,11 +405,12 @@
   height: 80px;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #334155;
-  background: #0b0f14;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: blur(8px);
 }
 
 .logoPreview img {
@@ -442,10 +465,11 @@
   position: sticky;
   bottom: 0;
   z-index: 20;
-  border-top: 1px solid #374151;
-  background: rgba(11, 15, 20, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(8, 8, 11, 0.95);
   backdrop-filter: blur(8px);
   padding: 16px 20px;
+  position: relative;
 }
 
 .footerContent {
@@ -458,16 +482,18 @@
 .cancelButton {
   padding: 10px 18px;
   border-radius: 6px;
-  border: 1px solid #4b5563;
-  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.5);
   color: #e5e7eb;
   font-size: 16px;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
 }
 
 .cancelButton:hover {
-  background: #1f2937;
+  background: rgba(0, 0, 0, 0.7);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .saveButton {

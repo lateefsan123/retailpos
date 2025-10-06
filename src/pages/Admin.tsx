@@ -614,7 +614,7 @@ const Admin = () => {
         alignItems: 'center', 
         height: '400px',
         fontSize: '18px',
-        color: '#1a1a1a'
+        color: '#000000'
       }}>
         <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '12px' }}></i>
         Loading users...
@@ -635,17 +635,18 @@ const Admin = () => {
         <div>
           <h1 style={{ 
             fontSize: '32px', 
-            fontWeight: '600', 
-            color: '#1a1a1a',
+            fontWeight: '900', 
+            color: '#000000',
             margin: '0 0 8px 0'
           }}>
-            <i className="fa-solid fa-users-cog" style={{ marginRight: '12px', color: '#7d8d86' }}></i>
+            <i className="fa-solid fa-users-cog" style={{ marginRight: '12px', color: '#000000' }}></i>
             User Management
           </h1>
           <p style={{ 
-            color: '#1a1a1a', 
+            color: '#000000', 
             margin: '0',
-            fontSize: '18px'
+            fontSize: '18px',
+            fontWeight: '700'
           }}>
             Manage system users and their permissions
           </p>
@@ -661,12 +662,12 @@ const Admin = () => {
             onClick={() => setShowPendingRegistrations(!showPendingRegistrations)}
             style={{
               background: showPendingRegistrations ? '#7d8d86' : '#e5e7eb',
-              color: showPendingRegistrations ? 'white' : '#3e3f29',
+              color: showPendingRegistrations ? 'white' : '#000000',
               border: 'none',
               borderRadius: '8px',
               padding: '12px 24px',
               fontSize: '18px',
-              fontWeight: '500',
+              fontWeight: '700',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -686,7 +687,7 @@ const Admin = () => {
               borderRadius: '8px',
               padding: '12px 24px',
               fontSize: '18px',
-              fontWeight: '500',
+              fontWeight: '700',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -707,7 +708,7 @@ const Admin = () => {
               borderRadius: '8px',
               padding: '12px 24px',
               fontSize: '16px',
-              fontWeight: '500',
+              fontWeight: '700',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -764,7 +765,7 @@ const Admin = () => {
             margin: '0', 
             fontSize: '20px', 
             fontWeight: '600',
-            color: '#1a1a1a'
+            color: '#000000'
           }}>
             <i className="fa-solid fa-list" style={{ marginRight: '8px', color: '#7d8d86' }}></i>
             All Users ({users.length})
@@ -775,7 +776,7 @@ const Admin = () => {
           <div style={{
             padding: '48px 24px',
             textAlign: 'center',
-            color: '#1a1a1a'
+            color: '#000000'
           }}>
             <i className="fa-solid fa-users" style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}></i>
             <p style={{ fontSize: '20px', margin: '0 0 8px 0' }}>No users found</p>
@@ -790,7 +791,7 @@ const Admin = () => {
                     padding: '16px 24px', 
                     textAlign: 'left', 
                     fontWeight: '600',
-                    color: '#1a1a1a',
+                    color: '#000000',
                     borderBottom: '2px solid #d1d5db',
                     fontSize: '16px'
                   }}>
@@ -800,7 +801,7 @@ const Admin = () => {
                     padding: '16px 24px', 
                     textAlign: 'center', 
                     fontWeight: '600',
-                    color: '#1a1a1a',
+                    color: '#000000',
                     borderBottom: '2px solid #d1d5db',
                     fontSize: '16px'
                   }}>
@@ -810,7 +811,7 @@ const Admin = () => {
                     padding: '16px 24px', 
                     textAlign: 'left', 
                     fontWeight: '600',
-                    color: '#1a1a1a',
+                    color: '#000000',
                     borderBottom: '2px solid #d1d5db',
                     fontSize: '16px'
                   }}>
@@ -820,7 +821,7 @@ const Admin = () => {
                     padding: '16px 24px', 
                     textAlign: 'left', 
                     fontWeight: '600',
-                    color: '#1a1a1a',
+                    color: '#000000',
                     borderBottom: '2px solid #d1d5db',
                     fontSize: '16px'
                   }}>
@@ -830,7 +831,7 @@ const Admin = () => {
                      padding: '16px 24px', 
                      textAlign: 'left', 
                      fontWeight: '600',
-                     color: '#1a1a1a',
+                     color: '#000000',
                      borderBottom: '2px solid #d1d5db',
                      fontSize: '16px'
                    }}>
@@ -840,7 +841,7 @@ const Admin = () => {
                     padding: '16px 24px', 
                     textAlign: 'center', 
                     fontWeight: '600',
-                    color: '#1a1a1a',
+                    color: '#000000',
                     borderBottom: '2px solid #d1d5db',
                     fontSize: '16px'
                   }}>
@@ -856,8 +857,8 @@ const Admin = () => {
                      <td style={{ padding: '16px 24px' }}>
                        <div>
                          <div style={{ 
-                           fontWeight: '500', 
-                           color: '#1a1a1a',
+                           fontWeight: '700', 
+                           color: '#000000',
                            marginBottom: '4px',
                            fontSize: '16px'
                          }}>
@@ -865,7 +866,7 @@ const Admin = () => {
                          </div>
                          <div style={{ 
                            fontSize: '15px', 
-                           color: '#1a1a1a' 
+                           color: '#000000' 
                          }}>
                            ID: {user.user_id}
                          </div>
@@ -898,7 +899,7 @@ const Admin = () => {
                          ) : (
                            <i className="fa-solid fa-user" style={{ 
                              fontSize: '20px', 
-                             color: '#9ca3af' 
+                             color: '#000000' 
                            }}></i>
                          )}
                        </div>
@@ -910,7 +911,7 @@ const Admin = () => {
                          padding: '4px 12px',
                          borderRadius: '20px',
                          fontSize: '14px',
-                         fontWeight: '500',
+                         fontWeight: '700',
                          textTransform: 'capitalize'
                        }}>
                          {user.role}
@@ -923,12 +924,12 @@ const Admin = () => {
                          padding: '4px 12px',
                          borderRadius: '20px',
                          fontSize: '14px',
-                         fontWeight: '500'
+                         fontWeight: '700'
                        }}>
                          {user.active ? 'Active' : 'Inactive'}
                        </span>
                      </td>
-                     <td style={{ padding: '16px 24px', color: '#1a1a1a', fontSize: '15px' }}>
+                     <td style={{ padding: '16px 24px', color: '#000000', fontSize: '15px' }}>
                        User #{user.user_id}
                      </td>
                     <td style={{ padding: '16px 24px', textAlign: 'center' }}>
@@ -1019,7 +1020,7 @@ const Admin = () => {
             margin: '0', 
             fontSize: '20px', 
             fontWeight: '600',
-            color: '#1a1a1a'
+            color: '#000000'
           }}>
             <i className="fa-solid fa-building" style={{ marginRight: '8px', color: '#3b82f6' }}></i>
             Branches ({branches.length})
@@ -1030,7 +1031,7 @@ const Admin = () => {
           <div style={{
             padding: '48px 24px',
             textAlign: 'center',
-            color: '#1a1a1a'
+            color: '#000000'
           }}>
             <i className="fa-solid fa-building" style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}></i>
             <p style={{ fontSize: '20px', margin: '0 0 8px 0' }}>No branches found</p>
@@ -1045,7 +1046,7 @@ const Admin = () => {
                     padding: '16px 24px', 
                     textAlign: 'left', 
                     fontWeight: '600',
-                    color: '#1a1a1a',
+                    color: '#000000',
                     borderBottom: '2px solid #d1d5db',
                     fontSize: '16px'
                   }}>
@@ -1055,7 +1056,7 @@ const Admin = () => {
                     padding: '16px 24px', 
                     textAlign: 'center', 
                     fontWeight: '600',
-                    color: '#1a1a1a',
+                    color: '#000000',
                     borderBottom: '2px solid #d1d5db',
                     fontSize: '16px'
                   }}>
@@ -1065,7 +1066,7 @@ const Admin = () => {
                     padding: '16px 24px', 
                     textAlign: 'left', 
                     fontWeight: '600',
-                    color: '#1a1a1a',
+                    color: '#000000',
                     borderBottom: '2px solid #d1d5db',
                     fontSize: '16px'
                   }}>
@@ -1075,7 +1076,7 @@ const Admin = () => {
                     padding: '16px 24px', 
                     textAlign: 'left', 
                     fontWeight: '600',
-                    color: '#1a1a1a',
+                    color: '#000000',
                     borderBottom: '2px solid #d1d5db',
                     fontSize: '16px'
                   }}>
@@ -1085,7 +1086,7 @@ const Admin = () => {
                     padding: '16px 24px', 
                     textAlign: 'left', 
                     fontWeight: '600',
-                    color: '#1a1a1a',
+                    color: '#000000',
                     borderBottom: '2px solid #d1d5db',
                     fontSize: '16px'
                   }}>
@@ -1095,7 +1096,7 @@ const Admin = () => {
                     padding: '16px 24px', 
                     textAlign: 'left', 
                     fontWeight: '600',
-                    color: '#1a1a1a',
+                    color: '#000000',
                     borderBottom: '2px solid #d1d5db',
                     fontSize: '16px'
                   }}>
@@ -1105,7 +1106,7 @@ const Admin = () => {
                     padding: '16px 24px', 
                     textAlign: 'center', 
                     fontWeight: '600',
-                    color: '#1a1a1a',
+                    color: '#000000',
                     borderBottom: '2px solid #d1d5db',
                     fontSize: '16px'
                   }}>
@@ -1121,8 +1122,8 @@ const Admin = () => {
                     <td style={{ padding: '16px 24px' }}>
                       <div>
                         <div style={{ 
-                          fontWeight: '500', 
-                          color: '#1a1a1a',
+                          fontWeight: '700', 
+                          color: '#000000',
                           marginBottom: '4px',
                           fontSize: '16px'
                         }}>
@@ -1130,7 +1131,7 @@ const Admin = () => {
                         </div>
                         <div style={{ 
                           fontSize: '15px', 
-                          color: '#6b7280' 
+                          color: '#000000' 
                         }}>
                           ID: {branch.branch_id}
                         </div>
@@ -1165,18 +1166,18 @@ const Admin = () => {
                         ) : (
                           <i className="fa-solid fa-building" style={{ 
                             fontSize: '24px', 
-                            color: '#9ca3af' 
+                            color: '#000000' 
                           }}></i>
                         )}
                       </div>
                     </td>
-                    <td style={{ padding: '16px 24px', color: '#1a1a1a', fontSize: '15px' }}>
+                    <td style={{ padding: '16px 24px', color: '#000000', fontSize: '15px' }}>
                       {branch.address}
                     </td>
-                    <td style={{ padding: '16px 24px', color: '#1a1a1a', fontSize: '15px' }}>
+                    <td style={{ padding: '16px 24px', color: '#000000', fontSize: '15px' }}>
                       {branch.phone || 'N/A'}
                     </td>
-                    <td style={{ padding: '16px 24px', color: '#1a1a1a', fontSize: '15px' }}>
+                    <td style={{ padding: '16px 24px', color: '#000000', fontSize: '15px' }}>
                       {branch.manager_id ? `User #${branch.manager_id}` : 'Not assigned'}
                     </td>
                     <td style={{ padding: '16px 24px' }}>
@@ -1186,7 +1187,7 @@ const Admin = () => {
                         padding: '4px 12px',
                         borderRadius: '20px',
                         fontSize: '14px',
-                        fontWeight: '500'
+                        fontWeight: '700'
                       }}>
                         {branch.active ? 'Active' : 'Inactive'}
                       </span>
@@ -1276,7 +1277,7 @@ const Admin = () => {
                 margin: '0', 
                 fontSize: '26px', 
                 fontWeight: '600',
-                color: '#1a1a1a'
+                color: '#000000'
               }}>
                 <i className="fa-solid fa-user-plus" style={{ marginRight: '8px', color: '#7d8d86' }}></i>
                 Add New User
@@ -1287,7 +1288,7 @@ const Admin = () => {
                   background: 'none',
                   border: 'none',
                   fontSize: '20px',
-                  color: '#1a1a1a',
+                  color: '#000000',
                   cursor: 'pointer',
                   padding: '4px'
                 }}
@@ -1301,8 +1302,8 @@ const Admin = () => {
                  <label style={{
                    display: 'block',
                    marginBottom: '8px',
-                   fontWeight: '500',
-                   color: '#1a1a1a'
+                   fontWeight: '700',
+                   color: '#000000'
                  }}>
                    Username *
                  </label>
@@ -1327,8 +1328,8 @@ const Admin = () => {
                 <label style={{
                   display: 'block',
                   marginBottom: '8px',
-                  fontWeight: '500',
-                  color: '#1a1a1a'
+                  fontWeight: '700',
+                  color: '#000000'
                 }}>
                   Password *
                 </label>
@@ -1353,8 +1354,8 @@ const Admin = () => {
                 <label style={{
                   display: 'block',
                   marginBottom: '8px',
-                  fontWeight: '500',
-                  color: '#1a1a1a'
+                  fontWeight: '700',
+                  color: '#000000'
                 }}>
                   Role *
                 </label>
@@ -1382,8 +1383,8 @@ const Admin = () => {
                 <label style={{
                   display: 'block',
                   marginBottom: '8px',
-                  fontWeight: '500',
-                  color: '#1a1a1a'
+                  fontWeight: '700',
+                  color: '#000000'
                 }}>
                   Branch *
                 </label>
@@ -1415,7 +1416,7 @@ const Admin = () => {
                   display: 'block',
                   marginBottom: '16px',
                   fontWeight: '600',
-                  color: '#1a1a1a',
+                  color: '#000000',
                   fontSize: '16px'
                 }}>
                   Character Icon *
@@ -1426,8 +1427,8 @@ const Admin = () => {
                   <label style={{
                     display: 'block',
                     marginBottom: '8px',
-                    fontWeight: '500',
-                    color: '#374151',
+                    fontWeight: '700',
+                    color: '#000000',
                     fontSize: '14px'
                   }}>
                     Icon Pack
@@ -1442,7 +1443,7 @@ const Admin = () => {
                       borderRadius: '8px',
                       backgroundColor: '#ffffff',
                       fontSize: '14px',
-                      color: '#1a1a1a',
+                      color: '#000000',
                       cursor: 'pointer',
                       outline: 'none',
                       transition: 'border-color 0.2s ease'
@@ -1554,12 +1555,12 @@ const Admin = () => {
                   onClick={() => setShowAddModal(false)}
                   style={{
                     background: '#f3f4f6',
-                    color: '#1a1a1a',
+                    color: '#000000',
                     border: 'none',
                     borderRadius: '8px',
                     padding: '12px 24px',
                     fontSize: '16px',
-                    fontWeight: '500',
+                    fontWeight: '700',
                     cursor: 'pointer'
                   }}
                 >
@@ -1575,7 +1576,7 @@ const Admin = () => {
                     borderRadius: '8px',
                     padding: '12px 24px',
                     fontSize: '16px',
-                    fontWeight: '500',
+                    fontWeight: '700',
                     cursor: isSubmitting ? 'not-allowed' : 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -1634,7 +1635,7 @@ const Admin = () => {
                  margin: '0', 
                  fontSize: '24px', 
                  fontWeight: '600',
-                 color: '#1a1a1a'
+                 color: '#000000'
                }}>
                  <i className="fa-solid fa-user-pen" style={{ marginRight: '8px', color: '#7d8d86' }}></i>
                  Edit User
@@ -1648,7 +1649,7 @@ const Admin = () => {
                    background: 'none',
                    border: 'none',
                    fontSize: '20px',
-                   color: '#1a1a1a',
+                   color: '#000000',
                    cursor: 'pointer',
                    padding: '4px'
                  }}
@@ -1662,8 +1663,8 @@ const Admin = () => {
                  <label style={{
                    display: 'block',
                    marginBottom: '8px',
-                   fontWeight: '500',
-                   color: '#1a1a1a'
+                   fontWeight: '700',
+                   color: '#000000'
                  }}>
                    Username *
                  </label>
@@ -1688,8 +1689,8 @@ const Admin = () => {
                  <label style={{
                    display: 'block',
                    marginBottom: '8px',
-                   fontWeight: '500',
-                   color: '#1a1a1a'
+                   fontWeight: '700',
+                   color: '#000000'
                  }}>
                    New Password (leave blank to keep current)
                  </label>
@@ -1713,8 +1714,8 @@ const Admin = () => {
                  <label style={{
                    display: 'block',
                    marginBottom: '8px',
-                   fontWeight: '500',
-                   color: '#1a1a1a'
+                   fontWeight: '700',
+                   color: '#000000'
                  }}>
                    Role *
                  </label>
@@ -1742,8 +1743,8 @@ const Admin = () => {
                  <label style={{
                    display: 'block',
                    marginBottom: '8px',
-                   fontWeight: '500',
-                   color: '#1a1a1a'
+                   fontWeight: '700',
+                   color: '#000000'
                  }}>
                    Branch *
                  </label>
@@ -1775,7 +1776,7 @@ const Admin = () => {
                    display: 'block',
                    marginBottom: '16px',
                    fontWeight: '600',
-                   color: '#1a1a1a',
+                   color: '#000000',
                    fontSize: '16px'
                  }}>
                    Character Icon *
@@ -1786,8 +1787,8 @@ const Admin = () => {
                    <label style={{
                      display: 'block',
                      marginBottom: '8px',
-                     fontWeight: '500',
-                     color: '#374151',
+                     fontWeight: '700',
+                     color: '#000000',
                      fontSize: '14px'
                    }}>
                      Icon Pack
@@ -1802,7 +1803,7 @@ const Admin = () => {
                        borderRadius: '8px',
                        backgroundColor: '#ffffff',
                        fontSize: '14px',
-                       color: '#1a1a1a',
+                       color: '#000000',
                        cursor: 'pointer',
                        outline: 'none',
                        transition: 'border-color 0.2s ease'
@@ -1917,12 +1918,12 @@ const Admin = () => {
                    }}
                    style={{
                      background: '#f3f4f6',
-                     color: '#1a1a1a',
+                     color: '#000000',
                      border: 'none',
                      borderRadius: '8px',
                      padding: '12px 24px',
                      fontSize: '16px',
-                     fontWeight: '500',
+                     fontWeight: '700',
                      cursor: 'pointer'
                    }}
                  >
@@ -1938,7 +1939,7 @@ const Admin = () => {
                      borderRadius: '8px',
                      padding: '12px 24px',
                      fontSize: '16px',
-                     fontWeight: '500',
+                     fontWeight: '700',
                      cursor: isSubmitting ? 'not-allowed' : 'pointer',
                      display: 'flex',
                      alignItems: 'center',
@@ -1997,7 +1998,7 @@ const Admin = () => {
                  margin: '0', 
                  fontSize: '26px', 
                  fontWeight: '600',
-                 color: '#1a1a1a'
+                 color: '#000000'
                }}>
                  <i className="fa-solid fa-building" style={{ marginRight: '8px', color: '#3b82f6' }}></i>
                  Add New Branch
@@ -2008,7 +2009,7 @@ const Admin = () => {
                    background: 'none',
                    border: 'none',
                    fontSize: '20px',
-                   color: '#1a1a1a',
+                   color: '#000000',
                    cursor: 'pointer',
                    padding: '4px'
                  }}
@@ -2022,8 +2023,8 @@ const Admin = () => {
                  <label style={{
                    display: 'block',
                    marginBottom: '8px',
-                   fontWeight: '500',
-                   color: '#1a1a1a'
+                   fontWeight: '700',
+                   color: '#000000'
                  }}>
                    Branch Name *
                  </label>
@@ -2048,8 +2049,8 @@ const Admin = () => {
                  <label style={{
                    display: 'block',
                    marginBottom: '8px',
-                   fontWeight: '500',
-                   color: '#1a1a1a'
+                   fontWeight: '700',
+                   color: '#000000'
                  }}>
                    Address *
                  </label>
@@ -2075,8 +2076,8 @@ const Admin = () => {
                  <label style={{
                    display: 'block',
                    marginBottom: '8px',
-                   fontWeight: '500',
-                   color: '#1a1a1a'
+                   fontWeight: '700',
+                   color: '#000000'
                  }}>
                    Phone Number
                  </label>
@@ -2100,8 +2101,8 @@ const Admin = () => {
                  <label style={{
                    display: 'block',
                    marginBottom: '8px',
-                   fontWeight: '500',
-                   color: '#1a1a1a'
+                   fontWeight: '700',
+                   color: '#000000'
                  }}>
                    Manager (Optional)
                  </label>
@@ -2132,7 +2133,7 @@ const Admin = () => {
                    display: 'block',
                    marginBottom: '16px',
                    fontWeight: '600',
-                   color: '#1a1a1a',
+                   color: '#000000',
                    fontSize: '16px'
                  }}>
                    Shop Image *
@@ -2198,8 +2199,8 @@ const Admin = () => {
                        </div>
                        <span style={{
                          fontSize: '14px',
-                         fontWeight: '500',
-                         color: newBranch.shop_image === shop.name ? 'white' : '#1a1a1a'
+                         fontWeight: '700',
+                         color: newBranch.shop_image === shop.name ? 'white' : '#000000'
                        }}>
                          {shop.label}
                        </span>
@@ -2240,12 +2241,12 @@ const Admin = () => {
                    onClick={() => setShowAddBranchModal(false)}
                    style={{
                      background: '#f3f4f6',
-                     color: '#1a1a1a',
+                     color: '#000000',
                      border: 'none',
                      borderRadius: '8px',
                      padding: '12px 24px',
                      fontSize: '16px',
-                     fontWeight: '500',
+                     fontWeight: '700',
                      cursor: 'pointer'
                    }}
                  >
@@ -2261,7 +2262,7 @@ const Admin = () => {
                      borderRadius: '8px',
                      padding: '12px 24px',
                      fontSize: '16px',
-                     fontWeight: '500',
+                     fontWeight: '700',
                      cursor: isSubmitting ? 'not-allowed' : 'pointer',
                      display: 'flex',
                      alignItems: 'center',
@@ -2320,7 +2321,7 @@ const Admin = () => {
                  margin: '0', 
                  fontSize: '24px', 
                  fontWeight: '600',
-                 color: '#1a1a1a'
+                 color: '#000000'
                }}>
                  <i className="fa-solid fa-building" style={{ marginRight: '8px', color: '#3b82f6' }}></i>
                  Edit Branch
@@ -2334,7 +2335,7 @@ const Admin = () => {
                    background: 'none',
                    border: 'none',
                    fontSize: '20px',
-                   color: '#1a1a1a',
+                   color: '#000000',
                    cursor: 'pointer',
                    padding: '4px'
                  }}
@@ -2348,8 +2349,8 @@ const Admin = () => {
                  <label style={{
                    display: 'block',
                    marginBottom: '8px',
-                   fontWeight: '500',
-                   color: '#1a1a1a'
+                   fontWeight: '700',
+                   color: '#000000'
                  }}>
                    Branch Name *
                  </label>
@@ -2374,8 +2375,8 @@ const Admin = () => {
                  <label style={{
                    display: 'block',
                    marginBottom: '8px',
-                   fontWeight: '500',
-                   color: '#1a1a1a'
+                   fontWeight: '700',
+                   color: '#000000'
                  }}>
                    Address *
                  </label>
@@ -2401,8 +2402,8 @@ const Admin = () => {
                  <label style={{
                    display: 'block',
                    marginBottom: '8px',
-                   fontWeight: '500',
-                   color: '#1a1a1a'
+                   fontWeight: '700',
+                   color: '#000000'
                  }}>
                    Phone Number
                  </label>
@@ -2426,8 +2427,8 @@ const Admin = () => {
                  <label style={{
                    display: 'block',
                    marginBottom: '8px',
-                   fontWeight: '500',
-                   color: '#1a1a1a'
+                   fontWeight: '700',
+                   color: '#000000'
                  }}>
                    Manager (Optional)
                  </label>
@@ -2458,7 +2459,7 @@ const Admin = () => {
                    display: 'block',
                    marginBottom: '16px',
                    fontWeight: '600',
-                   color: '#1a1a1a',
+                   color: '#000000',
                    fontSize: '16px'
                  }}>
                    Shop Image *
@@ -2524,8 +2525,8 @@ const Admin = () => {
                        </div>
                        <span style={{
                          fontSize: '14px',
-                         fontWeight: '500',
-                         color: newBranch.shop_image === shop.name ? 'white' : '#1a1a1a'
+                         fontWeight: '700',
+                         color: newBranch.shop_image === shop.name ? 'white' : '#000000'
                        }}>
                          {shop.label}
                        </span>
@@ -2569,12 +2570,12 @@ const Admin = () => {
                    }}
                    style={{
                      background: '#f3f4f6',
-                     color: '#1a1a1a',
+                     color: '#000000',
                      border: 'none',
                      borderRadius: '8px',
                      padding: '12px 24px',
                      fontSize: '16px',
-                     fontWeight: '500',
+                     fontWeight: '700',
                      cursor: 'pointer'
                    }}
                  >
@@ -2590,7 +2591,7 @@ const Admin = () => {
                      borderRadius: '8px',
                      padding: '12px 24px',
                      fontSize: '16px',
-                     fontWeight: '500',
+                     fontWeight: '700',
                      cursor: isSubmitting ? 'not-allowed' : 'pointer',
                      display: 'flex',
                      alignItems: 'center',

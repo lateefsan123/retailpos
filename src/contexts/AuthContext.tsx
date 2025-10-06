@@ -22,6 +22,7 @@ interface AuthContextType {
   authenticate: (email: string, password: string) => Promise<{ success: boolean; businessId?: number }>
   register: (username: string, password: string, businessName: string, firstName?: string, lastName?: string, email?: string, phone?: string, businessType?: string, businessDescription?: string, businessAddress?: string, businessPhone?: string, currency?: string, website?: string, vatNumber?: string, openTime?: string, closeTime?: string) => Promise<{ success: boolean; pendingApproval?: boolean }>
   switchUser: (targetUserId: number, password: string, usePin?: boolean) => Promise<boolean>
+  refreshUser: () => Promise<void>
   logout: () => void
   loading: boolean
   currentUserId: string | undefined
@@ -605,6 +606,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
+  const refreshUser = async () => {
+    if (user?.user_id) {
+      await loadUserProfile(user.user_id.toString())
+    }
+  }
+
   const logout = async () => {
     try {
       if (supabaseUser) {
@@ -631,6 +638,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     authenticate,
     register,
     switchUser,
+    refreshUser,
     logout,
     loading,
     currentUserId: supabaseUser?.id || user?.user_id?.toString()

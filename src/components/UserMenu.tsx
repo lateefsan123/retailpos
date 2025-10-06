@@ -4,6 +4,7 @@ import { useRole } from '../contexts/RoleContext'
 import { supabase } from '../lib/supabaseClient'
 import SelectUserModal from './SelectUserModal'
 import BusinessSettingsModal from './BusinessSettingsModal'
+import ChangeNameModal from './ChangeNameModal'
 
 const UserMenu: React.FC = () => {
   const { user, logout, switchUser } = useAuth()
@@ -11,6 +12,7 @@ const UserMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [showSelectUserModal, setShowSelectUserModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [showChangeNameModal, setShowChangeNameModal] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   // Debug logging
@@ -96,6 +98,11 @@ const UserMenu: React.FC = () => {
 
   const handleSettings = () => {
     setShowSettingsModal(true)
+    setIsOpen(false)
+  }
+
+  const handleChangeName = () => {
+    setShowChangeNameModal(true)
     setIsOpen(false)
   }
 
@@ -277,6 +284,36 @@ const UserMenu: React.FC = () => {
             <span>Settings</span>
           </button>
 
+          {/* Change Name - Only for Owners */}
+          {user?.role?.toLowerCase() === 'owner' && (
+            <button
+              onClick={handleChangeName}
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                padding: '12px 16px',
+                background: 'transparent',
+                border: 'none',
+                color: '#111827',
+                fontSize: '14px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                transition: 'background 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#f9fafb'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent'
+              }}
+            >
+              <i className="fa-solid fa-user-edit" style={{ fontSize: '16px', color: '#4b5563' }}></i>
+              <span>Change Name</span>
+            </button>
+          )}
+
           {/* Divider */}
           <div style={{
             borderTop: '1px solid #e5e7eb',
@@ -324,6 +361,12 @@ const UserMenu: React.FC = () => {
       <BusinessSettingsModal
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
+      />
+
+      {/* Change Name Modal */}
+      <ChangeNameModal
+        isOpen={showChangeNameModal}
+        onClose={() => setShowChangeNameModal(false)}
       />
     </div>
   )

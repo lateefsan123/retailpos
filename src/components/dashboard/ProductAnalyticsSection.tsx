@@ -133,7 +133,7 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
           alignItems: 'center',
           justifyContent: 'center'
         }}>
-          <i className="fa-solid fa-chart-line" style={{ fontSize: '18px', color: '#3e3f29' }}></i>
+          <i className="fa-solid fa-chart-line" style={{ fontSize: '18px', color: '#ffffff' }}></i>
         </div>
         <h3 style={{ fontSize: '20px', fontWeight: 600, color: '#3e3f29', margin: 0 }}>Top Products</h3>
       </div>
