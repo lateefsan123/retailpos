@@ -5,6 +5,7 @@ import { useBranch } from '../contexts/BranchContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useRole } from '../contexts/RoleContext'
 import BranchSelector from '../components/BranchSelector'
+import SupplierCalendar from '../components/SupplierCalendar'
 import { Supplier, SupplierRequest } from '../types/multitenant'
 import { formatCurrency } from '../utils/currency'
 import styles from './Suppliers.module.css'
@@ -123,6 +124,7 @@ const Suppliers = () => {
   const [totalPages, setTotalPages] = useState(0)
   const [unpaidVisitsCount, setUnpaidVisitsCount] = useState(0)
   const [supplierUnpaidCounts, setSupplierUnpaidCounts] = useState<{[key: number]: number}>({})
+  const [activeTab, setActiveTab] = useState<'suppliers' | 'visits'>('suppliers')
 
   // Form state
   const [formData, setFormData] = useState<SupplierRequest>({
@@ -353,6 +355,14 @@ const Suppliers = () => {
     setImagePreview(null)
   }
 
+  const handleTabChange = (tab: 'suppliers' | 'visits') => {
+    setActiveTab(tab)
+    if (tab === 'visits') {
+      setShowAddModal(false)
+      setShowVisitsModal(false)
+    }
+  }
+
   const fetchSupplierVisits = async (supplierId: number, page: number = 1) => {
     if (!businessId) return
 
@@ -550,7 +560,7 @@ const Suppliers = () => {
           
           <div className={styles.headerActions}>
             <BranchSelector />
-            {canManageSuppliers && (
+            {canManageSuppliers && activeTab === 'suppliers' && (
               <button
                 onClick={() => {
                   resetForm()
@@ -566,6 +576,27 @@ const Suppliers = () => {
           </div>
         </div>
 
+        <div className={styles.tabNavigation}>
+          <button
+            type="button"
+            className={`${styles.tabButton} ${activeTab === 'suppliers' ? styles.tabButtonActive : ''}`}
+            onClick={() => handleTabChange('suppliers')}
+          >
+            <i className="fa-solid fa-truck"></i>
+            Suppliers
+          </button>
+          <button
+            type="button"
+            className={`${styles.tabButton} ${activeTab === 'visits' ? styles.tabButtonActive : ''}`}
+            onClick={() => handleTabChange('visits')}
+          >
+            <i className="fa-solid fa-calendar-days"></i>
+            Supplier Visits
+          </button>
+        </div>
+
+        {activeTab === 'suppliers' ? (
+          <>
         {/* Filters */}
         <div className={styles.filtersContainer}>
           <div className={styles.filtersContent}>
@@ -1618,6 +1649,12 @@ const Suppliers = () => {
                 </div>
               )}
             </div>
+          </div>
+        )}
+          </>
+        ) : (
+          <div className={styles.calendarWrapper}>
+            <SupplierCalendar />
           </div>
         )}
       </div>

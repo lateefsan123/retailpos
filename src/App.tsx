@@ -25,7 +25,6 @@ import Admin from './pages/Admin'
 import Reminders from './pages/Reminders'
 import SelectUser from './pages/SelectUser'
 import Suppliers from './pages/Suppliers'
-import SupplierCalendar from './components/SupplierCalendar'
 import Promotions from './pages/Promotions'
 import VerificationAdmin from './pages/VerificationAdmin'
 import CustomerLoyalty from './pages/CustomerLoyalty'
@@ -121,11 +120,6 @@ const AppContent = () => {
               <Route path="/suppliers" element={
                 <RoleProtectedRoute requiredPermission="canManageProducts">
                   <Suppliers />
-                </RoleProtectedRoute>
-              } />
-              <Route path="/supplier-calendar" element={
-                <RoleProtectedRoute requiredPermission="canManageProducts">
-                  <SupplierCalendar />
                 </RoleProtectedRoute>
               } />
               <Route path="/promotions" element={

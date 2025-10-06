@@ -3,7 +3,7 @@
 /* Main Container */
 .suppliersContainer {
   min-height: 100vh;
-  background: #f8f9fa;
+  background: transparent;
   padding: 24px;
 }
 
@@ -86,6 +86,48 @@
   display: flex;
   gap: 12px;
   align-items: center;
+}
+
+.tabNavigation {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.tabButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 2px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tabButton i {
+  font-size: 14px;
+}
+
+.tabButton:hover {
+  background: #1a1a1a !important;
+  border-color: #1a1a1a !important;
+  color: #ffffff !important;
+}
+
+.tabButtonActive {
+  background: #1a1a1a;
+  color: #ffffff;
+  border-color: #1a1a1a;
+}
+
+.calendarWrapper {
+  margin-top: 24px;
 }
 
 .addButton {

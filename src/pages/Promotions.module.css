@@ -1,7 +1,7 @@
 /* Promotions Page Styles */
 .promotionsContainer {
   padding: 32px;
-  background: #f8f9fa;
+  background: transparent;
   min-height: 100vh;
 }
 
@@ -91,7 +91,7 @@
 }
 
 .statIconActive {
-  background: #d1fae5;
+  background: #1a1a1a;
 }
 
 .statIconInactive {
@@ -111,7 +111,7 @@
 }
 
 .statIconActive i {
-  color: #10b981;
+  color: #1a1a1a;
 }
 
 .statIconInactive i {
@@ -345,9 +345,9 @@
 
 .promotionsCount {
   font-size: 14px;
-  font-weight: 500;
-  color: #6b7280;
-  background: #f3f4f6;
+  font-weight: 600;
+  color: #ffffff;
+  background: #1a1a1a;
   padding: 4px 8px;
   border-radius: 12px;
   margin-left: 8px;
@@ -449,7 +449,7 @@
 }
 
 .promotionCardActive {
-  border-color: #10b981;
+  border-color: #1a1a1a;
 }
 
 .promotionCardExpired {
@@ -469,9 +469,9 @@
 }
 
 .statusActive {
-  background: #d1fae5;
-  color: #065f46;
-  border-color: #10b981;
+  background: #1a1a1a;
+  color: #ffffff;
+  border-color: #1a1a1a;
 }
 
 .statusExpired {
@@ -494,7 +494,7 @@
 
 .promotionName {
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 8px;
   color: #1a1a1a;
   line-height: 1.3;
@@ -503,6 +503,7 @@
 .promotionDescription {
   color: #6b7280;
   font-size: 14px;
+  font-weight: 600;
   margin-bottom: 16px;
   line-height: 1.5;
 }
@@ -518,7 +519,7 @@
 
 .discountValue {
   font-size: 28px;
-  font-weight: 800;
+  font-weight: 900;
   color: #7c3aed;
   margin-bottom: 4px;
   letter-spacing: -0.02em;
@@ -527,7 +528,7 @@
 .discountScope {
   font-size: 13px;
   color: #6b7280;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .datesContainer {
@@ -555,7 +556,7 @@
 
 .dateValue {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   color: #1a1a1a;
 }
 
@@ -571,7 +572,7 @@
 
 .conditionsTitle {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   color: #92400e;
   margin-bottom: 4px;
 }
@@ -597,7 +598,7 @@
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   transition: all 0.2s ease;
 }
 
@@ -622,13 +623,13 @@
 }
 
 .actionButtonToggleActive {
-  background: #d1fae5;
-  color: #065f46;
-  border-color: #10b981;
+  background: #1a1a1a;
+  color: #ffffff;
+  border-color: #1a1a1a;
 }
 
 .actionButtonToggleActive:hover {
-  background: #a7f3d0;
+  background: #000000;
 }
 
 .actionButtonStats {

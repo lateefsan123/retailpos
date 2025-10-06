@@ -9,7 +9,6 @@ import {
   FileText,
   Users,
   Truck,
-  Calendar,
   Tag,
   Briefcase,
   Bell,
@@ -43,7 +42,6 @@ const NAV_SECTIONS: Record<NavSectionKey, { title: string; items: NavItemConfig[
     title: 'Management & Tools',
     items: [
       { path: '/suppliers', label: 'Suppliers', icon: Truck },
-      { path: '/supplier-calendar', label: 'Supplier Visits', icon: Calendar },
       { path: '/promotions', label: 'Promotions', icon: Tag },
       { path: '/side-businesses', label: 'Side Businesses', icon: Briefcase },
       { path: '/reminders', label: 'Reminders', icon: Bell },

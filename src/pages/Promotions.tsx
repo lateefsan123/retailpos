@@ -196,11 +196,11 @@ const Promotions: React.FC = () => {
               <i className="fas fa-tags" style={{ marginRight: '16px', color: '#7c3aed' }} />
               Promotions & Discounts
             </h1>
-            <p style={{ 
+            <p style={{
               fontSize: '18px', 
-              color: '#6b7280', 
+              color: '#1a1a1a', 
               margin: 0,
-              fontWeight: '400'
+              fontWeight: '600'
             }}>
               Manage your promotional campaigns and discount offers
             </p>
@@ -478,9 +478,9 @@ const Promotions: React.FC = () => {
             All Promotions
             <span style={{
               fontSize: '14px',
-              fontWeight: '500',
-              color: '#6b7280',
-              background: '#f3f4f6',
+              fontWeight: '600',
+              color: '#ffffff',
+              background: '#1a1a1a',
               padding: '4px 8px',
               borderRadius: '12px',
               marginLeft: '8px'
@@ -567,7 +567,7 @@ const Promotions: React.FC = () => {
                   borderRadius: '16px',
                   padding: '24px',
                   boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-                  border: `2px solid ${isActive ? '#10b981' : isExpired ? '#dc2626' : '#d1d5db'}`,
+                  border: `2px solid ${isActive ? '#1a1a1a' : isExpired ? '#dc2626' : '#d1d5db'}`,
                   transition: 'all 0.3s ease',
                   position: 'relative',
                   overflow: 'hidden'
@@ -588,9 +588,9 @@ const Promotions: React.FC = () => {
                     borderRadius: '999px',
                     fontSize: '12px',
                     fontWeight: '600',
-                    background: isActive ? '#d1fae5' : isExpired ? '#fee2e2' : isUpcoming ? '#dbeafe' : '#f3f4f6',
-                    color: isActive ? '#065f46' : isExpired ? '#991b1b' : isUpcoming ? '#1e40af' : '#1a1a1a',
-                    border: `1px solid ${isActive ? '#10b981' : isExpired ? '#dc2626' : isUpcoming ? '#3b82f6' : '#d1d5db'}`
+                    background: isActive ? '#1a1a1a' : isExpired ? '#fee2e2' : isUpcoming ? '#dbeafe' : '#f3f4f6',
+                    color: isActive ? '#ffffff' : isExpired ? '#991b1b' : isUpcoming ? '#1e40af' : '#1a1a1a',
+                    border: `1px solid ${isActive ? '#1a1a1a' : isExpired ? '#dc2626' : isUpcoming ? '#3b82f6' : '#d1d5db'}`
                   }}>
                     {isActive ? '🟢 Active' : isExpired ? '⚫ Expired' : isUpcoming ? '🔵 Upcoming' : '⚪ Inactive'}
                   </span>
