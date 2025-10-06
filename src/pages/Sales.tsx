@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
@@ -14,6 +14,7 @@ import { RetroButton } from '../components/ui/RetroButton'
 import BranchSelector from '../components/BranchSelector'
 import Calculator from '../components/Calculator'
 import CustomerAutocomplete from '../components/CustomerAutocomplete'
+import styles from '../components/sales/SalesSummaryModal.module.css'
 
 // Helper function to get local time in database format
 const getLocalDateTime = () => {
@@ -213,7 +214,7 @@ const Sales = () => {
   const { selectedBranchId } = useBranch()
   const { currentBusiness } = useBusiness()
   const { isCollapsed } = useNav()
-  const { calculatePromotions } = usePromotions(businessId || null, selectedBranchId || null)
+  const { calculatePromotions, activePromotions } = usePromotions(businessId || null, selectedBranchId || null)
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [products, setProducts] = useState<Product[]>([])
@@ -235,7 +236,9 @@ const Sales = () => {
     discount: 0,
     total: 0
   })
-  const [promotionsEnabled, setPromotionsEnabled] = useState(true)
+  const [promotionsEnabled, setPromotionsEnabled] = useState(false)
+  const [hasUserToggledPromotions, setHasUserToggledPromotions] = useState(false)
+  const [selectedPromotionId, setSelectedPromotionId] = useState<number | null>(null)
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
@@ -313,6 +316,73 @@ const Sales = () => {
     }
   }, [searchParams, businessId, businessLoading])
 
+  // Filter products function
+  const filterProducts = useCallback(() => {
+    // Check if selected category is a side business category
+    const isSideBusinessCategory = selectedCategory !== 'All' && 
+      sideBusinessItems.some(item => item.side_businesses?.name === selectedCategory)
+    
+    // Debug logging
+    console.log('=== FILTERING DEBUG ===')
+    console.log('Selected category:', selectedCategory)
+    console.log('Is side business category:', isSideBusinessCategory)
+    console.log('Side business items:', sideBusinessItems.map(item => ({ name: item.name, business: item.side_businesses?.name })))
+    console.log('Top products:', topProducts.map(p => ({ name: p.name, category: p.category })))
+    
+    // Filter the cached top products client-side
+    let filteredProducts = topProducts
+
+    if (selectedCategory !== 'All') {
+      if (isSideBusinessCategory) {
+        // If it's a side business category, show no regular products
+        filteredProducts = []
+      } else {
+        // If it's a regular product category, filter by category
+        filteredProducts = filteredProducts.filter(p => p.category === selectedCategory)
+      }
+    }
+
+    if (searchTerm) {
+      const searchTermLower = searchTerm.toLowerCase().trim()
+      filteredProducts = filteredProducts.filter(p => 
+        p.name.toLowerCase().includes(searchTermLower) ||
+        p.category?.toLowerCase().includes(searchTermLower) ||
+        p.description?.toLowerCase().includes(searchTermLower) ||
+        p.sku?.toLowerCase().includes(searchTermLower)
+      )
+    }
+
+    setFilteredProducts(filteredProducts)
+
+    // Filter side business items (client-side since there are typically fewer)
+    let filteredSideBusiness = sideBusinessItems
+
+    if (selectedCategory !== 'All') {
+      if (isSideBusinessCategory) {
+        // If it's a side business category, show only items from that side business
+        filteredSideBusiness = filteredSideBusiness.filter(item => 
+          item.side_businesses?.name === selectedCategory
+        )
+      } else {
+        // If it's a regular product category, show no side business items
+        filteredSideBusiness = []
+      }
+    }
+
+    if (searchTerm) {
+      filteredSideBusiness = filteredSideBusiness.filter(item => 
+        item.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    }
+
+    setFilteredSideBusinessItems(filteredSideBusiness)
+    
+    // Debug logging
+    console.log('Filtered products count:', filteredProducts.length)
+    console.log('Filtered side business items count:', filteredSideBusiness.length)
+    console.log('=== END FILTERING DEBUG ===')
+  }, [selectedCategory, searchTerm, sideBusinessItems, topProducts])
+
   // Separate effect for filtering products when category or search changes
   useEffect(() => {
     if (businessId && !businessLoading && topProducts.length > 0) {
@@ -322,7 +392,7 @@ const Sales = () => {
       // Only fetch from server if we don't have products cached
       fetchProducts(selectedCategory, searchTerm)
     }
-  }, [selectedCategory, searchTerm])
+  }, [filterProducts, businessId, businessLoading, topProducts.length, selectedCategory, searchTerm])
 
   // Note: TTS will only be triggered manually by the cashier when they want to announce the order
   // This ensures TTS is only used when the cashier has finished adding items
@@ -362,6 +432,11 @@ const Sales = () => {
   useEffect(() => {
     calculateOrderTotal()
   }, [order.items])
+
+  // Recalculate totals when promotions state changes or active promos update
+  useEffect(() => {
+    calculateOrderTotal()
+  }, [promotionsEnabled, selectedPromotionId])
 
   // Save cart to localStorage whenever order changes
   useEffect(() => {
@@ -758,43 +833,6 @@ const Sales = () => {
     setShowSuggestions(allSuggestions.length > 0)
   }
 
-  const filterProducts = () => {
-    // Filter the cached top products client-side
-    let filteredProducts = topProducts
-
-    if (selectedCategory !== 'All') {
-      filteredProducts = filteredProducts.filter(p => p.category === selectedCategory)
-    }
-
-    if (searchTerm) {
-      const searchTermLower = searchTerm.toLowerCase().trim()
-      filteredProducts = filteredProducts.filter(p => 
-        p.name.toLowerCase().includes(searchTermLower) ||
-        p.category?.toLowerCase().includes(searchTermLower) ||
-        p.description?.toLowerCase().includes(searchTermLower) ||
-        p.sku?.toLowerCase().includes(searchTermLower)
-      )
-    }
-
-    setFilteredProducts(filteredProducts)
-
-    // Filter side business items (client-side since there are typically fewer)
-    let filteredSideBusiness = sideBusinessItems
-
-    if (selectedCategory !== 'All') {
-      filteredSideBusiness = filteredSideBusiness.filter(item => 
-        item.side_businesses?.name === selectedCategory
-      )
-    }
-
-    if (searchTerm) {
-      filteredSideBusiness = filteredSideBusiness.filter(item => 
-        item.name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    }
-
-    setFilteredSideBusinessItems(filteredSideBusiness)
-  }
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value)
@@ -804,7 +842,6 @@ const Sales = () => {
       // Small delay to ensure it's a complete barcode scan, not typing
       setTimeout(() => {
         if (searchTerm === value && value.trim() && /^\d{8,20}$/.test(value.trim())) {
-          console.log('🔍 Auto-detected barcode in search:', value.trim())
           handleBarcodeScanned(value.trim())
           setSearchTerm('')
           return
@@ -850,9 +887,9 @@ const Sales = () => {
     
     const tax = 0 // No tax
     
-    // Calculate promotion discounts (only if promotions are enabled)
+    // Calculate promotion discounts (only if promotions are enabled or there are active promos)
     let totalDiscount = 0
-    if (promotionsEnabled && calculatePromotions && order.items.length > 0) {
+    if (calculatePromotions && order.items.length > 0) {
       // Convert order items to the format expected by calculatePromotions
       const itemsForPromotion = order.items
         .filter(item => item.product) // Only include products, not side business items
@@ -866,7 +903,23 @@ const Sales = () => {
       
       if (itemsForPromotion.length > 0) {
         const applicablePromotions = calculatePromotions(itemsForPromotion, subtotal)
-        totalDiscount = applicablePromotions.reduce((sum, promo) => sum + promo.discount, 0)
+        const hasActivePromotions = applicablePromotions && applicablePromotions.length > 0
+        // Enable promos automatically only if there is at least one active promo and the user hasn't toggled manually
+        if (hasActivePromotions && !hasUserToggledPromotions && !promotionsEnabled) {
+          setPromotionsEnabled(true)
+        }
+        if (promotionsEnabled && hasActivePromotions) {
+          // If user selected a specific promotion, apply only that one
+          if (selectedPromotionId) {
+            const chosen = applicablePromotions.find(p => p.promotion.promotion_id === selectedPromotionId)
+            if (chosen) {
+              totalDiscount = chosen.discount
+            }
+          } else {
+            // Otherwise apply the best discount by default
+            totalDiscount = applicablePromotions.reduce((max, p) => Math.max(max, p.discount), 0)
+          }
+        }
       }
     }
     
@@ -1171,9 +1224,7 @@ const Sales = () => {
   })
 
   const handleBarcodeScanned = async (barcode: string) => {
-    console.log('🔍 Barcode scanned:', barcode)
     let product = findProductByBarcode(barcode)
-    console.log('🔍 Local product found:', product)
 
     if (!product) {
       if (businessId == null) {
@@ -1186,7 +1237,6 @@ const Sales = () => {
       }
 
       const normalizedBarcode = normalizeBarcodeValue(barcode)
-      console.log('🔍 Searching database for barcode:', normalizedBarcode, 'business_id:', businessId)
       const { data: remoteProducts, error: remoteError } = await supabase
         .from('products')
         .select('*')
@@ -1194,7 +1244,6 @@ const Sales = () => {
         .ilike('barcode', normalizedBarcode)
         .limit(1)
       
-      console.log('🔍 Database query result:', remoteProducts, 'error:', remoteError)
 
       if (remoteError) {
         console.error('Barcode lookup failed:', remoteError)
@@ -1227,7 +1276,6 @@ const Sales = () => {
     }
 
     if (product) {
-      console.log('✅ Adding product to order:', product.name)
       addToOrder(product)
       setBarcodeStatus('scanned')
       setLastScannedBarcode(barcode)
@@ -1236,7 +1284,6 @@ const Sales = () => {
         setBarcodeStatus('idle')
       }, 2000)
     } else {
-      console.log('❌ Product not found for barcode:', barcode)
       setBarcodeStatus('not_found')
       setLastScannedBarcode(barcode)
 
@@ -1289,7 +1336,6 @@ const Sales = () => {
         
         // Check if this looks like a barcode (8-20 characters, mostly alphanumeric)
         if (value.length >= 8 && value.length <= 20 && /^[A-Za-z0-9]+$/.test(value)) {
-          console.log('🔍 Global barcode fallback detected:', value)
           handleBarcodeScanned(value)
           input.value = ''
         }
@@ -1969,7 +2015,6 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
         console.error('Error creating partial payment reminder:', error)
         console.error('Reminder data attempted:', reminderData)
       } else {
-        console.log('Partial payment reminder created successfully')
       }
     } catch (error) {
       console.error('Error creating partial payment reminder:', error)
@@ -2017,12 +2062,12 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        borderRight: '4px solid #9ca3af'
+        borderRight: '3px solid #9ca3af'
       }}>
         {/* Header */}
         <div style={{ 
           padding: '24px 32px', 
-          borderBottom: '1px solid #e5e7eb',
+          borderBottom: 'none',
           background: isAddingToTransaction ? '#fef3c7' : '#f9fafb'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -2069,9 +2114,9 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
 
         {/* Search Bar */}
         <div style={{ 
-          padding: '24px 32px',
+          padding: '12px 32px 24px',
           borderBottom: '1px solid #e5e7eb',
-          background: '#f5f5f5'
+          background: isAddingToTransaction ? '#fef3c7' : '#f9fafb'
         }}>
           <div style={{ 
             display: 'flex', 
@@ -2123,7 +2168,6 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                       
                       // Check if it looks like a barcode (8-20 digits)
                       if (value && /^\d{8,20}$/.test(value)) {
-                        console.log('🔍 Barcode detected in search:', value)
                         handleBarcodeScanned(value)
                         setSearchTerm('')
                         return
@@ -2350,26 +2394,26 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   overflow: 'hidden',
                   minWidth: '120px',
                   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                  background: '#6b7280',
+                  background: '#000000',
                   color: 'white'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#4b5563';
+                  e.currentTarget.style.background = '#333333';
                   e.currentTarget.style.transform = 'translateY(-2px)';
                   e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.2)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#6b7280';
+                  e.currentTarget.style.background = '#000000';
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
                 }}
                 onMouseDown={(e) => {
-                  e.currentTarget.style.background = '#374151';
+                  e.currentTarget.style.background = '#1a1a1a';
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.15)';
                 }}
                 onMouseUp={(e) => {
-                  e.currentTarget.style.background = '#4b5563';
+                  e.currentTarget.style.background = '#333333';
                   e.currentTarget.style.transform = 'translateY(-2px)';
                   e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.2)';
                 }}
@@ -2402,7 +2446,6 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               onInput={(e) => {
                 const value = (e.target as HTMLInputElement).value
                 if (value && value.length >= 8 && value.length <= 20) {
-                  console.log('🔍 Hidden input barcode detected:', value)
                   handleBarcodeScanned(value)
                   ;(e.target as HTMLInputElement).value = ''
                 }
@@ -2447,7 +2490,6 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                     if (e.key === 'Enter') {
                       const value = (e.target as HTMLInputElement).value.trim()
                       if (value && value.length >= 8 && value.length <= 20) {
-                        console.log('🔍 Manual barcode input:', value)
                         handleBarcodeScanned(value)
                         ;(e.target as HTMLInputElement).value = ''
                       }
@@ -3247,14 +3289,14 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <i className="fa-solid fa-tags" style={{ 
                 fontSize: '16px', 
-                color: promotionsEnabled ? '#10b981' : '#6b7280' 
+                color: promotionsEnabled ? '#10b981' : (activePromotions && activePromotions.length > 0 ? '#10b981' : '#6b7280') 
               }}></i>
               <span style={{ 
                 fontSize: '14px', 
                 fontWeight: '500',
                 color: '#1f2937'
               }}>
-                Promotions
+                Promotions {activePromotions && activePromotions.length > 0 ? `(Active: ${activePromotions.length})` : ''}
               </span>
             </div>
             <label style={{
@@ -3266,7 +3308,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               <input
                 type="checkbox"
                 checked={promotionsEnabled}
-                onChange={(e) => setPromotionsEnabled(e.target.checked)}
+                onChange={(e) => { setPromotionsEnabled(e.target.checked); setHasUserToggledPromotions(true) }}
                 style={{
                   width: '18px',
                   height: '18px',
@@ -3279,9 +3321,33 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 color: '#6b7280',
                 fontWeight: '500'
               }}>
-                {promotionsEnabled ? 'Enabled' : 'Disabled'}
+                {promotionsEnabled ? 'Enabled' : (activePromotions && activePromotions.length > 0 ? 'Available' : 'Disabled')}
               </span>
             </label>
+            {promotionsEnabled && activePromotions && activePromotions.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '13px', color: '#6b7280' }}>Choose:</span>
+                <select
+                  value={selectedPromotionId ?? ''}
+                  onChange={(e) => setSelectedPromotionId(e.target.value ? Number(e.target.value) : null)}
+                  style={{
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    padding: '6px 8px',
+                    background: '#ffffff',
+                    color: '#111827',
+                    fontSize: '13px'
+                  }}
+                >
+                  <option value="">Best discount</option>
+                  {activePromotions.map(promo => (
+                    <option key={promo.promotion_id} value={promo.promotion_id}>
+                      {promo.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         )}
 
@@ -3406,23 +3472,20 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 
                 if (isTtsPlaying || ttsService.isPlaying()) {
                   // Stop TTS
-                  console.log('Stopping TTS...')
                   ttsService.stop()
                   setIsTtsPlaying(false)
                   return
                 }
                 
-                console.log('Announce Order clicked!')
-                console.log('Order items:', order.items)
                 
                 // Set playing state
                 setIsTtsPlaying(true)
                 
                 // Temporarily enable TTS
-                ttsService.updateSettings({ enabled: true })
+                ttsService.refreshSettings()
+                ttsService.updateSettings({ enabled: true, useOpenAI: true, useElevenLabs: false, openaiVoice: 'onyx' })
                 setTtsSettings(ttsService.getSettings())
                 
-                console.log('TTS Settings after enabling:', ttsService.getSettings())
                 
                 try {
                   await speakOrderItems(order.items)
@@ -3457,34 +3520,34 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 position: 'relative',
                 overflow: 'hidden',
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                background: order.items.length === 0 ? '#9ca3af' : '#4a5568',
+                background: order.items.length === 0 ? '#9ca3af' : '#000000',
                 color: 'white',
                 opacity: order.items.length === 0 ? 0.6 : 1
               }}
               onMouseEnter={(e) => {
                 if (order.items.length > 0) {
-                  e.currentTarget.style.background = '#2d3748'
+                  e.currentTarget.style.background = '#333333'
                   e.currentTarget.style.transform = 'translateY(-2px)'
                   e.currentTarget.style.boxShadow = '0 8px 25px rgba(31, 41, 55, 0.2)'
                 }
               }}
               onMouseLeave={(e) => {
                 if (order.items.length > 0) {
-                  e.currentTarget.style.background = '#4a5568'
+                  e.currentTarget.style.background = '#000000'
                   e.currentTarget.style.transform = 'translateY(0)'
                   e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)'
                 }
               }}
               onMouseDown={(e) => {
                 if (order.items.length > 0) {
-                  e.currentTarget.style.background = '#1a202c'
+                  e.currentTarget.style.background = '#1a1a1a'
                   e.currentTarget.style.transform = 'translateY(0)'
                   e.currentTarget.style.boxShadow = '0 4px 15px rgba(31, 41, 55, 0.15)'
                 }
               }}
               onMouseUp={(e) => {
                 if (order.items.length > 0) {
-                  e.currentTarget.style.background = '#2d3748'
+                  e.currentTarget.style.background = '#333333'
                   e.currentTarget.style.transform = 'translateY(-2px)'
                   e.currentTarget.style.boxShadow = '0 8px 25px rgba(31, 41, 55, 0.2)'
                 }
@@ -3557,28 +3620,8 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
 
       {/* Sales Summary Modal */}
       {showSalesSummary && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            background: '#ffffff',
-            borderRadius: '16px',
-            padding: '20px',
-            width: '95%',
-            maxWidth: '700px',
-            maxHeight: '95vh',
-            overflowY: 'auto',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
-          }}>
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
             {/* Header */}
             <div style={{ 
               display: 'flex', 
@@ -3614,70 +3657,39 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
 
 
             {/* Customer Info */}
-            <div style={{ marginBottom: '16px' }}>
-              <h3 style={{ 
-                fontSize: '18px', 
-                fontWeight: '600', 
-                color: '#1f2937',
-                margin: '0 0 12px 0'
-              }}>
-                Customer Information
-              </h3>
-            </div>
-
-            {/* Customer Name */}
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '8px'
-              }}>
-                Customer Name (Optional)
-              </label>
-              <CustomerAutocomplete
-                value={customerName}
-                onChange={setCustomerName}
-                onSelectCustomer={(customer) => {
-                  setSelectedCustomer(customer)
-                  if (customer) {
-                    setCustomerPhone(customer.phone_number)
-                  }
-                }}
-                placeholder="Enter customer name (optional)"
-                style={{
-                  fontSize: '16px'
-                }}
-              />
-            </div>
-
-            {/* Customer Phone */}
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '8px'
-              }}>
-                Phone Number (Optional)
-              </label>
-              <input
-                type="tel"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                placeholder="Enter phone number (optional)"
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '1px solid #6b7280',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  outline: 'none',
-                  marginBottom: '16px'
-                }}
-              />
+            <div className={styles.section}>
+              <h3 className={styles.sectionTitle}>Customer Information</h3>
+              <div className={styles.customerInfoGrid}>
+                <div className={styles.inputGroup}>
+                  <label className={styles.inputLabel}>Customer Name (Optional)</label>
+                  <CustomerAutocomplete
+                    value={customerName}
+                    onChange={setCustomerName}
+                    onSelectCustomer={(customer) => {
+                      setSelectedCustomer(customer)
+                      if (customer) {
+                        setCustomerPhone(customer.phone_number)
+                      }
+                    }}
+                    placeholder="Enter customer name and surname"
+                    style={{
+                      fontSize: '16px',
+                      width: '100%'
+                    }}
+                  />
+                </div>
+                
+                <div className={styles.inputGroup}>
+                  <label className={styles.inputLabel}>Phone Number (Optional)</label>
+                  <input
+                    type="tel"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="Enter phone number"
+                    className={styles.input}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Payment Method */}
@@ -3985,23 +3997,9 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 value={receiptNotes}
                 onChange={(e) => setReceiptNotes(e.target.value)}
                 placeholder="Add notes for receipt (e.g., partial payment, special instructions, etc.)"
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  outline: 'none',
-                  resize: 'vertical',
-                  minHeight: '60px',
-                  fontFamily: 'inherit'
-                }}
+                className={styles.textarea}
               />
-              <p style={{ 
-                fontSize: '12px', 
-                color: '#6b7280', 
-                margin: '8px 0 0 0' 
-              }}>
+              <p className={styles.helpText}>
                 These notes will appear on the printed receipt
               </p>
             </div>

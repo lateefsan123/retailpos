@@ -1,0 +1,364 @@
+/* Sales Summary Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #f8f9fa;
+  border-radius: 16px;
+  padding: 24px;
+  width: 95%;
+  max-width: 750px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e5e7eb;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #374151;
+  background: #ffffff;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.headerTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.section {
+  margin-bottom: 24px;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 16px 0;
+}
+
+.customerInfoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.inputLabel {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #374151;
+  border-radius: 8px;
+  font-size: 16px;
+  outline: none;
+  background-color: #ffffff;
+  transition: border-color 0.2s ease;
+  max-width: 250px;
+}
+
+.input:focus {
+  border-color: #7d8d86;
+}
+
+.textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #374151;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  resize: vertical;
+  min-height: 60px;
+  font-family: inherit;
+  background-color: #ffffff;
+  max-width: 300px;
+  transition: border-color 0.2s ease;
+}
+
+.textarea:focus {
+  border-color: #7d8d86;
+}
+
+.paymentMethodGrid {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.paymentButton {
+  flex: 1;
+  background: #374151;
+  color: #ffffff;
+  border: 2px solid #374151;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-transform: capitalize;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.paymentButton.active {
+  background: #111827;
+  color: white;
+  border-color: #111827;
+}
+
+.paymentButton:hover {
+  background: #1f2937;
+}
+
+.paymentButton.active:hover {
+  background: #000000;
+}
+
+.paymentOptionsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 16px;
+}
+
+.partialPaymentButton {
+  background: #374151;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+.partialPaymentButton:hover {
+  background: #1f2937;
+}
+
+.partialPaymentButton.danger {
+  background: #dc2626;
+}
+
+.partialPaymentButton.danger:hover {
+  background: #b91c1c;
+}
+
+.amountReceivedRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.amountInput {
+  max-width: 150px;
+  padding: 12px 16px;
+  border: 2px solid #374151;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  outline: none;
+  background-color: #ffffff;
+  text-align: center;
+}
+
+.amountInput:focus {
+  border-color: #7d8d86;
+}
+
+.exactAmountButton {
+  background: #374151;
+  color: #ffffff;
+  border: 2px solid #374151;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.exactAmountButton:hover {
+  background: #1f2937;
+}
+
+.paymentSummary {
+  background: #ffffff;
+  border: 2px solid #374151;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.summaryRow:last-child {
+  margin-bottom: 0;
+  font-weight: 700;
+  font-size: 18px;
+  color: #1f2937;
+  padding-top: 12px;
+  border-top: 2px solid #e5e7eb;
+}
+
+.summaryLabel {
+  font-size: 16px;
+  color: #6b7280;
+}
+
+.summaryValue {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.actionButton {
+  padding: 12px 20px;
+  border: 2px solid #374151;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #374151;
+  color: white;
+  min-width: fit-content;
+}
+
+.actionButton:hover {
+  background: #1f2937;
+}
+
+.actionButton.primary {
+  background: #111827;
+  color: white;
+  border-color: #111827;
+}
+
+.actionButton.primary:hover {
+  background: #000000;
+}
+
+.actionButton.secondary {
+  background: #374151;
+  color: white;
+  border-color: #374151;
+}
+
+.actionButton.secondary:hover {
+  background: #1f2937;
+}
+
+.helpText {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.partialPaymentInfo {
+  background: #fef3c7;
+  border: 2px solid #f59e0b;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.partialPaymentInfoHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.partialPaymentInfoTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.partialPaymentInfoText {
+  font-size: 14px;
+  color: #92400e;
+}

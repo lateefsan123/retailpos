@@ -851,7 +851,7 @@
 }
 
 .modalButtonSecondary:hover {
-  background: #bca88d;
+  background: #374151;
 }
 
 /* Stats Modal */
@@ -918,7 +918,7 @@
 }
 
 .statsCloseButton:hover {
-  background: #bca88d;
+  background: #374151;
 }
 
 /* Access Denied */

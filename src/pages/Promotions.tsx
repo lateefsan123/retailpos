@@ -1189,7 +1189,7 @@ const Promotions: React.FC = () => {
                     transition: 'all 0.2s ease'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#bca88d'
+                    e.currentTarget.style.background = '#374151'
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = '#7d8d86'
@@ -1310,7 +1310,7 @@ const Promotions: React.FC = () => {
                 transition: 'all 0.2s ease'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#bca88d'
+                e.currentTarget.style.background = '#374151'
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = '#7d8d86'

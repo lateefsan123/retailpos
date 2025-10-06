@@ -21,6 +21,10 @@
   margin-bottom: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
 }
 
 .header:hover {
@@ -31,11 +35,13 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 20px;
+  flex: 1;
 }
 
 .branchSelectorContainer {
   margin-top: 8px;
+  max-width: 180px;
+  flex-shrink: 0;
 }
 
 .headerTitle {
@@ -49,13 +55,13 @@
 }
 
 .headerTitleIcon {
-  color: #3b82f6;
+  color: #1a1a1a;
   font-size: 24px;
 }
 
 .headerSubtitle {
   font-size: 16px;
-  color: #6b7280;
+  color: #2d2d2d;
   margin: 0;
   font-weight: 500;
 }
@@ -65,12 +71,13 @@
   align-items: center;
   gap: 16px;
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 .addButton {
-  background: #3b82f6;
-  color: #ffffff;
-  border: 2px solid #3b82f6;
+  background: #1a1a1a !important;
+  color: #ffffff !important;
+  border: 2px solid #1a1a1a !important;
   border-radius: 8px;
   padding: 12px 20px;
   font-size: 15px;
@@ -84,8 +91,9 @@
 }
 
 .addButton:hover {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: #000000 !important;
+  border-color: #000000 !important;
+  color: #ffffff !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -130,12 +138,12 @@
 }
 
 .searchInput::placeholder {
-  color: #9ca3af;
+  color: #2d2d2d;
 }
 
 .searchInput:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #1a1a1a;
+  box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
 }
 
 /* Error Message */
@@ -178,7 +186,7 @@
   width: 40px;
   height: 40px;
   border: 4px solid #f3f4f6;
-  border-top: 4px solid #3b82f6;
+  border-top: 4px solid #1a1a1a;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 16px;
@@ -187,7 +195,7 @@
 .loadingText {
   font-size: 16px;
   font-weight: 500;
-  color: #6b7280;
+  color: #2d2d2d;
   margin: 0;
 }
 
@@ -196,7 +204,7 @@
   align-items: center;
   justify-content: center;
   padding: 40px;
-  color: #6b7280;
+  color: #2d2d2d;
   font-weight: 500;
   gap: 12px;
 }
@@ -205,7 +213,7 @@
   width: 20px;
   height: 20px;
   border: 2px solid #f3f4f6;
-  border-top: 2px solid #3b82f6;
+  border-top: 2px solid #1a1a1a;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -214,7 +222,7 @@
 .emptyState {
   text-align: center;
   padding: 60px 20px;
-  color: #6b7280;
+  color: #2d2d2d;
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
@@ -223,7 +231,7 @@
 
 .emptyIcon {
   font-size: 48px;
-  color: #9ca3af;
+  color: #2d2d2d;
   margin-bottom: 16px;
 }
 
@@ -236,7 +244,7 @@
 
 .emptyText {
   font-size: 16px;
-  color: #6b7280;
+  color: #2d2d2d;
   margin: 0;
   font-weight: 500;
 }
@@ -265,7 +273,7 @@
   text-align: left;
   font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  color: #1a1a1a;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 1px solid #e5e7eb;
@@ -354,7 +362,7 @@
 }
 
 .contactIcon {
-  color: #6b7280;
+  color: #2d2d2d;
   font-size: 12px;
   width: 16px;
 }
@@ -367,7 +375,7 @@
 }
 
 .contactLink:hover {
-  color: #3b82f6;
+  color: #1a1a1a;
 }
 
 /* Points and Credit */
@@ -389,7 +397,7 @@
 
 .pointsLabel {
   font-size: 12px;
-  color: #6b7280;
+  color: #2d2d2d;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -397,14 +405,14 @@
 }
 
 .pointsValueZero {
-  color: #9ca3af !important;
+  color: #2d2d2d !important;
   font-weight: 500 !important;
   font-size: 18px !important;
 }
 
 .pointsMotivation {
   font-size: 11px;
-  color: #6b7280;
+  color: #2d2d2d;
   font-style: italic;
   margin-top: 4px;
   text-align: center;
@@ -428,7 +436,7 @@
 
 .transactionCount {
   font-size: 12px;
-  color: #6b7280;
+  color: #2d2d2d;
   font-weight: 500;
 }
 
@@ -437,7 +445,7 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  color: #9ca3af;
+  color: #2d2d2d;
   font-size: 12px;
   font-style: italic;
 }
@@ -462,7 +470,7 @@
 
 .averageSpent {
   font-size: 11px;
-  color: #6b7280;
+  color: #2d2d2d;
   font-weight: 500;
 }
 
@@ -488,15 +496,15 @@
 }
 
 .actionButtonEdit {
-  background: #eff6ff;
-  border-color: #dbeafe;
-  color: #2563eb;
+  background: #f8f9fa;
+  border-color: #e5e7eb;
+  color: #1a1a1a;
 }
 
 .actionButtonEdit:hover {
-  background: #dbeafe;
-  border-color: #93c5fd;
-  color: #1d4ed8;
+  background: #e5e7eb;
+  border-color: #d1d5db;
+  color: #000000;
 }
 
 .actionButtonDelete {
@@ -524,7 +532,7 @@
   padding: 8px 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: #6b7280;
+  color: #2d2d2d;
   font-size: 14px;
 }
 
@@ -627,7 +635,7 @@
   border: none;
   font-size: 24px;
   cursor: pointer;
-  color: #6b7280;
+  color: #2d2d2d;
   padding: 4px;
 }
 
@@ -710,10 +718,10 @@
 
 .submitButton {
   padding: 12px 24px;
-  border: 2px solid #1a1a1a;
+  border: 2px solid #1a1a1a !important;
   border-radius: 8px;
-  background: #1a1a1a;
-  color: #ffffff;
+  background: #1a1a1a !important;
+  color: #ffffff !important;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -721,6 +729,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.submitButton:hover {
+  background: #000000 !important;
+  border-color: #000000 !important;
+  color: #ffffff !important;
 }
 
 /* Points Modal Styles */
@@ -773,7 +787,7 @@
 
 .statusLabel {
   font-size: 14px;
-  color: #6b7280;
+  color: #2d2d2d;
   font-weight: 600;
 }
 
@@ -830,13 +844,15 @@
 }
 
 .sectionButtonAdd {
-  background: #10b981;
-  color: #ffffff;
+  background: #1a1a1a !important;
+  color: #ffffff !important;
+  border: 1px solid #1a1a1a !important;
 }
 
 .sectionButtonRedeem {
-  background: #dc2626;
-  color: #ffffff;
+  background: #1a1a1a !important;
+  color: #ffffff !important;
+  border: 1px solid #1a1a1a !important;
 }
 
 .sectionButton:disabled {
@@ -853,7 +869,7 @@
 
 .tabButton {
   background: #f8f9fa;
-  color: #6b7280;
+  color: #2d2d2d;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 8px 16px;
@@ -872,14 +888,15 @@
 }
 
 .tabButtonActive {
-  background: #3b82f6;
+  background: #1a1a1a;
   color: #ffffff;
-  border-color: #3b82f6;
+  border-color: #1a1a1a;
 }
 
 .tabButtonActive:hover {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: #000000;
+  border-color: #000000;
+  color: #ffffff;
 }
 
 /* Loyalty Prizes Styles */
@@ -957,7 +974,7 @@
 }
 
 .statusActive {
-  background: #10b981;
+  background: #1a1a1a;
   color: #ffffff;
 }
 
@@ -980,7 +997,7 @@
 }
 
 .prizeDetailLabel {
-  color: #9ca3af;
+  color: #2d2d2d;
   font-size: 14px;
   font-weight: 500;
 }
@@ -1015,16 +1032,18 @@
 .prizeActionButton:hover {
   background: #4b5563;
   border-color: #6b7280;
+  color: #ffffff;
 }
 
 .prizeActionButtonDanger {
-  background: #dc2626;
-  border-color: #ef4444;
+  background: #1a1a1a;
+  border-color: #1a1a1a;
 }
 
 .prizeActionButtonDanger:hover {
-  background: #ef4444;
-  border-color: #f87171;
+  background: #000000;
+  border-color: #000000;
+  color: #ffffff;
 }
 
 /* Available Prizes in Points Modal */
@@ -1083,9 +1102,9 @@
 }
 
 .redeemButton {
-  background: #10b981;
-  color: #ffffff;
-  border: 1px solid #10b981;
+  background: #1a1a1a !important;
+  color: #ffffff !important;
+  border: 1px solid #1a1a1a !important;
   border-radius: 6px;
   padding: 8px 16px;
   font-size: 14px;
@@ -1096,13 +1115,15 @@
 }
 
 .redeemButton:hover:not(:disabled) {
-  background: #059669;
-  border-color: #059669;
+  background: #000000 !important;
+  border-color: #000000 !important;
+  color: #ffffff !important;
 }
 
 .redeemButton:disabled {
-  background: #9ca3af;
-  border-color: #9ca3af;
+  background: #2d2d2d !important;
+  border-color: #2d2d2d !important;
+  color: #ffffff !important;
   cursor: not-allowed;
 }
 
@@ -1112,13 +1133,13 @@
   align-items: center;
   gap: 8px;
   padding: 24px;
-  color: #6b7280;
+  color: #2d2d2d;
   font-style: italic;
 }
 
 .noAvailablePrizes i {
   font-size: 24px;
-  color: #9ca3af;
+  color: #2d2d2d;
 }
 
 /* Transaction History Styles */
@@ -1128,7 +1149,7 @@
   justify-content: center;
   gap: 12px;
   padding: 20px;
-  color: #6b7280;
+  color: #2d2d2d;
   font-weight: 500;
 }
 
@@ -1138,13 +1159,13 @@
   align-items: center;
   gap: 8px;
   padding: 24px;
-  color: #6b7280;
+  color: #2d2d2d;
   font-style: italic;
 }
 
 .noTransactionsFound i {
   font-size: 24px;
-  color: #9ca3af;
+  color: #2d2d2d;
 }
 
 .transactionHistory {
@@ -1216,7 +1237,7 @@
 .itemQuantity {
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
+  color: #2d2d2d;
   background: #f3f4f6;
   padding: 2px 8px;
   border-radius: 4px;
@@ -1250,7 +1271,7 @@
 
 .formCheckboxText {
   font-size: 14px;
-  color: #374151;
+  color: #2d2d2d;
   font-weight: 500;
 }
 
@@ -1258,6 +1279,8 @@
 @media (max-width: 768px) {
   .header {
     padding: 20px;
+    flex-direction: column;
+    gap: 16px;
   }
   
   .headerTitle {
@@ -1268,6 +1291,10 @@
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
+  }
+  
+  .branchSelectorContainer {
+    max-width: 100%;
   }
   
   .filtersContent {

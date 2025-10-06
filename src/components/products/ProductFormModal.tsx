@@ -677,9 +677,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               accept="image/*"
               onChange={onImageChange}
               style={{
-                width: '100%',
+                width: 'auto',
+                maxWidth: '200px',
                 padding: '10px 12px',
-                border: '1px solid #d1d5db',
+                border: '2px solid #000000',
                 borderRadius: '8px',
                 fontSize: '14px'
               }}

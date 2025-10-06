@@ -352,3 +352,14 @@ nav a span {
   .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
+/* Force black borders on image upload buttons only */
+label[for="image-upload"] {
+  border: 2px solid #000000 !important;
+  border-color: #000000 !important;
+}
+
+label[for="image-upload"]:hover {
+  border: 2px solid #000000 !important;
+  border-color: #000000 !important;
+}
+

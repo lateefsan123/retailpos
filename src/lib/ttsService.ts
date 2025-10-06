@@ -85,6 +85,15 @@ class TTSService {
         const parsed = JSON.parse(saved)
         // Merge with defaults to ensure new fields are present
         const merged = { ...defaultSettings, ...parsed }
+        // Environment variables always win over cached values (trimmed)
+        if (envOpenAIKey) {
+          merged.openaiApiKey = String(envOpenAIKey).trim()
+          merged.useOpenAI = true
+        }
+        if (envElevenLabsKey) {
+          merged.apiKey = String(envElevenLabsKey).trim()
+          merged.useElevenLabs = true
+        }
         console.log('Loaded TTS settings from localStorage:', merged)
         return merged
       }

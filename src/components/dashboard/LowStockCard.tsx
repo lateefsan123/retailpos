@@ -273,7 +273,7 @@ const LowStockCard = ({ product, onRestock, onQuickRestock }: LowStockCardProps)
                 }}
                 onMouseEnter={(e) => {
                   if (!isRestocking && restockQuantity) {
-                    e.currentTarget.style.background = '#bca88d'
+                    e.currentTarget.style.background = '#374151'
                   }
                 }}
                 onMouseLeave={(e) => {

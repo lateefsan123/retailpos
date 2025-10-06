@@ -58,23 +58,13 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
         borderRadius: '8px',
         border: transaction.partial_payment ? '2px solid #dc2626' : '2px solid #374151',
         cursor: 'pointer',
-        transition: 'all 0.2s ease',
+        transition: 'none',
         position: 'relative',
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
         marginBottom: '12px'
       }}
-      onMouseEnter={(e) => {
-        const target = e.currentTarget as HTMLElement
-        target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)'
-        target.style.transform = 'translateY(-2px)'
-        target.style.border = transaction.partial_payment ? '2px solid #dc2626' : '2px solid #374151'
-      }}
-      onMouseLeave={(e) => {
-        const target = e.currentTarget as HTMLElement
-        target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)'
-        target.style.transform = 'translateY(0)'
-        target.style.border = transaction.partial_payment ? '2px solid #dc2626' : '2px solid #374151'
-      }}
+      onMouseEnter={() => {}}
+      onMouseLeave={() => {}}
     >
       {/* Transaction ID */}
       <div style={{

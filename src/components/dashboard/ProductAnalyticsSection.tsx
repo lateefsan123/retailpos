@@ -128,7 +128,7 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
           width: '40px',
           height: '40px',
           borderRadius: '10px',
-          background: '#bca88d',
+          background: '#111827',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center'

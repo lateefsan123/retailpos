@@ -128,7 +128,7 @@ const LowStockSection = () => {
               }}
               onMouseEnter={(e) => {
                 if (hasPrevious) {
-                  e.currentTarget.style.background = '#bca88d'
+                  e.currentTarget.style.background = '#374151'
                 }
               }}
               onMouseLeave={(e) => {
@@ -168,7 +168,7 @@ const LowStockSection = () => {
               }}
               onMouseEnter={(e) => {
                 if (hasNext) {
-                  e.currentTarget.style.background = '#bca88d'
+                  e.currentTarget.style.background = '#374151'
                 }
               }}
               onMouseLeave={(e) => {

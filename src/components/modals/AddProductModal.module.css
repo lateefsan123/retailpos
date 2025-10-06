@@ -1,0 +1,377 @@
+/* Add Product Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 0 24px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 24px;
+}
+
+.modalTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.modalBody {
+  padding: 0 24px 24px 24px;
+}
+
+.errorMessage {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.formLabel {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.formInput {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #000000;
+  border-radius: 8px;
+  font-size: 16px;
+  background: #f8fafc;
+  color: #1a1a1a;
+  box-sizing: border-box;
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: #7d8d86;
+}
+
+.formTextarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #000000;
+  border-radius: 8px;
+  font-size: 16px;
+  background: #f8fafc;
+  color: #1a1a1a;
+  resize: vertical;
+  min-height: 80px;
+  box-sizing: border-box;
+}
+
+.formTextarea:focus {
+  outline: none;
+  border-color: #7d8d86;
+}
+
+.formSelect {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #000000;
+  border-radius: 8px;
+  font-size: 16px;
+  background: #f8fafc;
+  color: #1a1a1a;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.formSelect:focus {
+  outline: none;
+  border-color: #7d8d86;
+}
+
+.categoryInputContainer {
+  position: relative;
+}
+
+.categorySuggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #f8fafc;
+  border: 2px solid #000000;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  max-height: 200px;
+  overflow: auto;
+}
+
+.categorySuggestion {
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #3e3f29;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.categorySuggestion:last-child {
+  border-bottom: none;
+}
+
+.categorySuggestion:hover {
+  background: #f8f9fa;
+}
+
+.categorySuggestionIcon {
+  color: #7d8d86;
+  font-size: 12px;
+}
+
+.weightSection {
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.weightHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.weightCheckbox {
+  width: 16px;
+  height: 16px;
+}
+
+.weightLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #3e3f29;
+  cursor: pointer;
+}
+
+.weightGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.imageUploadSection {
+  margin-bottom: 16px;
+}
+
+.imageUploadButton {
+  width: auto !important;
+  max-width: 200px !important;
+  padding: 20px !important;
+  border: 2px solid #000000 !important;
+  border-radius: 8px !important;
+  background: #f8fafc !important;
+  color: #1a1a1a !important;
+  cursor: pointer !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 8px !important;
+  transition: all 0.2s ease !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  flex-shrink: 0 !important;
+}
+
+/* Force black border for image upload buttons */
+label.imageUploadButton {
+  border: 2px solid #000000 !important;
+  border-color: #000000 !important;
+}
+
+label.imageUploadButton:hover {
+  border: 2px solid #000000 !important;
+  border-color: #000000 !important;
+}
+
+.imageUploadButton:hover {
+  border-color: #000000 !important;
+  background: #f1f5f9 !important;
+}
+
+.imageUploadIcon {
+  font-size: 24px;
+  color: #7d8d86;
+}
+
+.imagePreview {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #000000;
+}
+
+.imagePreviewContainer {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.removeImageButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(220, 38, 38, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: background 0.2s ease;
+}
+
+.removeImageButton:hover {
+  background: rgba(185, 28, 28, 0.9);
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 24px;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 24px;
+}
+
+.cancelButton {
+  background: #f3f4f6;
+  color: #1a1a1a;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.cancelButton:hover {
+  background: #e5e7eb;
+}
+
+.addButton {
+  background: #111827;
+  color: #f1f0e4;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.addButton:hover {
+  background: #374151;
+}
+
+.addButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.addButtonIcon {
+  font-size: 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modal {
+    max-width: 95%;
+    margin: 10px;
+  }
+  
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .weightGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .modalFooter {
+    flex-direction: column;
+  }
+  
+  .cancelButton,
+  .addButton {
+    width: 100%;
+    justify-content: center;
+  }
+}

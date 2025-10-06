@@ -6,15 +6,12 @@ import { useBusinessId } from '../hooks/useBusinessId'
 import { useBranch } from '../contexts/BranchContext'
 import BranchSelector from '../components/BranchSelector'
 import { formatCurrency } from '../utils/currency'
+import styles from './Products.module.css'
 import { useSuppliers } from '../hooks/useSuppliers'
+import AddProductModal from '../components/modals/AddProductModal'
+import { printProductLabel, printBulkLabels } from '../utils/labelUtils'
 
 async function uploadProductImage(file: File, productId: string, businessId: number | null) {
-  console.log("?? Starting image upload for product:", productId)
-  console.log("?? File details:", {
-    name: file.name,
-    size: file.size,
-    type: file.type
-  })
   
   if (businessId == null) {
     console.error('Cannot upload product image without an active business')
@@ -24,7 +21,6 @@ async function uploadProductImage(file: File, productId: string, businessId: num
   try {
     // Upload original file directly to Supabase Storage
     const fileName = `product-images/${productId}.${file.name.split('.').pop()}`
-    console.log("?? Uploading to Supabase Storage:", fileName)
     
     const { error: uploadError } = await supabase.storage
       .from('products')
@@ -43,10 +39,7 @@ async function uploadProductImage(file: File, productId: string, businessId: num
       .from('products')
       .getPublicUrl(fileName)
     
-    console.log("? Image uploaded successfully:", publicUrl)
-    
     // Update database with public URL
-    console.log("?? Updating database with public URL...")
     const { error: dbError } = await supabase
       .from('products')
       .update({ image_url: publicUrl })
@@ -56,8 +49,6 @@ async function uploadProductImage(file: File, productId: string, businessId: num
     if (dbError) {
       console.error("? DB update failed:", dbError)
       return null
-    } else {
-      console.log("? Database updated with public URL")
     }
 
     return publicUrl
@@ -96,7 +87,6 @@ const Products = () => {
   const { selectedBranchId } = useBranch()
   const { suppliers } = useSuppliers(businessId, selectedBranchId)
   const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
   // Summary statistics for all products (not just current page)
@@ -123,6 +113,10 @@ const Products = () => {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  
+  // Print label functionality state
+  const [isPrintMode, setIsPrintMode] = useState(false)
+  const [selectedProductsForPrint, setSelectedProductsForPrint] = useState<Set<string>>(new Set())
   const [newProduct, setNewProduct] = useState({
     product_name: '',
     category: '',
@@ -286,10 +280,6 @@ const Products = () => {
     fetchSummaryStats(true)
   }, [businessId, businessLoading, selectedBranchId])
 
-  // Debug modal state
-  useEffect(() => {
-    console.log('Modal state changed:', { showEditModal, editingProduct: editingProduct?.name })
-  }, [showEditModal, editingProduct])
 
   // Search handlers
   const handleSearchSubmit = () => {
@@ -355,12 +345,10 @@ const Products = () => {
     if (businessId == null) {
       setProducts([])
       setTotalProducts(0)
-      setLoading(false)
       return
     }
 
     try {
-      setLoading(true)
       setError(null)
 
       if (summaryFilter && summaryFilter !== 'totalProducts') {
@@ -461,7 +449,7 @@ const Products = () => {
       console.error('Error fetching products:', err)
       alert(`Products loading error: ${errorMessage}. Please check your database permissions.`)
     } finally {
-      setLoading(false)
+      // Loading complete
     }
   }
 
@@ -644,8 +632,6 @@ const Products = () => {
       setInsightsLoading(true)
       setError(null)
 
-      console.log('Fetching insights for product:', product.product_id, product.name)
-
       const { data: allSalesData, error: allSalesError } = await supabase
         .from('sale_items')
         .select(`
@@ -666,8 +652,6 @@ const Products = () => {
       if (allSalesError) {
         throw allSalesError
       }
-
-      console.log('All sales query result:', { data: allSalesData })
 
       // Calculate actual sales data from sale_items
       const actualTotalSales = allSalesData?.length || 0
@@ -718,19 +702,6 @@ const Products = () => {
         .map(([date, count]) => ({ date, count }))
 
       const chartData = processChartData(allSalesData || [])
-
-      console.log('Calculated insights:', {
-        totalSales,
-        totalRevenue,
-        totalQuantitySold,
-        averageSalesPerDay,
-        topSellingDays,
-        estimatedProfit,
-        profitMargin,
-        recentSalesList,
-        lastSoldDate,
-        chartData
-      })
 
       setProductInsights({
         product,
@@ -965,7 +936,6 @@ const Products = () => {
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Form submitted, newProduct:', newProduct)
     setIsSubmitting(true)
 
     if (businessId == null) {
@@ -976,11 +946,9 @@ const Products = () => {
 
     try {
       const productId = generateUUID()
-      console.log('Generated product ID:', productId)
 
       const productData = transformFormToProductData(newProduct, productId)
       const productPayload = { ...productData, business_id: businessId, branch_id: selectedBranchId }
-      console.log('Inserting product data:', productPayload)
 
       const { data, error } = await supabase
         .from('products')
@@ -996,8 +964,6 @@ const Products = () => {
       if (!insertedProduct) {
         throw new Error('Product insertion returned no data')
       }
-
-      console.log('Product added successfully!')
 
       if (selectedImage) {
         const imageUrl = await handleImageUpload(productId)
@@ -1074,9 +1040,7 @@ const Products = () => {
     setError(null)
 
     try {
-      console.log('Editing product data:', newProduct)
       const productData = transformFormToProductData(newProduct, undefined, true)
-      console.log('Transformed product data:', productData)
 
       const { data, error } = await supabase
         .from('products')
@@ -1144,7 +1108,6 @@ const Products = () => {
     }
 
     try {
-      console.log("??? Starting delete for product:", productId)
 
       const { error } = await supabase
         .from('products')
@@ -1156,7 +1119,6 @@ const Products = () => {
         console.error("?? Error deleting product:", error)
         throw error
       }
-      console.log("? Product deleted successfully")
 
       setProducts(products.filter(p => p.product_id !== productId))
       setProductToDelete(null)
@@ -1197,7 +1159,6 @@ const Products = () => {
   }
 
   const startEditProduct = (product: Product) => {
-    console.log('Starting edit for product:', product)
     setEditingProduct(product)
     setNewProduct({
       product_name: product.name,
@@ -1218,7 +1179,6 @@ const Products = () => {
     setImagePreview(product.image_url || null)
     setSelectedImage(null)
     setShowEditModal(true)
-    console.log('Edit modal should be open now')
   }
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1257,6 +1217,60 @@ const Products = () => {
   const closeImageModal = () => {
     setShowImageModal(false)
     setFullSizeImage(null)
+  }
+
+  // Print label handlers
+  const handleTogglePrintMode = () => {
+    setIsPrintMode(!isPrintMode)
+    if (isPrintMode) {
+      setSelectedProductsForPrint(new Set())
+    }
+  }
+
+  const handleSelectProductForPrint = (productId: string) => {
+    const newSelected = new Set(selectedProductsForPrint)
+    if (newSelected.has(productId)) {
+      newSelected.delete(productId)
+    } else {
+      newSelected.add(productId)
+    }
+    setSelectedProductsForPrint(newSelected)
+  }
+
+  const handleSelectAllProducts = () => {
+    if (selectedProductsForPrint.size === products.length) {
+      setSelectedProductsForPrint(new Set())
+    } else {
+      setSelectedProductsForPrint(new Set(products.map(p => p.product_id)))
+    }
+  }
+
+  const handlePrintSelectedLabels = () => {
+    const selectedProducts = products.filter(p => selectedProductsForPrint.has(p.product_id))
+    if (selectedProducts.length === 0) return
+
+    // Get business info for labels
+    const businessInfo = {
+      business_name: 'Business',
+      name: 'Business',
+      address: '',
+      phone_number: '',
+      logo_url: '/images/backgrounds/logo1.png'
+    }
+
+    printBulkLabels(selectedProducts, businessInfo)
+  }
+
+  const handlePrintIndividualLabel = (product: Product) => {
+    const businessInfo = {
+      business_name: 'Business',
+      name: 'Business',
+      address: '',
+      phone_number: '',
+      logo_url: '/images/backgrounds/logo1.png'
+    }
+
+    printProductLabel(product, businessInfo)
   }
 
   const getStockStatus = (stock: number, reorderLevel: number) => {
@@ -1432,15 +1446,13 @@ const Products = () => {
           <BranchSelector size="sm" showLabel={false} />
         </div>
         
-        {hasPermission('canManageProducts') && (
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          {/* Print Label Toggle */}
           <button
-            onClick={() => {
-              console.log('Add Product button clicked')
-              setShowAddModal(true)
-              console.log('showAddModal set to true')
-            }}
+            onClick={handleTogglePrintMode}
+            className={`${styles.bulkPrintToggle} ${isPrintMode ? styles.active : ''}`}
             style={{
-              background: '#7d8d86',
+              background: isPrintMode ? '#111827' : '#111827',
               color: '#f1f0e4',
               border: 'none',
               padding: '12px 24px',
@@ -1451,22 +1463,123 @@ const Products = () => {
               alignItems: 'center',
               gap: '8px',
               fontSize: '14px',
-              fontWeight: '500'
+              fontWeight: '500',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
             }}
             onMouseEnter={(e) => {
-              (e.target as HTMLButtonElement).style.background = '#bca88d'
-              setLilyMessage("Click this button to add a new product to your inventory! You'll need to fill in details like name, price, stock quantity, and reorder level.")
-              setShowLilyMessage(true)
+              (e.target as HTMLButtonElement).style.background = '#374151'
             }}
             onMouseLeave={(e) => {
-              (e.target as HTMLButtonElement).style.background = '#7d8d86'
-              setShowLilyMessage(false)
+              (e.target as HTMLButtonElement).style.background = isPrintMode ? '#111827' : '#111827'
             }}
           >
-            <i className="fa-solid fa-plus" style={{ fontSize: '16px' }}></i>
-            <span>Add Product</span>
+            <i className="fa-solid fa-print" style={{ fontSize: '16px' }}></i>
+            <span>{isPrintMode ? 'Exit Print Mode' : 'Print Labels'}</span>
           </button>
-        )}
+
+          {/* Bulk Print Actions */}
+          {isPrintMode && (
+            <>
+              <button
+                onClick={handleSelectAllProducts}
+                className={`${styles.bulkActionButton} ${styles.secondary}`}
+                style={{
+                  background: selectedProductsForPrint.size === products.length ? '#6b7c73' : '#111827',
+                  color: '#f1f0e4',
+                  border: 'none',
+                  padding: '10px 18px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                }}
+                onMouseEnter={(e) => {
+                  (e.target as HTMLButtonElement).style.background = '#6b7c73'
+                }}
+                onMouseLeave={(e) => {
+                  (e.target as HTMLButtonElement).style.background = selectedProductsForPrint.size === products.length ? '#6b7c73' : '#111827'
+                }}
+              >
+                <i className="fa-solid fa-check-double" style={{ fontSize: '14px' }}></i>
+                <span>{selectedProductsForPrint.size === products.length ? 'Deselect All' : 'Select All'}</span>
+              </button>
+
+              <button
+                onClick={handlePrintSelectedLabels}
+                disabled={selectedProductsForPrint.size === 0}
+                className={`${styles.bulkActionButton} ${styles.primary} ${selectedProductsForPrint.size === 0 ? styles.disabled : ''}`}
+                style={{
+                  background: selectedProductsForPrint.size === 0 ? '#9ca3af' : '#111827',
+                  color: '#f1f0e4',
+                  border: 'none',
+                  padding: '10px 18px',
+                  borderRadius: '8px',
+                  cursor: selectedProductsForPrint.size === 0 ? 'not-allowed' : 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedProductsForPrint.size > 0) {
+                    (e.target as HTMLButtonElement).style.background = '#6b7c73'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedProductsForPrint.size > 0) {
+                    (e.target as HTMLButtonElement).style.background = '#111827'
+                  }
+                }}
+              >
+                <i className="fa-solid fa-print" style={{ fontSize: '14px' }}></i>
+                <span>Print Selected ({selectedProductsForPrint.size})</span>
+              </button>
+            </>
+          )}
+
+          {/* Add Product Button */}
+          {hasPermission('canManageProducts') && (
+            <button
+              onClick={() => {
+                setShowAddModal(true)
+              }}
+              style={{
+                background: '#111827',
+                color: '#f1f0e4',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
+              onMouseEnter={(e) => {
+                (e.target as HTMLButtonElement).style.background = '#374151'
+                setLilyMessage("Click this button to add a new product to your inventory! You'll need to fill in details like name, price, stock quantity, and reorder level.")
+                setShowLilyMessage(true)
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLButtonElement).style.background = '#111827'
+                setShowLilyMessage(false)
+              }}
+            >
+              <i className="fa-solid fa-plus" style={{ fontSize: '16px' }}></i>
+              <span>Add Product</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -1508,7 +1621,7 @@ const Products = () => {
               width: '40px',
               height: '40px',
               borderRadius: '8px',
-              background: '#7d8d86',
+              background: '#111827',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
@@ -1694,7 +1807,7 @@ const Products = () => {
                   style={{
                     width: '100%',
                     padding: '10px 12px 10px 36px',
-                    border: '2px solid #bca88d',
+                    border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
                     background: '#f8fafc',
@@ -1879,7 +1992,7 @@ const Products = () => {
                 onClick={handleSearchSubmit}
                 style={{
                   padding: '10px 16px',
-                  background: '#7d8d86',
+                  background: '#111827',
                   color: '#f1f0e4',
                   border: 'none',
                   borderRadius: '8px',
@@ -1892,8 +2005,8 @@ const Products = () => {
                   gap: '6px',
                   whiteSpace: 'nowrap'
                 }}
-                onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = '#bca88d'}
-                onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = '#7d8d86'}
+                onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = '#374151'}
+                onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = '#111827'}
               >
                 <i className="fa-solid fa-search" style={{ fontSize: '12px' }}></i>
                 Search
@@ -1908,7 +2021,7 @@ const Products = () => {
               style={{
                 width: '100%',
                 padding: '10px 12px',
-                border: '2px solid #bca88d',
+                      border: '2px solid #000000',
                 borderRadius: '8px',
                 fontSize: '14px',
                 background: '#f8fafc',
@@ -1941,6 +2054,29 @@ const Products = () => {
                borderBottom: '4px solid #7d8d86'
              }}>
                <tr>
+                 {isPrintMode && (
+                   <th style={{ 
+                     padding: '16px', 
+                     textAlign: 'center', 
+                     color: '#f1f0e4', 
+                     fontSize: '12px', 
+                     fontWeight: '600', 
+                     textTransform: 'uppercase',
+                     borderBottom: '4px solid #7d8d86',
+                     borderRight: '2px solid #7d8d86',
+                     width: '50px'
+                   }}>
+                     <input
+                       type="checkbox"
+                       checked={selectedProductsForPrint.size === products.length && products.length > 0}
+                       onChange={handleSelectAllProducts}
+                       style={{
+                         transform: 'scale(1.2)',
+                         cursor: 'pointer'
+                       }}
+                     />
+                   </th>
+                 )}
                  <th style={{ 
                    padding: '16px', 
                    textAlign: 'left', 
@@ -2017,7 +2153,7 @@ const Products = () => {
             <tbody style={{ border: '1px solid rgba(125, 141, 134, 0.2)' }}>
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: '#7d8d86' }}>
+                  <td colSpan={isPrintMode ? 7 : 6} style={{ padding: '40px', textAlign: 'center', color: '#7d8d86' }}>
                     <i className="fa-solid fa-boxes-stacked" style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}></i>
                     <p style={{ fontSize: '16px', margin: 0 }}>No products found</p>
                     <p style={{ fontSize: '14px', margin: '8px 0 0 0' }}>Add your first product to get started!</p>
@@ -2032,12 +2168,40 @@ const Products = () => {
                       borderLeft: '1px solid rgba(125, 141, 134, 0.2)',
                       borderRight: '1px solid rgba(125, 141, 134, 0.2)',
                       transition: 'background 0.2s ease',
-                      cursor: 'pointer'
+                      cursor: isPrintMode ? 'default' : 'pointer'
                     }}
-                    onClick={() => handleProductClick(product)}
-                    onMouseEnter={(e) => (e.target as HTMLTableRowElement).style.background = 'rgba(125, 141, 134, 0.05)'}
-                    onMouseLeave={(e) => (e.target as HTMLTableRowElement).style.background = 'transparent'}
+                    onClick={isPrintMode ? undefined : () => handleProductClick(product)}
+                    onMouseEnter={(e) => {
+                      if (!isPrintMode) {
+                        (e.target as HTMLTableRowElement).style.background = 'rgba(125, 141, 134, 0.05)'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isPrintMode) {
+                        (e.target as HTMLTableRowElement).style.background = 'transparent'
+                      }
+                    }}
                     >
+                      {isPrintMode && (
+                        <td style={{ 
+                          padding: '16px', 
+                          borderRight: '2px solid rgba(125, 141, 134, 0.25)',
+                          textAlign: 'center'
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedProductsForPrint.has(product.product_id)}
+                            onChange={(e) => {
+                              e.stopPropagation()
+                              handleSelectProductForPrint(product.product_id)
+                            }}
+                            style={{
+                              transform: 'scale(1.2)',
+                              cursor: 'pointer'
+                            }}
+                          />
+                        </td>
+                      )}
                       <td style={{ padding: '16px', borderRight: '2px solid rgba(125, 141, 134, 0.25)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           {product.image_url && (
@@ -2053,7 +2217,7 @@ const Products = () => {
                                 height: '48px',
                                 objectFit: 'cover',
                                 borderRadius: '8px',
-                                border: '2px solid #bca88d',
+                                border: '2px solid #000000',
                                 background: '#f3f4f6',
                                 cursor: 'pointer',
                                 transition: 'transform 0.2s ease, box-shadow 0.2s ease'
@@ -2134,15 +2298,42 @@ const Products = () => {
                       </td>
                       <td style={{ padding: '16px' }}>
                         <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handlePrintIndividualLabel(product)
+                            }}
+                            style={{
+                              background: '#111827',
+                              color: '#f1f0e4',
+                              border: 'none',
+                              padding: '6px 12px',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              transition: 'background 0.2s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              (e.target as HTMLButtonElement).style.background = '#374151'
+                              setLilyMessage(`Click to print a label for "${product.name}". This will open a print dialog with a formatted product label!`)
+                              setShowLilyMessage(true)
+                            }}
+                            onMouseLeave={(e) => {
+                              (e.target as HTMLButtonElement).style.background = '#111827'
+                              setShowLilyMessage(false)
+                            }}
+                          >
+                            <i className="fa-solid fa-print" style={{ marginRight: '4px' }}></i>
+                            Print Label
+                          </button>
                           {hasPermission('canManageProducts') && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
-                                console.log('Edit button clicked for product:', product.name)
                                 startEditProduct(product)
                               }}
                               style={{
-                                background: '#7d8d86',
+                                background: '#111827',
                                 color: '#f1f0e4',
                                 border: 'none',
                                 padding: '6px 12px',
@@ -2152,12 +2343,12 @@ const Products = () => {
                                 transition: 'background 0.2s ease'
                               }}
                               onMouseEnter={(e) => {
-                                e.target.style.background = '#bca88d'
+                                e.target.style.background = '#374151'
                                 setLilyMessage(`Click to edit "${product.name}". You can update the price, stock quantity, reorder level, and other details!`)
                                 setShowLilyMessage(true)
                               }}
                               onMouseLeave={(e) => {
-                                e.target.style.background = '#7d8d86'
+                                e.target.style.background = '#111827'
                                 setShowLilyMessage(false)
                               }}
                             >
@@ -2171,7 +2362,7 @@ const Products = () => {
                               setProductToDelete(product)
                             }}
                             style={{
-                              background: '#ef4444',
+                              background: '#6b7280',
                               color: 'white',
                               border: 'none',
                               padding: '6px 12px',
@@ -2180,8 +2371,8 @@ const Products = () => {
                               fontSize: '12px',
                               transition: 'background 0.2s ease'
                             }}
-                            onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = '#dc2626'}
-                            onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = '#ef4444'}
+                            onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = '#4b5563'}
+                            onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = '#6b7280'}
                           >
                             <i className="fa-solid fa-trash-can" style={{ marginRight: '4px' }}></i>
                             Delete
@@ -2246,7 +2437,7 @@ const Products = () => {
               onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value))}
               style={{
                 padding: '6px 12px',
-                border: '2px solid #bca88d',
+                      border: '2px solid #000000',
                 borderRadius: '6px',
                 fontSize: '14px',
                 background: '#f8fafc',
@@ -2270,7 +2461,7 @@ const Products = () => {
               disabled={currentPage === 1}
               style={{
                 padding: '8px 12px',
-                border: '2px solid #bca88d',
+                      border: '2px solid #000000',
                 borderRadius: '6px',
                 background: currentPage === 1 ? '#f3f4f6' : 'white',
                 color: currentPage === 1 ? '#9ca3af' : '#3e3f29',
@@ -2313,9 +2504,9 @@ const Products = () => {
                     onClick={() => handlePageChange(pageNum)}
                     style={{
                       padding: '8px 12px',
-                      border: '2px solid #bca88d',
+                      border: '2px solid #000000',
                       borderRadius: '6px',
-                      background: currentPage === pageNum ? '#7d8d86' : 'white',
+                      background: currentPage === pageNum ? '#111827' : 'white',
                       color: currentPage === pageNum ? '#f1f0e4' : '#3e3f29',
                       cursor: 'pointer',
                       fontSize: '14px',
@@ -2345,7 +2536,7 @@ const Products = () => {
               disabled={currentPage === totalPages}
               style={{
                 padding: '8px 12px',
-                border: '2px solid #bca88d',
+                      border: '2px solid #000000',
                 borderRadius: '6px',
                 background: currentPage === totalPages ? '#f3f4f6' : 'white',
                 color: currentPage === totalPages ? '#9ca3af' : '#3e3f29',
@@ -2372,7 +2563,28 @@ const Products = () => {
       )}
 
       {/* Add Product Modal */}
-      {showAddModal && (
+      <AddProductModal
+        isOpen={showAddModal}
+        onClose={() => {
+          resetForm()
+          setShowAddModal(false)
+        }}
+        onProductAdded={(product) => {
+          // Refresh the products list
+          fetchProducts(currentPage, itemsPerPage, searchTerm, selectedCategory, activeSummaryFilter)
+          setShowAddModal(false)
+        }}
+        categories={categories}
+        onCategoryAdded={(category) => {
+          if (!categories.includes(category)) {
+            // Add the new category to the categories list
+            // This will be handled by the modal component
+          }
+        }}
+      />
+
+      {/* Old Add Product Modal - Remove this section */}
+      {false && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -2454,7 +2666,7 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '2px solid #bca88d',
+                      border: '2px solid #000000',
                       borderRadius: '8px',
                       fontSize: '14px',
                       background: '#f8fafc',
@@ -2486,7 +2698,7 @@ const Products = () => {
                       style={{
                         width: '100%',
                         padding: '10px 12px',
-                        border: '2px solid #bca88d',
+                        border: '2px solid #000000',
                         borderRadius: '8px',
                         fontSize: '14px',
                         background: '#f8fafc',
@@ -2503,7 +2715,7 @@ const Products = () => {
                         left: 0,
                         right: 0,
                         background: '#f8fafc',
-                        border: '2px solid #bca88d',
+                        border: '2px solid #000000',
                         borderTop: 'none',
                         borderRadius: '0 0 8px 8px',
                         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
@@ -2568,7 +2780,7 @@ const Products = () => {
                         style={{
                           width: '100%',
                           padding: '10px 12px',
-                          border: '2px solid #bca88d',
+                          border: '2px solid #000000',
                           borderRadius: '8px',
                           fontSize: '14px',
                           background: '#f8fafc',
@@ -2597,7 +2809,7 @@ const Products = () => {
                         style={{
                           width: '100%',
                           padding: '10px 12px',
-                          border: '2px solid #bca88d',
+                          border: '2px solid #000000',
                           borderRadius: '8px',
                           fontSize: '14px',
                           background: '#f8fafc',
@@ -2628,7 +2840,7 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '2px solid #bca88d',
+                      border: '2px solid #000000',
                       borderRadius: '8px',
                       fontSize: '14px',
                       background: newProduct.is_weighted ? '#f9fafb' : 'white',
@@ -2652,7 +2864,7 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '2px solid #bca88d',
+                      border: '2px solid #000000',
                       borderRadius: '8px',
                       fontSize: '14px',
                       background: '#f8fafc',
@@ -2676,7 +2888,7 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '2px solid #bca88d',
+                      border: '2px solid #000000',
                       borderRadius: '8px',
                       fontSize: '14px',
                       background: '#f8fafc',
@@ -2698,7 +2910,7 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '2px solid #bca88d',
+                      border: '2px solid #000000',
                       borderRadius: '8px',
                       fontSize: '14px',
                       background: '#f8fafc',
@@ -2719,7 +2931,7 @@ const Products = () => {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    border: '2px solid #bca88d',
+                    border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
                     background: '#f8fafc',
@@ -2746,7 +2958,7 @@ const Products = () => {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    border: '2px solid #bca88d',
+                    border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
                     background: '#f8fafc',
@@ -2767,7 +2979,7 @@ const Products = () => {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    border: '2px solid #bca88d',
+                    border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
                     background: '#f8fafc',
@@ -2788,7 +3000,7 @@ const Products = () => {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    border: '2px solid #bca88d',
+                    border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
                     background: '#f8fafc',
@@ -2814,24 +3026,26 @@ const Products = () => {
                     htmlFor="image-upload"
                     style={{
                       padding: '10px 16px',
-                      border: '2px dashed #bca88d',
+                      border: '2px solid #000000',
                       borderRadius: '8px',
                       cursor: 'pointer',
                       fontSize: '14px',
-                      color: '#7d8d86',
+                      color: '#3e3f29',
                       textAlign: 'center',
                       transition: 'all 0.2s ease',
-                      minWidth: '120px'
+                      width: 'auto',
+                      maxWidth: '200px',
+                      flexShrink: 0
                     }}
                     onMouseEnter={(e) => {
                       e.target.style.borderColor = '#7d8d86'
-                      e.target.style.color = '#3e3f29'
+                      e.target.style.backgroundColor = '#f8fafc'
                       setLilyMessage("Click here to upload a product image! This helps customers see what they're buying.")
                       setShowLilyMessage(true)
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.borderColor = '#bca88d'
-                      e.target.style.color = '#7d8d86'
+                      e.target.style.borderColor = '#000000'
+                      e.target.style.backgroundColor = 'transparent'
                       setShowLilyMessage(false)
                     }}
                   >
@@ -2852,7 +3066,7 @@ const Products = () => {
                           height: '80px',
                           objectFit: 'cover',
                           borderRadius: '8px',
-                          border: '2px solid #bca88d',
+                          border: '2px solid #000000',
                           background: '#f3f4f6',
                           cursor: 'pointer',
                           transition: 'transform 0.2s ease, box-shadow 0.2s ease'
@@ -2909,7 +3123,7 @@ const Products = () => {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    border: '2px solid #bca88d',
+                    border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
                     background: '#f8fafc',
@@ -2951,7 +3165,7 @@ const Products = () => {
                   type="submit"
                   disabled={isSubmitting}
                   style={{
-                    background: isSubmitting ? '#9ca3af' : '#7d8d86',
+                    background: isSubmitting ? '#9ca3af' : '#111827',
                     color: '#ffffff',
                     border: 'none',
                     padding: '12px 24px',
@@ -3078,7 +3292,7 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '2px solid #bca88d',
+                      border: '2px solid #000000',
                       borderRadius: '8px',
                       fontSize: '14px',
                       background: '#f8fafc',
@@ -3110,7 +3324,7 @@ const Products = () => {
                       style={{
                         width: '100%',
                         padding: '10px 12px',
-                        border: '2px solid #bca88d',
+                        border: '2px solid #000000',
                         borderRadius: '8px',
                         fontSize: '14px',
                         background: '#f8fafc',
@@ -3127,7 +3341,7 @@ const Products = () => {
                         left: 0,
                         right: 0,
                         background: '#f8fafc',
-                        border: '2px solid #bca88d',
+                        border: '2px solid #000000',
                         borderTop: 'none',
                         borderRadius: '0 0 8px 8px',
                         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
@@ -3192,7 +3406,7 @@ const Products = () => {
                         style={{
                           width: '100%',
                           padding: '10px 12px',
-                          border: '2px solid #bca88d',
+                          border: '2px solid #000000',
                           borderRadius: '8px',
                           fontSize: '14px',
                           background: '#f8fafc',
@@ -3221,7 +3435,7 @@ const Products = () => {
                         style={{
                           width: '100%',
                           padding: '10px 12px',
-                          border: '2px solid #bca88d',
+                          border: '2px solid #000000',
                           borderRadius: '8px',
                           fontSize: '14px',
                           background: '#f8fafc',
@@ -3252,7 +3466,7 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '2px solid #bca88d',
+                      border: '2px solid #000000',
                       borderRadius: '8px',
                       fontSize: '14px',
                       background: newProduct.is_weighted ? '#f9fafb' : 'white',
@@ -3276,7 +3490,7 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '2px solid #bca88d',
+                      border: '2px solid #000000',
                       borderRadius: '8px',
                       fontSize: '14px',
                       background: '#f8fafc',
@@ -3300,7 +3514,7 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '2px solid #bca88d',
+                      border: '2px solid #000000',
                       borderRadius: '8px',
                       fontSize: '14px',
                       background: '#f8fafc',
@@ -3322,7 +3536,7 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      border: '2px solid #bca88d',
+                      border: '2px solid #000000',
                       borderRadius: '8px',
                       fontSize: '14px',
                       background: '#f8fafc',
@@ -3343,7 +3557,7 @@ const Products = () => {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    border: '2px solid #bca88d',
+                    border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
                     background: '#f8fafc',
@@ -3370,7 +3584,7 @@ const Products = () => {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    border: '2px solid #bca88d',
+                    border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
                     background: '#f8fafc',
@@ -3391,7 +3605,7 @@ const Products = () => {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    border: '2px solid #bca88d',
+                    border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
                     background: '#f8fafc',
@@ -3412,7 +3626,7 @@ const Products = () => {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    border: '2px solid #bca88d',
+                    border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
                     background: '#f8fafc',
@@ -3438,24 +3652,26 @@ const Products = () => {
                     htmlFor="image-upload"
                     style={{
                       padding: '10px 16px',
-                      border: '2px dashed #bca88d',
+                      border: '2px solid #000000',
                       borderRadius: '8px',
                       cursor: 'pointer',
                       fontSize: '14px',
-                      color: '#7d8d86',
+                      color: '#3e3f29',
                       textAlign: 'center',
                       transition: 'all 0.2s ease',
-                      minWidth: '120px'
+                      width: 'auto',
+                      maxWidth: '200px',
+                      flexShrink: 0
                     }}
                     onMouseEnter={(e) => {
                       e.target.style.borderColor = '#7d8d86'
-                      e.target.style.color = '#3e3f29'
+                      e.target.style.backgroundColor = '#f8fafc'
                       setLilyMessage("Click here to upload a product image! This helps customers see what they're buying.")
                       setShowLilyMessage(true)
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.borderColor = '#bca88d'
-                      e.target.style.color = '#7d8d86'
+                      e.target.style.borderColor = '#000000'
+                      e.target.style.backgroundColor = 'transparent'
                       setShowLilyMessage(false)
                     }}
                   >
@@ -3476,7 +3692,7 @@ const Products = () => {
                           height: '80px',
                           objectFit: 'cover',
                           borderRadius: '8px',
-                          border: '2px solid #bca88d',
+                          border: '2px solid #000000',
                           background: '#f3f4f6',
                           cursor: 'pointer',
                           transition: 'transform 0.2s ease, box-shadow 0.2s ease'
@@ -3533,7 +3749,7 @@ const Products = () => {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    border: '2px solid #bca88d',
+                    border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
                     background: '#f8fafc',
@@ -3575,7 +3791,7 @@ const Products = () => {
                   type="submit"
                   disabled={isSubmitting}
                   style={{
-                    background: isSubmitting ? '#9ca3af' : '#7d8d86',
+                    background: isSubmitting ? '#9ca3af' : '#111827',
                     color: '#ffffff',
                     border: 'none',
                     padding: '12px 24px',
@@ -4135,7 +4351,7 @@ const Products = () => {
                                     style={{
                                       width: '100%',
                                       height: `${height}px`,
-                                      background: day.sales > 0 ? '#7d8d86' : '#e5e7eb',
+                                      background: day.sales > 0 ? '#111827' : '#e5e7eb',
                                       borderRadius: '2px 2px 0 0',
                                       minHeight: '2px'
                                     }}

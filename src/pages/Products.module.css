@@ -1,0 +1,543 @@
+/* Products Page Styles */
+.productsContainer {
+  padding: 24px;
+  background: #f8fafc;
+  min-height: 100vh;
+  border: 1px solid rgba(125, 141, 134, 0.1);
+  border-radius: 16px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(62, 63, 41, 0.1);
+  border: 2px solid rgba(125, 141, 134, 0.2);
+}
+
+.headerContent h1 {
+  font-size: 32px;
+  font-weight: bold;
+  color: #3e3f29;
+  margin: 0 0 8px 0;
+}
+
+.headerContent p {
+  font-size: 16px;
+  color: #7d8d86;
+  margin: 0 0 12px 0;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.bulkPrintToggle {
+  background: #111827;
+  color: #f1f0e4;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bulkPrintToggle:hover {
+  background: #374151;
+}
+
+.bulkPrintToggle.active {
+  background: #111827;
+}
+
+.bulkPrintToggle.active:hover {
+  background: #374151;
+}
+
+.bulkActionButton {
+  background: #111827;
+  color: #f1f0e4;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bulkActionButton:hover {
+  background: #6b7c73;
+}
+
+.bulkActionButton.primary {
+  background: #111827;
+}
+
+.bulkActionButton.primary:hover {
+  background: #6b7c73;
+}
+
+.bulkActionButton.secondary {
+  background: #111827;
+}
+
+.bulkActionButton.secondary:hover {
+  background: #374151;
+}
+
+.bulkActionButton.disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.bulkActionButton.disabled:hover {
+  background: #9ca3af;
+}
+
+.addProductButton {
+  background: #111827;
+  color: #f1f0e4;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.addProductButton:hover {
+  background: #374151;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.statCard {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(125, 141, 134, 0.2);
+}
+
+.statCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.statCardTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statCardIcon {
+  font-size: 20px;
+  color: #7d8d86;
+}
+
+.statCardValue {
+  font-size: 28px;
+  font-weight: 700;
+  color: #3e3f29;
+  margin: 0;
+}
+
+.statCardSubtext {
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 4px 0 0 0;
+}
+
+.controlsSection {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(125, 141, 134, 0.2);
+  margin-bottom: 24px;
+}
+
+.controlsRow {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.controlsRow:last-child {
+  margin-bottom: 0;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #7d8d86;
+}
+
+.filterSelect {
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: #7d8d86;
+}
+
+.productsTable {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(62, 63, 41, 0.1);
+  border: 2px solid rgba(125, 141, 134, 0.3);
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tableHeader {
+  background: #3e3f29;
+  border-bottom: 4px solid #7d8d86;
+}
+
+.tableHeaderCell {
+  padding: 16px;
+  text-align: left;
+  color: #f1f0e4;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-bottom: 4px solid #7d8d86;
+  border-right: 2px solid #7d8d86;
+}
+
+.tableHeaderCell:last-child {
+  border-right: none;
+}
+
+.tableHeaderCell.checkbox {
+  text-align: center;
+  width: 50px;
+}
+
+.checkboxInput {
+  transform: scale(1.2);
+  cursor: pointer;
+}
+
+.tableBody {
+  border: 1px solid rgba(125, 141, 134, 0.2);
+}
+
+.tableRow {
+  border-bottom: 2px solid rgba(125, 141, 134, 0.3);
+  border-left: 1px solid rgba(125, 141, 134, 0.2);
+  border-right: 1px solid rgba(125, 141, 134, 0.2);
+  transition: background 0.2s ease;
+  cursor: pointer;
+}
+
+.tableRow:hover {
+  background: rgba(125, 141, 134, 0.05);
+}
+
+.tableRow.printMode {
+  cursor: default;
+}
+
+.tableCell {
+  padding: 16px;
+  border-right: 2px solid rgba(125, 141, 134, 0.25);
+}
+
+.tableCell:last-child {
+  border-right: none;
+}
+
+.tableCell.checkbox {
+  text-align: center;
+}
+
+.productInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.productImage {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #000000;
+  background: #f3f4f6;
+  cursor: pointer;
+}
+
+.productDetails {
+  flex: 1;
+}
+
+.productName {
+  font-size: 16px;
+  font-weight: 600;
+  color: #3e3f29;
+  margin: 0 0 4px 0;
+}
+
+.productCategory {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.stockStatus {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.stockStatus.inStock {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.stockStatus.lowStock {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.stockStatus.outOfStock {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.actionButton {
+  background: #111827;
+  color: #f1f0e4;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.actionButton:hover {
+  background: #374151;
+}
+
+.emptyState {
+  padding: 40px;
+  text-align: center;
+  color: #7d8d86;
+}
+
+.emptyStateIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.emptyStateTitle {
+  font-size: 16px;
+  margin: 0;
+}
+
+.emptyStateSubtitle {
+  font-size: 14px;
+  margin: 8px 0 0 0;
+}
+
+/* Additional button styles */
+.quickServiceButton {
+  background: #111827;
+  color: #f1f0e4;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.quickServiceButton:hover {
+  background: #6b7c73;
+}
+
+.calculatorButton {
+  background: #111827;
+  color: #f1f0e4;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.calculatorButton:hover {
+  background: #374151;
+}
+
+.calculatorButton:active {
+  background: #1f2937;
+}
+
+.playButton {
+  background: #111827;
+  color: #f1f0e4;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.playButton:hover {
+  background: #374151;
+}
+
+.playButton:active {
+  background: #1f2937;
+}
+
+.modalButton {
+  background: #111827;
+  color: #f1f0e4;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.modalButton:hover {
+  background: #6b7c73;
+}
+
+.modalButton.secondary {
+  background: #6b7280;
+}
+
+.modalButton.secondary:hover {
+  background: #4b5563;
+}
+
+.modalButton.danger {
+  background: #dc2626;
+}
+
+.modalButton.danger:hover {
+  background: #b91c1c;
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.imageButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.imageButton:hover {
+  transform: scale(1.05);
+}
+
+.imageButton:active {
+  transform: scale(0.95);
+}

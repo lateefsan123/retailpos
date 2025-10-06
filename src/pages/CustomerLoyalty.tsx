@@ -1025,7 +1025,6 @@ const CustomerLoyalty = () => {
             <div className={styles.pointsModalContent}>
               <div className={styles.modalHeader}>
                 <h2 className={styles.pointsModalTitle}>
-                  <i className="fa-solid fa-star" style={{ marginRight: '12px', color: '#f59e0b' }}></i>
                   {selectedCustomer.name} - Loyalty Management
                 </h2>
                 <button
@@ -1057,7 +1056,6 @@ const CustomerLoyalty = () => {
               {/* Points Management */}
               <div style={{ marginBottom: '32px' }}>
                 <h3 className={styles.sectionTitle}>
-                  <i className="fa-solid fa-star" style={{ color: '#f59e0b' }}></i>
                   Loyalty Points Management
                 </h3>
                 
