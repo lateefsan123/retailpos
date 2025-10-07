@@ -17,7 +17,9 @@ const MobileRedirect: React.FC<{ children: React.ReactNode }> = ({ children }) =
       '/products': '/products-mobile',
       '/sales': '/sales-mobile',
       '/transactions': '/transactions-mobile',
-      '/select-user': '/select-user-mobile'
+      '/select-user': '/select-user-mobile',
+      '/login': '/login-mobile',
+      '/signup': '/signup-mobile'
     };
 
     // Check if current path needs to be redirected

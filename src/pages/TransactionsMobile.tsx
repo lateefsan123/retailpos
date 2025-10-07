@@ -829,7 +829,7 @@ const TransactionsMobile = () => {
                     className={styles.detailActionButton}
                     onClick={() => {
                       closeTransactionDetail()
-                      navigate(`/sales?transaction=${selectedTransaction.sale_id}`)
+                      navigate(`/sales-mobile?transaction=${selectedTransaction.sale_id}`)
                     }}
                   >
                     Edit Transaction

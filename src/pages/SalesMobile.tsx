@@ -78,6 +78,7 @@ type ActiveModal =
 const SalesMobile = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const searchParams = new URLSearchParams(location.search)
   const { user } = useAuth()
   const { businessId, businessLoading } = useBusinessId()
   const { selectedBranch, selectedBranchId } = useBranch()
@@ -92,7 +93,8 @@ const SalesMobile = () => {
     updateWeight,
     removeFromOrder,
     resetOrder,
-    calculateOrderTotal
+    calculateOrderTotal,
+    loadExistingTransaction
   } = useOrder()
   const partialPayment = usePartialPayment(order.total)
   useBarcodeScanner({
@@ -109,6 +111,7 @@ const SalesMobile = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [isLoadingTransaction, setIsLoadingTransaction] = useState(false)
   const [showNav, setShowNav] = useState(false)
   const [activeModal, setActiveModal] = useState<ActiveModal>(null)
   const [pendingWeightedProduct, setPendingWeightedProduct] = useState<Product | null>(null)
@@ -162,6 +165,154 @@ const SalesMobile = () => {
   useEffect(() => {
     setShowNav(false)
   }, [location.pathname])
+
+  // Load transaction from URL parameter for editing
+  useEffect(() => {
+    const transactionParam = searchParams.get('transaction')
+    if (!transactionParam || !businessId || businessLoading) return
+
+    const fetchTransaction = async () => {
+      setIsLoadingTransaction(true)
+      try {
+        const saleId = parseInt(transactionParam.replace('TXN-', ''))
+
+        // Fetch transaction details
+        const { data: transactionData, error: transactionError } = await supabase
+          .from('sales')
+          .select(`
+            *,
+            customers (name)
+          `)
+          .eq('sale_id', saleId)
+          .eq('business_id', businessId)
+          .single()
+
+        if (transactionError || !transactionData) {
+          console.error('Error fetching transaction:', transactionError)
+          return
+        }
+
+        // Set customer info if available
+        if (transactionData.customers) {
+          setCustomerName(transactionData.customers.name || '')
+          // Phone is stored directly on the sales table as customer_phone if needed
+          setCustomerPhone(transactionData.customer_phone || '')
+        }
+
+        // Fetch sale items
+        const { data: itemsData, error: itemsError } = await supabase
+          .from('sale_items')
+          .select(`
+            *,
+            products (
+              name,
+              category,
+              price,
+              stock_quantity,
+              image_url,
+              is_weighted,
+              weight_unit,
+              price_per_unit
+            )
+          `)
+          .eq('sale_id', saleId)
+
+        if (itemsError) {
+          console.error('Error fetching sale items:', itemsError)
+          return
+        }
+
+        // Map items to order format
+        const existingItems: OrderItem[] = (itemsData || []).map(item => {
+          const product: Product = {
+            product_id: item.product_id.toString(),
+            name: item.products?.name || 'Unknown Product',
+            price: item.price_each,
+            category: item.products?.category || 'Unknown',
+            stock_quantity: item.products?.stock_quantity || 0,
+            image_url: item.products?.image_url,
+            is_weighted: item.products?.is_weighted || false,
+            weight_unit: item.products?.weight_unit,
+            price_per_unit: item.products?.price_per_unit
+          }
+
+          const orderItem: OrderItem = {
+            product,
+            quantity: item.quantity,
+            originalQuantity: item.quantity
+          }
+
+          if (item.products?.is_weighted && item.weight && item.calculated_price) {
+            orderItem.weight = item.weight
+            orderItem.calculatedPrice = item.calculated_price
+            orderItem.originalWeight = item.weight
+            orderItem.originalCalculatedPrice = item.calculated_price
+          }
+
+          return orderItem
+        })
+
+        // Fetch side business items
+        const { data: sideSalesData, error: sideSalesError } = await supabase
+          .from('side_business_sales')
+          .select(`
+            *,
+            side_business_items (
+              name,
+              price,
+              description,
+              image_url,
+              side_business_id
+            ),
+            side_businesses (
+              name
+            )
+          `)
+          .eq('sale_id', saleId)
+
+        if (!sideSalesError && sideSalesData) {
+          const sideBusinessOrderItems: OrderItem[] = sideSalesData.map((item: any) => {
+            const sideBusinessItem: SideBusinessItem = {
+              id: item.item_id.toString(),
+              name: item.side_business_items?.name || item.name || 'Unknown Item',
+              price: item.total_amount / item.quantity,
+              description: item.side_business_items?.description || item.description,
+              image_url: item.side_business_items?.image_url,
+              side_business_id: item.side_business_id,
+              side_businesses: {
+                name: item.side_businesses?.name || 'Unknown Business'
+              }
+            }
+
+            return {
+              product: sideBusinessItem as any,
+              quantity: item.quantity,
+              originalQuantity: item.quantity,
+              isSideBusinessItem: true
+            }
+          })
+
+          existingItems.push(...sideBusinessOrderItems)
+        }
+
+        // Load items into order using the hook
+        if (loadExistingTransaction) {
+          loadExistingTransaction(existingItems)
+        }
+
+        // Open cart to show loaded items
+        setActiveModal('cart')
+
+      } catch (error) {
+        console.error('Error loading transaction:', error)
+      } finally {
+        setIsLoadingTransaction(false)
+      }
+    }
+
+    fetchTransaction()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search, businessId, businessLoading])
 
   const filteredProducts = useMemo(() => {
     let filtered = products
@@ -1589,11 +1740,11 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
     </div>
   )
 
-  if (productsLoading || businessLoading) {
+  if (productsLoading || businessLoading || isLoadingTransaction) {
     return (
       <div className={styles.loadingContainer}>
         <Loader2 className={styles.loadingSpinner} />
-        Loading sales data...
+        {isLoadingTransaction ? 'Loading transaction...' : 'Loading sales data...'}
       </div>
     )
   }

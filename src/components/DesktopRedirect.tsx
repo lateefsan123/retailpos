@@ -20,7 +20,9 @@ const DesktopRedirect: React.FC<{ children: React.ReactNode }> = ({ children }) 
       '/products-mobile': '/products',
       '/sales-mobile': '/sales',
       '/transactions-mobile': '/transactions',
-      '/select-user-mobile': '/select-user'
+      '/select-user-mobile': '/select-user',
+      '/login-mobile': '/login',
+      '/signup-mobile': '/signup'
     };
 
     // Check if current path needs to be redirected

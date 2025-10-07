@@ -14,9 +14,12 @@ import UserMenu from './components/UserMenu'
 import LoadingScreen from './components/LoadingScreen'
 import MobileRedirect from './components/MobileRedirect'
 import DesktopRedirect from './components/DesktopRedirect'
+import RootRedirect from './components/RootRedirect'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
+import LoginMobile from './pages/LoginMobile'
 import Signup from './pages/Signup'
+import SignupMobile from './pages/SignupMobile'
 import Dashboard from './pages/Dashboard'
 import DashboardMobile from './pages/DashboardMobile'
 import Products from './pages/Products'
@@ -210,10 +213,12 @@ function App() {
                   <MobileRedirect>
                     <DesktopRedirect>
                       <Routes>
-                        <Route path="/" element={<Landing />} />
+                        <Route path="/" element={<RootRedirect />} />
                         <Route path="/landing" element={<Landing />} />
                         <Route path="/login" element={<Login />} />
+                        <Route path="/login-mobile" element={<LoginMobile />} />
                         <Route path="/signup" element={<Signup />} />
+                        <Route path="/signup-mobile" element={<SignupMobile />} />
                         <Route path="/select-user" element={<SelectUser />} />
                         <Route path="/select-user-mobile" element={<SelectUserMobile />} />
                         <Route path="/*" element={

@@ -163,6 +163,17 @@ export const useOrder = () => {
     })
   }
 
+  const loadExistingTransaction = (items: OrderItem[]) => {
+    setOrder({
+      items,
+      subtotal: 0,
+      tax: 0,
+      discount: 0,
+      total: 0
+    })
+    // Total will be recalculated by the useEffect
+  }
+
   // Recalculate totals whenever items change
   useEffect(() => {
     calculateOrderTotal()
@@ -177,6 +188,7 @@ export const useOrder = () => {
     updateWeight,
     removeFromOrder,
     resetOrder,
-    calculateOrderTotal
+    calculateOrderTotal,
+    loadExistingTransaction
   }
 }

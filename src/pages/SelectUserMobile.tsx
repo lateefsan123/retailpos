@@ -263,7 +263,7 @@ const SelectUserMobile: React.FC = () => {
             <div className={styles.pinButtons}>
               <button
                 type="button"
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/login-mobile')}
                 className={styles.btnSecondary}
               >
                 Back to Login
@@ -285,7 +285,7 @@ const SelectUserMobile: React.FC = () => {
         <div className={styles.header}>
           <h1 className={styles.title}>Select Branch</h1>
           <button
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/login-mobile')}
             className={styles.closeBtn}
             aria-label="Close"
           >
@@ -327,7 +327,7 @@ const SelectUserMobile: React.FC = () => {
           </button>
           <h1 className={styles.title}>Sign In</h1>
           <button
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/login-mobile')}
             className={styles.closeBtn}
             aria-label="Close"
           >
@@ -423,7 +423,7 @@ const SelectUserMobile: React.FC = () => {
       <div className={styles.header}>
         <h1 className={styles.title}>Select User</h1>
         <button
-          onClick={() => navigate('/login')}
+          onClick={() => navigate('/login-mobile')}
           className={styles.closeBtn}
           aria-label="Close"
         >
