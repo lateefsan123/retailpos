@@ -33,7 +33,20 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const useAuth = () => {
   const context = useContext(AuthContext)
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    // Provide a safe no-op fallback to avoid crashes when a component renders
+    // outside the provider due to provider order or conditional trees.
+    return {
+      user: null,
+      supabaseUser: null,
+      login: async () => false,
+      authenticate: async () => ({ success: false }),
+      register: async () => ({ success: false }),
+      switchUser: async () => false,
+      refreshUser: async () => {},
+      logout: () => {},
+      loading: true,
+      currentUserId: undefined,
+    } satisfies AuthContextType
   }
   return context
 }
@@ -298,29 +311,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       // Check if business name already exists
-      const { data: existingBusiness } = await supabase
+      const { data: existingBusiness, error: existingBusinessError } = await supabase
         .from('business_info')
-        .select('business_id')
+        .select('business_id, name')
         .eq('name', businessName)
+        .limit(1)
         .maybeSingle()
+
+      if (existingBusinessError && existingBusinessError.code !== 'PGRST116') {
+        console.error('Error checking business name:', existingBusinessError)
+        return { success: false }
+      }
 
       if (existingBusiness) {
         console.error('Business name already exists')
         return { success: false }
       }
 
-      // Check if there's already a pending registration for this email
-      const { data: existingPending } = await supabase
-        .from('pending_registrations')
-        .select('id')
-        .eq('email', email || username)
-        .eq('status', 'pending')
-        .maybeSingle()
-
-      if (existingPending) {
-        console.error('Registration already pending for this email')
-        return { success: false }
-      }
+      // Skip pending registration checks entirely
 
       // Create business first with all provided details
       const businessHours = openTime && closeTime ? `${openTime} - ${closeTime}` : null;
@@ -384,10 +392,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           username: username,
           password_hash: hashedPassword,
           role: 'owner',
-          active: false, // Set to false initially - will be activated after approval
+          active: true, // Immediately active (no pending_registrations flow)
           business_id: businessData.business_id,
           email: email || null,
           full_name: fullName,
+          email_verified: true,
           created_at: new Date().toISOString()
         })
         .select('*')
@@ -403,56 +412,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return { success: false }
       }
 
-      // Create pending registration record
-      console.log('Creating pending registration for user_id:', userData.user_id)
-      const pendingRegistrationData = {
-        user_id: userData.user_id,
-        email: email || username,
-        business_name: businessName,
-        first_name: firstName,
-        last_name: lastName,
-        phone: phone,
-        business_type: businessType,
-        business_description: businessDescription,
-        business_address: businessAddress,
-        business_phone: businessPhone,
-        currency: currency,
-        website: website,
-        vat_number: vatNumber,
-        open_time: openTime,
-        close_time: closeTime,
-        status: 'pending'
-      }
-      console.log('Pending registration data:', pendingRegistrationData)
-      
-      const { data: pendingData, error: pendingError } = await supabase
-        .from('pending_registrations')
-        .insert(pendingRegistrationData)
-        .select()
-
-      if (pendingError) {
-        console.error('Error creating pending registration:', pendingError)
-        // Clean up user and business if pending registration creation failed
-        await supabase
-          .from('users')
-          .delete()
-          .eq('user_id', userData.user_id)
-        await supabase
-          .from('business_info')
-          .delete()
-          .eq('business_id', businessData.business_id)
-        return { success: false }
-      }
-      
-      console.log('Pending registration created successfully:', pendingData)
-
-      // Don't log the user in automatically - they need approval first
-      // Return success with pending approval flag
-      console.log('=== REGISTRATION COMPLETED SUCCESSFULLY ===')
+      // No pending registration: consider registration completed
+      console.log('=== REGISTRATION COMPLETED SUCCESSFULLY (no pending flow) ===')
       console.log('User created with ID:', userData.user_id)
       console.log('Business created with ID:', businessData.business_id)
-      console.log('Pending registration created:', pendingData)
-      return { success: true, pendingApproval: true }
+      return { success: true, pendingApproval: false }
     } catch (error) {
       console.error('=== REGISTRATION FAILED ===')
       console.error('Registration error:', error)

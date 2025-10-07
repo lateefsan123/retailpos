@@ -493,7 +493,7 @@ const TransactionsMobile = () => {
         </div>
       </section>
 
-      <main className={styles.sectionBody}>
+      <main ref={listRef} className={styles.sectionBody}>
         {transactionsLoading && (
           <div className={styles.loadingState}>
             <div className={styles.loadingSpinner} />
