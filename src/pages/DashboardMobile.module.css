@@ -2,16 +2,21 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #f9fafb;
+  background-image: linear-gradient(rgba(8, 8, 11, 0.35), rgba(8, 8, 11, 0.5)), url('/images/backgrounds/mainbg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   overflow-x: hidden;
   overflow-y: auto;
   padding-bottom: 72px; /* space for bottom nav */
 }
 
 .header {
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border-bottom: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
   position: sticky;
   top: 0;
   z-index: 30;
@@ -288,12 +293,14 @@
 }
 
 .statsSection {
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.45);
   padding: 24px 20px;
   display: flex;
   flex-direction: column;
   gap: 24px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
 }
 
 .statsScroller {
@@ -360,11 +367,12 @@
 }
 
 .sectionCard {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.85);
   border-radius: 12px;
   margin: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(14px);
   display: flex;
   flex-direction: column;
   gap: 24px;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { X, Calendar as CalendarIcon, RefreshCw, Home, Package, Receipt, ShoppingBag } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
@@ -45,6 +45,7 @@ const formatDateTime = (isoString: string) => {
 const TransactionsMobile = () => {
   const location = useLocation()
   const navigate = useNavigate()
+  const listRef = useRef<HTMLDivElement | null>(null)
   const { businessId, businessLoading } = useBusinessId()
   const { selectedBranch, selectedBranchId } = useBranch()
   const { user } = useAuth()
@@ -73,12 +74,30 @@ const TransactionsMobile = () => {
   const [itemsPerPage] = useState(10)
   const [calendarMonth, setCalendarMonth] = useState(() => new Date())
   const [showBranchSelector, setShowBranchSelector] = useState(false)
+  const [initialScroll, setInitialScroll] = useState(false)
 
   const canSwitchBranches = user?.role?.toLowerCase() === 'owner'
 
   useEffect(() => {
     setShowNav(false)
   }, [location.pathname])
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const dateParam = params.get('date')
+    if (dateParam) {
+      try {
+        const parsed = new Date(dateParam)
+        if (!isNaN(parsed.getTime())) {
+          const end = params.get('end') ? new Date(params.get('end')!) : parsed
+          setSelectedDateRange({ start: parsed, end })
+          setActiveChip(null)
+        }
+      } catch (error) {
+        console.error('Invalid date param', error)
+      }
+    }
+  }, [location.search])
 
   useEffect(() => {
     const handleFocus = () => fetchTransactions()
@@ -88,6 +107,19 @@ const TransactionsMobile = () => {
       window.removeEventListener('focus', handleFocus)
     }
   }, [fetchTransactions])
+
+  useEffect(() => {
+    if (!initialScroll) {
+      const params = new URLSearchParams(location.search)
+      const dateParam = params.get('date')
+      if (dateParam && listRef.current) {
+        requestAnimationFrame(() => {
+          listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          setInitialScroll(true)
+        })
+      }
+    }
+  }, [initialScroll, location.search])
 
   useEffect(() => {
     setCurrentPage(1)

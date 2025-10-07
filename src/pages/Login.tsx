@@ -156,18 +156,8 @@ const Login: React.FC = () => {
         <div className={styles.headerContent}>
           <div className={styles.headerLeft}>
             <div className={styles.logoContainer}>
-              <svg 
-                className={styles.logo}
-                viewBox="0 0 200 60" 
-                fill="none" 
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                {/* Circle */}
-                <circle cx="25" cy="30" r="14" fill="#7d8d86"/>
-                
-                {/* TillPoint Text */}
-                <text x="45" y="38" fontFamily="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" fontSize="22" fontWeight="600" fill="#3e3f29">TillPoint</text>
-              </svg>
+              <i className={`fa-kit fa-test ${styles.faLogo}`}></i>
+              <span className={styles.logoText}>TillPoint POS</span>
             </div>
           </div>
           <div className={styles.headerRight}>

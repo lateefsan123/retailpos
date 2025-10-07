@@ -3,7 +3,11 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #f9fafb;
+  background-image: linear-gradient(rgba(8, 8, 11, 0.35), rgba(8, 8, 11, 0.5)), url('/images/backgrounds/mainbg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   overflow-x: hidden;
   overflow-y: auto;
   padding-bottom: 72px; /* space for bottom nav */
@@ -420,9 +424,11 @@
 
 /* Search Section */
 .searchSection {
-  background: white;
+  background: rgba(255, 255, 255, 0.85);
   padding: 16px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
 .searchContainer {

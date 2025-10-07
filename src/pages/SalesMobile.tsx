@@ -37,12 +37,12 @@ import { useAuth } from '../contexts/AuthContext'
 import { useBranch } from '../contexts/BranchContext'
 import { useBusinessId } from '../hooks/useBusinessId'
 import { useProductsData } from '../hooks/data/useProductsData'
+import { useTransactions } from '../hooks/derived/useTransactions'
 import { useOrder } from '../hooks/useOrder'
 import MobileBottomNav from '../components/MobileBottomNav'
 import { usePromotions } from '../hooks/usePromotions'
 import { useBarcodeScanner, setModalOpen } from '../hooks/useBarcodeScanner'
 import { usePartialPayment } from '../hooks/usePartialPayment'
-import BranchSelector from '../components/BranchSelector'
 import CustomerAutocomplete from '../components/CustomerAutocomplete'
 import { supabase } from '../lib/supabaseClient'
 
@@ -52,6 +52,24 @@ import { generateReceiptHTML, printReceipt } from '../utils/receiptUtils'
 import type { OrderItem } from '../types/sales'
 import type { Product, SideBusinessItem } from '../hooks/data/useProductsData'
 import styles from './SalesMobile.module.css'
+
+const formatRelativeTime = (isoString: string) => {
+  const normalized = isoString.includes('T') ? isoString : isoString.replace(' ', 'T')
+  const date = new Date(normalized)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMinutes = Math.floor(diffMs / (1000 * 60))
+  const diffHours = Math.floor(diffMinutes / 60)
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffMinutes < 1) return 'Just now'
+  if (diffMinutes < 60) return `${diffMinutes} min${diffMinutes > 1 ? 's' : ''} ago`
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+  if (diffDays === 1) return '1 day ago'
+  if (diffDays < 7) return `${diffDays} days ago`
+
+  return date.toLocaleDateString()
+}
 
 // Helper function to get local time in database format
 const getLocalDateTime = () => {
@@ -83,6 +101,7 @@ const SalesMobile = () => {
   const { businessId, businessLoading } = useBusinessId()
   const { selectedBranch, selectedBranchId } = useBranch()
   const { data: productsData, isLoading: productsLoading } = useProductsData()
+  const { transactions: hookTransactions, loading: transactionsLoading } = useTransactions()
   const { calculatePromotions, activePromotions } = usePromotions(businessId || null, selectedBranchId || null)
   const {
     order,
@@ -126,7 +145,6 @@ const SalesMobile = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'credit'>('cash')
   const [cashAmount, setCashAmount] = useState('')
-  const [showBranchSelector, setShowBranchSelector] = useState(false)
   const [allowPartialPayment, setAllowPartialPayment] = useState(false)
   const [receiptHtml, setReceiptHtml] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
@@ -137,6 +155,16 @@ const SalesMobile = () => {
   const [receiptEmail, setReceiptEmail] = useState('')
   const [receiptPhone, setReceiptPhone] = useState('')
   const [sendingReceipt, setSendingReceipt] = useState(false)
+
+  const recentTransactions = useMemo(() => (hookTransactions || []).slice(0, 5), [hookTransactions])
+
+  const handleViewAllTransactions = () => {
+    const firstTransaction = recentTransactions[0]
+    const rawDatetime = firstTransaction?.datetime
+    const normalized = rawDatetime ? rawDatetime.replace(' ', 'T') : new Date().toISOString()
+    const dateIso = normalized.split('T')[0]
+    navigate(`/transactions-mobile?date=${dateIso}`)
+  }
 
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const cashInputRef = useRef<HTMLInputElement | null>(null)
@@ -755,13 +783,13 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
       }
 
       // Generate receipt HTML for viewing later
-      const paymentInfo = {
-        method: paymentMethod,
-        amountEntered: paymentMethod === 'cash' ? cashAmount : total.toFixed(2),
-        change: paymentMethod === 'cash' ? Math.max(changeDue, 0) : 0,
-        customerName,
+    const paymentInfo = {
+      method: paymentMethod,
+      amountEntered: paymentMethod === 'cash' ? cashAmount : total.toFixed(2),
+      change: paymentMethod === 'cash' ? Math.max(changeDue, 0) : 0,
+      customerName,
         receiptNotes,
-        allowPartialPayment,
+      allowPartialPayment,
         partialAmount: allowPartialPayment ? partialAmount : undefined,
         remainingAmount: allowPartialPayment ? remainingAmount.toString() : undefined
       }
@@ -782,7 +810,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
       setReceiptHtml(receipt)
 
       // Clear cart and reset state
-      handleClearCart()
+    handleClearCart()
       setCustomerName('')
       setCustomerPhone('')
       setSelectedCustomer(null)
@@ -794,7 +822,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
       setRemainingAmount(0)
       setAllowPartialPayment(false)
       setActiveModal(null)
-      setIsProcessing(false)
+    setIsProcessing(false)
 
       // Show success message
       const successMsg = document.createElement('div')
@@ -841,12 +869,6 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
           </button>
           <div>
             <h1 className={styles.title}>Sales</h1>
-            <button
-              className={styles.branchButton}
-              onClick={() => setShowBranchSelector(true)}
-            >
-              {selectedBranch?.branch_name || 'Select branch'}
-            </button>
           </div>
         </div>
         <div className={styles.headerRight}>
@@ -999,6 +1021,78 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
         {filteredSideBusinessItems.map(renderSideBusinessCard)}
       </div>
     </div>
+  )
+
+  const renderRecentTransactions = () => (
+    <section className={styles.recentTransactionsSection}>
+      <div className={styles.recentTransactionsHeader}>
+        <div>
+          <h2 className={styles.recentTransactionsTitle}>Recent Transactions</h2>
+          <p className={styles.recentTransactionsSubtitle}>Latest sales activity</p>
+        </div>
+        <button
+          type="button"
+          className={styles.recentTransactionsLink}
+          onClick={handleViewAllTransactions}
+        >
+          View All
+        </button>
+      </div>
+
+      {transactionsLoading ? (
+        <div className={styles.recentTransactionsEmpty}>Loading transactions...</div>
+      ) : recentTransactions.length === 0 ? (
+        <div className={styles.recentTransactionsEmpty}>No recent transactions yet</div>
+      ) : (
+        <ul className={styles.recentTransactionsList}>
+          {recentTransactions.map(transaction => (
+            <li key={transaction.sale_id} className={styles.recentTransactionItem}>
+              <button
+                type="button"
+                className={styles.recentTransactionButton}
+                onClick={() => {
+                  const dateIso = transaction.datetime.split('T')[0]
+                  navigate(`/transactions-mobile?date=${dateIso}&transaction=${transaction.sale_id}`)
+                }}
+              >
+                <div className={styles.recentTransactionIcon}>
+                  <span className={
+                    transaction.partial_payment
+                      ? styles.recentTransactionDotPartial
+                      : styles.recentTransactionDotComplete
+                  }></span>
+                </div>
+                <div className={styles.recentTransactionInfo}>
+                  <span className={styles.recentTransactionId}>
+                    #{transaction.sale_id.toString().padStart(8, '0')}
+                  </span>
+                  <span className={styles.recentTransactionMeta}>
+                    {transaction.items?.length || 0} {transaction.items?.length === 1 ? 'item' : 'items'} • {transaction.payment_method}
+                  </span>
+                  <div className={styles.recentTransactionSubMeta}>
+                    <span className={styles.recentTransactionTime}>
+                      {formatRelativeTime(transaction.datetime)}
+                    </span>
+                    {transaction.partial_payment && (
+                      <span className={styles.recentTransactionBadge}>Partial</span>
+                    )}
+                  </div>
+                </div>
+                <div className={styles.recentTransactionAmount}>
+                  <span>{formatCurrency(transaction.total_amount)}</span>
+                  {transaction.partial_payment && transaction.remaining_amount != null && (
+                    <span className={styles.recentTransactionAmountSecondary}>
+                      Owes {formatCurrency(transaction.remaining_amount)}
+                    </span>
+                  )}
+                </div>
+                <ChevronRight className={styles.recentTransactionChevron} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   )
 
   const renderCartOverlay = () => {
@@ -1411,17 +1505,17 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 <div className={styles.summaryToggleSection}>
                   <div className={styles.summaryInputGroup}>
                     <label className={styles.summaryInputLabel}>Amount to Pay Now</label>
-                    <input
-                      type="number"
+                  <input
+                    type="number"
                       className={styles.summaryInputField}
                       value={partialAmount}
                       onChange={e => handlePartialAmountChange(e.target.value)}
-                      placeholder="0.00"
+                    placeholder="0.00"
                       step="0.01"
                       min="0"
                       max={total}
-                    />
-                  </div>
+                  />
+                </div>
                   <div className={styles.summaryInputGroup}>
                     <label className={styles.summaryInputLabel}>Notes</label>
                     <textarea
@@ -1446,7 +1540,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   )}
                 </div>
               )}
-            </div>
+                </div>
 
             {/* Cash Payment */}
             {paymentMethod === 'cash' && (
@@ -1457,7 +1551,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 </div>
                 <div className={styles.summaryInputGroup}>
                   <label className={styles.summaryInputLabel}>Amount Received</label>
-                  <input
+                    <input
                     ref={cashInputRef}
                     type="number"
                     className={styles.summaryCashInput}
@@ -1470,26 +1564,26 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 </div>
                 <button className={styles.summaryExactBtn} onClick={handleSetExactAmount}>
                   Set Exact Amount ({formatCurrency(amountDue)})
-                </button>
+                    </button>
                 {changeDue > 0 && (
                   <div className={styles.summaryChangeDisplay}>
                     Change: {formatCurrency(changeDue)}
                   </div>
-                )}
+                  )}
                 {cashAmount && changeDue < 0 && (
                   <div className={styles.summaryWarning}>
                     Insufficient cash. Need {formatCurrency(Math.abs(changeDue))} more.
+                </div>
+                )}
                   </div>
                 )}
-              </div>
-            )}
 
             {/* Receipt Notes */}
             <div className={styles.summarySection}>
               <div className={styles.summarySectionTitle}>
                 <FileText size={18} />
                 Receipt Notes
-              </div>
+                  </div>
               <div className={styles.summaryInputGroup}>
                 <textarea
                   className={`${styles.summaryInputField} ${styles.summaryTextarea}`}
@@ -1499,7 +1593,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 />
                 <div className={styles.summaryHelpText}>
                   These notes will appear on the printed receipt
-                </div>
+              </div>
               </div>
             </div>
 
@@ -1633,112 +1727,89 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
     )
   }
 
-  const renderSideMenu = () => (
-    <div className={`fixed inset-0 z-50 ${showNav ? 'pointer-events-auto' : 'pointer-events-none'}`}>
-      <div
-        className={`absolute inset-0 bg-black/40 transition-opacity ${showNav ? 'opacity-100' : 'opacity-0'}`}
-        onClick={() => setShowNav(false)}
-      ></div>
-      <div
-        className={`absolute left-0 top-0 bottom-0 w-72 bg-white shadow-xl transform transition-transform ${
-          showNav ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Menu</h2>
-          <button className="p-2 rounded-lg hover:bg-gray-100" onClick={() => setShowNav(false)}>
-            <X className="w-6 h-6 text-gray-600" />
-          </button>
-        </div>
-        <nav className="p-4 space-y-1">
-          <button
-            onClick={() => {
-              setShowNav(false)
-              navigate('/dashboard-mobile')
-            }}
-            className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm font-medium ${
-              location.pathname.startsWith('/dashboard-mobile') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            <span className="flex items-center space-x-3">
-              <Home size={18} />
-              <span>Home</span>
-            </span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => {
-              setShowNav(false)
-              navigate('/sales-mobile')
-            }}
-            className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm font-medium ${
-              location.pathname.startsWith('/sales-mobile') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            <span className="flex items-center space-x-3">
-              <ShoppingBag size={18} />
-              <span>Sales</span>
-            </span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => {
-              setShowNav(false)
-              navigate('/products-mobile')
-            }}
-            className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm font-medium ${
-              location.pathname.startsWith('/products-mobile') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            <span className="flex items-center space-x-3">
-              <Package size={18} />
-              <span>Products</span>
-            </span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => {
-              setShowNav(false)
-              navigate('/transactions-mobile')
-            }}
-            className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm font-medium ${
-              location.pathname.startsWith('/transactions-mobile') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            <span className="flex items-center space-x-3">
-              <Receipt size={18} />
-              <span>Transactions</span>
-            </span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </nav>
-      </div>
-    </div>
-  )
+  const renderSideMenu = () => {
+    if (!showNav) return null
 
-  const renderBranchSelectorModal = () => (
-    <div className={`fixed inset-0 z-50 ${showBranchSelector ? 'pointer-events-auto' : 'pointer-events-none'}`}>
-      <div
-        className={`absolute inset-0 bg-black/40 transition-opacity ${showBranchSelector ? 'opacity-100' : 'opacity-0'}`}
-        onClick={() => setShowBranchSelector(false)}
-      ></div>
-      <div
-        className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-xl transform transition-transform ${
-          showBranchSelector ? 'translate-y-0' : 'translate-y-full'
-        }`}
-      >
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Select Branch</h2>
-          <button className="p-2 rounded-lg hover:bg-gray-100" onClick={() => setShowBranchSelector(false)}>
-            <X className="w-6 h-6 text-gray-600" />
-          </button>
-        </div>
-        <div className="p-4">
-          <BranchSelector size="md" />
+    return (
+      <div className="fixed inset-0 z-50">
+        <div
+          className="absolute inset-0 bg-black/40"
+          onClick={() => setShowNav(false)}
+        ></div>
+        <div className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-xl">
+          <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+            <h2 className="text-lg font-bold">Menu</h2>
+            <button className="p-2 rounded-lg hover:bg-gray-100" onClick={() => setShowNav(false)}>
+              <X className="w-6 h-6 text-gray-600" />
+            </button>
+          </div>
+          <nav className="p-4 space-y-1">
+            <button
+              onClick={() => {
+                setShowNav(false)
+                navigate('/dashboard-mobile')
+              }}
+              className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm font-medium ${
+                location.pathname.startsWith('/dashboard-mobile') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <span className="flex items-center space-x-3">
+                <Home size={18} />
+                <span>Home</span>
+              </span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => {
+                setShowNav(false)
+                navigate('/sales-mobile')
+              }}
+              className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm font-medium ${
+                location.pathname.startsWith('/sales-mobile') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <span className="flex items-center space-x-3">
+                <ShoppingBag size={18} />
+                <span>Sales</span>
+              </span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => {
+                setShowNav(false)
+                navigate('/products-mobile')
+              }}
+              className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm font-medium ${
+                location.pathname.startsWith('/products-mobile') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <span className="flex items-center space-x-3">
+                <Package size={18} />
+                <span>Products</span>
+              </span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => {
+                setShowNav(false)
+                navigate('/transactions-mobile')
+              }}
+              className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm font-medium ${
+                location.pathname.startsWith('/transactions-mobile') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <span className="flex items-center space-x-3">
+                <Receipt size={18} />
+                <span>Transactions</span>
+              </span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </nav>
         </div>
       </div>
-    </div>
-  )
+    )
+  }
+
 
   if (productsLoading || businessLoading || isLoadingTransaction) {
     return (
@@ -1753,6 +1824,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
     <div className={styles.page}>
       {renderHeader()}
       {renderSearchBar()}
+      {renderRecentTransactions()}
       {renderCategoryTabs()}
       {renderProductsGrid()}
       <MobileBottomNav />
@@ -1762,7 +1834,6 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
       {renderPaymentModal()}
       {renderReceiptModal()}
       {renderSideMenu()}
-      {renderBranchSelectorModal()}
     </div>
   )
 }
