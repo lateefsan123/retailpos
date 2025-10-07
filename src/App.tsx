@@ -12,6 +12,8 @@ import RoleProtectedRoute from './components/RoleProtectedRoute'
 import Navigation from './components/Navigation'
 import UserMenu from './components/UserMenu'
 import LoadingScreen from './components/LoadingScreen'
+import MobileRedirect from './components/MobileRedirect'
+import DesktopRedirect from './components/DesktopRedirect'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -20,12 +22,14 @@ import DashboardMobile from './pages/DashboardMobile'
 import Products from './pages/Products'
 import ProductsMobile from './pages/ProductsMobile'
 import Sales from './pages/Sales'
+import SalesMobile from './pages/SalesMobile'
 import SideBusinesses from './pages/SideBusinesses'
 import Transactions from './pages/Transactions'
 import TransactionDetail from './pages/TransactionDetail'
 import Admin from './pages/Admin'
 import Reminders from './pages/Reminders'
 import SelectUser from './pages/SelectUser'
+import SelectUserMobile from './pages/SelectUserMobile'
 import Suppliers from './pages/Suppliers'
 import Promotions from './pages/Promotions'
 import VerificationAdmin from './pages/VerificationAdmin'
@@ -35,7 +39,7 @@ import TransactionsMobile from './pages/TransactionsMobile'
 const AppContent = () => {
   const location = useLocation()
   const { isSwitchingBranch, switchingToBranch } = useBranch()
-  const isMobileDashboard = location.pathname.startsWith('/dashboard-mobile') || location.pathname.startsWith('/products-mobile') || location.pathname.startsWith('/transactions-mobile')
+  const isMobileDashboard = location.pathname.startsWith('/dashboard-mobile') || location.pathname.startsWith('/products-mobile') || location.pathname.startsWith('/transactions-mobile') || location.pathname.startsWith('/sales-mobile')
   useNavCollapse()
 
   // Render mobile pages separately without the main app layout
@@ -45,6 +49,7 @@ const AppContent = () => {
         {location.pathname.startsWith('/dashboard-mobile') && <DashboardMobile />}
         {location.pathname.startsWith('/products-mobile') && <ProductsMobile />}
         {location.pathname.startsWith('/transactions-mobile') && <TransactionsMobile />}
+        {location.pathname.startsWith('/sales-mobile') && <SalesMobile />}
         <LoadingScreen 
           isVisible={isSwitchingBranch} 
           message={switchingToBranch ? `Switching to ${switchingToBranch}...` : "Switching Branch..."} 
@@ -123,6 +128,11 @@ const AppContent = () => {
                   <Sales />
                 </RoleProtectedRoute>
               } />
+              <Route path="/sales-mobile" element={
+                <RoleProtectedRoute requiredPermission="canProcessSales">
+                  <SalesMobile />
+                </RoleProtectedRoute>
+              } />
               <Route path="/side-businesses" element={
                 <RoleProtectedRoute requiredPermission="canProcessSales">
                   <SideBusinesses />
@@ -197,18 +207,23 @@ function App() {
               <NavProvider>
                 <PinProvider>
                 <Router basename="/">
-                  <Routes>
-                    <Route path="/" element={<Landing />} />
-                    <Route path="/landing" element={<Landing />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<Signup />} />
-                    <Route path="/select-user" element={<SelectUser />} />
-                    <Route path="/*" element={
-                      <ProtectedRoute>
-                        <AppContent />
-                      </ProtectedRoute>
-                    } />
-                  </Routes>
+                  <MobileRedirect>
+                    <DesktopRedirect>
+                      <Routes>
+                        <Route path="/" element={<Landing />} />
+                        <Route path="/landing" element={<Landing />} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/signup" element={<Signup />} />
+                        <Route path="/select-user" element={<SelectUser />} />
+                        <Route path="/select-user-mobile" element={<SelectUserMobile />} />
+                        <Route path="/*" element={
+                          <ProtectedRoute>
+                            <AppContent />
+                          </ProtectedRoute>
+                        } />
+                      </Routes>
+                    </DesktopRedirect>
+                  </MobileRedirect>
                 </Router>
                 </PinProvider>
               </NavProvider>

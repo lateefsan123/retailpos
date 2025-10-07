@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useDeviceDetection } from '../hooks/useDeviceDetection';
 import styles from './Login.module.css';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const { login, loading } = useAuth();
+  const { isMobile, isTablet } = useDeviceDetection();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -101,8 +103,12 @@ const Login: React.FC = () => {
           // Redirect verification admin directly to their page
           navigate('/verification-admin');
         } else {
-          // Redirect to select user page after successful login
-          navigate('/select-user');
+          // Redirect to appropriate select user page based on device
+          if (isMobile || isTablet) {
+            navigate('/select-user-mobile');
+          } else {
+            navigate('/select-user');
+          }
         }
       } else {
         setErrors({ general: 'Invalid email or password' });

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Home, Package, Receipt, X, Calendar as CalendarIcon, RefreshCw } from 'lucide-react'
+import { X, Calendar as CalendarIcon, RefreshCw, Home, Package, Receipt, ShoppingBag } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { useBusinessId } from '../hooks/useBusinessId'
@@ -9,6 +9,7 @@ import { formatCurrency } from '../utils/currency'
 import { useAuth } from '../contexts/AuthContext'
 
 import BranchSelector from '../components/BranchSelector'
+import MobileBottomNav from '../components/MobileBottomNav'
 import styles from './TransactionsMobile.module.css'
 
 interface CalendarDay {
@@ -610,35 +611,7 @@ const TransactionsMobile = () => {
         </button>
       </footer>
 
-      <nav className={styles.bottomNav} aria-label="Primary">
-        <button
-          type="button"
-          className={`${styles.tabButton} ${location.pathname.startsWith('/dashboard-mobile') ? styles.tabActive : ''}`}
-          onClick={() => navigate('/dashboard-mobile')}
-          aria-current={location.pathname.startsWith('/dashboard-mobile') ? 'page' : undefined}
-        >
-          <Home size={22} aria-hidden="true" />
-          <span>Dashboard</span>
-        </button>
-        <button
-          type="button"
-          className={`${styles.tabButton} ${location.pathname.startsWith('/products-mobile') ? styles.tabActive : ''}`}
-          onClick={() => navigate('/products-mobile')}
-          aria-current={location.pathname.startsWith('/products-mobile') ? 'page' : undefined}
-        >
-          <Package size={22} aria-hidden="true" />
-          <span>Products</span>
-        </button>
-        <button
-          type="button"
-          className={`${styles.tabButton} ${location.pathname.startsWith('/transactions-mobile') ? styles.tabActive : ''}`}
-          onClick={() => navigate('/transactions-mobile')}
-          aria-current={location.pathname.startsWith('/transactions-mobile') ? 'page' : undefined}
-        >
-          <Receipt size={22} aria-hidden="true" />
-          <span>Transactions</span>
-        </button>
-      </nav>
+      <MobileBottomNav />
 
       {showCalendar && (
         <div className={styles.calendarOverlay} onClick={() => setShowCalendar(false)}>

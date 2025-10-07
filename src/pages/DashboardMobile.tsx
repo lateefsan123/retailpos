@@ -1,14 +1,14 @@
 import { useEffect, useState, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Home, Package, Receipt, X } from 'lucide-react'
+import { X, Calendar, ChevronLeft, ChevronRight, TrendingUp, Clock } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { formatCurrency } from '../utils/currency'
 import { useBusinessId } from '../hooks/useBusinessId'
 import { useBranch } from '../contexts/BranchContext'
 import { useAuth } from '../contexts/AuthContext'
 import BranchSelector from '../components/BranchSelector'
+import MobileBottomNav from '../components/MobileBottomNav'
 
-import Navigation from '../components/Navigation'
 import LowStockSection from '../components/dashboard/LowStockSection'
 import ProductAnalyticsSection from '../components/dashboard/ProductAnalyticsSection'
 import { useTransactions } from '../hooks/derived/useTransactions'
@@ -35,7 +35,6 @@ const DashboardMobile = () => {
   const { selectedBranchId, selectedBranch } = useBranch()
   const { user } = useAuth()
   
-  const [showNav, setShowNav] = useState(false)
   const [showBranchSelector, setShowBranchSelector] = useState(false)
   const [showTransactionModal, setShowTransactionModal] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null)
@@ -52,14 +51,17 @@ const DashboardMobile = () => {
   })
   const [loading, setLoading] = useState(true)
   const [recentTransactions, setRecentTransactions] = useState<RecentTransaction[]>([])
-  const [sideBusinessBreakdown, setSideBusinessBreakdown] = useState<Array<{
-    business_id: number
-    name: string
-    image_url: string | null
-    total_amount: number
-  }>>([])
-  const [selectedDate] = useState<Date>(new Date())
-  const [activePeriod] = useState<'today' | 'week' | 'month'>('today')
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+  const [activePeriod, setActivePeriod] = useState<'today' | 'week' | 'month'>('today')
+  const [chartType, setChartType] = useState<'weekly' | 'hourly'>('weekly')
+  const [businessHours, setBusinessHours] = useState<string>('9:00 AM - 6:00 PM')
+  const [selectedWeekStart, setSelectedWeekStart] = useState<Date>(() => {
+    const today = new Date()
+    const dayOfWeek = today.getDay()
+    const weekStart = new Date(today)
+    weekStart.setDate(today.getDate() - dayOfWeek)
+    return weekStart
+  })
 
   const canSwitchBranches = user?.role?.toLowerCase() === 'owner'
 
@@ -72,9 +74,6 @@ const DashboardMobile = () => {
   }>>([])
   const chartRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    setShowNav(false)
-  }, [location.pathname])
 
   // Animate chart when chartData changes
   useEffect(() => {
@@ -82,17 +81,19 @@ const DashboardMobile = () => {
       // Reset all bars to 0 width
       const bars = chartRef.current.querySelectorAll('[data-width]')
       bars.forEach(bar => {
-        bar.style.width = '0%'
-        bar.classList.remove('loaded')
+        const element = bar as HTMLElement
+        element.style.width = '0%'
+        element.classList.remove('loaded')
       })
 
       // Animate bars after a short delay
       setTimeout(() => {
         bars.forEach(bar => {
-          const width = bar.getAttribute('data-width')
+          const element = bar as HTMLElement
+          const width = element.getAttribute('data-width')
           if (width) {
-            bar.style.width = width
-            setTimeout(() => bar.classList.add('loaded'), 800)
+            element.style.width = width
+            setTimeout(() => element.classList.add('loaded'), 800)
           }
         })
       }, 100)
@@ -108,6 +109,17 @@ const DashboardMobile = () => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true)
+
+        // Fetch business hours
+        const { data: businessInfo } = await supabase
+          .from('business_info')
+          .select('business_hours')
+          .eq('business_id', businessId)
+          .single()
+        
+        if (businessInfo?.business_hours) {
+          setBusinessHours(businessInfo.business_hours)
+        }
 
         // Fetch today's stats
         const today = new Date()
@@ -146,25 +158,21 @@ const DashboardMobile = () => {
         const totalRefunds = todayRefunds?.reduce((sum, refund) => sum + (refund.refund_amount || 0), 0) || 0
 
         // Recent transactions now come from hook; keep state in sync
-        setRecentTransactions(computedRecentTransactions)
+        setRecentTransactions(computedRecentTransactions.map(t => ({
+          ...t,
+          items_count: t.items?.length || 0,
+          status: t.partial_payment ? 'pending' as const : 'completed' as const
+        })))
 
-        // Side business breakdown - simplified query
-        const { data: sideBusinessData, error: sideBusinessError } = await supabase
-          .from('side_businesses')
-          .select('business_id, name, image_url')
-          .eq('business_id', businessId)
+        // Side business breakdown - simplified query (removed as not used)
 
-        if (sideBusinessError) {
-          console.error('Error fetching side businesses:', sideBusinessError)
-        }
-
-        // Get side business sales separately
+        // Get side business sales separately - using side_business_sales table instead
         let sideBusinessSalesQuery = supabase
-          .from('sales')
-          .select('side_business_id, total_amount')
+          .from('side_business_sales')
+          .select('total_amount')
           .eq('business_id', businessId)
-          .gte('datetime', `${todayStr}T00:00:00Z`)
-          .lt('datetime', `${todayStr}T23:59:59Z`)
+          .gte('date_time', `${todayStr}T00:00:00Z`)
+          .lt('date_time', `${todayStr}T23:59:59Z`)
         
         if (selectedBranchId) {
           sideBusinessSalesQuery = sideBusinessSalesQuery.eq('branch_id', selectedBranchId)
@@ -175,74 +183,147 @@ const DashboardMobile = () => {
           console.error('Error fetching side business sales:', sideBusinessSalesError)
         }
 
-        if (sideBusinessData && sideBusinessSales) {
-          const breakdown = sideBusinessData.map(sb => {
-            const sales = sideBusinessSales
-              .filter(sale => sale.side_business_id != null)
-              .filter(sale => sale.side_business_id === sb.business_id)
-            return {
-              business_id: sb.business_id,
-              name: sb.name,
-              image_url: sb.image_url,
-              total_amount: sales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0)
-            }
-          })
-          setSideBusinessBreakdown(breakdown)
-        }
+        // Side business breakdown calculation removed as it's not used
 
         // Calculate side business revenue
         const sideBusinessRevenue = sideBusinessSales
-          ?.filter(sale => sale.side_business_id != null)
-          .reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
+          ?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
 
-        // Fetch chart data for the last 7 days
-        const chartStartDate = new Date(today)
-        chartStartDate.setDate(chartStartDate.getDate() - 6)
-        
-        let chartQuery = supabase
-          .from('sales')
-          .select('datetime, total_amount')
-          .eq('business_id', businessId)
-          .gte('datetime', chartStartDate.toISOString().split('T')[0])
-          .lt('datetime', `${todayStr}T23:59:59`)
-          .order('datetime', { ascending: true })
-        
-        if (selectedBranchId) {
-          chartQuery = chartQuery.eq('branch_id', selectedBranchId)
-        }
-
-        const { data: chartSales, error: chartError } = await chartQuery
-        if (chartError) {
-          console.error('Error fetching chart data:', chartError)
-        }
-
-        // Process chart data by day
-        if (chartSales) {
-          const dailyData: { [key: string]: { revenue: number } } = {}
+        // Fetch chart data based on chart type
+        if (chartType === 'weekly') {
+          // Fetch 7 days of data starting from selectedWeekStart
+          const weekEnd = new Date(selectedWeekStart)
+          weekEnd.setDate(weekEnd.getDate() + 6)
           
-          // Initialize last 7 days
-          for (let i = 6; i >= 0; i--) {
-            const date = new Date(today)
-            date.setDate(date.getDate() - i)
-            const dateStr = date.toISOString().split('T')[0]
-            dailyData[dateStr] = { revenue: 0 }
+          const weekStartStr = ymdLocal(selectedWeekStart)
+          const weekEndStr = ymdLocal(weekEnd)
+          
+          let chartQuery = supabase
+            .from('sales')
+            .select('datetime, total_amount')
+            .eq('business_id', businessId)
+            .gte('datetime', `${weekStartStr}T00:00:00`)
+            .lt('datetime', `${weekEndStr}T23:59:59`)
+            .order('datetime', { ascending: true })
+          
+          if (selectedBranchId) {
+            chartQuery = chartQuery.eq('branch_id', selectedBranchId)
           }
 
-          // Aggregate sales data
-          chartSales.forEach(sale => {
-            const saleDate = sale.datetime.split('T')[0]
-            if (dailyData[saleDate]) {
-              dailyData[saleDate].revenue += sale.total_amount || 0
-            }
-          })
+          const { data: chartSales, error: chartError } = await chartQuery
+          if (chartError) {
+            console.error('Error fetching chart data:', chartError)
+          }
 
-          // Convert to array format
-          const chartDataArray = Object.entries(dailyData).map(([date, data]) => ({
-            period: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
-            revenue: data.revenue
-          }))
+          // Process chart data by day
+          if (chartSales) {
+            const dailyData: { [key: string]: { revenue: number; isToday: boolean } } = {}
+            const todayStr = ymdLocal(new Date())
+            
+            // Initialize 7 days of the week
+            for (let i = 0; i < 7; i++) {
+              const date = new Date(selectedWeekStart)
+              date.setDate(date.getDate() + i)
+              const dateStr = ymdLocal(date)
+              dailyData[dateStr] = { revenue: 0, isToday: dateStr === todayStr }
+            }
+
+            // Aggregate sales data
+            chartSales.forEach(sale => {
+              const saleDate = sale.datetime.split('T')[0]
+              if (dailyData[saleDate]) {
+                dailyData[saleDate].revenue += sale.total_amount || 0
+              }
+            })
+
+            // Convert to array format
+            const chartDataArray = Object.entries(dailyData).map(([date, data]) => ({
+              period: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
+              revenue: data.revenue,
+              isToday: data.isToday
+            }))
+            
+            setChartData(chartDataArray)
+          }
+        } else {
+          // Fetch hourly data for selected date
+          let hourlyQuery = supabase
+            .from('sales')
+            .select('datetime, total_amount')
+            .eq('business_id', businessId)
+            .gte('datetime', `${todayStr}T00:00:00Z`)
+            .lt('datetime', `${todayStr}T23:59:59Z`)
+            .order('datetime', { ascending: true })
           
-          setChartData(chartDataArray)
+          if (selectedBranchId) {
+            hourlyQuery = hourlyQuery.eq('branch_id', selectedBranchId)
+          }
+
+          const { data: hourlySales, error: hourlyError } = await hourlyQuery
+          if (hourlyError) {
+            console.error('Error fetching hourly data:', hourlyError)
+          }
+
+          // Process chart data by hour
+          if (hourlySales) {
+            // Parse business hours to get start and end times
+            const parseBusinessHours = (hours: string): { start: number; end: number } => {
+              try {
+                // Format: "9:00 AM - 6:00 PM" or "09:00 - 18:00"
+                const parts = hours.split('-').map(p => p.trim())
+                if (parts.length !== 2) return { start: 9, end: 21 }
+                
+                const parseTime = (timeStr: string): number => {
+                  const isPM = timeStr.toLowerCase().includes('pm')
+                  const isAM = timeStr.toLowerCase().includes('am')
+                  const numStr = timeStr.replace(/[^0-9:]/g, '')
+                  const [hourStr] = numStr.split(':')
+                  let hour = parseInt(hourStr)
+                  
+                  if (isPM && hour < 12) hour += 12
+                  if (isAM && hour === 12) hour = 0
+                  
+                  return hour
+                }
+                
+                return {
+                  start: parseTime(parts[0]),
+                  end: parseTime(parts[1])
+                }
+              } catch {
+                return { start: 9, end: 21 }
+              }
+            }
+            
+            const { start, end } = parseBusinessHours(businessHours)
+            const hourlyData: { [key: number]: { revenue: number } } = {}
+            
+            // Initialize hours based on business hours
+            for (let hour = start; hour <= end; hour++) {
+              hourlyData[hour] = { revenue: 0 }
+            }
+
+            // Aggregate sales data by hour
+            hourlySales.forEach(sale => {
+              const saleDate = new Date(sale.datetime)
+              const hour = saleDate.getHours()
+              if (hourlyData[hour] !== undefined) {
+                hourlyData[hour].revenue += sale.total_amount || 0
+              }
+            })
+
+            // Convert to array format with 12-hour format
+            const chartDataArray = Object.entries(hourlyData).map(([hour, data]) => {
+              const h = parseInt(hour)
+              const period = h === 0 ? '12 AM' : h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`
+              return {
+                period,
+                revenue: data.revenue
+              }
+            })
+            
+            setChartData(chartDataArray)
+          }
         }
 
         // Update stats
@@ -263,7 +344,7 @@ const DashboardMobile = () => {
     }
 
     fetchDashboardData()
-  }, [businessId, businessLoading, selectedBranchId, selectedDate])
+  }, [businessId, businessLoading, selectedBranchId, selectedDate, chartType, selectedWeekStart])
 
 
   return (
@@ -273,12 +354,42 @@ const DashboardMobile = () => {
           <div className={styles.headerCopy}>
             <div>
               <h1 className={styles.title}>Dashboard</h1>
-              <p className={styles.dateText}>{selectedDate.toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}</p>
+              <div className={styles.dateNavigation}>
+                <button 
+                  className={styles.dateNavBtn}
+                  onClick={() => {
+                    const newDate = new Date(selectedDate)
+                    newDate.setDate(newDate.getDate() - 1)
+                    setSelectedDate(newDate)
+                  }}
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <p className={styles.dateText}>{selectedDate.toLocaleDateString('en-US', { 
+                  weekday: 'short', 
+                  month: 'short', 
+                  day: 'numeric',
+                  year: selectedDate.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+                })}</p>
+                <button 
+                  className={styles.dateNavBtn}
+                  onClick={() => {
+                    const newDate = new Date(selectedDate)
+                    newDate.setDate(newDate.getDate() + 1)
+                    setSelectedDate(newDate)
+                  }}
+                  disabled={selectedDate.toDateString() === new Date().toDateString()}
+                >
+                  <ChevronRight size={20} />
+                </button>
+                <button 
+                  className={styles.todayBtn}
+                  onClick={() => setSelectedDate(new Date())}
+                >
+                  <Calendar size={16} />
+                  Today
+                </button>
+              </div>
             </div>
           </div>
           <div className={styles.branch}>
@@ -336,8 +447,53 @@ const DashboardMobile = () => {
         <div className={styles.sectionHeader}>
           <div>
             <h2 className={styles.sectionTitle}>
-              Sales Overview (Last 7 Days)
+              {chartType === 'weekly' ? 'Weekly Sales' : 'Business Hours'}
             </h2>
+            {chartType === 'weekly' && (
+              <div className={styles.weekNavigation}>
+                <button 
+                  className={styles.weekNavBtn}
+                  onClick={() => {
+                    const newWeek = new Date(selectedWeekStart)
+                    newWeek.setDate(newWeek.getDate() - 7)
+                    setSelectedWeekStart(newWeek)
+                  }}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className={styles.weekLabel}>
+                  {selectedWeekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - 
+                  {' '}{new Date(selectedWeekStart.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </span>
+                <button 
+                  className={styles.weekNavBtn}
+                  onClick={() => {
+                    const newWeek = new Date(selectedWeekStart)
+                    newWeek.setDate(newWeek.getDate() + 7)
+                    setSelectedWeekStart(newWeek)
+                  }}
+                  disabled={selectedWeekStart.getTime() + 7 * 24 * 60 * 60 * 1000 > new Date().getTime()}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+          <div className={styles.chartToggle}>
+            <button
+              className={`${styles.chartToggleBtn} ${chartType === 'weekly' ? styles.active : ''}`}
+              onClick={() => setChartType('weekly')}
+            >
+              <TrendingUp size={16} />
+              Weekly
+            </button>
+            <button
+              className={`${styles.chartToggleBtn} ${chartType === 'hourly' ? styles.active : ''}`}
+              onClick={() => setChartType('hourly')}
+            >
+              <Clock size={16} />
+              Hourly
+            </button>
           </div>
         </div>
         <div className={styles.chartContainer}>
@@ -349,13 +505,14 @@ const DashboardMobile = () => {
                 const maxRevenue = Math.max(...chartData.map(d => d.revenue))
                 const percentage = maxRevenue > 0 ? (item.revenue / maxRevenue) * 100 : 0
                 const isLow = item.revenue < maxRevenue * 0.3
+                const isToday = (item as any).isToday
                 
                 return (
-                  <div key={index} className={styles.dayItem}>
-                    <div className={styles.dayLabel}>{item.period}</div>
+                  <div key={index} className={`${styles.dayItem} ${isToday ? styles.todayItem : ''}`}>
+                    <div className={`${styles.dayLabel} ${isToday ? styles.todayLabel : ''}`}>{item.period}</div>
                     <div className={styles.barContainer}>
                       <div 
-                        className={`${styles.bar} ${isLow ? styles.barLow : styles.barHigh}`}
+                        className={`${styles.bar} ${isToday ? styles.barToday : isLow ? styles.barLow : styles.barHigh}`}
                         style={{ width: '0%' }}
                         data-width={`${percentage}%`}
                       >
@@ -476,35 +633,7 @@ const DashboardMobile = () => {
       </div>
 
       {/* Bottom navigation */}
-      <nav className={styles.bottomNav} aria-label="Primary">
-        <button
-          type="button"
-          className={`${styles.tabButton} ${location.pathname.startsWith('/dashboard-mobile') ? styles.tabActive : ''}`}
-          onClick={() => navigate('/dashboard-mobile')}
-          aria-current={location.pathname.startsWith('/dashboard-mobile') ? 'page' : undefined}
-        >
-          <Home size={22} aria-hidden="true" />
-          <span className={styles.tabLabel}>Home</span>
-        </button>
-        <button
-          type="button"
-          className={`${styles.tabButton} ${location.pathname.startsWith('/products-mobile') ? styles.tabActive : ''}`}
-          onClick={() => navigate('/products-mobile')}
-          aria-current={location.pathname.startsWith('/products-mobile') ? 'page' : undefined}
-        >
-          <Package size={22} aria-hidden="true" />
-          <span className={styles.tabLabel}>Products</span>
-        </button>
-        <button
-          type="button"
-          className={`${styles.tabButton} ${location.pathname.startsWith('/transactions-mobile') ? styles.tabActive : ''}`}
-          onClick={() => navigate('/transactions-mobile')}
-          aria-current={location.pathname.startsWith('/transactions-mobile') ? 'page' : undefined}
-        >
-          <Receipt size={22} aria-hidden="true" />
-          <span className={styles.tabLabel}>Transactions</span>
-        </button>
-      </nav>
+      <MobileBottomNav />
 
       {/* Branch Selector Modal */}
       {showBranchSelector && canSwitchBranches && (

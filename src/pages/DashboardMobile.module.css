@@ -42,6 +42,141 @@
   margin: 0;
   font-size: 0.875rem;
   color: #6b7280;
+  font-weight: 500;
+}
+
+.dateNavigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.dateNavBtn {
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #374151;
+  transition: all 0.2s ease;
+}
+
+.dateNavBtn:hover:not(:disabled) {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.dateNavBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.todayBtn {
+  background: #1a1a1a;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  margin-left: 4px;
+}
+
+.todayBtn:hover {
+  background: #2c2c2c;
+}
+
+.chartToggle {
+  display: flex;
+  gap: 4px;
+  background: #f3f4f6;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.chartToggleBtn {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.chartToggleBtn:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.chartToggleBtn.active {
+  background: white;
+  color: #111827;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.weekNavigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.weekNavBtn {
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #374151;
+  transition: all 0.2s ease;
+}
+
+.weekNavBtn:hover:not(:disabled) {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.weekNavBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.weekLabel {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.todayItem {
+  position: relative;
+}
+
+.todayLabel {
+  color: #1a1a1a;
+  font-weight: 700;
+}
+
+.barToday {
+  background: linear-gradient(135deg, #1a1a1a, #2c2c2c) !important;
+  border: 2px solid #1a1a1a;
+  box-shadow: 0 4px 12px rgba(26, 26, 26, 0.3);
 }
 
 .branch {
@@ -739,48 +874,6 @@
   transform: translateX(0);
 }
 
-/* Bottom navigation */
-.bottomNav {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 60px;
-  background: #ffffff;
-  border-top: 1px solid #e5e7eb;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  align-items: center;
-  padding: 0 8px;
-  z-index: 3200;
-}
-
-.tabButton {
-  height: 44px;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  color: #6b7280;
-  background: transparent;
-  border: none;
-  border-radius: 10px;
-}
-
-.tabButton:focus-visible,
-.tabButton:hover {
-  background: #f3f4f6;
-}
-
-.tabActive {
-  color: #111827;
-}
-
-.tabLabel {
-  font-size: 11px;
-  line-height: 1;
-}
 
 @media (min-width: 768px) {
   .menuButton {

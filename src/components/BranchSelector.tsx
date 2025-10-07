@@ -36,12 +36,9 @@ const BranchSelector: React.FC<BranchSelectorProps> = ({
   const [loading, setLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
 
-  // Debug logging
-  console.log('BranchSelector - User role:', user?.role, 'Lowercase:', user?.role?.toLowerCase(), 'Is owner?', user?.role?.toLowerCase() === 'owner')
   
   // Only show branch selector for owners
   if (user?.role?.toLowerCase() !== 'owner') {
-    console.log('BranchSelector - Not rendering because user is not owner. Current role:', user?.role)
     return null
   }
 

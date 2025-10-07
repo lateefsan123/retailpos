@@ -42,7 +42,8 @@ export const usePartialPayment = (totalAmount: number) => {
   const createPaymentPlan = (installments: number, dueDate?: string) => {
     if (installments <= 0) return null
 
-    const installmentAmount = amountRemaining / installments
+    const baseAmount = isPartialPaymentEnabled ? amountRemaining : totalAmount
+    const installmentAmount = baseAmount / installments
     const installmentsList: PaymentInstallment[] = []
     
     for (let i = 0; i < installments; i++) {
@@ -51,7 +52,7 @@ export const usePartialPayment = (totalAmount: number) => {
       
       installmentsList.push({
         id: `installment-${i + 1}`,
-        amount: i === installments - 1 ? amountRemaining - (installmentAmount * (installments - 1)) : installmentAmount,
+        amount: i === installments - 1 ? baseAmount - (installmentAmount * (installments - 1)) : installmentAmount,
         dueDate: installmentDate.toISOString().split('T')[0],
         status: 'pending'
       })
@@ -94,19 +95,10 @@ export const usePartialPayment = (totalAmount: number) => {
     }
   }
 
-  const resetPartialPayment = () => {
-    setIsPartialPaymentEnabled(false)
-    setAmountPaid(0)
-    setAmountRemaining(totalAmount)
-    setDueDate('')
-    setPaymentNotes('')
-    setPaymentMethod('cash')
-    setPaymentPlan(null)
-  }
-
   return {
     // State
     isPartialPaymentEnabled,
+    partialAmount: amountPaid,
     amountPaid,
     amountRemaining,
     dueDate,
@@ -127,6 +119,14 @@ export const usePartialPayment = (totalAmount: number) => {
     getPaymentStatus,
     canProcessPayment,
     getPaymentSummary,
-    resetPartialPayment
+    reset() {
+      setIsPartialPaymentEnabled(false)
+      setAmountPaid(0)
+      setAmountRemaining(totalAmount)
+      setDueDate('')
+      setPaymentNotes('')
+      setPaymentMethod('cash')
+      setPaymentPlan(null)
+    }
   }
 }

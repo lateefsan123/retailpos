@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Home, Package, Receipt, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useBusinessId } from '../hooks/useBusinessId'
 import { useBranch } from '../contexts/BranchContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -10,6 +10,7 @@ import { useProductsData } from '../hooks/data/useProductsData'
 import AddProductModal from '../components/modals/AddProductModal'
 import { printBulkLabels } from '../utils/labelUtils'
 import BranchSelector from '../components/BranchSelector'
+import MobileBottomNav from '../components/MobileBottomNav'
 import styles from './ProductsMobile.module.css'
 
 interface Product {
@@ -382,32 +383,7 @@ const ProductsMobile = () => {
       </div>
 
       {/* Bottom Navigation */}
-      <nav className={styles.bottomNav} aria-label="Primary">
-        <button
-          type="button"
-          className={`${styles.tabButton} ${styles.tabInactive}`}
-          onClick={() => navigate('/dashboard-mobile')}
-        >
-          <Home size={22} aria-hidden="true" />
-          <span className={styles.tabLabel}>Home</span>
-        </button>
-        <button
-          type="button"
-          className={`${styles.tabButton} ${styles.tabActive}`}
-          aria-current="page"
-        >
-          <Package size={22} aria-hidden="true" />
-          <span className={styles.tabLabel}>Products</span>
-        </button>
-        <button
-          type="button"
-          className={`${styles.tabButton} ${styles.tabInactive}`}
-          onClick={() => navigate('/transactions-mobile')}
-        >
-          <Receipt size={22} aria-hidden="true" />
-          <span className={styles.tabLabel}>Transactions</span>
-        </button>
-      </nav>
+      <MobileBottomNav />
 
       {/* Add Product Modal */}
       {showProductModal && (
