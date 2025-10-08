@@ -2027,10 +2027,10 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
       left: '264px', // Match standard navbar width
       right: 0,
       bottom: 0,
-      paddingRight: '16px',
+      paddingRight: '0',
       display: 'flex', 
       height: '100vh', 
-      background: 'linear-gradient(135deg, #7d8d86, #3e3f29)',
+      background: '#ffffff',
       fontFamily: 'Poppins, sans-serif',
       zIndex: 2
     }}>
@@ -2983,31 +2983,15 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
           borderBottom: '1px solid #e5e7eb',
           background: '#e5e7eb'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #7d8d86, #3e3f29)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontSize: '16px',
-              fontWeight: '600'
+          <div style={{ marginBottom: '8px' }}>
+            <p style={{ 
+              margin: '0', 
+              fontSize: '16px', 
+              fontWeight: '500', 
+              color: '#1f2937' 
             }}>
-              {user?.username?.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <p style={{ 
-                margin: '0', 
-                fontSize: '16px', 
-                fontWeight: '500', 
-                color: '#1f2937' 
-              }}>
-                Hello, {user?.username}
-              </p>
-            </div>
+              Hello, {user?.username}
+            </p>
           </div>
           <p style={{ 
             margin: '0', 

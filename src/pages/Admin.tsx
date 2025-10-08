@@ -6,6 +6,7 @@ import { useBranch } from '../contexts/BranchContext'
 import VaultModal from '../components/VaultModal'
 import BranchSelector from '../components/BranchSelector'
 import PendingRegistrations from '../components/PendingRegistrations'
+import { ICON_PACKS, DEFAULT_ICON_NAME } from '../constants/userIcons'
 
 interface User {
   user_id: number
@@ -62,7 +63,7 @@ const Admin = () => {
     username: '',
     password: '',
     role: 'Cashier',
-    icon: 'ryu',
+    icon: DEFAULT_ICON_NAME,
     branch_id: selectedBranchId || undefined
   })
   const [newBranch, setNewBranch] = useState<NewBranch>({
@@ -73,37 +74,8 @@ const Admin = () => {
     shop_image: 'shop1'
   })
 
-  // Icon packs
-  const iconPacks = {
-    'default': {
-      name: 'Default Pack',
-      icons: [
-        { name: 'lily', label: 'Lily' },
-        { name: 'chunli', label: 'Chun-Li' },
-        { name: 'ken', label: 'Ken' },
-        { name: 'kimberly', label: 'Kimberly' },
-        { name: 'mai', label: 'Mai' },
-        { name: 'manon', label: 'Manon' },
-        { name: 'rashid', label: 'Rashid' },
-        { name: 'ryu', label: 'Ryu' },
-        { name: 'zangief', label: 'Zangief' }
-      ]
-    },
-    'modern': {
-      name: 'Modern Pack',
-      icons: [
-        { name: 'icon10', label: 'Icon 10' },
-        { name: 'icon11', label: 'Icon 11' },
-        { name: 'icon12', label: 'Icon 12' },
-        { name: 'icon13', label: 'Icon 13' },
-        { name: 'icon14', label: 'Icon 14' },
-        { name: 'icon15', label: 'Icon 15' }
-      ]
-    }
-  }
-
-  const [selectedIconPack, setSelectedIconPack] = useState('default')
-  const availableIcons = iconPacks[selectedIconPack as keyof typeof iconPacks].icons
+  const [selectedIconPack, setSelectedIconPack] = useState<keyof typeof ICON_PACKS>('default')
+  const availableIcons = ICON_PACKS[selectedIconPack].icons
 
   // Available shop images
   const availableShopImages = [
@@ -323,7 +295,7 @@ const Admin = () => {
         username: '',
         password: '',
         role: 'Cashier',
-        icon: 'ryu'
+        icon: DEFAULT_ICON_NAME
       })
       setShowAddModal(false)
       fetchUsers() // Refresh the list
@@ -385,7 +357,7 @@ const Admin = () => {
       username: user.username,
       password: '', // Don't pre-fill password
       role: user.role,
-      icon: user.icon || 'ryu',
+      icon: user.icon || DEFAULT_ICON_NAME,
       branch_id: user.branch_id
     })
     setShowEditModal(true)
@@ -430,7 +402,7 @@ const Admin = () => {
         username: '',
         password: '',
         role: 'Cashier',
-        icon: 'ryu'
+        icon: DEFAULT_ICON_NAME
       })
       setEditingUser(null)
       setShowEditModal(false)
@@ -1455,7 +1427,7 @@ const Admin = () => {
                       e.target.style.borderColor = '#e5e7eb'
                     }}
                   >
-                    {Object.entries(iconPacks).map(([key, pack]) => (
+                    {Object.entries(ICON_PACKS).map(([key, pack]) => (
                       <option key={key} value={key}>
                         {pack.name}
                       </option>
@@ -1815,7 +1787,7 @@ const Admin = () => {
                        e.target.style.borderColor = '#e5e7eb'
                      }}
                    >
-                     {Object.entries(iconPacks).map(([key, pack]) => (
+                   {Object.entries(ICON_PACKS).map(([key, pack]) => (
                        <option key={key} value={key}>
                          {pack.name}
                        </option>

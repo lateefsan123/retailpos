@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabaseClient'
+import { ALL_USER_ICONS, DEFAULT_ICON_NAME } from '../constants/userIcons'
 
 interface ChangeNameModalProps {
   isOpen: boolean
@@ -10,9 +11,19 @@ interface ChangeNameModalProps {
 const ChangeNameModal: React.FC<ChangeNameModalProps> = ({ isOpen, onClose }) => {
   const { user, refreshUser } = useAuth()
   const [newName, setNewName] = useState(user?.username || '')
+  const [selectedIcon, setSelectedIcon] = useState(user?.icon || DEFAULT_ICON_NAME)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+
+  useEffect(() => {
+    if (isOpen) {
+      setNewName(user?.username || '')
+      setSelectedIcon(user?.icon || DEFAULT_ICON_NAME)
+      setError(null)
+      setSuccess(false)
+    }
+  }, [isOpen, user])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,9 +34,14 @@ const ChangeNameModal: React.FC<ChangeNameModalProps> = ({ isOpen, onClose }) =>
     setSuccess(false)
 
     try {
+      const updates = {
+        username: newName.trim(),
+        icon: selectedIcon || null
+      }
+
       const { error: updateError } = await supabase
         .from('users')
-        .update({ username: newName.trim() })
+        .update(updates)
         .eq('user_id', user.user_id)
 
       if (updateError) {
@@ -39,7 +55,7 @@ const ChangeNameModal: React.FC<ChangeNameModalProps> = ({ isOpen, onClose }) =>
       setTimeout(() => {
         onClose()
         setSuccess(false)
-        setNewName('')
+        setNewName(newName.trim())
       }, 1500)
 
     } catch (error) {
@@ -54,6 +70,7 @@ const ChangeNameModal: React.FC<ChangeNameModalProps> = ({ isOpen, onClose }) =>
     setError(null)
     setSuccess(false)
     setNewName(user?.username || '')
+    setSelectedIcon(user?.icon || DEFAULT_ICON_NAME)
     onClose()
   }
 
@@ -173,11 +190,11 @@ const ChangeNameModal: React.FC<ChangeNameModalProps> = ({ isOpen, onClose }) =>
               marginBottom: '10px',
               fontWeight: '500'
             }}>
-              New Username
-            </label>
-            <input
-              type="text"
-              value={newName}
+          New Username
+        </label>
+        <input
+          type="text"
+          value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Enter new username"
               style={{
@@ -200,8 +217,79 @@ const ChangeNameModal: React.FC<ChangeNameModalProps> = ({ isOpen, onClose }) =>
                 e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'
                 e.target.style.boxShadow = 'none'
               }}
-              required
-            />
+          required
+        />
+      </div>
+
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{
+              display: 'block',
+              fontSize: '16px',
+              color: '#d1d5db',
+              marginBottom: '12px',
+              fontWeight: '500'
+            }}>
+              Profile Icon
+            </label>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))',
+              gap: '12px'
+            }}>
+              {ALL_USER_ICONS.map((icon) => {
+                const isSelected = icon.name === selectedIcon
+                return (
+                  <button
+                    key={icon.name}
+                    type="button"
+                    onClick={() => setSelectedIcon(icon.name)}
+                    style={{
+                      padding: '10px 8px',
+                      borderRadius: '10px',
+                      border: isSelected ? '2px solid #7d8d86' : '1px solid rgba(255, 255, 255, 0.1)',
+                      background: isSelected ? 'rgba(125, 141, 134, 0.2)' : 'rgba(255, 255, 255, 0.02)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '8px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      color: '#f3f4f6'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = isSelected ? 'rgba(125, 141, 134, 0.25)' : 'rgba(255, 255, 255, 0.08)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = isSelected ? 'rgba(125, 141, 134, 0.2)' : 'rgba(255, 255, 255, 0.02)'
+                    }}
+                  >
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '50%',
+                      overflow: 'hidden',
+                      background: '#111827',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <img
+                        src={`/images/icons/${icon.name}.png`}
+                        alt={icon.label}
+                        style={{ width: '48px', height: '48px', objectFit: 'cover' }}
+                      />
+                    </div>
+                    <span style={{
+                      fontSize: '12px',
+                      fontWeight: isSelected ? 600 : 400,
+                      textAlign: 'center'
+                    }}>
+                      {icon.label}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* Buttons */}

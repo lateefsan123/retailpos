@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import SidebarStepper from "./Sidebarstepper";
 import { useAuth } from "../contexts/AuthContext";
+import { ALL_USER_ICONS, DEFAULT_ICON_NAME } from "../constants/userIcons";
 
 const steps = [
   {
@@ -53,6 +54,8 @@ const Signup: React.FC = () => {
     phone: "",
     password: "",
     confirmPassword: "",
+    ownerUsername: "",
+    ownerIcon: DEFAULT_ICON_NAME,
     // Step 2: Business Info
     businessName: "",
     businessType: "",
@@ -67,12 +70,20 @@ const Signup: React.FC = () => {
     closeTime: "18:00",
   });
   const progress = Math.round((currentStep / steps.length) * 100);
+  const selectedOwnerIcon = ALL_USER_ICONS.find(icon => icon.name === formData.ownerIcon) || ALL_USER_ICONS[0];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleIconSelect = (iconName: string) => {
+    setFormData(prev => ({
+      ...prev,
+      ownerIcon: iconName
     }));
   };
 
@@ -95,12 +106,22 @@ const Signup: React.FC = () => {
         throw new Error("Passwords do not match");
       }
 
-      // Create username from email
-      const username = formData.email.split('@')[0];
+      const trimmedUsername = formData.ownerUsername.trim();
+      if (!trimmedUsername) {
+        throw new Error("Please choose an owner username");
+      }
+      if (trimmedUsername.includes(" ")) {
+        throw new Error("Owner username cannot contain spaces");
+      }
+      if (!formData.ownerIcon) {
+        throw new Error("Please select an owner icon");
+      }
+
+      const normalizedUsername = trimmedUsername.toLowerCase();
 
       // Call the register function with all the form data
       const result = await register(
-        username,
+        normalizedUsername,
         formData.password,
         formData.businessName,
         formData.firstName,
@@ -115,7 +136,8 @@ const Signup: React.FC = () => {
         formData.website,
         formData.vatNumber,
         formData.openTime,
-        formData.closeTime
+        formData.closeTime,
+        formData.ownerIcon
       );
 
       if (result.success) {
@@ -416,6 +438,35 @@ const Signup: React.FC = () => {
                         boxSizing: "border-box"
                       }} 
                     />
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                      <input 
+                        name="ownerUsername"
+                        placeholder="Owner Username *"
+                        value={formData.ownerUsername}
+                        onChange={(event) => {
+                          const value = event.target.value.toLowerCase();
+                          setFormData(prev => ({
+                            ...prev,
+                            ownerUsername: value
+                          }));
+                        }}
+                        required
+                        autoComplete="off"
+                        style={{ 
+                          width: "100%",
+                          padding: "1rem", 
+                          borderRadius: "12px", 
+                          border: "2px solid #9ca3af",
+                          fontSize: "1rem",
+                          outline: "none",
+                          transition: "border-color 0.2s",
+                          boxSizing: "border-box"
+                        }} 
+                      />
+                      <span style={{ fontSize: "0.85rem", color: "#6b7280" }}>
+                        This username is used for the owner's login.
+                      </span>
+                    </div>
                     <input 
                       name="phone"
                       type="tel"
@@ -473,6 +524,63 @@ const Signup: React.FC = () => {
                           boxSizing: "border-box"
                         }} 
                       />
+                    </div>
+                    <div style={{ marginTop: "0.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                      <p style={{ margin: 0, fontWeight: 600, color: "#1f2937" }}>Choose Owner Icon</p>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))", gap: "0.75rem" }}>
+                        {ALL_USER_ICONS.map((icon) => {
+                          const isSelected = icon.name === formData.ownerIcon;
+                          return (
+                            <button
+                              key={icon.name}
+                              type="button"
+                              onClick={() => handleIconSelect(icon.name)}
+                              style={{
+                                borderRadius: "12px",
+                                border: isSelected ? "2px solid #7d8d86" : "1px solid #d1d5db",
+                                backgroundColor: isSelected ? "#eef4f2" : "#ffffff",
+                                padding: "10px 8px",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                gap: "8px",
+                                cursor: "pointer",
+                                boxShadow: isSelected ? "0 8px 20px rgba(125, 141, 134, 0.25)" : "0 2px 6px rgba(15, 23, 42, 0.05)",
+                                transition: "all 0.2s ease",
+                                color: "#1f2937"
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = "translateY(-2px)";
+                                e.currentTarget.style.boxShadow = isSelected ? "0 10px 24px rgba(125, 141, 134, 0.3)" : "0 4px 12px rgba(15, 23, 42, 0.08)";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = "translateY(0)";
+                                e.currentTarget.style.boxShadow = isSelected ? "0 8px 20px rgba(125, 141, 134, 0.25)" : "0 2px 6px rgba(15, 23, 42, 0.05)";
+                              }}
+                            >
+                              <div style={{
+                                width: "52px",
+                                height: "52px",
+                                borderRadius: "50%",
+                                overflow: "hidden",
+                                backgroundColor: "#f3f4f6",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center"
+                              }}>
+                                <img
+                                  src={`/images/icons/${icon.name}.png`}
+                                  alt={icon.label}
+                                  style={{ width: "52px", height: "52px", objectFit: "cover" }}
+                                />
+                              </div>
+                              <span style={{ fontSize: "0.75rem", fontWeight: isSelected ? 600 : 500, textAlign: "center" }}>
+                                {icon.label}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
             </>
           )}
@@ -708,7 +816,19 @@ const Signup: React.FC = () => {
                         <strong style={{ color: "#374151" }}>Account Details:</strong>
                         <p style={{ margin: "0.25rem 0", fontSize: "0.9rem" }}>Name: {formData.firstName} {formData.lastName}</p>
                         <p style={{ margin: "0.25rem 0", fontSize: "0.9rem" }}>Email: {formData.email}</p>
+                        <p style={{ margin: "0.25rem 0", fontSize: "0.9rem" }}>Owner Username: {formData.ownerUsername}</p>
                         <p style={{ margin: "0.25rem 0", fontSize: "0.9rem" }}>Phone: {formData.phone || "Not provided"}</p>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginTop: "0.5rem" }}>
+                          <span style={{ fontSize: "0.9rem", color: "#374151" }}>Owner Icon:</span>
+                          <div style={{ width: "42px", height: "42px", borderRadius: "50%", overflow: "hidden", backgroundColor: "#e5e7eb" }}>
+                            <img
+                              src={`/images/icons/${selectedOwnerIcon.name}.png`}
+                              alt={selectedOwnerIcon.label}
+                              style={{ width: "42px", height: "42px", objectFit: "cover" }}
+                            />
+                          </div>
+                          <span style={{ fontSize: "0.9rem", color: "#6b7280" }}>{selectedOwnerIcon.label}</span>
+                        </div>
                       </div>
                       <div>
                         <strong style={{ color: "#374151" }}>Business Information:</strong>

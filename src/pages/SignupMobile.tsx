@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ChevronLeft, User, Briefcase, Mail, Phone, Lock, Building, MapPin, Clock, DollarSign } from 'lucide-react';
+import { ChevronLeft, User, Briefcase, Mail, Phone, Lock, Building, MapPin, Clock, DollarSign, Smile } from 'lucide-react';
 import styles from './SignupMobile.module.css';
+import { ALL_USER_ICONS, DEFAULT_ICON_NAME } from '../constants/userIcons';
 
 const SignupMobile: React.FC = () => {
   const navigate = useNavigate();
@@ -19,6 +20,8 @@ const SignupMobile: React.FC = () => {
     phone: '',
     password: '',
     confirmPassword: '',
+    ownerUsername: '',
+    ownerIcon: DEFAULT_ICON_NAME,
     // Step 2: Business Info
     businessName: '',
     businessType: '',
@@ -37,25 +40,43 @@ const SignupMobile: React.FC = () => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: name === 'ownerUsername' ? value.toLowerCase() : value
     }));
     // Clear error when user types
     if (error) setError(null);
   };
 
+  const handleIconSelect = (iconName: string) => {
+    setFormData(prev => ({
+      ...prev,
+      ownerIcon: iconName
+    }));
+    if (error) setError(null);
+  };
+
+  const selectedOwnerIcon = ALL_USER_ICONS.find(icon => icon.name === formData.ownerIcon) || ALL_USER_ICONS[0];
+
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1:
-        if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
-          setError('Please fill in all required fields');
-          return false;
-        }
-        if (formData.password !== formData.confirmPassword) {
+      if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+        setError('Please fill in all required fields');
+        return false;
+      }
+      if (formData.password !== formData.confirmPassword) {
           setError('Passwords do not match');
           return false;
         }
         if (formData.password.length < 6) {
           setError('Password must be at least 6 characters');
+          return false;
+        }
+        if (!formData.ownerUsername.trim()) {
+          setError('Please choose an owner username');
+          return false;
+        }
+        if (formData.ownerUsername.includes(' ')) {
+          setError('Owner username cannot contain spaces');
           return false;
         }
         break;
@@ -92,10 +113,15 @@ const SignupMobile: React.FC = () => {
         return;
       }
 
-      const username = formData.email.split('@')[0];
+      const trimmedUsername = formData.ownerUsername.trim();
+      if (!trimmedUsername) {
+        setError('Please choose an owner username');
+        setIsSubmitting(false);
+        return;
+      }
 
       const result = await register(
-        username,
+        trimmedUsername,
         formData.password,
         formData.businessName,
         formData.firstName,
@@ -110,7 +136,8 @@ const SignupMobile: React.FC = () => {
         formData.website,
         formData.vatNumber,
         formData.openTime,
-        formData.closeTime
+        formData.closeTime,
+        formData.ownerIcon
       );
 
       if (result.success) {
@@ -188,6 +215,23 @@ const SignupMobile: React.FC = () => {
         </div>
 
         <div className={styles.inputGroup}>
+          <label className={styles.label}>Owner Username *</label>
+          <div className={styles.inputWithIcon}>
+            <Smile size={18} className={styles.inputIcon} />
+            <input
+              type="text"
+              name="ownerUsername"
+              value={formData.ownerUsername}
+              onChange={handleInputChange}
+              className={styles.input}
+              placeholder="owner username"
+              required
+            />
+          </div>
+          <p className={styles.helperText}>Used for the owner's login. Lowercase letters and numbers only.</p>
+        </div>
+
+        <div className={styles.inputGroup}>
           <label className={styles.label}>Phone (Optional)</label>
           <div className={styles.inputWithIcon}>
             <Phone size={18} className={styles.inputIcon} />
@@ -231,6 +275,36 @@ const SignupMobile: React.FC = () => {
               placeholder="Confirm password"
               required
             />
+          </div>
+        </div>
+
+        <div className={styles.iconSection}>
+          <div className={styles.iconSectionHeader}>
+            <div className={styles.iconPreview}>
+              <img src={`/images/icons/${selectedOwnerIcon.name}.png`} alt={selectedOwnerIcon.label} />
+            </div>
+            <div>
+              <p className={styles.iconTitle}>Choose Owner Icon</p>
+              <span className={styles.iconSubtitle}>Selected: {selectedOwnerIcon.label}</span>
+            </div>
+          </div>
+          <div className={styles.iconGrid}>
+            {ALL_USER_ICONS.map((icon) => {
+              const isSelected = icon.name === formData.ownerIcon;
+              return (
+                <button
+                  key={icon.name}
+                  type="button"
+                  onClick={() => handleIconSelect(icon.name)}
+                  className={`${styles.iconButton} ${isSelected ? styles.iconButtonSelected : ''}`}
+                >
+                  <div className={styles.iconImageWrapper}>
+                    <img src={`/images/icons/${icon.name}.png`} alt={icon.label} />
+                  </div>
+                  <span className={styles.iconLabel}>{icon.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

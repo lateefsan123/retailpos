@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { supabase } from '../lib/supabaseClient'
 import { User as SupabaseUser } from '@supabase/supabase-js'
 import { hashPassword, hashPasswordAlternative } from '../utils/auth'
+import { DEFAULT_ICON_NAME } from '../constants/userIcons'
 
 interface User {
   user_id: number
@@ -20,7 +21,7 @@ interface AuthContextType {
   supabaseUser: SupabaseUser | null
   login: (email: string, password: string) => Promise<boolean>
   authenticate: (email: string, password: string) => Promise<{ success: boolean; businessId?: number }>
-  register: (username: string, password: string, businessName: string, firstName?: string, lastName?: string, email?: string, phone?: string, businessType?: string, businessDescription?: string, businessAddress?: string, businessPhone?: string, currency?: string, website?: string, vatNumber?: string, openTime?: string, closeTime?: string) => Promise<{ success: boolean; pendingApproval?: boolean }>
+  register: (username: string, password: string, businessName: string, firstName?: string, lastName?: string, email?: string, phone?: string, businessType?: string, businessDescription?: string, businessAddress?: string, businessPhone?: string, currency?: string, website?: string, vatNumber?: string, openTime?: string, closeTime?: string, iconName?: string) => Promise<{ success: boolean; pendingApproval?: boolean }>
   switchUser: (targetUserId: number, password: string, usePin?: boolean) => Promise<boolean>
   refreshUser: () => Promise<void>
   logout: () => void
@@ -282,7 +283,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     website?: string,
     vatNumber?: string,
     openTime?: string,
-    closeTime?: string
+    closeTime?: string,
+    iconName?: string
   ): Promise<{ success: boolean; pendingApproval?: boolean }> => {
     try {
       console.log('=== REGISTRATION STARTED ===')
@@ -385,6 +387,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Create user with the business_id and additional details
       const hashedPassword = hashPassword(password)
       const fullName = firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || null
+      const iconToSave = iconName || DEFAULT_ICON_NAME
       
       const { data: userData, error: userError } = await supabase
         .from('users')
@@ -397,6 +400,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           email: email || null,
           full_name: fullName,
           email_verified: true,
+          icon: iconToSave,
           created_at: new Date().toISOString()
         })
         .select('*')
