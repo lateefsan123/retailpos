@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
@@ -248,6 +248,7 @@ const Sales = () => {
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [amountEntered, setAmountEntered] = useState('')
   const [change, setChange] = useState(0)
+  const changeBreakdown = useMemo(() => calculateChangeBreakdown(change), [change])
   const [receiptNotes, setReceiptNotes] = useState('')
   const [showReceiptPreview, setShowReceiptPreview] = useState(false)
   const [showCustomPriceModal, setShowCustomPriceModal] = useState(false)
@@ -3914,83 +3915,80 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                       Change: €{change.toFixed(2)}
                     </div>
 
-                    {(() => {
-                      const changeBreakdown = calculateChangeBreakdown(change)
-                      return changeBreakdown.length > 0 && (
+                    {changeBreakdown.length > 0 && (
+                      <div style={{
+                        background: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        padding: '16px',
+                        marginTop: '8px',
+                        boxShadow: 'none'
+                      }}>
                         <div style={{
-                          background: '#f8fafc',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '12px',
-                          padding: '16px',
-                          marginTop: '8px',
-                          boxShadow: 'none'
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: '#475569',
+                          marginBottom: '12px'
                         }}>
-                          <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            fontSize: '14px',
-                            fontWeight: '600',
-                            color: '#475569',
-                            marginBottom: '12px'
-                          }}>
-                            <i className="fa-solid fa-coins" style={{ color: '#7d8d86' }}></i>
-                            Change Breakdown
-                          </div>
-
-                          <div style={{
-                            display: 'flex',
-                            flexWrap: 'wrap',
-                            gap: '8px',
-                            justifyContent: 'center'
-                          }}>
-                            {changeBreakdown.map((item, idx) => (
-                              <div
-                                key={`${item.label}-${idx}`}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '8px',
-                                  background: item.type === 'note' ? '#dcfce7' : '#fef3c7',
-                                  border: `1px solid ${item.type === 'note' ? '#bbf7d0' : '#fde68a'}`,
-                                  borderRadius: '10px',
-                                  padding: '10px 12px',
-                                  fontSize: '13px',
-                                  fontWeight: '600',
-                                  color: item.type === 'note' ? '#166534' : '#92400e',
-                                  minWidth: 'fit-content',
-                                  boxShadow: 'none'
-                                }}
-                              >
-                                {item.image && (
-                                  <img
-                                    src={item.image}
-                                    alt={item.label}
-                                    style={{
-                                      width: '40px',
-                                      height: '40px',
-                                      objectFit: 'contain',
-                                      borderRadius: '4px'
-                                    }}
-                                  />
-                                )}
-                                <span style={{ fontSize: '13px', fontWeight: '600' }}>{item.label}</span>
-                                <span style={{
-                                  background: item.type === 'note' ? '#22c55e' : '#f59e0b',
-                                  color: 'white',
-                                  borderRadius: '6px',
-                                  padding: '3px 8px',
-                                  fontSize: '11px',
-                                  fontWeight: '700'
-                                }}>
-                                  ×{item.count}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
+                          <i className="fa-solid fa-coins" style={{ color: '#7d8d86' }}></i>
+                          Change Breakdown
                         </div>
-                      )
-                    })()}
+
+                        <div style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: '8px',
+                          justifyContent: 'center'
+                        }}>
+                          {changeBreakdown.map((item, idx) => (
+                            <div
+                              key={`${item.label}-${idx}`}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                background: item.type === 'note' ? '#dcfce7' : '#fef3c7',
+                                border: `1px solid ${item.type === 'note' ? '#bbf7d0' : '#fde68a'}`,
+                                borderRadius: '10px',
+                                padding: '10px 12px',
+                                fontSize: '13px',
+                                fontWeight: '600',
+                                color: item.type === 'note' ? '#166534' : '#92400e',
+                                minWidth: 'fit-content',
+                                boxShadow: 'none'
+                              }}
+                            >
+                              {item.image && (
+                                <img
+                                  src={item.image}
+                                  alt={item.label}
+                                  style={{
+                                    width: '40px',
+                                    height: '40px',
+                                    objectFit: 'contain',
+                                    borderRadius: '4px'
+                                  }}
+                                />
+                              )}
+                              <span style={{ fontSize: '13px', fontWeight: '600' }}>{item.label}</span>
+                              <span style={{
+                                background: item.type === 'note' ? '#22c55e' : '#f59e0b',
+                                color: 'white',
+                                borderRadius: '6px',
+                                padding: '3px 8px',
+                                fontSize: '11px',
+                                fontWeight: '700'
+                              }}>
+                                ×{item.count}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
                 {allowPartialPayment && remainingAmount > 0 && (

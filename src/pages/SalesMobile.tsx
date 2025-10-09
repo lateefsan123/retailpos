@@ -131,6 +131,7 @@ const SalesMobile = () => {
   const [partialAmount, setPartialAmount] = useState('')
   const [partialNotes, setPartialNotes] = useState('')
   const [remainingAmount, setRemainingAmount] = useState(0)
+  const [stripeStatus, setStripeStatus] = useState<string | null>(null)
 
 
   const searchInputRef = useRef<HTMLInputElement | null>(null)
@@ -503,89 +504,137 @@ const SalesMobile = () => {
 
   const handlePaymentMethod = (method: 'cash' | 'card' | 'credit' | 'tap') => {
     setPaymentMethod(method)
+    if (method === 'card') {
+      setStripeStatus('Stripe is ready. Tap "Process Sale" to charge the card.')
+    } else {
+      setStripeStatus(null)
+    }
   }
 
-  const handleTapPayment = async () => {
+  const handleCardPayment = async () => {
+    if (!order.items.length || !businessId || businessLoading) {
+      return
+    }
+
+    const totalAmount = allowPartialPayment ? (parseFloat(partialAmount) || 0) : total
+    if (totalAmount <= 0) {
+      alert('Card payments require a positive amount to charge.')
+      return
+    }
+
+    const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+    if (!publishableKey) {
+      const shouldProceed = window.confirm(
+        'Stripe is not configured for this environment. Record this sale as a card payment without charging the customer?'
+      )
+      if (shouldProceed) {
+        setPaymentMethod('card')
+        await completeSale()
+      }
+      return
+    }
+
+    setIsProcessing(true)
+    setStripeStatus('Connecting to Stripe...')
+
     try {
-      // Initialize Stripe
-      const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
-      if (!stripe) throw new Error('Stripe failed to load')
+      const stripe = await loadStripe(publishableKey)
+      if (!stripe) {
+        throw new Error('Stripe failed to load')
+      }
 
-      const totalAmount = allowPartialPayment ? (parseFloat(partialAmount) || 0) : total
-
-      // Create payment request for Apple Pay/Google Pay
       const paymentRequest = stripe.paymentRequest({
         country: 'IE',
         currency: 'eur',
         total: {
           label: 'Total',
-          amount: Math.round(totalAmount * 100), // Convert to cents
-        },
-      })
-
-      // Check if Apple Pay/Google Pay is available
-      const canMakePayment = await paymentRequest.canMakePayment()
-      if (!canMakePayment) {
-        alert('Apple Pay or Google Pay is not available on this device.')
-        return
-      }
-
-      // Handle payment method
-      paymentRequest.on('paymentmethod', async (event) => {
-        try {
-          // Create payment intent using Supabase function
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment-intent`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-            },
-            body: JSON.stringify({
-              amount: totalAmount,
-              currency: 'eur',
-              orderId: `order_${Date.now()}`,
-              businessId: businessId,
-              branchId: selectedBranchId
-            })
-          })
-
-          if (!response.ok) {
-            throw new Error('Failed to create payment intent')
-          }
-
-          const { clientSecret } = await response.json()
-
-          // Confirm payment with Stripe
-          const { error } = await stripe.confirmCardPayment(clientSecret, {
-            payment_method: event.paymentMethod.id,
-          })
-
-          if (error) {
-            event.complete('fail')
-            alert(`Payment failed: ${error.message}`)
-          } else {
-            event.complete('success')
-            // Payment succeeded - process the sale
-            setPaymentMethod('tap')
-            await processSale()
-          }
-        } catch (error) {
-          event.complete('fail')
-          console.error('Payment processing error:', error)
-          alert('Payment processing failed. Please try again.')
+          amount: Math.round(totalAmount * 100)
         }
       })
 
-      // Show the payment sheet
-      paymentRequest.show()
+      const canMakePayment = await paymentRequest.canMakePayment()
 
+      if (canMakePayment) {
+        setStripeStatus('Waiting for Apple Pay / Google Pay...')
+
+        paymentRequest.on('paymentmethod', async (event) => {
+          try {
+            setStripeStatus('Confirming payment...')
+
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment-intent`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+              },
+              body: JSON.stringify({
+                amount: totalAmount,
+                currency: 'eur',
+                orderId: `order_${Date.now()}`,
+                businessId,
+                branchId: selectedBranchId
+              })
+            })
+
+            if (!response.ok) {
+              throw new Error('Failed to create payment intent')
+            }
+
+            const { clientSecret } = await response.json()
+            const { error } = await stripe.confirmCardPayment(clientSecret, {
+              payment_method: event.paymentMethod.id
+            })
+
+            if (error) {
+              event.complete('fail')
+              setStripeStatus(error.message || 'Payment failed.')
+              setIsProcessing(false)
+              alert(`Payment failed: ${error.message}`)
+            } else {
+              event.complete('success')
+              setPaymentMethod('card')
+              setStripeStatus('Payment confirmed. Finalizing sale...')
+              await completeSale()
+              setStripeStatus('Sale completed successfully.')
+            }
+          } catch (err) {
+            console.error('Payment processing error:', err)
+            event.complete('fail')
+            setStripeStatus('Payment processing failed.')
+            setIsProcessing(false)
+            alert('Payment processing failed. Please try again.')
+          }
+        })
+
+        paymentRequest.on('cancel', () => {
+          setStripeStatus('Payment cancelled.')
+          setIsProcessing(false)
+        })
+
+        paymentRequest.show()
+      } else {
+        setStripeStatus('Apple Pay / Google Pay is not available on this device.')
+        const shouldRecord = window.confirm(
+          'This device cannot trigger Stripe contactless payments. Record the sale as a manual card payment instead?'
+        )
+        if (shouldRecord) {
+          setPaymentMethod('card')
+          setStripeStatus('Recording manual card payment...')
+          await completeSale()
+          setStripeStatus('Manual card payment recorded.')
+        } else {
+          setIsProcessing(false)
+        }
+      }
     } catch (error) {
-      console.error('Tap payment error:', error)
-      alert('Failed to initialize payment. Please try again.')
+      console.error('Card payment error:', error)
+      setStripeStatus('Failed to initialize Stripe.')
+      setIsProcessing(false)
+      alert('Failed to initialize card payment. Please try again.')
     }
   }
 
-  const processSale = async () => {
+  const completeSale = async () => {
     if (!order.items.length || !businessId || businessLoading) return
     if (paymentMethod === 'cash' && !paymentValid) return
 
@@ -857,7 +906,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
       setReceiptHtml(receipt)
 
       // Clear cart and reset state
-    handleClearCart()
+      handleClearCart()
       setCustomerName('')
       setCustomerPhone('')
       setSelectedCustomer(null)
@@ -868,8 +917,9 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
       setPartialNotes('')
       setRemainingAmount(0)
       setAllowPartialPayment(false)
+      setStripeStatus(null)
       setActiveModal(null)
-    setIsProcessing(false)
+      setIsProcessing(false)
 
       // Show success message
       const successMsg = document.createElement('div')
@@ -900,6 +950,18 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
       console.error('Error processing sale:', error)
       alert('Error processing sale. Please try again.')
       setIsProcessing(false)
+    }
+  }
+
+  const handleProcessSale = async () => {
+    if (isProcessing) {
+      return
+    }
+
+    if (paymentMethod === 'card') {
+      await handleCardPayment()
+    } else {
+      await completeSale()
     }
   }
 
@@ -1439,7 +1501,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 </button>
                 <button
                   className={`${styles.summaryPaymentBtn} ${paymentMethod === 'card' ? 'active' : ''}`}
-                  onClick={() => handlePaymentMethod('card')}
+                  onClick={handleCardPayment}
                 >
                   <CreditCard size={20} />
                   Card
@@ -1450,28 +1512,6 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 >
                   <CircleDollarSign size={20} />
                   Credit
-                </button>
-                <button
-                  className={`${styles.summaryPaymentBtn} ${paymentMethod === 'tap' ? 'active' : ''}`}
-                  onClick={handleTapPayment}
-                  style={{
-                    background: paymentMethod === 'tap' ? '#007AFF' : '#f3f4f6',
-                    color: paymentMethod === 'tap' ? 'white' : '#374151',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    padding: '12px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}
-                >
-                  <div style={{ fontSize: '20px' }}>📱</div>
-                  Apple Pay
                 </button>
               </div>
             </div>
@@ -1538,7 +1578,35 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   )}
                 </div>
               )}
+            </div>
+
+            {/* Card Payment */}
+            {paymentMethod === 'card' && (
+              <div className={styles.summarySection}>
+                <div className={styles.summarySectionTitle}>
+                  <CreditCard size={18} />
+                  Stripe Card Payment
                 </div>
+                <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.5, marginBottom: '12px' }}>
+                  Tap <strong>Process Sale</strong> to launch the Stripe payment sheet. We will finalize the sale automatically once the payment succeeds.
+                </p>
+                {stripeStatus && (
+                  <div
+                    style={{
+                      padding: '12px 16px',
+                      borderRadius: '10px',
+                      background: '#eef2ff',
+                      border: '1px solid #c7d2fe',
+                      color: '#3730a3',
+                      fontSize: '13px',
+                      fontWeight: 600
+                    }}
+                  >
+                    {stripeStatus}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Cash Payment */}
             {paymentMethod === 'cash' && (
@@ -1642,7 +1710,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             </button>
             <button
               className={`${styles.summaryActionBtn} ${styles.summaryBtnPrimary}`}
-              onClick={processSale}
+              onClick={handleProcessSale}
               disabled={isProcessing || !isPaymentValid || !order.items.length}
             >
               {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />}
