@@ -45,7 +45,7 @@ interface ProductsData {
 }
 
 const fetchProductsData = async (businessId: number, branchId: number | null): Promise<ProductsData> => {
-  console.log('[fetchProductsData] fetching products data for business:', businessId, 'branch:', branchId)
+  // Fetching products data for business and branch
   
   // Build queries with branch filtering
   let productsQuery = supabase

@@ -10,6 +10,7 @@ import { useNav } from '../contexts/NavContext'
 import { useBarcodeScanner, setModalOpen } from '../hooks/useBarcodeScanner'
 import { generateReceiptHTML as generateReceiptHTMLUtil, printReceipt as printReceiptUtil } from '../utils/receiptUtils'
 import { ttsService, TTSSettings } from '../lib/ttsService'
+import { calculateChangeBreakdown } from '../utils/changeBreakdown'
 import { RetroButton } from '../components/ui/RetroButton'
 import BranchSelector from '../components/BranchSelector'
 import Calculator from '../components/Calculator'
@@ -2129,7 +2130,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 
                 <input
                   type="text"
-                  placeholder="Search products, categories, SKU, or scan barcode..."
+                  placeholder="Search products or scan barcode..."
                   value={searchTerm}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   onFocus={(e) => {
@@ -3898,19 +3899,98 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 />
                 
                 {change > 0 && (
-                  <div style={{
-                    marginTop: '12px',
-                    padding: '12px 16px',
-                    background: '#f0f9ff',
-                    border: '1px solid #0ea5e9',
-                    borderRadius: '8px',
-                    color: '#0c4a6e',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    textAlign: 'center'
-                  }}>
-                    <i className="fa-solid fa-coins" style={{ marginRight: '8px' }}></i>
-                    Change: €{change.toFixed(2)}
+                  <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{
+                      padding: '12px 16px',
+                      background: '#f0f9ff',
+                      border: '1px solid #0ea5e9',
+                      borderRadius: '8px',
+                      color: '#0c4a6e',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      textAlign: 'center'
+                    }}>
+                      <i className="fa-solid fa-coins" style={{ marginRight: '8px' }}></i>
+                      Change: €{change.toFixed(2)}
+                    </div>
+
+                    {(() => {
+                      const changeBreakdown = calculateChangeBreakdown(change)
+                      return changeBreakdown.length > 0 && (
+                        <div style={{
+                          background: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '12px',
+                          padding: '16px',
+                          marginTop: '8px',
+                          boxShadow: 'none'
+                        }}>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            color: '#475569',
+                            marginBottom: '12px'
+                          }}>
+                            <i className="fa-solid fa-coins" style={{ color: '#7d8d86' }}></i>
+                            Change Breakdown
+                          </div>
+
+                          <div style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: '8px',
+                            justifyContent: 'center'
+                          }}>
+                            {changeBreakdown.map((item, idx) => (
+                              <div
+                                key={`${item.label}-${idx}`}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                  background: item.type === 'note' ? '#dcfce7' : '#fef3c7',
+                                  border: `1px solid ${item.type === 'note' ? '#bbf7d0' : '#fde68a'}`,
+                                  borderRadius: '10px',
+                                  padding: '10px 12px',
+                                  fontSize: '13px',
+                                  fontWeight: '600',
+                                  color: item.type === 'note' ? '#166534' : '#92400e',
+                                  minWidth: 'fit-content',
+                                  boxShadow: 'none'
+                                }}
+                              >
+                                {item.image && (
+                                  <img
+                                    src={item.image}
+                                    alt={item.label}
+                                    style={{
+                                      width: '40px',
+                                      height: '40px',
+                                      objectFit: 'contain',
+                                      borderRadius: '4px'
+                                    }}
+                                  />
+                                )}
+                                <span style={{ fontSize: '13px', fontWeight: '600' }}>{item.label}</span>
+                                <span style={{
+                                  background: item.type === 'note' ? '#22c55e' : '#f59e0b',
+                                  color: 'white',
+                                  borderRadius: '6px',
+                                  padding: '3px 8px',
+                                  fontSize: '11px',
+                                  fontWeight: '700'
+                                }}>
+                                  ×{item.count}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })()}
                   </div>
                 )}
                 {allowPartialPayment && remainingAmount > 0 && (

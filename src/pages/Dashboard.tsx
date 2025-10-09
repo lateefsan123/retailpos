@@ -5,7 +5,7 @@ import { formatCurrency } from '../utils/currency'
 import { useBusinessId } from '../hooks/useBusinessId'
 import { useSalesData } from '../hooks/data/useSalesData'
 import { useProductsData } from '../hooks/data/useProductsData'
- 
+
 import { useBranch } from '../contexts/BranchContext'
 import BranchSelector from '../components/BranchSelector'
 import LowStockSection from '../components/dashboard/LowStockSection'
@@ -34,6 +34,8 @@ interface RecentTransaction {
 }
 
 
+type DashboardPeriod = 'today' | 'yesterday' | 'last7' | 'last30' | 'week' | 'month'
+
 const Dashboard = () => {
   const navigate = useNavigate()
   const { businessId, businessLoading } = useBusinessId()
@@ -60,7 +62,7 @@ const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [calendarDate, setCalendarDate] = useState<Date>(new Date())
   const [recentTransactions, setRecentTransactions] = useState<RecentTransaction[]>([])
-  const [activePeriod, setActivePeriod] = useState<'today' | 'week' | 'month'>('today')
+  const [activePeriod, setActivePeriod] = useState<DashboardPeriod>('today')
   const [sideBusinessBreakdown, setSideBusinessBreakdown] = useState<Array<{
     business_id: number
     name: string
@@ -68,7 +70,187 @@ const Dashboard = () => {
     total_amount: number
   }>>([])
   const [previousDayTransactions, setPreviousDayTransactions] = useState<number>(0)
-  const [sideBusinessTransactionCount, setSideBusinessTransactionCount] = useState<number>(0)
+  const [periodSummary, setPeriodSummary] = useState({
+    revenue: 0,
+    netRevenue: 0,
+    refunds: 0,
+    sideRevenue: 0,
+    transactions: 0,
+    productTransactions: 0,
+    sideTransactions: 0
+  })
+
+  const normalizePeriod = (period: DashboardPeriod): 'today' | 'week' | 'month' => {
+    switch (period) {
+      case 'yesterday':
+        return 'today'
+      case 'last7':
+      case 'week':
+        return 'week'
+      case 'last30':
+      case 'month':
+        return 'month'
+      default:
+        return 'today'
+    }
+  }
+
+  const getDateRangeForDashboardPeriod = (period: DashboardPeriod, base: Date) => {
+    const baseStart = new Date(base)
+    baseStart.setHours(0, 0, 0, 0)
+
+    const nextDay = (date: Date, days = 1) => {
+      const copy = new Date(date)
+      copy.setDate(copy.getDate() + days)
+      return copy
+    }
+
+    switch (period) {
+      case 'today': {
+        const start = new Date(baseStart)
+        const end = nextDay(baseStart)
+        return { start, end }
+      }
+      case 'yesterday': {
+        const start = nextDay(baseStart, -1)
+        const end = new Date(baseStart)
+        return { start, end }
+      }
+      case 'last7': {
+        const end = nextDay(baseStart)
+        const start = nextDay(baseStart, -6)
+        return { start, end }
+      }
+      case 'last30': {
+        const end = nextDay(baseStart)
+        const start = nextDay(baseStart, -29)
+        return { start, end }
+      }
+      case 'week': {
+        const start = new Date(baseStart)
+        const day = start.getDay()
+        start.setDate(start.getDate() - day)
+        const end = nextDay(start, 7)
+        return { start, end }
+      }
+      case 'month': {
+        const start = new Date(baseStart.getFullYear(), baseStart.getMonth(), 1)
+        const end = new Date(start)
+        end.setMonth(start.getMonth() + 1)
+        return { start, end }
+      }
+      default: {
+        const start = new Date(baseStart)
+        const end = nextDay(baseStart)
+        return { start, end }
+      }
+    }
+  }
+
+  const computePeriodSummary = async (period: DashboardPeriod, baseDate: Date) => {
+    if (businessId == null || !salesData) {
+      setPeriodSummary({
+        revenue: 0,
+        netRevenue: 0,
+        refunds: 0,
+        sideRevenue: 0,
+        transactions: 0,
+        productTransactions: 0,
+        sideTransactions: 0
+      })
+      setSideBusinessBreakdown([])
+      return
+    }
+
+    const { start, end } = getDateRangeForDashboardPeriod(period, baseDate)
+    const startTime = start.getTime()
+    const endTime = end.getTime()
+
+    const filteredSales = (salesData.sales || []).filter((sale) => {
+      const saleDate = new Date(sale.datetime).getTime()
+      return saleDate >= startTime && saleDate < endTime
+    })
+
+    const filteredSideSales = (salesData.sideBusinessSales || []).filter((sale) => {
+      const saleDate = new Date(sale.date_time).getTime()
+      return saleDate >= startTime && saleDate < endTime
+    })
+
+    const productRevenue = filteredSales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0)
+    const productTransactions = filteredSales.length
+
+    const sideRevenue = filteredSideSales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0)
+    const sideTransactions = filteredSideSales.length
+
+    const breakdownMap = new Map<number, { business_id: number; name: string; image_url: string | null; total_amount: number }>()
+    filteredSideSales.forEach((sale) => {
+      const business = (sale as any)?.side_business_items?.side_businesses
+      if (business) {
+        const existing = breakdownMap.get(business.business_id)
+        if (existing) {
+          existing.total_amount += sale.total_amount || 0
+        } else {
+          breakdownMap.set(business.business_id, {
+            business_id: business.business_id,
+            name: business.name,
+            image_url: business.image_url,
+            total_amount: sale.total_amount || 0
+          })
+        }
+      }
+    })
+
+    const breakdownArray = Array.from(breakdownMap.values()).sort((a, b) => b.total_amount - a.total_amount)
+    setSideBusinessBreakdown(breakdownArray)
+
+    // Fetch refunds within the range
+    let refundsTotal = 0
+    try {
+      let refundsQuery = supabase
+        .from('refunds')
+        .select('refund_amount')
+        .eq('business_id', businessId)
+        .gte('created_at', start.toISOString())
+        .lt('created_at', end.toISOString())
+
+      if (selectedBranchId) {
+        refundsQuery = refundsQuery.eq('branch_id', selectedBranchId)
+      }
+
+      const { data: refundRows, error: refundError } = await refundsQuery
+      if (refundError && refundError.code !== 'PGRST116') {
+        throw refundError
+      }
+      refundsTotal = refundRows?.reduce((sum, row) => sum + (row.refund_amount || 0), 0) || 0
+    } catch (error) {
+      console.warn('Failed to load refunds for summary:', error)
+      refundsTotal = 0
+    }
+
+    setPeriodSummary({
+      revenue: productRevenue,
+      netRevenue: productRevenue - refundsTotal,
+      refunds: refundsTotal,
+      sideRevenue,
+      transactions: productTransactions + sideTransactions,
+      productTransactions,
+      sideTransactions
+    })
+
+    if (period === 'today' || period === 'yesterday') {
+      const previousStart = new Date(start)
+      const previousEnd = new Date(start)
+      previousStart.setDate(previousStart.getDate() - 1)
+
+      const prevFiltered = (salesData.sales || []).filter((sale) => {
+        const saleDate = new Date(sale.datetime).getTime()
+        return saleDate >= previousStart.getTime() && saleDate < previousEnd.getTime()
+      })
+      setPreviousDayTransactions(prevFiltered.length)
+    } else {
+      setPreviousDayTransactions(0)
+    }
+  }
 
   // On mount and on focus, refresh cached sales/products by invalidating their queries indirectly
   useEffect(() => {
@@ -135,9 +317,6 @@ const Dashboard = () => {
         lowStockItems
       })
 
-      // Set side business transaction count for pie chart
-      setSideBusinessTransactionCount(todaySideBusinessSales.length)
-
       setLoading(false)
     } else if (businessId == null && !businessLoading) {
       // Reset stats when no business is selected
@@ -152,7 +331,6 @@ const Dashboard = () => {
         todayTransactions: 0,
         lowStockItems: 0
       })
-      setSideBusinessTransactionCount(0)
       setLoading(false)
     }
   }, [businessId, businessLoading, salesData?.sales?.length, productsData?.products?.length])
@@ -170,13 +348,41 @@ const Dashboard = () => {
     }
   }, [activePeriod, selectedDate, businessId, businessLoading, salesData, productsData, stats.todayTransactions])
 
+  useEffect(() => {
+    if (businessLoading) {
+      return
+    }
+    if (!salesData || businessId == null) {
+      setPeriodSummary({
+        revenue: 0,
+        netRevenue: 0,
+        refunds: 0,
+        sideRevenue: 0,
+        transactions: 0,
+        productTransactions: 0,
+        sideTransactions: 0
+      })
+      setSideBusinessBreakdown([])
+      return
+    }
+    computePeriodSummary(activePeriod, selectedDate)
+  }, [
+    businessLoading,
+    businessId,
+    selectedBranchId,
+    salesData,
+    activePeriod,
+    selectedDate
+  ])
+
   // Fetch recent transactions when component mounts or when business/date changes
   useEffect(() => {
     if (businessId && !businessLoading) {
-      if (activePeriod === 'today') {
+      const normalizedPeriod = normalizePeriod(activePeriod)
+      if (normalizedPeriod === 'today') {
         fetchRecentTransactions(selectedDate)
       } else {
-        fetchRecentTransactionsForPeriod(activePeriod, selectedDate)
+        fetchRecentTransactionsForPeriod(normalizedPeriod, selectedDate)
       }
     }
   }, [businessId, businessLoading, selectedDate, activePeriod, selectedBranchId])
@@ -295,10 +501,9 @@ const Dashboard = () => {
         sideBusinessQuery = sideBusinessQuery.eq('branch_id', selectedBranchId)
       }
       
-      const { data: todaySideBusinessSales, count: todaySideBusinessTransactionCount } = await sideBusinessQuery
+      const { data: todaySideBusinessSales } = await sideBusinessQuery
 
       const todaySideBusinessRevenue = todaySideBusinessSales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
-      setSideBusinessTransactionCount(todaySideBusinessTransactionCount || 0)
 
       // Process side business breakdown for today
       const businessMap = new Map<number, { business_id: number; name: string; image_url: string | null; total_amount: number }>()
@@ -607,7 +812,7 @@ const Dashboard = () => {
       setPreviousDayTransactions(previousDayTransactionsCount || 0)
 
       // Fetch side business revenue for selected date with breakdown
-      const { data: daySideBusinessSales, count: daySideBusinessTransactionCount } = await supabase
+      const { data: daySideBusinessSales } = await supabase
         .from('side_business_sales')
         .select(`
           total_amount,
@@ -623,7 +828,6 @@ const Dashboard = () => {
         .lt('date_time', `${dateString}T23:59:59`)
 
       const daySideBusinessRevenue = daySideBusinessSales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0
-      setSideBusinessTransactionCount(daySideBusinessTransactionCount || 0)
 
       // Process side business breakdown
       const businessMap = new Map<number, { business_id: number; name: string; image_url: string | null; total_amount: number }>()
@@ -666,8 +870,6 @@ const Dashboard = () => {
         lowStockItems: lowStockCount || 0
       })
       
-      // Update side business transaction count for breakdown calculation
-      setSideBusinessTransactionCount(daySideBusinessTransactionCount || 0)
     } catch (error) {
       console.error('Error fetching dashboard stats for date:', error)
     } finally {
@@ -694,14 +896,21 @@ const Dashboard = () => {
 
   const getSalesCardTitle = () => {
     switch (activePeriod) {
-      case 'today':
+      case 'today': {
         const today = new Date()
         const isToday = selectedDate.toDateString() === today.toDateString()
         return isToday ? "Today's Sales" : `${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} Sales`
+      }
+      case 'yesterday':
+        return "Yesterday's Sales"
       case 'week':
         return 'This Week Sales'
+      case 'last7':
+        return 'Last 7 Days Sales'
       case 'month':
         return 'This Month Sales'
+      case 'last30':
+        return 'Last 30 Days Sales'
       default:
         return "Today's Sales"
     }
@@ -709,38 +918,66 @@ const Dashboard = () => {
 
   const getTransactionsCardTitle = () => {
     switch (activePeriod) {
-      case 'today':
+      case 'today': {
         const today = new Date()
         const isToday = selectedDate.toDateString() === today.toDateString()
-        return isToday ? 'Today\'s Transactions' : `${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} Transactions`
+        return isToday ? "Today's Transactions" : `${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} Transactions`
+      }
+      case 'yesterday':
+        return "Yesterday's Transactions"
       case 'week':
         return 'This Week Transactions'
+      case 'last7':
+        return 'Last 7 Days Transactions'
       case 'month':
         return 'This Month Transactions'
+      case 'last30':
+        return 'Last 30 Days Transactions'
       default:
-        return 'Today\'s Transactions'
+        return "Today's Transactions"
     }
   }
 
   const getTransactionPercentageChange = () => {
     if (previousDayTransactions === 0) {
-      return stats.todayTransactions > 0 ? "+100%" : "0%"
+      return periodSummary.productTransactions > 0 ? '+100%' : '0%'
     }
-    
-    const change = ((stats.todayTransactions - previousDayTransactions) / previousDayTransactions) * 100
-    const sign = change >= 0 ? "+" : ""
+
+    const change =
+      ((periodSummary.productTransactions - previousDayTransactions) /
+        previousDayTransactions) *
+      100
+    const sign = change >= 0 ? '+' : ''
     return `${sign}${change.toFixed(0)}%`
   }
 
   const getProductTransactionCount = () => {
-    return stats.todayTransactions - sideBusinessTransactionCount
+    return periodSummary.productTransactions
   }
 
   const getTransactionBreakdown = () => {
     const productTransactions = getProductTransactionCount()
-    const percentageChange = getTransactionPercentageChange()
+    const sideTransactions = periodSummary.sideTransactions
+
+    let descriptor = ''
+    if (activePeriod === 'today') {
+      descriptor = `${getTransactionPercentageChange()} vs yesterday`
+    } else if (activePeriod === 'yesterday') {
+      descriptor = `${getTransactionPercentageChange()} vs prior day`
+    } else if (activePeriod === 'last7') {
+      descriptor = 'Last 7 days'
+    } else if (activePeriod === 'last30') {
+      descriptor = 'Last 30 days'
+    } else if (activePeriod === 'week') {
+      descriptor = 'This week'
+    } else if (activePeriod === 'month') {
+      descriptor = 'This month'
+    }
+
     return {
-      text: `Products: ${productTransactions} | Side Business: ${sideBusinessTransactionCount} (${percentageChange} from yesterday)`,
+      text: `Products: ${productTransactions} | Side Business: ${sideTransactions}${
+        descriptor ? ` (${descriptor})` : ''
+      }`,
       icon: 'fa-solid fa-chart-pie'
     }
   }
@@ -801,83 +1038,57 @@ const Dashboard = () => {
     return isToday ? 'No transactions found for today' : `No transactions found for ${formattedDate}`
   }
 
-  const createPieChart = (productCount: number, sideBusinessCount: number, size: number = 150) => {
-    const total = productCount + sideBusinessCount
-    if (total === 0) return null
+  const totalRevenue = periodSummary.netRevenue + periodSummary.sideRevenue
+  const averageSale = periodSummary.transactions > 0 ? totalRevenue / periodSummary.transactions : 0
+  const transactionSummary = getTransactionBreakdown()
+  const productTransactions = getProductTransactionCount()
 
-    const productPercentage = (productCount / total) * 100
+  const topSideBusiness = sideBusinessBreakdown[0]
 
-    // Calculate angles for SVG path
-    const productAngle = (productPercentage / 100) * 360
-
-    // SVG path for pie slices
-    const createArcPath = (startAngle: number, endAngle: number, radius: number) => {
-      const start = polarToCartesian(size/2, size/2, radius, endAngle)
-      const end = polarToCartesian(size/2, size/2, radius, startAngle)
-      const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1"
-      return `M ${size/2} ${size/2} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y} Z`
-    }
-
-    const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
-      const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0
-      return {
-        x: centerX + (radius * Math.cos(angleInRadians)),
-        y: centerY + (radius * Math.sin(angleInRadians))
-      }
-    }
-
-    const radius = size * 0.4
-
-    return (
-      <svg width={size} height={size} style={{ marginRight: '16px' }}>
-        {productCount > 0 && (
-          <path
-            d={createArcPath(0, productAngle, radius)}
-            fill="#dc2626"
-            stroke="#ffffff"
-            strokeWidth="3"
-          />
-        )}
-        {sideBusinessCount > 0 && (
-          <path
-            d={createArcPath(productAngle, 360, radius)}
-            fill="#f59e0b"
-            stroke="#ffffff"
-            strokeWidth="3"
-          />
-        )}
-      </svg>
-    )
-  }
-
-  const statCards = [
+  const heroCards = [
     {
       title: getSalesCardTitle(),
-      value: formatCurrency(stats.todayNetRevenue + stats.todaySideBusinessRevenue),
-      change: `Net Sales: ${formatCurrency(stats.todayNetRevenue)} | Side Business: ${formatCurrency(stats.todaySideBusinessRevenue)}${stats.todayRefunds > 0 ? ` | Refunds: -${formatCurrency(stats.todayRefunds)}` : ''}`,
-      changeColor: '#1a1a1a',
-      icon: 'fa-solid fa-euro-sign',
-      bgColor: '#1a1a1a',
-      iconColor: '#f1f0e4'
+      value: formatCurrency(totalRevenue),
+      icon: 'fa-solid fa-coins',
+      accent: '#1a1a1a',
+      subtitle: `Net: ${formatCurrency(periodSummary.netRevenue)} | Side: ${formatCurrency(periodSummary.sideRevenue)}${periodSummary.refunds > 0 ? ` | Refunds: -${formatCurrency(periodSummary.refunds)}` : ''}${topSideBusiness ? ` | Top Side: ${topSideBusiness.name}` : ''}`
     },
     {
       title: getTransactionsCardTitle(),
-      value: stats.todayTransactions,
-      change: getTransactionBreakdown().text,
-      changeIcon: getTransactionBreakdown().icon,
-      changeColor: '#bca88d',
-      icon: 'fa-solid fa-shopping-cart',
-      bgColor: '#bca88d',
-      iconColor: '#1a1a1a',
-      pieChart: {
-        productCount: getProductTransactionCount(),
-        sideBusinessCount: sideBusinessTransactionCount
-      }
+      value: periodSummary.transactions.toLocaleString(),
+      icon: transactionSummary.icon ?? 'fa-solid fa-receipt',
+      accent: '#7d8d86',
+      subtitle: transactionSummary.text || `Products: ${productTransactions} | Side: ${periodSummary.sideTransactions}`
+    },
+    {
+      title: activePeriod === 'today' ? 'Average Sale' : 'Average Ticket',
+      value: formatCurrency(averageSale),
+      icon: 'fa-solid fa-chart-line',
+      accent: '#bca88d',
+      subtitle: periodSummary.transactions > 0 ? `Across ${periodSummary.transactions} sale${periodSummary.transactions === 1 ? '' : 's'}` : 'No sales recorded'
     }
   ]
 
-  // Display cards with consistent currency formatting
-  const displayCards = statCards
+  const periodOptions: { value: DashboardPeriod; label: string }[] = [
+    { value: 'today', label: 'Today' },
+    { value: 'yesterday', label: 'Yesterday' },
+    { value: 'last7', label: 'Last 7 Days' },
+    { value: 'last30', label: 'Last 30 Days' },
+    { value: 'week', label: 'This Week' },
+    { value: 'month', label: 'This Month' }
+  ]
+
+  const handlePeriodSelect = (period: DashboardPeriod) => {
+    setActivePeriod(period)
+    if (period === 'today' || period === 'yesterday') {
+      const base = new Date()
+      if (period === 'yesterday') {
+        base.setDate(base.getDate() - 1)
+      }
+      base.setHours(0, 0, 0, 0)
+      setSelectedDate(base)
+    }
+  }
 
   // Loading state hidden - always show content
   // if (loading) {
@@ -970,274 +1181,101 @@ const Dashboard = () => {
         </div>
 
         {/* Period Filter */}
-        <div style={{
-          display: 'flex',
-          gap: '8px',
-          background: '#f9fafb',
-          border: '1px solid #e5e7eb',
-          borderRadius: '8px',
-          padding: '4px'
-        }}>
-          <button
-            onClick={() => setActivePeriod('today')}
-            style={{
-              padding: '6px 10px',
-              borderRadius: '6px',
-              border: 'none',
-              background: activePeriod === 'today' ? '#7d8d86' : 'transparent',
-              color: activePeriod === 'today' ? '#f1f0e4' : '#7d8d86',
-              fontSize: '12px',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            Today
-          </button>
-          <button
-            onClick={() => setActivePeriod('week')}
-            style={{
-              padding: '6px 10px',
-              borderRadius: '6px',
-              border: 'none',
-              background: activePeriod === 'week' ? '#7d8d86' : 'transparent',
-              color: activePeriod === 'week' ? '#f1f0e4' : '#7d8d86',
-              fontSize: '12px',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            This Week
-          </button>
-          <button
-            onClick={() => setActivePeriod('month')}
-            style={{
-              padding: '6px 10px',
-              borderRadius: '6px',
-              border: 'none',
-              background: activePeriod === 'month' ? '#7d8d86' : 'transparent',
-              color: activePeriod === 'month' ? '#f1f0e4' : '#7d8d86',
-              fontSize: '12px',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            This Month
-          </button>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          {periodOptions.map(option => {
+            const isActive = activePeriod === option.value
+            return (
+              <button
+                key={option.value}
+                onClick={() => handlePeriodSelect(option.value)}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '999px',
+                  border: isActive ? '1px solid #1a1a1a' : '1px solid #e5e7eb',
+                  background: isActive ? '#1a1a1a' : '#ffffff',
+                  color: isActive ? '#f1f0e4' : '#1f2937',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: isActive ? '0 6px 18px rgba(26, 26, 26, 0.25)' : 'none'
+                }}
+              >
+                {option.label}
+              </button>
+            )
+          })}
         </div>
         </div>
       </div>
       
-      {/* Stats Cards */}
+      {/* Hero Stat Cards */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '24px',
-        marginBottom: '32px',
-        minHeight: '140px'
+        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+        gap: '20px',
+        marginBottom: '28px'
       }}>
-        {displayCards.map((card, index) => (
+        {heroCards.map((card, index) => (
           <div
             key={index}
-            className="dashboardCard"
             style={{
               background: '#ffffff',
-              borderRadius: '16px',
-              padding: '20px',
-              boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-              border: '2px solid #d1d5db',
-              borderWidth: '2px',
-              borderStyle: 'solid',
-              borderColor: '#d1d5db',
-              transition: 'all 0.3s ease',
-              cursor: 'pointer',
+              borderRadius: '20px',
+              padding: '24px',
+              border: '1px solid #e5e7eb',
+              boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: 'space-between',
-              minHeight: '120px'
+              gap: '16px',
+              minHeight: '150px'
             }}
           >
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                <p style={{ 
-                  color: '#1a1a1a', 
-                  fontSize: '16px', 
-                  fontWeight: '500', 
-                  margin: '0 0 12px 0' 
-                }}>
-                  {card.title}
-                </p>
-                <p style={{ 
-                  fontSize: '36px', 
-                  fontWeight: 'bold', 
-                  color: '#1a1a1a', 
-                  margin: '0 0 8px 0',
-                  lineHeight: '1.1'
-                }}>
-                  {card.value}
-                </p>
-                <div style={{ 
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '16px',
-                  fontSize: '14px', 
-                  fontWeight: '500', 
-                  color: card.changeColor, 
-                  margin: 0 
-                }}>
-                  {(card as any).pieChart ? (
-                    <>
-                      {createPieChart((card as any).pieChart.productCount, (card as any).pieChart.sideBusinessCount, 120)}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#dc2626' }}></div>
-                          <span style={{ fontSize: '14px', fontWeight: '600', color: '#1a1a1a' }}>Products: {(card as any).pieChart.productCount}</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#f59e0b' }}></div>
-                          <span style={{ fontSize: '14px', fontWeight: '600', color: '#1a1a1a' }}>Side Business: {(card as any).pieChart.sideBusinessCount}</span>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      {(card as any).changeIcon && (
-                        <i className={(card as any).changeIcon} style={{ fontSize: '12px' }}></i>
-                      )}
-                      <span>{card.change}</span>
-                    </>
-                  )}
-                </div>
-                
-                {/* Side Business Breakdown - Only on Sales card (index 0) */}
-                {index === 0 && sideBusinessBreakdown.length > 0 && (
-                  <div style={{ 
-                    marginTop: '12px',
-                    paddingTop: '12px',
-                    borderTop: '1px solid rgba(125, 141, 134, 0.2)'
-                  }}>
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
-                      gap: '12px',
-                      maxWidth: '100%'
-                    }}>
-                      {sideBusinessBreakdown.map((business) => (
-                        <div key={business.business_id} style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '8px',
-                          background: '#f9fafb',
-                          borderRadius: '8px',
-                          border: '1px solid #e5e7eb'
-                        }}>
-                          <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '8px',
-                            overflow: 'hidden',
-                            background: '#f3f4f6',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-                          }}>
-                            {business.image_url ? (
-                              <img 
-                                src={business.image_url} 
-                                alt={business.name}
-                                style={{
-                                  width: '100%',
-                                  height: '100%',
-                                  objectFit: 'cover'
-                                }}
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement
-                                  target.style.display = 'none'
-                                  const parent = target.parentElement
-                                  if (parent) {
-                                    parent.innerHTML = '<i class="fa-solid fa-store" style="font-size: 18px; color: #7d8d86;"></i>'
-                                  }
-                                }}
-                              />
-                            ) : (
-                              <i className="fa-solid fa-store" style={{ fontSize: '18px', color: '#7d8d86' }}></i>
-                            )}
-                          </div>
-                          <div style={{
-                            textAlign: 'center',
-                            width: '100%'
-                          }}>
-                            <p style={{
-                              fontSize: '11px',
-                              color: '#7d8d86',
-                              fontWeight: '500',
-                              margin: '0 0 2px 0',
-                              lineHeight: '1.2'
-                            }}>
-                              {business.name}
-                            </p>
-                            <p style={{
-                              fontSize: '12px',
-                              color: '#1a1a1a',
-                              fontWeight: '600',
-                              margin: 0
-                            }}>
-                              {formatCurrency(business.total_amount)}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '16px', fontWeight: 600, color: '#475569' }}>{card.title}</span>
               <div style={{
-                width: '56px',
-                height: '56px',
+                width: '44px',
+                height: '44px',
                 borderRadius: '14px',
-                background: card.bgColor,
+                background: 'rgba(125, 141, 134, 0.12)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                alignSelf: 'flex-end',
-                marginTop: '16px'
+                color: card.accent,
+                fontSize: '18px'
               }}>
-                <i className={card.icon} style={{ 
-                  fontSize: '24px', 
-                  color: card.iconColor 
-                }}></i>
+                <i className={card.icon}></i>
               </div>
+            </div>
+            <div style={{ fontSize: '32px', fontWeight: 700, color: '#111827', letterSpacing: '-0.02em' }}>
+              {card.value}
+            </div>
+            <div style={{ fontSize: '13px', fontWeight: 500, color: '#6b7280', lineHeight: 1.5 }}>
+              {card.subtitle}
             </div>
           </div>
         ))}
-        
-        {/* Low Stock Section as Third Card */}
-        <div 
-          className="dashboardCard"
-          style={{
-            background: '#ffffff',
-            borderRadius: '16px',
-            padding: '20px',
-            boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-            border: '2px solid #d1d5db',
-            borderWidth: '2px',
-            borderStyle: 'solid',
-            borderColor: '#d1d5db',
-            transition: 'all 0.3s ease',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            minHeight: '120px'
-          }}
-        >
+      </div>
+
+      {/* Supporting Insights */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: '20px',
+        marginBottom: '32px'
+      }}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '18px',
+          padding: '24px',
+          border: '1px solid #e5e7eb',
+          boxShadow: '0 8px 24px rgba(15, 23, 42, 0.05)'
+        }}>
           <LowStockSection />
         </div>
-
-        {/* Top Products as Fourth Card */}
-        <ProductAnalyticsSection activePeriod={activePeriod} selectedDate={selectedDate} />
+        <div>
+          <ProductAnalyticsSection activePeriod={normalizePeriod(activePeriod)} selectedDate={selectedDate} />
+        </div>
       </div>
 
       {/* Main Content Layout */}
@@ -1254,10 +1292,10 @@ const Dashboard = () => {
             className="dashboardCard"
             style={{
               background: '#ffffff',
-              borderRadius: '16px',
+              borderRadius: '20px',
               padding: '24px',
-              boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-              border: '5px solid #000000 !important'
+              boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
+              border: '1px solid #e5e7eb'
             }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1280,14 +1318,21 @@ const Dashboard = () => {
               }}>
                 {(() => {
                   switch (activePeriod) {
-                    case 'today':
+                    case 'today': {
                       const today = new Date()
                       const isToday = selectedDate.toDateString() === today.toDateString()
                       return isToday ? 'Recent Transactions' : `${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} Transactions`
+                    }
+                    case 'yesterday':
+                      return "Yesterday's Transactions"
                     case 'week':
                       return 'This Week Transactions'
+                    case 'last7':
+                      return 'Last 7 Days Transactions'
                     case 'month':
                       return 'This Month Transactions'
+                    case 'last30':
+                      return 'Last 30 Days Transactions'
                     default:
                       return 'Recent Transactions'
                   }
@@ -1431,14 +1476,21 @@ const Dashboard = () => {
                 }}>
                   {(() => {
                     switch (activePeriod) {
-                      case 'today':
+                      case 'today': {
                         const today = new Date()
                         const isToday = selectedDate.toDateString() === today.toDateString()
                         return isToday ? 'No recent transactions' : `No transactions on ${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                      }
+                      case 'yesterday':
+                        return 'No transactions yesterday'
                       case 'week':
                         return 'No transactions this week'
+                      case 'last7':
+                        return 'No transactions in the last 7 days'
                       case 'month':
                         return 'No transactions this month'
+                      case 'last30':
+                        return 'No transactions in the last 30 days'
                       default:
                         return 'No recent transactions'
                     }
@@ -1452,7 +1504,7 @@ const Dashboard = () => {
 
         {/* Right Column - Sales Chart */}
         <div>
-          <SalesChart selectedDate={selectedDate} activePeriod={activePeriod} />
+          <SalesChart selectedDate={selectedDate} activePeriod={normalizePeriod(activePeriod)} />
         </div>
       </div>
 

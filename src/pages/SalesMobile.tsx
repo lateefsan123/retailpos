@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { loadStripe } from '@stripe/stripe-js'
 import {
   BadgeCheck,
   ChevronRight,
@@ -22,22 +23,18 @@ import {
   Briefcase,
   Printer,
   User,
-  Phone,
   RefreshCw,
   DollarSign,
   FileText,
   BarChart3,
   Eye,
-  CheckCircle,
-  Send,
-  MessageCircle
+  CheckCircle
 } from 'lucide-react'
 
 import { useAuth } from '../contexts/AuthContext'
 import { useBranch } from '../contexts/BranchContext'
 import { useBusinessId } from '../hooks/useBusinessId'
 import { useProductsData } from '../hooks/data/useProductsData'
-import { useTransactions } from '../hooks/derived/useTransactions'
 import { useOrder } from '../hooks/useOrder'
 import MobileBottomNav from '../components/MobileBottomNav'
 import { usePromotions } from '../hooks/usePromotions'
@@ -53,23 +50,6 @@ import type { OrderItem } from '../types/sales'
 import type { Product, SideBusinessItem } from '../hooks/data/useProductsData'
 import styles from './SalesMobile.module.css'
 
-const formatRelativeTime = (isoString: string) => {
-  const normalized = isoString.includes('T') ? isoString : isoString.replace(' ', 'T')
-  const date = new Date(normalized)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffMinutes = Math.floor(diffMs / (1000 * 60))
-  const diffHours = Math.floor(diffMinutes / 60)
-  const diffDays = Math.floor(diffHours / 24)
-
-  if (diffMinutes < 1) return 'Just now'
-  if (diffMinutes < 60) return `${diffMinutes} min${diffMinutes > 1 ? 's' : ''} ago`
-  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
-  if (diffDays === 1) return '1 day ago'
-  if (diffDays < 7) return `${diffDays} days ago`
-
-  return date.toLocaleDateString()
-}
 
 // Helper function to get local time in database format
 const getLocalDateTime = () => {
@@ -101,7 +81,6 @@ const SalesMobile = () => {
   const { businessId, businessLoading } = useBusinessId()
   const { selectedBranch, selectedBranchId } = useBranch()
   const { data: productsData, isLoading: productsLoading } = useProductsData()
-  const { transactions: hookTransactions, loading: transactionsLoading } = useTransactions()
   const { calculatePromotions, activePromotions } = usePromotions(businessId || null, selectedBranchId || null)
   const {
     order,
@@ -143,7 +122,7 @@ const SalesMobile = () => {
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'credit'>('cash')
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'credit' | 'tap'>('cash')
   const [cashAmount, setCashAmount] = useState('')
   const [allowPartialPayment, setAllowPartialPayment] = useState(false)
   const [receiptHtml, setReceiptHtml] = useState('')
@@ -152,19 +131,7 @@ const SalesMobile = () => {
   const [partialAmount, setPartialAmount] = useState('')
   const [partialNotes, setPartialNotes] = useState('')
   const [remainingAmount, setRemainingAmount] = useState(0)
-  const [receiptEmail, setReceiptEmail] = useState('')
-  const [receiptPhone, setReceiptPhone] = useState('')
-  const [sendingReceipt, setSendingReceipt] = useState(false)
 
-  const recentTransactions = useMemo(() => (hookTransactions || []).slice(0, 5), [hookTransactions])
-
-  const handleViewAllTransactions = () => {
-    const firstTransaction = recentTransactions[0]
-    const rawDatetime = firstTransaction?.datetime
-    const normalized = rawDatetime ? rawDatetime.replace(' ', 'T') : new Date().toISOString()
-    const dateIso = normalized.split('T')[0]
-    navigate(`/transactions-mobile?date=${dateIso}`)
-  }
 
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const cashInputRef = useRef<HTMLInputElement | null>(null)
@@ -534,8 +501,88 @@ const SalesMobile = () => {
     }
   }
 
-  const handlePaymentMethod = (method: 'cash' | 'card' | 'credit') => {
+  const handlePaymentMethod = (method: 'cash' | 'card' | 'credit' | 'tap') => {
     setPaymentMethod(method)
+  }
+
+  const handleTapPayment = async () => {
+    try {
+      // Initialize Stripe
+      const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
+      if (!stripe) throw new Error('Stripe failed to load')
+
+      const totalAmount = allowPartialPayment ? (parseFloat(partialAmount) || 0) : total
+
+      // Create payment request for Apple Pay/Google Pay
+      const paymentRequest = stripe.paymentRequest({
+        country: 'IE',
+        currency: 'eur',
+        total: {
+          label: 'Total',
+          amount: Math.round(totalAmount * 100), // Convert to cents
+        },
+      })
+
+      // Check if Apple Pay/Google Pay is available
+      const canMakePayment = await paymentRequest.canMakePayment()
+      if (!canMakePayment) {
+        alert('Apple Pay or Google Pay is not available on this device.')
+        return
+      }
+
+      // Handle payment method
+      paymentRequest.on('paymentmethod', async (event) => {
+        try {
+          // Create payment intent using Supabase function
+          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment-intent`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+            },
+            body: JSON.stringify({
+              amount: totalAmount,
+              currency: 'eur',
+              orderId: `order_${Date.now()}`,
+              businessId: businessId,
+              branchId: selectedBranchId
+            })
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to create payment intent')
+          }
+
+          const { clientSecret } = await response.json()
+
+          // Confirm payment with Stripe
+          const { error } = await stripe.confirmCardPayment(clientSecret, {
+            payment_method: event.paymentMethod.id,
+          })
+
+          if (error) {
+            event.complete('fail')
+            alert(`Payment failed: ${error.message}`)
+          } else {
+            event.complete('success')
+            // Payment succeeded - process the sale
+            setPaymentMethod('tap')
+            await processSale()
+          }
+        } catch (error) {
+          event.complete('fail')
+          console.error('Payment processing error:', error)
+          alert('Payment processing failed. Please try again.')
+        }
+      })
+
+      // Show the payment sheet
+      paymentRequest.show()
+
+    } catch (error) {
+      console.error('Tap payment error:', error)
+      alert('Failed to initialize payment. Please try again.')
+    }
   }
 
   const processSale = async () => {
@@ -1023,77 +1070,6 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
     </div>
   )
 
-  const renderRecentTransactions = () => (
-    <section className={styles.recentTransactionsSection}>
-      <div className={styles.recentTransactionsHeader}>
-        <div>
-          <h2 className={styles.recentTransactionsTitle}>Recent Transactions</h2>
-          <p className={styles.recentTransactionsSubtitle}>Latest sales activity</p>
-        </div>
-        <button
-          type="button"
-          className={styles.recentTransactionsLink}
-          onClick={handleViewAllTransactions}
-        >
-          View All
-        </button>
-      </div>
-
-      {transactionsLoading ? (
-        <div className={styles.recentTransactionsEmpty}>Loading transactions...</div>
-      ) : recentTransactions.length === 0 ? (
-        <div className={styles.recentTransactionsEmpty}>No recent transactions yet</div>
-      ) : (
-        <ul className={styles.recentTransactionsList}>
-          {recentTransactions.map(transaction => (
-            <li key={transaction.sale_id} className={styles.recentTransactionItem}>
-              <button
-                type="button"
-                className={styles.recentTransactionButton}
-                onClick={() => {
-                  const dateIso = transaction.datetime.split('T')[0]
-                  navigate(`/transactions-mobile?date=${dateIso}&transaction=${transaction.sale_id}`)
-                }}
-              >
-                <div className={styles.recentTransactionIcon}>
-                  <span className={
-                    transaction.partial_payment
-                      ? styles.recentTransactionDotPartial
-                      : styles.recentTransactionDotComplete
-                  }></span>
-                </div>
-                <div className={styles.recentTransactionInfo}>
-                  <span className={styles.recentTransactionId}>
-                    #{transaction.sale_id.toString().padStart(8, '0')}
-                  </span>
-                  <span className={styles.recentTransactionMeta}>
-                    {transaction.items?.length || 0} {transaction.items?.length === 1 ? 'item' : 'items'} • {transaction.payment_method}
-                  </span>
-                  <div className={styles.recentTransactionSubMeta}>
-                    <span className={styles.recentTransactionTime}>
-                      {formatRelativeTime(transaction.datetime)}
-                    </span>
-                    {transaction.partial_payment && (
-                      <span className={styles.recentTransactionBadge}>Partial</span>
-                    )}
-                  </div>
-                </div>
-                <div className={styles.recentTransactionAmount}>
-                  <span>{formatCurrency(transaction.total_amount)}</span>
-                  {transaction.partial_payment && transaction.remaining_amount != null && (
-                    <span className={styles.recentTransactionAmountSecondary}>
-                      Owes {formatCurrency(transaction.remaining_amount)}
-                    </span>
-                  )}
-                </div>
-                <ChevronRight className={styles.recentTransactionChevron} />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  )
 
   const renderCartOverlay = () => {
     if (activeModal !== 'cart') return null
@@ -1475,6 +1451,28 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   <CircleDollarSign size={20} />
                   Credit
                 </button>
+                <button
+                  className={`${styles.summaryPaymentBtn} ${paymentMethod === 'tap' ? 'active' : ''}`}
+                  onClick={handleTapPayment}
+                  style={{
+                    background: paymentMethod === 'tap' ? '#007AFF' : '#f3f4f6',
+                    color: paymentMethod === 'tap' ? 'white' : '#374151',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <div style={{ fontSize: '20px' }}>📱</div>
+                  Apple Pay
+                </button>
               </div>
             </div>
 
@@ -1824,7 +1822,6 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
     <div className={styles.page}>
       {renderHeader()}
       {renderSearchBar()}
-      {renderRecentTransactions()}
       {renderCategoryTabs()}
       {renderProductsGrid()}
       <MobileBottomNav />

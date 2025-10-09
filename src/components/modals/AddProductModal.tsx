@@ -171,7 +171,11 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
         throw new Error('Business ID is required')
       }
 
+      // Generate a unique product ID
+      const productId = crypto.randomUUID()
+
       const productData = {
+        product_id: productId,
         business_id: businessId,
         branch_id: selectedBranchId,
         name: newProduct.product_name,
@@ -187,7 +191,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
         description: newProduct.description,
         is_weighted: newProduct.is_weighted,
         weight_unit: newProduct.is_weighted ? newProduct.weight_unit : null,
-        price_per_unit: newProduct.is_weighted ? parseFloat(newProduct.price_per_unit.toString()) : null
+        price_per_unit: newProduct.is_weighted ? parseFloat(newProduct.price_per_unit.toString()) : null,
+        last_updated: new Date().toISOString(),
+        sales_count: 0,
+        total_revenue: 0
       }
 
       const { data, error: insertError } = await supabase

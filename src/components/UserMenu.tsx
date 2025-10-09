@@ -1,12 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { CSSProperties, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useRole } from '../contexts/RoleContext'
-import { supabase } from '../lib/supabaseClient'
 import SelectUserModal from './SelectUserModal'
 import BusinessSettingsModal from './BusinessSettingsModal'
 import ChangeNameModal from './ChangeNameModal'
 
-const UserMenu: React.FC = () => {
+type UserMenuVariant = 'floating' | 'sidebar'
+
+interface UserMenuProps {
+  variant?: UserMenuVariant
+}
+
+const UserMenu: React.FC<UserMenuProps> = ({ variant = 'floating' }) => {
   const { user, logout, switchUser } = useAuth()
   const { userRole } = useRole()
   const [isOpen, setIsOpen] = useState(false)
@@ -15,16 +20,18 @@ const UserMenu: React.FC = () => {
   const [showChangeNameModal, setShowChangeNameModal] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  // Debug logging
-  console.log('UserMenu - Current user:', user?.username, 'Role:', user?.role, 'UserRole from context:', userRole)
-  console.log('UserMenu - User object:', user)
+  const isSidebar = variant === 'sidebar'
+  const iconName = user?.icon
+  const userExtra = (user as unknown as Record<string, any>) || null
+  const displayName = (userExtra?.full_name as string | undefined) || user?.username || 'User'
+  const emailAddress = userExtra?.email as string | undefined
+  const usernameInitial = (user?.username || displayName || '?').charAt(0).toUpperCase()
 
-  // Monitor user changes
+  // Debug logging / lifecycle hooks
   useEffect(() => {
-    console.log('UserMenu - User changed to:', user?.username, 'Role:', user?.role)
-  }, [user])
+    // User role tracking for debugging
+  }, [user, userRole])
 
-  // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -32,35 +39,113 @@ const UserMenu: React.FC = () => {
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
-
-  // Close menu on escape key
-  useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsOpen(false)
       }
     }
 
+    document.addEventListener('mousedown', handleClickOutside)
     document.addEventListener('keydown', handleEscape)
     return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleEscape)
     }
   }, [])
 
   const getRoleColor = (role: string) => {
     switch (role.toLowerCase()) {
-      case 'admin': return '#dc2626' // Red
-      case 'owner': return '#7c3aed' // Purple
-      case 'manager': return '#ea580c' // Orange
-      case 'cashier': return '#2563eb' // Blue
-      default: return '#6b7280' // Gray
+      case 'admin':
+        return '#dc2626'
+      case 'owner':
+        return '#7c3aed'
+      case 'manager':
+        return '#ea580c'
+      case 'cashier':
+        return '#2563eb'
+      default:
+        return '#6b7280'
     }
   }
+
+  const containerStyle: CSSProperties = isSidebar
+    ? {
+        position: 'relative',
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        zIndex: 5
+      }
+    : {
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        display: 'inline-flex',
+        zIndex: 1000
+      }
+
+  const buttonStyle: CSSProperties = isSidebar
+    ? {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+        gap: '12px',
+        padding: '12px 16px',
+        borderRadius: '14px',
+        background: 'rgba(255, 255, 255, 0.06)',
+        border: '1px solid rgba(255, 255, 255, 0.12)',
+        color: '#f8fafc',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        backdropFilter: 'blur(6px)'
+      }
+    : {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '8px 12px',
+        borderRadius: '25px',
+        background: '#f3f4f6',
+        border: 'none',
+        color: '#111827',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease'
+      }
+
+  const dropdownStyle: CSSProperties = isSidebar
+    ? {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: '100%',
+        marginBottom: '12px',
+        background: 'rgba(12, 12, 16, 0.98)',
+        borderRadius: '16px',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        boxShadow: '0 20px 45px rgba(0, 0, 0, 0.45)',
+        padding: '12px 0',
+        zIndex: 10
+      }
+    : {
+        position: 'absolute',
+        right: 0,
+        top: '100%',
+        marginTop: '8px',
+        minWidth: '220px',
+        maxWidth: '300px',
+        background: '#ffffff',
+        borderRadius: '8px',
+        border: '1px solid #e5e7eb',
+        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+        padding: '8px 0',
+        zIndex: 1001
+      }
+
+  const dropdownTextColor = isSidebar ? '#f8fafc' : '#111827'
+  const dropdownIconColor = isSidebar ? '#d1d5db' : '#4b5563'
+  const dropdownHoverBg = isSidebar ? 'rgba(255, 255, 255, 0.08)' : '#f9fafb'
 
   const handleLogout = async () => {
     await logout()
@@ -74,24 +159,14 @@ const UserMenu: React.FC = () => {
 
   const handleUserSwitch = async (selectedUser: any, password: string, usePin?: boolean) => {
     try {
-      console.log('Attempting to switch to user:', selectedUser.username, 'using', usePin ? 'PIN' : 'password')
       const success = await switchUser(selectedUser.user_id, password, usePin)
-      
       if (success) {
-        console.log('User switch successful, closing modal')
         setShowSelectUserModal(false)
-        // Force a small delay to ensure state updates are processed
-        setTimeout(() => {
-          console.log('User switch completed - Current user should now be:', selectedUser.username)
-          // The AuthContext should automatically update all dependent components
-        }, 100)
       } else {
-        // Keep the modal open and show error
         throw new Error(usePin ? 'Invalid PIN' : 'Invalid password')
       }
     } catch (error) {
       console.error('Error switching user:', error)
-      // Re-throw the error so the modal can handle it
       throw error
     }
   }
@@ -106,129 +181,160 @@ const UserMenu: React.FC = () => {
     setIsOpen(false)
   }
 
+  const handleButtonEnter = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (isSidebar) {
+      Object.assign(event.currentTarget.style, {
+        borderColor: 'rgba(255, 255, 255, 0.22)',
+        background: 'rgba(255, 255, 255, 0.12)'
+      })
+    } else {
+      Object.assign(event.currentTarget.style, {
+        boxShadow: '0 8px 18px rgba(148, 163, 184, 0.2)',
+        transform: 'translateY(-2px)',
+        background: '#e5e7eb'
+      })
+    }
+  }
+
+  const handleButtonLeave = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (isSidebar) {
+      Object.assign(event.currentTarget.style, {
+        borderColor: 'rgba(255, 255, 255, 0.12)',
+        background: 'rgba(255, 255, 255, 0.06)'
+      })
+    } else {
+      Object.assign(event.currentTarget.style, {
+        boxShadow: 'none',
+        transform: 'translateY(0)',
+        background: '#f3f4f6'
+      })
+    }
+  }
+
   return (
-    <div style={{
-      position: 'fixed',
-      top: '20px',
-      right: '20px',
-      zIndex: 1000
-    }} ref={menuRef}>
-      {/* User avatar button */}
+    <div style={containerStyle} ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          background: '#f3f4f6',
-          border: 'none',
-          borderRadius: '25px',
-          padding: '8px 12px',
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          color: '#111827'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = '#e5e7eb'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = '#f3f4f6'
-        }}
+        style={buttonStyle}
+        onMouseEnter={handleButtonEnter}
+        onMouseLeave={handleButtonLeave}
       >
-        <div style={{
-          width: '32px',
-          height: '32px',
-          borderRadius: '50%',
-          background: '#7d8d86',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-          border: 'none'
-        }}>
-          {user?.icon ? (
-            <img 
-              src={`/images/icons/${user.icon}.png`} 
-              alt={user.icon}
-              style={{
-                width: '28px',
-                height: '28px',
-                objectFit: 'cover',
-                borderRadius: '50%'
+        <div
+          style={{
+            width: isSidebar ? 36 : 32,
+            height: isSidebar ? 36 : 32,
+            borderRadius: isSidebar ? '12px' : '50%',
+            background: isSidebar
+              ? 'linear-gradient(135deg, rgba(255,255,255,0.18), rgba(148,163,184,0.28))'
+              : 'linear-gradient(135deg, #1a1a1a, #374151)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden'
+          }}
+        >
+          {iconName ? (
+            <img
+              src={`/images/icons/${iconName}.png`}
+              alt={iconName}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              onError={(e) => {
+                const target = e.target as HTMLImageElement
+                target.style.display = 'none'
+                const parent = target.parentElement
+                if (parent) {
+                  parent.innerHTML = `<span style="font-size:14px;color:#f8fafc;font-weight:600;">${(user?.username || '?').charAt(0).toUpperCase()}</span>`
+                }
               }}
             />
           ) : (
-            <i className="fa-solid fa-user" style={{ 
-              fontSize: '16px', 
-              color: '#9ca3af' 
-            }}></i>
+            <span style={{ fontSize: '14px', color: '#f8fafc', fontWeight: 600 }}>
+              {(user?.username || '?').charAt(0).toUpperCase()}
+            </span>
           )}
         </div>
-            <span 
+
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', color: isSidebar ? '#f8fafc' : '#111827' }}>
+          <span style={{ fontSize: '14px', fontWeight: 500, margin: 0, textTransform: 'capitalize' }}>
+            {user?.username || 'loading...'}
+          </span>
+          {(user?.role || userRole) && (
+            <span
               style={{
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#111827',
-                maxWidth: '120px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
+                fontSize: '12px',
+                fontWeight: 600,
+                color: isSidebar ? 'rgba(226, 232, 240, 0.7)' : getRoleColor(user?.role || userRole),
+                textTransform: 'capitalize',
+                letterSpacing: '0.01em'
               }}
-              title={user?.username || 'Unknown User'}
             >
-              {user?.username || 'Unknown User'}
+              {user?.role || userRole}
             </span>
-            <i className={`fa-solid fa-chevron-${isOpen ? 'up' : 'down'}`} style={{ fontSize: '12px', color: '#4b5563' }}></i>
+          )}
+        </div>
+
+        <i
+          className={`fa-solid fa-chevron-${isOpen ? 'up' : 'down'}`}
+          style={{ fontSize: '12px', color: isSidebar ? '#d1d5db' : '#6b7280', marginLeft: 'auto' }}
+        ></i>
       </button>
 
-      {/* Dropdown menu */}
       {isOpen && (
-        <div style={{
-          position: 'absolute',
-          right: '0',
-          top: '100%',
-          marginTop: '8px',
-          minWidth: '200px',
-          maxWidth: '300px',
-          background: '#ffffff',
-          borderRadius: '8px',
-          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
-          border: '1px solid #e5e7eb',
-          padding: '8px 0',
-          zIndex: 1001
-        }}>
-          {/* User info header */}
-          <div style={{
-            padding: '12px 16px',
-            borderBottom: '1px solid #e5e7eb',
-            marginBottom: '8px'
-          }}>
-            <div 
-              style={{
-                color: '#111827',
-                fontSize: '14px',
-                fontWeight: '500',
-                marginBottom: '4px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                maxWidth: '100%'
-              }}
-              title={user?.username || 'Unknown User'}
-            >
-              {user?.username || 'Unknown User'}
-            </div>
-            <div style={{
-              color: getRoleColor(userRole),
-              fontSize: '12px',
-              textTransform: 'capitalize',
-              fontWeight: '500'
-            }}>
-              {userRole}
+        <div style={dropdownStyle}>
+          <div
+            style={{
+              padding: '12px 16px',
+              borderBottom: isSidebar ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e5e7eb',
+              marginBottom: '8px',
+              color: dropdownTextColor
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: '50%',
+                  background: isSidebar
+                    ? 'linear-gradient(135deg, rgba(255,255,255,0.18), rgba(148,163,184,0.28))'
+                    : 'linear-gradient(135deg, #1a1a1a, #374151)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden'
+                }}
+              >
+                {iconName ? (
+                  <img
+                    src={`/images/icons/${iconName}.png`}
+                    alt={iconName}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      target.style.display = 'none'
+                      const parent = target.parentElement
+                      if (parent) {
+                        parent.innerHTML = `<span style="font-size:16px;color:#f8fafc;font-weight:600;">${(user?.username || '?').charAt(0).toUpperCase()}</span>`
+                      }
+                    }}
+                  />
+                ) : (
+                  <span style={{ fontSize: '16px', color: '#f8fafc', fontWeight: 600 }}>
+                    {(user?.username || '?').charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                <span style={{ fontSize: '14px', fontWeight: 600, color: dropdownTextColor }}>
+                  {user?.full_name || user?.username || 'User'}
+                </span>
+                <span style={{ fontSize: '12px', color: isSidebar ? 'rgba(226, 232, 240, 0.68)' : '#6b7280' }}>
+                  {user?.email || ''}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Switch User */}
           <button
             onClick={handleSwitchUser}
             style={{
@@ -237,7 +343,7 @@ const UserMenu: React.FC = () => {
               padding: '12px 16px',
               background: 'transparent',
               border: 'none',
-              color: '#111827',
+              color: dropdownTextColor,
               fontSize: '14px',
               cursor: 'pointer',
               display: 'flex',
@@ -245,18 +351,13 @@ const UserMenu: React.FC = () => {
               gap: '12px',
               transition: 'background 0.2s ease'
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#f9fafb'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent'
-            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = dropdownHoverBg)}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
           >
-            <i className="fa-solid fa-user-group" style={{ fontSize: '16px', color: '#4b5563' }}></i>
+            <i className="fa-solid fa-user-group" style={{ fontSize: '16px', color: dropdownIconColor }}></i>
             <span>Switch User</span>
           </button>
 
-          {/* Settings */}
           <button
             onClick={handleSettings}
             style={{
@@ -265,7 +366,7 @@ const UserMenu: React.FC = () => {
               padding: '12px 16px',
               background: 'transparent',
               border: 'none',
-              color: '#111827',
+              color: dropdownTextColor,
               fontSize: '14px',
               cursor: 'pointer',
               display: 'flex',
@@ -273,18 +374,13 @@ const UserMenu: React.FC = () => {
               gap: '12px',
               transition: 'background 0.2s ease'
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#f9fafb'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent'
-            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = dropdownHoverBg)}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
           >
-            <i className="fa-solid fa-gear" style={{ fontSize: '16px', color: '#4b5563' }}></i>
+            <i className="fa-solid fa-gear" style={{ fontSize: '16px', color: dropdownIconColor }}></i>
             <span>Settings</span>
           </button>
 
-          {/* Change Name - Only for Owners */}
           {user?.role?.toLowerCase() === 'owner' && (
             <button
               onClick={handleChangeName}
@@ -294,7 +390,7 @@ const UserMenu: React.FC = () => {
                 padding: '12px 16px',
                 background: 'transparent',
                 border: 'none',
-                color: '#111827',
+                color: dropdownTextColor,
                 fontSize: '14px',
                 cursor: 'pointer',
                 display: 'flex',
@@ -302,25 +398,21 @@ const UserMenu: React.FC = () => {
                 gap: '12px',
                 transition: 'background 0.2s ease'
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#f9fafb'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent'
-              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = dropdownHoverBg)}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
             >
-              <i className="fa-solid fa-user-edit" style={{ fontSize: '16px', color: '#4b5563' }}></i>
+              <i className="fa-solid fa-user-edit" style={{ fontSize: '16px', color: dropdownIconColor }}></i>
               <span>Change Name</span>
             </button>
           )}
 
-          {/* Divider */}
-          <div style={{
-            borderTop: '1px solid #e5e7eb',
-            margin: '8px 0'
-          }}></div>
+          <div
+            style={{
+              borderTop: isSidebar ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e5e7eb',
+              margin: '8px 0'
+            }}
+          ></div>
 
-          {/* Logout */}
           <button
             onClick={handleLogout}
             style={{
@@ -338,7 +430,7 @@ const UserMenu: React.FC = () => {
               transition: 'background 0.2s ease'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#fef2f2'
+              e.currentTarget.style.background = isSidebar ? 'rgba(220, 38, 38, 0.12)' : '#fef2f2'
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = 'transparent'
@@ -350,20 +442,17 @@ const UserMenu: React.FC = () => {
         </div>
       )}
 
-      {/* Select User Modal */}
       <SelectUserModal
         isOpen={showSelectUserModal}
         onClose={() => setShowSelectUserModal(false)}
         onUserSwitch={handleUserSwitch}
       />
 
-      {/* Business Settings Modal */}
       <BusinessSettingsModal
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
       />
 
-      {/* Change Name Modal */}
       <ChangeNameModal
         isOpen={showChangeNameModal}
         onClose={() => setShowChangeNameModal(false)}

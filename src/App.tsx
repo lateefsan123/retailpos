@@ -10,7 +10,6 @@ import { useNavCollapse } from './hooks/useNavCollapse'
 import ProtectedRoute from './components/ProtectedRoute'
 import RoleProtectedRoute from './components/RoleProtectedRoute'
 import Navigation from './components/Navigation'
-import UserMenu from './components/UserMenu'
 import LoadingScreen from './components/LoadingScreen'
 import MobileRedirect from './components/MobileRedirect'
 import DesktopRedirect from './components/DesktopRedirect'
@@ -97,7 +96,6 @@ const AppContent = () => {
           position: 'relative',
           zIndex: 1
         }}>
-          <UserMenu />
           <main style={{
             flex: 1,
             padding: '32px',

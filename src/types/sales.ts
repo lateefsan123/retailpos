@@ -51,7 +51,7 @@ export interface Order {
 }
 
 export interface PaymentInfo {
-  method: 'cash' | 'card' | 'credit'
+  method: 'cash' | 'card' | 'credit' | 'tap'
   amountEntered: string
   change: number
   customerName: string

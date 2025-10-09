@@ -2,6 +2,7 @@ import { type CSSProperties, type MouseEvent as ReactMouseEvent, useEffect, useS
 import { Link, useLocation } from 'react-router-dom'
 import { useNav } from '../contexts/NavContext'
 import { useRole } from '../contexts/RoleContext'
+import UserMenu from './UserMenu'
 import {
   Home,
   Package,
@@ -385,6 +386,9 @@ const Navigation = ({ allowedPaths }: NavigationProps) => {
         </>
     </nav>
 
+      <div style={{ marginTop: 'auto', padding: '0 4px' }}>
+        <UserMenu variant="sidebar" />
+      </div>
 
       <div style={{ pointerEvents: 'none', position: 'absolute', inset: 0 }}>
         <div

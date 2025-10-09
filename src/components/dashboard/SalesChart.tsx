@@ -146,13 +146,10 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
         className="dashboardCard"
         style={{
           background: '#ffffff',
-          borderRadius: '16px',
-          padding: '32px',
-          border: '2px solid #d1d5db',
-          borderWidth: '2px',
-          borderStyle: 'solid',
-          borderColor: '#d1d5db',
-          boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
+          borderRadius: '20px',
+          padding: '28px',
+          border: '1px solid #e5e7eb',
+          boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -181,13 +178,10 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
         className="dashboardCard"
         style={{
           background: '#ffffff',
-          borderRadius: '16px',
-          padding: '32px',
-          border: '2px solid #d1d5db',
-          borderWidth: '2px',
-          borderStyle: 'solid',
-          borderColor: '#d1d5db',
-          boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
+          borderRadius: '20px',
+          padding: '28px',
+          border: '1px solid #e5e7eb',
+          boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -251,10 +245,10 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
     return (
       <div style={{
         background: '#ffffff',
-        borderRadius: '16px',
-        padding: '32px',
-        border: '5px solid #000000 !important',
-        boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
+        borderRadius: '20px',
+        padding: '28px',
+        border: '1px solid #e5e7eb',
+        boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
         width: '100%',
         margin: '0',
         fontFamily: 'inherit',
@@ -358,13 +352,10 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
         className="dashboardCard"
         style={{
           background: '#ffffff',
-          borderRadius: '16px',
-          padding: '32px',
-          border: '2px solid #d1d5db',
-          borderWidth: '2px',
-          borderStyle: 'solid',
-          borderColor: '#d1d5db',
-          boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
+          borderRadius: '20px',
+          padding: '28px',
+          border: '1px solid #e5e7eb',
+          boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
           width: '100%',
           maxWidth: '1000px',
           margin: '0 auto',
@@ -942,20 +933,20 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
         justifyContent: 'center',
         gap: '16px',
         flexWrap: 'wrap',
-        background: '#3e3f29',
-        borderRadius: '8px',
-        padding: '8px 12px',
-        border: '2px solid #d1d5db'
+        background: '#f9fafb',
+        borderRadius: '999px',
+        padding: '10px 18px',
+        border: '1px solid #e5e7eb'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <div style={{ width: '12px', height: '12px', borderRadius: '2px', background: '#7d8d86' }}></div>
-          <span style={{ fontSize: '11px', color: '#f1f0e4', fontWeight: 500 }}>
+          <div style={{ width: '12px', height: '12px', borderRadius: '4px', background: '#7d8d86' }}></div>
+          <span style={{ fontSize: '11px', color: '#334155', fontWeight: 600 }}>
             {view === 'weekly' ? 'Daily Sales' : view === 'monthly' ? 'Daily Sales (Month)' : 'Hourly Sales'}
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <i className="fa-solid fa-chart-bar" style={{ fontSize: '12px', color: '#f1f0e4' }}></i>
-          <span style={{ fontSize: '11px', color: '#f1f0e4', fontWeight: 500 }}>
+          <i className="fa-solid fa-chart-bar" style={{ fontSize: '12px', color: '#334155' }}></i>
+          <span style={{ fontSize: '11px', color: '#334155', fontWeight: 600 }}>
             Max: {formatCurrencyUtil(maxValue, {}, currentBusiness?.currency)}
           </span>
         </div>

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Order, PaymentInfo, PartialPayment } from '../../types/sales'
 import PartialPaymentModal from './PartialPaymentModal'
 import { usePartialPayment } from '../../hooks/usePartialPayment'
+import { calculateChangeBreakdown } from '../../utils/changeBreakdown'
+import { loadStripe } from '@stripe/stripe-js'
 
 interface SalesSummaryModalProps {
   isOpen: boolean
@@ -19,7 +21,7 @@ const SalesSummaryModal: React.FC<SalesSummaryModalProps> = ({
   user
 }) => {
   const [customerName, setCustomerName] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'credit'>('cash')
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'credit' | 'tap'>('cash')
   const [amountEntered, setAmountEntered] = useState('')
   const [change, setChange] = useState(0)
   const [receiptNotes, setReceiptNotes] = useState('')
@@ -58,6 +60,87 @@ const SalesSummaryModal: React.FC<SalesSummaryModalProps> = ({
     setAmountEntered(partial.amountPaid.toString())
   }
 
+  const handleTapPayment = async () => {
+    try {
+      // Initialize Stripe
+      const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
+      if (!stripe) throw new Error('Stripe failed to load')
+
+      // Create payment request for Apple Pay/Google Pay
+      const paymentRequest = stripe.paymentRequest({
+        country: 'IE',
+        currency: 'eur',
+        total: {
+          label: 'Total',
+          amount: Math.round(getTotalToPay() * 100), // Convert to cents
+        },
+      })
+
+      // Check if Apple Pay/Google Pay is available
+      const canMakePayment = await paymentRequest.canMakePayment()
+      if (!canMakePayment) {
+        alert('Apple Pay or Google Pay is not available on this device.')
+        return
+      }
+
+      // Handle payment method
+      paymentRequest.on('paymentmethod', async (event) => {
+        try {
+          // Create payment intent
+          const response = await fetch('/api/create-payment-intent', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              amount: getTotalToPay(),
+              orderId: order.id || `order_${Date.now()}`,
+              businessId: user?.business_id,
+              branchId: user?.branch_id
+            })
+          })
+
+          const { clientSecret } = await response.json()
+
+          // Confirm payment with Stripe
+          const { error } = await stripe.confirmCardPayment(clientSecret, {
+            payment_method: event.paymentMethod.id,
+          })
+
+          if (error) {
+            event.complete('fail')
+            alert(`Payment failed: ${error.message}`)
+          } else {
+            event.complete('success')
+            // Payment succeeded
+            const paymentInfo: PaymentInfo = {
+              method: 'tap',
+              amountEntered: getTotalToPay().toString(),
+              change: 0,
+              customerName,
+              receiptNotes,
+              allowPartialPayment: isPartialPaymentEnabled,
+              partialAmount: isPartialPaymentEnabled ? amountPaid.toString() : undefined,
+              remainingAmount: isPartialPaymentEnabled ? amountRemaining : undefined
+            }
+            onProcessSale(paymentInfo)
+          }
+        } catch (error) {
+          event.complete('fail')
+          console.error('Payment processing error:', error)
+          alert('Payment processing failed. Please try again.')
+        }
+      })
+
+      // Show the payment sheet
+      paymentRequest.show()
+
+    } catch (error) {
+      console.error('Tap payment error:', error)
+      alert('Payment initialization failed. Please try again.')
+    }
+  }
+
   const handleProcessSale = () => {
     const paymentInfo: PaymentInfo = {
       method: paymentMethod,
@@ -85,6 +168,8 @@ const SalesSummaryModal: React.FC<SalesSummaryModalProps> = ({
   const getTotalToPay = () => {
     return isPartialPaymentEnabled ? amountPaid : order.total
   }
+
+  const changeBreakdown = change > 0 ? calculateChangeBreakdown(change) : []
 
   if (!isOpen) return null
 
@@ -183,10 +268,10 @@ const SalesSummaryModal: React.FC<SalesSummaryModalProps> = ({
               Payment Method
             </h3>
             <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-              {['cash', 'card', 'credit'].map(method => (
+              {['cash', 'card', 'credit', 'tap'].map(method => (
                 <button
                   key={method}
-                  onClick={() => setPaymentMethod(method as 'cash' | 'card' | 'credit')}
+                  onClick={() => setPaymentMethod(method as 'cash' | 'card' | 'credit' | 'tap')}
                   style={{
                     background: paymentMethod === method ? '#7d8d86' : '#f3f4f6',
                     color: paymentMethod === method ? 'white' : '#374151',
@@ -200,7 +285,7 @@ const SalesSummaryModal: React.FC<SalesSummaryModalProps> = ({
                     transition: 'all 0.2s ease'
                   }}
                 >
-                  <i className={`fa-solid fa-${method === 'cash' ? 'money-bill' : method === 'card' ? 'credit-card' : 'hand-holding-dollar'}`} style={{ marginRight: '6px' }}></i>
+                  <i className={`fa-solid fa-${method === 'cash' ? 'money-bill' : method === 'card' ? 'credit-card' : method === 'credit' ? 'hand-holding-dollar' : 'mobile'}`} style={{ marginRight: '6px' }}></i>
                   {method}
                 </button>
               ))}
@@ -277,6 +362,63 @@ const SalesSummaryModal: React.FC<SalesSummaryModalProps> = ({
             )}
           </div>
 
+          {/* Tap to Pay */}
+          {paymentMethod === 'tap' && (
+            <div style={{ marginBottom: '16px' }}>
+              <h3 style={{ 
+                fontSize: '18px', 
+                fontWeight: '600', 
+                color: '#1f2937',
+                margin: '0 0 12px 0'
+              }}>
+                Tap to Pay
+              </h3>
+              <div style={{
+                padding: '16px',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                textAlign: 'center'
+              }}>
+                <div style={{
+                  fontSize: '14px',
+                  color: '#6b7280',
+                  marginBottom: '12px'
+                }}>
+                  Customer will use Apple Pay or Google Pay
+                </div>
+                <div style={{
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  color: '#1f2937',
+                  marginBottom: '8px'
+                }}>
+                  Total: €{getTotalToPay().toFixed(2)}
+                </div>
+                <button
+                  onClick={handleTapPayment}
+                  style={{
+                    background: 'linear-gradient(135deg, #007AFF, #0051D5)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '12px 24px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    margin: '0 auto'
+                  }}
+                >
+                  <i className="fa-solid fa-mobile" style={{ fontSize: '18px' }}></i>
+                  Process Tap Payment
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Amount Entered */}
           {paymentMethod === 'cash' && (
             <div style={{ marginBottom: '16px' }}>
@@ -335,19 +477,95 @@ const SalesSummaryModal: React.FC<SalesSummaryModalProps> = ({
               />
               
               {change > 0 && (
-                <div style={{
-                  marginTop: '12px',
-                  padding: '12px 16px',
-                  background: '#f0f9ff',
-                  border: '1px solid #0ea5e9',
-                  borderRadius: '8px',
-                  color: '#0c4a6e',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  textAlign: 'center'
-                }}>
-                  <i className="fa-solid fa-coins" style={{ marginRight: '8px' }}></i>
-                  Change: €{change.toFixed(2)}
+                <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{
+                    padding: '12px 16px',
+                    background: '#f0f9ff',
+                    border: '1px solid #0ea5e9',
+                    borderRadius: '8px',
+                    color: '#0c4a6e',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    textAlign: 'center'
+                  }}>
+                    <i className="fa-solid fa-coins" style={{ marginRight: '8px' }}></i>
+                    Change: €{change.toFixed(2)}
+                  </div>
+
+                  {changeBreakdown.length > 0 && (
+                    <div style={{
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      marginTop: '8px',
+                      boxShadow: 'none'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: '#475569',
+                        marginBottom: '12px'
+                      }}>
+                        <i className="fa-solid fa-coins" style={{ color: '#7d8d86' }}></i>
+                        Change Breakdown
+                      </div>
+
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '8px',
+                        justifyContent: 'center'
+                      }}>
+                        {changeBreakdown.map((item, idx) => (
+                          <div
+                            key={`${item.label}-${idx}`}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              background: item.type === 'note' ? '#dcfce7' : '#fef3c7',
+                              border: `1px solid ${item.type === 'note' ? '#bbf7d0' : '#fde68a'}`,
+                              borderRadius: '10px',
+                              padding: '10px 12px',
+                              fontSize: '13px',
+                              fontWeight: '600',
+                              color: item.type === 'note' ? '#166534' : '#92400e',
+                              minWidth: 'fit-content',
+                              boxShadow: 'none'
+                            }}
+                          >
+                            {item.image && (
+                              <img
+                                src={item.image}
+                                alt={item.label}
+                                style={{
+                                  width: '40px',
+                                  height: '40px',
+                                  objectFit: 'contain',
+                                  borderRadius: '4px'
+                                }}
+                              />
+                            )}
+                            <span style={{ fontSize: '13px', fontWeight: '600' }}>{item.label}</span>
+                            <span style={{
+                              background: item.type === 'note' ? '#22c55e' : '#f59e0b',
+                              color: 'white',
+                              borderRadius: '6px',
+                              padding: '3px 8px',
+                              fontSize: '11px',
+                              fontWeight: '700'
+                            }}>
+                              ×{item.count}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               {amountEntered && parseFloat(amountEntered) < getTotalToPay() && (
