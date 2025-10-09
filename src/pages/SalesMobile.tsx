@@ -50,6 +50,8 @@ import type { OrderItem } from '../types/sales'
 import type { Product, SideBusinessItem } from '../hooks/data/useProductsData'
 import styles from './SalesMobile.module.css'
 
+console.log('Stripe publishable key:', import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
+
 
 // Helper function to get local time in database format
 const getLocalDateTime = () => {
