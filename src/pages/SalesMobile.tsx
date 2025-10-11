@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { loadStripe } from '@stripe/stripe-js'
+import { loadStripeTerminal } from '@stripe/terminal-js'
 import {
   BadgeCheck,
   ChevronRight,
@@ -49,8 +50,6 @@ import { generateReceiptHTML, printReceipt } from '../utils/receiptUtils'
 import type { OrderItem } from '../types/sales'
 import type { Product, SideBusinessItem } from '../hooks/data/useProductsData'
 import styles from './SalesMobile.module.css'
-
-console.log('Stripe publishable key:', import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
 
 
 // Helper function to get local time in database format
@@ -134,6 +133,16 @@ const SalesMobile = () => {
   const [partialNotes, setPartialNotes] = useState('')
   const [remainingAmount, setRemainingAmount] = useState(0)
   const [stripeStatus, setStripeStatus] = useState<string | null>(null)
+
+  const terminalServerUrl = import.meta.env.VITE_TERMINAL_SERVER_URL || 'http://localhost:8787'
+  const useSimulatedTerminal = (import.meta.env.VITE_STRIPE_TERMINAL_USE_SIMULATOR ?? 'true') !== 'false'
+  const terminalRef = useRef<any>(null)
+  const [terminalStatus, setTerminalStatus] = useState<'idle' | 'initializing' | 'discovering' | 'connecting' | 'connected' | 'error'>('idle')
+  const [terminalMessage, setTerminalMessage] = useState<string | null>(null)
+  const [terminalError, setTerminalError] = useState<string | null>(null)
+  const [connectedReader, setConnectedReader] = useState<any>(null)
+  const [lastTerminalPaymentIntentId, setLastTerminalPaymentIntentId] = useState<string | null>(null)
+  const currencyCode = selectedBranch?.currency_code || 'eur'
 
 
   const searchInputRef = useRef<HTMLInputElement | null>(null)
@@ -504,12 +513,159 @@ const SalesMobile = () => {
     }
   }
 
+  const fetchConnectionToken = useCallback(async () => {
+    const response = await fetch(`${terminalServerUrl}/terminal/connection_token`, {
+      method: 'POST',
+    })
+    if (!response.ok) {
+      throw new Error('Failed to fetch connection token')
+    }
+    const data = await response.json()
+    if (!data?.secret) {
+      throw new Error('Connection token response invalid')
+    }
+    return data.secret as string
+  }, [terminalServerUrl])
+
+  const initializeTerminal = useCallback(async () => {
+    if (terminalRef.current) {
+      return terminalRef.current
+    }
+
+    setTerminalStatus('initializing')
+    setTerminalMessage('Preparing tap to pay terminal...')
+    setTerminalError(null)
+
+    try {
+      const terminal = await loadStripeTerminal({
+        onFetchConnectionToken: fetchConnectionToken,
+        onUnexpectedReaderDisconnect: () => {
+          setTerminalStatus('idle')
+          setConnectedReader(null)
+          setTerminalMessage('Reader disconnected. Please reconnect before collecting payment.')
+        },
+      })
+
+      if (!terminal) {
+        throw new Error('Stripe Terminal failed to load')
+      }
+
+      terminalRef.current = terminal
+      setTerminalStatus('idle')
+      setTerminalMessage('Terminal ready. Discover a reader to continue.')
+      return terminal
+    } catch (error: any) {
+      console.error('Failed to initialize Stripe Terminal:', error)
+      setTerminalStatus('error')
+      setTerminalError(error?.message ?? 'Failed to initialize Stripe Terminal.')
+      setTerminalMessage(null)
+      return null
+    }
+  }, [fetchConnectionToken])
+
+  const discoverAndConnectReader = useCallback(async (forceReconnect = false) => {
+    const terminal = await initializeTerminal()
+    if (!terminal) {
+      return null
+    }
+
+    if (connectedReader && !forceReconnect) {
+      setTerminalStatus('connected')
+      setTerminalMessage(`Connected to ${connectedReader.label || connectedReader.deviceType}. Ready to collect payment.`)
+      setTerminalError(null)
+      return connectedReader
+    }
+
+    if (connectedReader && forceReconnect && typeof terminal.disconnectReader === 'function') {
+      try {
+        await terminal.disconnectReader()
+      } catch (disconnectError) {
+        console.warn('Failed to disconnect reader before reconnecting:', disconnectError)
+      }
+      setConnectedReader(null)
+    }
+
+    setTerminalStatus('discovering')
+    setTerminalMessage('Searching for available readers...')
+    setTerminalError(null)
+
+    try {
+      const discovery = await terminal.discoverReaders({
+        simulated: useSimulatedTerminal,
+      })
+
+      if (discovery.error) {
+        throw discovery.error
+      }
+
+      if (!discovery.discoveredReaders?.length) {
+        throw new Error('No readers found. Ensure your reader is powered on and assigned to this location.')
+      }
+
+      const reader = discovery.discoveredReaders[0]
+      setTerminalStatus('connecting')
+      setTerminalMessage(`Connecting to ${reader.label || reader.deviceType}...`)
+
+      const connectResult = await terminal.connectReader(reader)
+      if (connectResult.error) {
+        throw connectResult.error
+      }
+
+      setConnectedReader(connectResult.reader)
+      setTerminalStatus('connected')
+      setTerminalMessage(`Connected to ${connectResult.reader.label || connectResult.reader.deviceType}. Ready to collect payment.`)
+      return connectResult.reader
+    } catch (error: any) {
+      console.error('Failed to connect reader:', error)
+      setTerminalStatus('error')
+      setTerminalError(error?.message ?? 'Failed to connect to reader.')
+      setTerminalMessage(null)
+      return null
+    }
+  }, [initializeTerminal, useSimulatedTerminal])
+
+  const cancelTerminalPaymentIntent = useCallback(async (intentId: string) => {
+    try {
+      await fetch(`${terminalServerUrl}/terminal/payment_intents/${intentId}/cancel`, {
+        method: 'POST',
+      })
+    } catch (error) {
+      console.error('Failed to cancel payment intent', error)
+    }
+  }, [terminalServerUrl])
+
+  useEffect(() => {
+    if (paymentMethod === 'tap') {
+      void discoverAndConnectReader()
+    }
+  }, [paymentMethod, discoverAndConnectReader])
+
+  useEffect(() => {
+    if (paymentMethod === 'tap' && allowPartialPayment) {
+      setAllowPartialPayment(false)
+      setPartialAmount('')
+      setRemainingAmount(0)
+      partialPayment.reset()
+      setStripeStatus('Partial payments are not available with tap to pay.')
+    }
+  }, [paymentMethod, allowPartialPayment, partialPayment])
+
   const handlePaymentMethod = (method: 'cash' | 'card' | 'credit' | 'tap') => {
     setPaymentMethod(method)
     if (method === 'card') {
       setStripeStatus('Stripe is ready. Tap "Process Sale" to charge the card.')
-    } else {
+    } else if (method !== 'tap') {
       setStripeStatus(null)
+    }
+    if (method === 'tap') {
+      setStripeStatus('Connect a reader to start tap to pay.')
+      setTerminalError(null)
+      if (connectedReader) {
+        setTerminalMessage(`Connected to ${connectedReader.label || connectedReader.deviceType}.`)
+      } else {
+        setTerminalMessage('Preparing tap reader...')
+      }
+      void discoverAndConnectReader()
     }
   }
 
@@ -636,7 +792,7 @@ const SalesMobile = () => {
     }
   }
 
-  const completeSale = async () => {
+  const completeSale = async (options?: { terminalPaymentIntentId?: string }) => {
     if (!order.items.length || !businessId || businessLoading) return
     if (paymentMethod === 'cash' && !paymentValid) return
 
@@ -696,10 +852,16 @@ const SalesMobile = () => {
 
       // Prepare notes with partial payment information
       let notesContent = ''
+      if (options?.terminalPaymentIntentId) {
+        notesContent = `TERMINAL PAYMENT\nStripe PaymentIntent: ${options.terminalPaymentIntentId}`
+      }
       if (allowPartialPayment) {
-        notesContent = `PARTIAL PAYMENT
+        const partialDetails = `PARTIAL PAYMENT
 Amount Paid Today: €${(parseFloat(partialAmount) || 0).toFixed(2)}
 Remaining Balance: €${remainingAmount.toFixed(2)}`
+        notesContent = notesContent
+          ? `${notesContent}\n\n${partialDetails}`
+          : partialDetails
         if (partialNotes) {
           notesContent += `\n\nPartial Payment Notes: ${partialNotes}`
         }
@@ -955,6 +1117,131 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
     }
   }
 
+  const handleTapPayment = useCallback(async () => {
+    if (!order.items.length || !businessId || businessLoading) {
+      setStripeStatus('Add products to the cart before collecting tap payments.')
+      return
+    }
+
+    const totalAmount = order.total
+    if (totalAmount <= 0) {
+      setStripeStatus('Cannot process a zero amount tap payment.')
+      return
+    }
+
+    setIsProcessing(true)
+    setStripeStatus('Preparing tap to pay...')
+    setTerminalError(null)
+
+    const terminal = (await initializeTerminal()) ?? terminalRef.current
+    if (!terminal) {
+      setIsProcessing(false)
+      setStripeStatus('Unable to initialize tap reader.')
+      return
+    }
+
+    let reader = connectedReader
+    if (!reader) {
+      reader = await discoverAndConnectReader()
+      if (!reader) {
+        setIsProcessing(false)
+        setStripeStatus('Unable to connect to tap reader.')
+        return
+      }
+    }
+
+    const amountInMinor = Math.round(totalAmount * 100)
+    const currency = currencyCode
+    const description = `POS Sale (${order.items.length} item${order.items.length === 1 ? '' : 's'})`
+
+    let paymentIntentId: string | null = null
+
+    try {
+      setStripeStatus('Creating payment intent...')
+      const intentResponse = await fetch(`${terminalServerUrl}/terminal/payment_intents`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: amountInMinor,
+          currency,
+          description,
+        }),
+      })
+
+      if (!intentResponse.ok) {
+        const errorBody = await intentResponse.text()
+        throw new Error(errorBody || 'Failed to create payment intent')
+      }
+
+      const intentPayload = await intentResponse.json()
+      paymentIntentId = intentPayload?.id ?? null
+      const clientSecret = intentPayload?.client_secret
+      if (!clientSecret) {
+        throw new Error('PaymentIntent did not include a client secret')
+      }
+
+      setStripeStatus('Ask the customer to tap or insert their card...')
+      const collectResult = await terminal.collectPaymentMethod(clientSecret)
+      const collectError = (collectResult as any)?.error
+      if (collectError) {
+        if (paymentIntentId) {
+          await cancelTerminalPaymentIntent(paymentIntentId)
+        }
+        setStripeStatus(collectError.message ?? 'Payment cancelled.')
+        return
+      }
+      const collectedIntent = (collectResult as any)?.paymentIntent ?? collectResult
+      if (!collectedIntent) {
+        if (paymentIntentId) {
+          await cancelTerminalPaymentIntent(paymentIntentId)
+        }
+        setStripeStatus('Failed to collect payment method. Please try again.')
+        return
+      }
+
+      const processResult = await terminal.processPayment(collectedIntent)
+      const processError = (processResult as any)?.error
+      if (processError) {
+        const failedIntent = (processResult as any)?.paymentIntent ?? collectedIntent
+        if (failedIntent?.id) {
+          await cancelTerminalPaymentIntent(failedIntent.id)
+        }
+        setStripeStatus(processError.message ?? 'Payment failed. Please try again.')
+        return
+      }
+
+      const processedIntent = (processResult as any)?.paymentIntent ?? processResult
+      if (!processedIntent?.id) {
+        setStripeStatus('Payment completed but intent details were unavailable.')
+      } else {
+        setLastTerminalPaymentIntentId(processedIntent.id)
+        setStripeStatus('Payment captured. Finalizing sale...')
+        await completeSale({ terminalPaymentIntentId: processedIntent.id })
+      }
+      setStripeStatus('Tap payment completed.')
+    } catch (error: any) {
+      console.error('Tap payment error:', error)
+      if (paymentIntentId) {
+        await cancelTerminalPaymentIntent(paymentIntentId)
+      }
+      setStripeStatus(error?.message ?? 'Failed to complete tap payment.')
+    } finally {
+      setIsProcessing(false)
+    }
+  }, [
+    order.items,
+    order.total,
+    businessId,
+    businessLoading,
+    connectedReader,
+    initializeTerminal,
+    discoverAndConnectReader,
+    terminalServerUrl,
+    currencyCode,
+    cancelTerminalPaymentIntent,
+    completeSale,
+  ])
+
   const handleProcessSale = async () => {
     if (isProcessing) {
       return
@@ -962,6 +1249,8 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
 
     if (paymentMethod === 'card') {
       await handleCardPayment()
+    } else if (paymentMethod === 'tap') {
+      await handleTapPayment()
     } else {
       await completeSale()
     }
@@ -1509,6 +1798,13 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   Card
                 </button>
                 <button
+                  className={`${styles.summaryPaymentBtn} ${paymentMethod === 'tap' ? 'active' : ''}`}
+                  onClick={() => handlePaymentMethod('tap')}
+                >
+                  <BadgeCheck size={20} />
+                  Tap to Pay
+                </button>
+                <button
                   className={`${styles.summaryPaymentBtn} ${paymentMethod === 'credit' ? 'active' : ''}`}
                   onClick={() => handlePaymentMethod('credit')}
                 >
@@ -1517,6 +1813,66 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 </button>
               </div>
             </div>
+
+            {paymentMethod === 'tap' && (
+              <div className={styles.summarySection}>
+                <div className={styles.summarySectionTitle}>
+                  <BadgeCheck size={18} />
+                  Tap to Pay Status
+                </div>
+                <div
+                  style={{
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    padding: '14px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                    fontSize: '13px',
+                    color: '#475569',
+                  }}
+                >
+                  <span>
+                    <strong>Reader:</strong>{' '}
+                    {connectedReader ? connectedReader.label || connectedReader.deviceType : 'Not connected'}
+                  </span>
+                  <span>
+                    <strong>Status:</strong>{' '}
+                    {terminalStatus === 'connected'
+                      ? 'Connected'
+                      : terminalStatus === 'connecting'
+                        ? 'Connecting...'
+                        : terminalStatus === 'discovering'
+                          ? 'Searching for readers...'
+                          : terminalStatus === 'initializing'
+                            ? 'Initializing...'
+                            : terminalStatus === 'error'
+                              ? 'Error'
+                              : 'Idle'}
+                  </span>
+                  {terminalMessage && <span>{terminalMessage}</span>}
+                  {terminalError && <span style={{ color: '#dc2626' }}>{terminalError}</span>}
+                  {stripeStatus && <span style={{ color: '#2563eb' }}>{stripeStatus}</span>}
+                </div>
+                <div
+                  style={{
+                    marginTop: '12px',
+                    display: 'flex',
+                    gap: '10px',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <button
+                    className={styles.summaryActionBtn}
+                    onClick={() => discoverAndConnectReader(true)}
+                    disabled={terminalStatus === 'connecting' || terminalStatus === 'discovering' || isProcessing}
+                  >
+                    {terminalStatus === 'connected' ? 'Reconnect Reader' : 'Find Reader'}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Partial Payment */}
             <div className={styles.summarySection}>

@@ -142,7 +142,9 @@ const getDateRange = (period: 'today' | 'week' | 'month', timezone: string = 'UT
       }
     case 'week':
       const weekStart = new Date(today)
-      weekStart.setDate(today.getDate() - today.getDay())
+      const dayOfWeek = today.getDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Convert to Monday-based (0 = Monday, 6 = Sunday)
+      weekStart.setDate(today.getDate() - daysToMonday)
       return {
         start: weekStart,
         end: new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000)
@@ -190,13 +192,15 @@ const processWeeklyData = (sales: any[], sideBusinessSales: any[], timezone: str
     }
   })
   
-  return Object.entries(weeklyData).map(([date, data]) => ({
-    day: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
-    date,
-    totalSales: data.totalSales,
-    transactionCount: data.transactionCount,
-    averageTransaction: data.transactionCount > 0 ? data.totalSales / data.transactionCount : 0
-  }))
+  return Object.entries(weeklyData)
+    .sort(([dateA], [dateB]) => new Date(dateA).getTime() - new Date(dateB).getTime())
+    .map(([date, data]) => ({
+      day: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
+      date,
+      totalSales: data.totalSales,
+      transactionCount: data.transactionCount,
+      averageTransaction: data.transactionCount > 0 ? data.totalSales / data.transactionCount : 0
+    }))
 }
 
 const processHourlyData = (sales: any[], sideBusinessSales: any[], timezone: string = 'UTC', businessHours: string = '9:00 AM - 6:00 PM', baseDate?: Date): HourlySalesData[] => {
@@ -296,13 +300,15 @@ const processMonthlyData = (sales: any[], sideBusinessSales: any[], timezone: st
     }
   })
   
-  return Object.entries(monthlyData).map(([date, data]) => ({
-    day: new Date(date).toLocaleDateString('en-US', { day: 'numeric' }),
-    date,
-    totalSales: data.totalSales,
-    transactionCount: data.transactionCount,
-    averageTransaction: data.transactionCount > 0 ? data.totalSales / data.transactionCount : 0
-  }))
+  return Object.entries(monthlyData)
+    .sort(([dateA], [dateB]) => new Date(dateA).getTime() - new Date(dateB).getTime())
+    .map(([date, data]) => ({
+      day: new Date(date).toLocaleDateString('en-US', { day: 'numeric' }),
+      date,
+      totalSales: data.totalSales,
+      transactionCount: data.transactionCount,
+      averageTransaction: data.transactionCount > 0 ? data.totalSales / data.transactionCount : 0
+    }))
 }
 
 export const useSalesAnalytics = (selectedDate?: Date, weekOffset: number = 0, monthOffset: number = 0) => {

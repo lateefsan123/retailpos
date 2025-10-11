@@ -65,9 +65,11 @@ const processProductAnalytics = (sales: any[], period: 'today' | 'week' | 'month
       const productId = item.product_id
       const existing = productMap.get(productId) || { quantity: 0, total: 0, name: item.products?.name || 'Unknown', image_url: item.products?.image_url }
       
+      const itemTotal = parseFloat(item.calculated_price) || (item.price_each * item.quantity)
+      
       productMap.set(productId, {
         quantity: existing.quantity + (item.quantity || 0),
-        total: existing.total + (parseFloat(item.calculated_price) || 0),
+        total: existing.total + itemTotal,
         name: existing.name,
         image_url: existing.image_url
       })

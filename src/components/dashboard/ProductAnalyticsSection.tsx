@@ -49,7 +49,9 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
   }
 
   const periods: TimePeriod[] = ['today', 'week', 'month']
+  
   const currentProducts = getProductsForPeriod(activePeriod)
+
 
   const topProducts = useMemo(() => currentProducts.slice(0, 5), [currentProducts])
   const totalSalesValue = useMemo(
@@ -293,16 +295,41 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
                       width: '36px',
                       height: '36px',
                       borderRadius: '10px',
-                      background: accentColor,
+                      background: product.image_url ? 'transparent' : accentColor,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       color: '#ffffff',
                       fontWeight: 700,
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      overflow: 'hidden',
+                      border: product.image_url ? '1px solid #e5e7eb' : 'none'
                     }}
                   >
-                    #{index + 1}
+                    {product.image_url ? (
+                      <img
+                        src={product.image_url}
+                        alt={product.product_name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          borderRadius: '10px'
+                        }}
+                        onError={(e) => {
+                          // Fallback to numbered badge if image fails to load
+                          const target = e.target as HTMLImageElement
+                          target.style.display = 'none'
+                          const parent = target.parentElement
+                          if (parent) {
+                            parent.style.background = accentColor
+                            parent.innerHTML = `#${index + 1}`
+                          }
+                        }}
+                      />
+                    ) : (
+                      `#${index + 1}`
+                    )}
                   </div>
                   <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

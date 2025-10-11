@@ -1414,31 +1414,30 @@ const Products = () => {
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
-        alignItems: 'flex-start',
+        alignItems: 'center',
+        paddingBottom: '24px',
         marginBottom: '32px',
-        padding: '20px'
+        borderBottom: '3px solid #d1d5db'
       }}>
         <div>
           <h1 style={{
             fontSize: '32px',
-            fontWeight: '900',
-            color: '#000000',
+            fontWeight: 'bold',
+            color: '#1a1a1a',
             margin: '0 0 8px 0'
           }}>
             Inventory Management
           </h1>
           <p style={{
             fontSize: '16px',
-            color: '#000000',
-            margin: '0 0 12px 0',
-            fontWeight: '800'
+            color: '#6b7280',
+            margin: 0
           }}>
-            Manage your product inventory, stock levels, and suppliers.
+            Manage your product inventory, stock levels, and suppliers
           </p>
-          <BranchSelector size="sm" showLabel={false} />
         </div>
-        
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <BranchSelector size="md" />
           {/* Print Label Toggle */}
           <button
             onClick={handleTogglePrintMode}
@@ -1584,7 +1583,7 @@ const Products = () => {
         background: 'rgba(248, 250, 252, 0.9)',
         borderRadius: '12px',
         boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
-        border: '1px solid rgba(125, 141, 134, 0.2)',
+        border: '1px solid #e5e7eb',
         backdropFilter: 'blur(10px)'
       }}>
         <div 
@@ -1767,7 +1766,7 @@ const Products = () => {
           padding: '20px',
           marginBottom: '24px',
           boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
-          border: '2px solid rgba(125, 141, 134, 0.3)',
+          border: '2px solid #d1d5db',
           backdropFilter: 'blur(10px)'
         }}>
         <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -2037,7 +2036,7 @@ const Products = () => {
           borderRadius: '12px',
           overflow: 'hidden',
           boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-          border: '2px solid rgba(125, 141, 134, 0.3)',
+          border: '2px solid #d1d5db',
           backdropFilter: 'blur(10px)'
         }}>
         <div style={{ overflowX: 'auto' }}>
@@ -2143,7 +2142,7 @@ const Products = () => {
                  </th>
                </tr>
              </thead>
-            <tbody style={{ border: '1px solid rgba(125, 141, 134, 0.2)' }}>
+            <tbody style={{ border: '1px solid #e5e7eb' }}>
               {filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan={isPrintMode ? 7 : 6} style={{ padding: '40px', textAlign: 'center', color: '#7d8d86' }}>
@@ -2157,16 +2156,16 @@ const Products = () => {
                   const stockStatus = getStockStatus(product.stock_quantity, product.reorder_level)
                   return (
                     <tr key={product.product_id} style={{ 
-                      borderBottom: '2px solid rgba(125, 141, 134, 0.3)',
-                      borderLeft: '1px solid rgba(125, 141, 134, 0.2)',
-                      borderRight: '1px solid rgba(125, 141, 134, 0.2)',
+                      borderBottom: '2px solid #d1d5db',
+                      borderLeft: '1px solid #e5e7eb',
+                      borderRight: '1px solid #e5e7eb',
                       transition: 'background 0.2s ease',
                       cursor: isPrintMode ? 'default' : 'pointer'
                     }}
                     onClick={isPrintMode ? undefined : () => handleProductClick(product)}
                     onMouseEnter={(e) => {
                       if (!isPrintMode) {
-                        (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(125, 141, 134, 0.05)'
+                        (e.currentTarget as HTMLTableRowElement).style.background = '#f3f4f6'
                       }
                     }}
                     onMouseLeave={(e) => {
@@ -2178,7 +2177,7 @@ const Products = () => {
                       {isPrintMode && (
                         <td style={{ 
                           padding: '16px', 
-                          borderRight: '2px solid rgba(125, 141, 134, 0.25)',
+                          borderRight: '2px solid #e5e7eb',
                           textAlign: 'center'
                         }}>
                           <input
@@ -2359,7 +2358,7 @@ const Products = () => {
         textAlign: 'center',
         padding: '12px',
         borderRadius: '8px',
-        border: '1px solid rgba(125, 141, 134, 0.2)',
+        border: '1px solid #e5e7eb',
         marginBottom: '16px'
       }}>
         {totalProducts > 0 ? (
@@ -2385,7 +2384,7 @@ const Products = () => {
           padding: '16px',
           borderRadius: '12px',
           boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
-          border: '1px solid rgba(125, 141, 134, 0.2)',
+          border: '1px solid #e5e7eb',
           marginBottom: '24px'
         }}>
           {/* Items per page selector */}

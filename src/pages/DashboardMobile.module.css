@@ -893,30 +893,34 @@
 .salesChart {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+  padding: 8px 0;
 }
 
 .dayItem {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
+  padding: 4px 0;
 }
 
 .dayLabel {
   font-size: 13px;
   font-weight: 500;
   color: #666;
-  width: 40px;
+  width: 45px;
   text-align: right;
+  flex-shrink: 0;
 }
 
 .barContainer {
   flex: 1;
-  height: 40px;
+  height: 44px;
   background: #f5f5f5;
   border-radius: 12px;
   overflow: hidden;
   position: relative;
+  min-width: 120px;
 }
 
 .bar {
@@ -951,12 +955,14 @@
 }
 
 .totalSection {
-  margin-top: 24px;
+  margin-top: 32px;
   padding-top: 24px;
   border-top: 2px solid #f0f0f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-left: 4px;
+  padding-right: 4px;
 }
 
 .totalLabel {
@@ -973,18 +979,41 @@
 
 /* Responsive adjustments */
 @media (max-width: 480px) {
-  .barLabel {
-    min-width: 28px;
-    font-size: 0.7rem;
+  .salesChart {
+    gap: 16px;
+    padding: 4px 0;
   }
   
-  .barWrapper {
-    height: 20px;
+  .dayItem {
+    gap: 16px;
+    padding: 2px 0;
   }
   
-  .barValue {
-    font-size: 0.7rem;
-    padding: 0 8px;
+  .dayLabel {
+    width: 40px;
+    font-size: 12px;
+  }
+  
+  .barContainer {
+    height: 36px;
+    min-width: 100px;
+  }
+  
+  .amount {
+    font-size: 11px;
+  }
+  
+  .totalSection {
+    margin-top: 24px;
+    padding-top: 20px;
+  }
+  
+  .totalLabel {
+    font-size: 13px;
+  }
+  
+  .totalAmount {
+    font-size: 24px;
   }
 }
 

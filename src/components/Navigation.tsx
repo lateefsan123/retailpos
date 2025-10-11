@@ -256,7 +256,6 @@ const Navigation = ({ allowedPaths }: NavigationProps) => {
     color: '#f9fafc',
     boxSizing: 'border-box',
     borderRight: '1px solid rgba(255, 255, 255, 0.05)',
-    boxShadow: '10px 0 40px rgba(0, 0, 0, 0.45)',
     transition: 'all 0.3s ease',
     overflow: 'hidden',
     zIndex: 10
@@ -265,8 +264,8 @@ const Navigation = ({ allowedPaths }: NavigationProps) => {
   const brandContainerStyle: CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'flex-start',
-    gap: '6px',
+    alignItems: 'center',
+    gap: '8px',
     position: 'relative',
     zIndex: 2,
     paddingRight: '16px',
@@ -328,7 +327,8 @@ const Navigation = ({ allowedPaths }: NavigationProps) => {
     letterSpacing: '0.06em',
     margin: 0,
     color: '#ffffff',
-    whiteSpace: 'nowrap'
+    whiteSpace: 'nowrap',
+    textAlign: 'center'
   }
 
   const navContainerStyle: CSSProperties = {
@@ -373,8 +373,10 @@ const Navigation = ({ allowedPaths }: NavigationProps) => {
   return (
     <aside style={asideStyle}>
       <div style={brandContainerStyle}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+          <i className="fa-kit fa-test fa-4x" style={{ color: '#B197FC' }}></i>
+        </div>
         <h1 style={brandSecondaryTextStyle}>
-          <i className="fa-kit fa-test fa-3x" style={{ color: '#B197FC', marginRight: '8px', verticalAlign: 'middle' }}></i>
           Tillpoint POS
         </h1>
       </div>

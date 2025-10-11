@@ -3,7 +3,7 @@
   padding: 24px;
   background: #f8fafc;
   min-height: 100vh;
-  border: 1px solid rgba(125, 141, 134, 0.1);
+  border: 1px solid #e5e7eb;
   border-radius: 16px;
 }
 
@@ -16,7 +16,7 @@
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(62, 63, 41, 0.1);
-  border: 2px solid rgba(125, 141, 134, 0.2);
+  border: 2px solid #d1d5db;
 }
 
 .headerContent h1 {
@@ -142,7 +142,7 @@
   padding: 24px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(125, 141, 134, 0.2);
+  border: 1px solid #e5e7eb;
 }
 
 .statCardHeader {
@@ -183,7 +183,7 @@
   padding: 24px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(125, 141, 134, 0.2);
+  border: 1px solid #e5e7eb;
   margin-bottom: 24px;
 }
 
@@ -241,19 +241,19 @@
 }
 
 .tableHeader {
-  background: #3e3f29;
-  border-bottom: 4px solid #7d8d86;
+  background: #1a1a1a;
+  border-bottom: 4px solid #d1d5db;
 }
 
 .tableHeaderCell {
   padding: 16px;
   text-align: left;
-  color: #f1f0e4;
+  color: #ffffff;
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  border-bottom: 4px solid #7d8d86;
-  border-right: 2px solid #7d8d86;
+  border-bottom: 4px solid #d1d5db;
+  border-right: 2px solid #d1d5db;
 }
 
 .tableHeaderCell:last-child {
@@ -271,19 +271,19 @@
 }
 
 .tableBody {
-  border: 1px solid rgba(125, 141, 134, 0.2);
+  border: 1px solid #e5e7eb;
 }
 
 .tableRow {
-  border-bottom: 2px solid rgba(125, 141, 134, 0.3);
-  border-left: 1px solid rgba(125, 141, 134, 0.2);
-  border-right: 1px solid rgba(125, 141, 134, 0.2);
+  border-bottom: 2px solid #d1d5db;
+  border-left: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
   transition: background 0.2s ease;
   cursor: pointer;
 }
 
 .tableRow:hover {
-  background: rgba(125, 141, 134, 0.05);
+  background: #f3f4f6;
 }
 
 .tableRow.printMode {
@@ -292,7 +292,7 @@
 
 .tableCell {
   padding: 16px;
-  border-right: 2px solid rgba(125, 141, 134, 0.25);
+  border-right: 2px solid #e5e7eb;
 }
 
 .tableCell:last-child {

@@ -45,7 +45,9 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
     const startOfWeek = (d: Date) => {
       const x = new Date(d)
       x.setHours(0, 0, 0, 0)
-      x.setDate(x.getDate() - x.getDay()) // Sunday as week start
+      const dayOfWeek = x.getDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Convert to Monday-based (0 = Monday, 6 = Sunday)
+      x.setDate(x.getDate() - daysToMonday) // Monday as week start
       return x
     }
 
@@ -87,9 +89,10 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
 
   const getWeekRangeLabel = () => {
     const today = new Date()
-    const currentDay = today.getDay()
+    const currentDay = today.getDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const daysToMonday = currentDay === 0 ? 6 : currentDay - 1 // Convert to Monday-based (0 = Monday, 6 = Sunday)
     const startOfWeek = new Date(today)
-    startOfWeek.setDate(today.getDate() - currentDay + (weekOffset * 7))
+    startOfWeek.setDate(today.getDate() - daysToMonday + (weekOffset * 7))
     
     const endOfWeek = new Date(startOfWeek)
     endOfWeek.setDate(startOfWeek.getDate() + 6)

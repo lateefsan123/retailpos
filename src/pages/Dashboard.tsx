@@ -1125,6 +1125,43 @@ const Dashboard = () => {
 
   return (
     <div style={{ padding: '0' }}>
+      {/* Dashboard Header */}
+      <div style={{
+        marginBottom: '32px'
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '24px'
+        }}>
+          <div>
+            <h1 style={{
+              fontSize: '32px',
+              fontWeight: 'bold',
+              color: '#1a1a1a',
+              margin: '0 0 8px 0'
+            }}>
+              Dashboard
+            </h1>
+            <p style={{
+              fontSize: '16px',
+              color: '#6b7280',
+              margin: 0
+            }}>
+              Track your business performance and key metrics
+            </p>
+          </div>
+          <BranchSelector size="md" />
+        </div>
+        {/* Full width line below header */}
+        <div style={{
+          width: '100%',
+          height: '2px',
+          backgroundColor: '#9ca3af'
+        }}></div>
+      </div>
+
       {/* Header Controls */}
       <div style={{ 
         display: 'flex', 
@@ -1133,10 +1170,6 @@ const Dashboard = () => {
         marginBottom: '32px',
         position: 'relative'
       }}>
-        {/* Branch Selector */}
-        <div style={{ position: 'absolute', left: 0 }}>
-          <BranchSelector size="md" />
-        </div>
         
         {/* Date and Period Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -1191,7 +1224,7 @@ const Dashboard = () => {
                 style={{
                   padding: '8px 14px',
                   borderRadius: '999px',
-                  border: isActive ? '1px solid #1a1a1a' : '1px solid #e5e7eb',
+                  border: isActive ? '2px solid #1a1a1a' : '2px solid #d1d5db',
                   background: isActive ? '#1a1a1a' : '#ffffff',
                   color: isActive ? '#f1f0e4' : '#1f2937',
                   fontSize: '12px',
@@ -1223,7 +1256,7 @@ const Dashboard = () => {
               background: '#ffffff',
               borderRadius: '20px',
               padding: '24px',
-              border: '1px solid #e5e7eb',
+              border: '2px solid #d1d5db',
               boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
               display: 'flex',
               flexDirection: 'column',
@@ -1532,7 +1565,7 @@ const Dashboard = () => {
             maxHeight: '80vh',
             overflow: 'auto',
             boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
-            border: '1px solid rgba(125, 141, 134, 0.2)'
+            border: '2px solid #d1d5db'
           }}>
             {/* Modal Header */}
             <div style={{
@@ -1541,7 +1574,7 @@ const Dashboard = () => {
               alignItems: 'center',
               marginBottom: '24px',
               paddingBottom: '16px',
-              borderBottom: '1px solid rgba(125, 141, 134, 0.2)'
+              borderBottom: '2px solid #d1d5db'
             }}>
               <h2 style={{
                 fontSize: '24px',
@@ -1689,7 +1722,7 @@ const Dashboard = () => {
             maxWidth: '400px',
             width: '100%',
             boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
-            border: '1px solid rgba(125, 141, 134, 0.2)'
+            border: '2px solid #d1d5db'
           }}>
             {/* Calendar Header */}
             <div style={{
@@ -1788,7 +1821,7 @@ const Dashboard = () => {
                     style={{
                       background: isSelected ? '#1a1a1a' : 'transparent',
                       color: isSelected ? '#f1f0e4' : isCurrentMonth ? '#1a1a1a' : '#bca88d',
-                      border: isToday ? '2px solid #1a1a1a' : '1px solid transparent',
+                      border: isToday ? '3px solid #1a1a1a' : '2px solid transparent',
                       borderRadius: '8px',
                       padding: '8px',
                       fontSize: '14px',

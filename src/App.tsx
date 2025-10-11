@@ -68,23 +68,13 @@ const AppContent = () => {
         color: '#1a1a1a', 
         display: 'flex', 
         overflow: 'hidden',
-        backgroundImage: 'url(/images/backgrounds/u2541828551_An_elegant_illustration_of_a_small_African_corner_5e875dd7-e5d8-4655-af92-bb5c9c2865fd_1.png)',
+        backgroundImage: 'url(/images/backgrounds/tillpoint-bg-v2-3840x2160.webp)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
         backgroundAttachment: 'fixed',
         position: 'relative'
       }}>
-        {/* Dark overlay to reduce brightness - covers entire app */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.3)',
-          zIndex: 0
-        }}></div>
         {!isMobileDashboard && <Navigation />}
 
 
