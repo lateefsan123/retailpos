@@ -7,6 +7,7 @@ import { useBranch } from '../contexts/BranchContext'
 import { useTransactions } from '../hooks/useTransactions'
 import { formatCurrency } from '../utils/currency'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
 
 import BranchSelector from '../components/BranchSelector'
 import MobileBottomNav from '../components/MobileBottomNav'
@@ -49,6 +50,7 @@ const TransactionsMobile = () => {
   const { businessId, businessLoading } = useBusinessId()
   const { selectedBranch, selectedBranchId } = useBranch()
   const { user } = useAuth()
+  const { theme } = useTheme()
 
   const {
     transactions,
@@ -344,8 +346,28 @@ const TransactionsMobile = () => {
     return base
   }, [filteredTransactions, selectedDateRange, currentPage, itemsPerPage, activeChip])
 
+  // Theme-aware background configuration
+  const getBackgroundImage = () => {
+    if (theme === 'light') {
+      return 'url(/images/backgrounds/stribebg_white.png)'
+    }
+    return 'url(/images/backgrounds/stribebg.png)'
+  }
+
   return (
-    <div className={styles.page}>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: '100vh',
+      backgroundImage: getBackgroundImage(),
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      backgroundAttachment: 'fixed',
+      overflowX: 'hidden',
+      overflowY: 'auto',
+      paddingBottom: '80px'
+    }}>
       <div className={`${styles.overlay} ${showNav ? styles.overlayOpen : ''}`} onClick={() => setShowNav(false)}>
         <div className={`${styles.slideNav} ${showNav ? styles.slideNavOpen : ''}`} onClick={(e) => e.stopPropagation()}>
           <div className={styles.navHeader}>

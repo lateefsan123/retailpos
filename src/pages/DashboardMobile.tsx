@@ -6,6 +6,7 @@ import { formatCurrency } from '../utils/currency'
 import { useBusinessId } from '../hooks/useBusinessId'
 import { useBranch } from '../contexts/BranchContext'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
 import BranchSelector from '../components/BranchSelector'
 import MobileBottomNav from '../components/MobileBottomNav'
 
@@ -34,6 +35,7 @@ const DashboardMobile = () => {
   const { businessId, businessLoading } = useBusinessId()
   const { selectedBranchId, selectedBranch } = useBranch()
   const { user } = useAuth()
+  const { theme } = useTheme()
   
   const [showBranchSelector, setShowBranchSelector] = useState(false)
   const [showTransactionModal, setShowTransactionModal] = useState(false)
@@ -347,8 +349,28 @@ const DashboardMobile = () => {
   }, [businessId, businessLoading, selectedBranchId, selectedDate, chartType, selectedWeekStart])
 
 
+  // Theme-aware background configuration
+  const getBackgroundImage = () => {
+    if (theme === 'light') {
+      return 'url(/images/backgrounds/stribebg_white.png)'
+    }
+    return 'url(/images/backgrounds/stribebg.png)'
+  }
+
   return (
-    <div className={styles.page}>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: '100vh',
+      backgroundImage: getBackgroundImage(),
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      backgroundAttachment: 'fixed',
+      overflowX: 'hidden',
+      overflowY: 'auto',
+      paddingBottom: '72px'
+    }}>
       <div className={styles.header}>
         <div className={styles.headerMain}>
           <div className={styles.headerCopy}>

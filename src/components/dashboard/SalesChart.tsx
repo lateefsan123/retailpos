@@ -151,7 +151,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           background: '#ffffff',
           borderRadius: '20px',
           padding: '28px',
-          border: '1px solid #e5e7eb',
+           border: '1px solid #9ca3af',
           boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
           display: 'flex',
           alignItems: 'center',
@@ -183,7 +183,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           background: '#ffffff',
           borderRadius: '20px',
           padding: '28px',
-          border: '1px solid #e5e7eb',
+           border: '1px solid #9ca3af',
           boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
           display: 'flex',
           alignItems: 'center',
@@ -250,7 +250,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
         background: '#ffffff',
         borderRadius: '20px',
         padding: '28px',
-        border: '1px solid #e5e7eb',
+           border: '1px solid #9ca3af',
         boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
         width: '100%',
         margin: '0',
@@ -357,7 +357,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           background: '#ffffff',
           borderRadius: '20px',
           padding: '28px',
-          border: '1px solid #e5e7eb',
+           border: '1px solid #9ca3af',
           boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
           width: '100%',
           maxWidth: '1000px',
@@ -414,7 +414,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           {(currentBusiness?.business_name || currentBusiness?.name) && (
             <p style={{
               fontSize: '14px',
-              color: '#7d8d86',
+              color: '#1a1a1a',
               margin: 0,
               fontWeight: '500'
             }}>
@@ -560,7 +560,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
               padding: '8px 12px',
               borderRadius: '6px',
               border: '1px solid #d1d5db',
-              background: '#ffffff',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
               color: '#7d8d86',
               fontSize: '14px',
               fontWeight: '500',
@@ -620,7 +620,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
               padding: '8px 12px',
               borderRadius: '6px',
               border: '1px solid #d1d5db',
-              background: '#ffffff',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
               color: '#7d8d86',
               fontSize: '14px',
               fontWeight: '500',
@@ -711,7 +711,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
             {businessHours && (
               <div style={{
                 fontSize: '12px',
-                color: '#7d8d86',
+                color: '#1a1a1a',
                 background: '#e5e7eb',
                 padding: '4px 8px',
                 borderRadius: '4px',

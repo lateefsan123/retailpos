@@ -7,6 +7,7 @@ import { useSalesData } from '../hooks/data/useSalesData'
 import { useProductsData } from '../hooks/data/useProductsData'
 
 import { useBranch } from '../contexts/BranchContext'
+import { useTheme } from '../contexts/ThemeContext'
 import BranchSelector from '../components/BranchSelector'
 import LowStockSection from '../components/dashboard/LowStockSection'
 import ProductAnalyticsSection from '../components/dashboard/ProductAnalyticsSection'
@@ -40,6 +41,7 @@ const Dashboard = () => {
   const navigate = useNavigate()
   const { businessId, businessLoading } = useBusinessId()
   const { selectedBranchId } = useBranch()
+  const { theme } = useTheme()
   const { data: salesData } = useSalesData()
   const { data: productsData } = useProductsData()
   
@@ -1139,18 +1141,11 @@ const Dashboard = () => {
             <h1 style={{
               fontSize: '32px',
               fontWeight: 'bold',
-              color: '#1a1a1a',
+              color: theme === 'light' ? '#1a1a1a' : '#ffffff',
               margin: '0 0 8px 0'
             }}>
               Dashboard
             </h1>
-            <p style={{
-              fontSize: '16px',
-              color: '#6b7280',
-              margin: 0
-            }}>
-              Track your business performance and key metrics
-            </p>
           </div>
           <BranchSelector size="md" />
         </div>
@@ -1158,7 +1153,7 @@ const Dashboard = () => {
         <div style={{
           width: '100%',
           height: '2px',
-          backgroundColor: '#9ca3af'
+          backgroundColor: theme === 'light' ? '#6b7280' : '#ffffff'
         }}></div>
       </div>
 
@@ -1253,10 +1248,10 @@ const Dashboard = () => {
           <div
             key={index}
             style={{
-              background: '#ffffff',
-              borderRadius: '20px',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              borderRadius: '8px',
               padding: '24px',
-              border: '2px solid #d1d5db',
+              border: '2px solid #9ca3af',
               boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
               display: 'flex',
               flexDirection: 'column',
@@ -1283,7 +1278,7 @@ const Dashboard = () => {
             <div style={{ fontSize: '32px', fontWeight: 700, color: '#111827', letterSpacing: '-0.02em' }}>
               {card.value}
             </div>
-            <div style={{ fontSize: '13px', fontWeight: 500, color: '#6b7280', lineHeight: 1.5 }}>
+            <div style={{ fontSize: '13px', fontWeight: 500, color: '#1a1a1a', lineHeight: 1.5 }}>
               {card.subtitle}
             </div>
           </div>
@@ -1298,10 +1293,10 @@ const Dashboard = () => {
         marginBottom: '32px'
       }}>
         <div style={{
-          background: '#ffffff',
-          borderRadius: '18px',
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+          borderRadius: '8px',
           padding: '24px',
-          border: '1px solid #e5e7eb',
+           border: '1px solid #9ca3af',
           boxShadow: '0 8px 24px rgba(15, 23, 42, 0.05)'
         }}>
           <LowStockSection />
@@ -1324,11 +1319,11 @@ const Dashboard = () => {
           <div 
             className="dashboardCard"
             style={{
-              background: '#ffffff',
-              borderRadius: '20px',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              borderRadius: '8px',
               padding: '24px',
               boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
-              border: '1px solid #e5e7eb'
+               border: '1px solid #9ca3af'
             }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1472,7 +1467,7 @@ const Dashboard = () => {
                           </p>
                           <p style={{ 
                             fontSize: '11px', 
-                            color: '#6b7280', 
+                            color: '#1a1a1a', 
                             margin: '0 0 2px 0',
                             fontWeight: '500'
                           }}>
@@ -1558,7 +1553,7 @@ const Dashboard = () => {
         }}>
           <div style={{
             background: '#ffffff',
-            borderRadius: '16px',
+            borderRadius: '8px',
             padding: '32px',
             maxWidth: '600px',
             width: '100%',
@@ -1717,7 +1712,7 @@ const Dashboard = () => {
         }}>
           <div style={{
             background: '#ffffff',
-            borderRadius: '16px',
+            borderRadius: '8px',
             padding: '24px',
             maxWidth: '400px',
             width: '100%',

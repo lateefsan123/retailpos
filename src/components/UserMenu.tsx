@@ -1,9 +1,11 @@
 import React, { CSSProperties, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useRole } from '../contexts/RoleContext'
+import { useTheme } from '../contexts/ThemeContext'
 import SelectUserModal from './SelectUserModal'
 import BusinessSettingsModal from './BusinessSettingsModal'
 import ChangeNameModal from './ChangeNameModal'
+import ThemeToggle from './ThemeToggle'
 
 type UserMenuVariant = 'floating' | 'sidebar'
 
@@ -14,6 +16,7 @@ interface UserMenuProps {
 const UserMenu: React.FC<UserMenuProps> = ({ variant = 'floating' }) => {
   const { user, logout, switchUser } = useAuth()
   const { userRole } = useRole()
+  const { theme } = useTheme()
   const [isOpen, setIsOpen] = useState(false)
   const [showSelectUserModal, setShowSelectUserModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
@@ -116,17 +119,16 @@ const UserMenu: React.FC<UserMenuProps> = ({ variant = 'floating' }) => {
 
   const dropdownStyle: CSSProperties = isSidebar
     ? {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: '100%',
-        marginBottom: '12px',
+        position: 'fixed',
+        left: '280px',
+        bottom: '20px',
+        minWidth: '260px',
         background: 'rgba(12, 12, 16, 0.98)',
         borderRadius: '16px',
         border: '1px solid rgba(255, 255, 255, 0.08)',
         boxShadow: '0 20px 45px rgba(0, 0, 0, 0.45)',
         padding: '12px 0',
-        zIndex: 10
+        zIndex: 1000
       }
     : {
         position: 'absolute',
@@ -406,12 +408,33 @@ const UserMenu: React.FC<UserMenuProps> = ({ variant = 'floating' }) => {
             </button>
           )}
 
+          {/* Theme Toggle */}
           <div
             style={{
+              padding: '12px 16px',
               borderTop: isSidebar ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e5e7eb',
+              borderBottom: isSidebar ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e5e7eb',
               margin: '8px 0'
             }}
-          ></div>
+          >
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              color: dropdownTextColor
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <i 
+                  className={theme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon'} 
+                  style={{ fontSize: '16px', color: dropdownIconColor }}
+                ></i>
+                <span style={{ fontSize: '14px', fontWeight: 500 }}>
+                  {theme === 'light' ? 'Light Mode' : 'Dark Mode'}
+                </span>
+              </div>
+              <ThemeToggle variant="switch" size="sm" />
+            </div>
+          </div>
 
           <button
             onClick={handleLogout}

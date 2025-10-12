@@ -34,7 +34,7 @@ const LowStockSection = () => {
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
-          color: '#7d8d86',
+          color: '#1a1a1a',
           fontSize: '16px'
         }}>
           <i className="fa-solid fa-spinner" style={{ 
@@ -99,7 +99,7 @@ const LowStockSection = () => {
             </h3>
             <p style={{ 
               fontSize: '14px', 
-              color: '#7d8d86', 
+              color: '#1a1a1a', 
               margin: 0 
             }}>
               {lowStockItems.length} item{lowStockItems.length !== 1 ? 's' : ''} need{lowStockItems.length === 1 ? 's' : ''} restocking
@@ -142,7 +142,7 @@ const LowStockSection = () => {
             
             <span style={{
               fontSize: '12px',
-              color: '#7d8d86',
+              color: '#1a1a1a',
               fontWeight: '500',
               minWidth: '40px',
               textAlign: 'center'
@@ -188,7 +188,7 @@ const LowStockSection = () => {
         <div style={{ 
           textAlign: 'center', 
           padding: '40px 20px', 
-          color: '#7d8d86' 
+          color: '#1a1a1a' 
         }}>
           <i className="fa-solid fa-check-circle" style={{
             fontSize: '48px',

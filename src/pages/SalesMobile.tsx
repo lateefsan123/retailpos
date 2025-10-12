@@ -33,6 +33,7 @@ import {
 } from 'lucide-react'
 
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
 import { useBranch } from '../contexts/BranchContext'
 import { useBusinessId } from '../hooks/useBusinessId'
 import { useProductsData } from '../hooks/data/useProductsData'
@@ -79,6 +80,7 @@ const SalesMobile = () => {
   const location = useLocation()
   const searchParams = new URLSearchParams(location.search)
   const { user } = useAuth()
+  const { theme } = useTheme()
   const { businessId, businessLoading } = useBusinessId()
   const { selectedBranch, selectedBranchId } = useBranch()
   const { data: productsData, isLoading: productsLoading } = useProductsData()
@@ -2244,8 +2246,28 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
     )
   }
 
+  // Theme-aware background configuration
+  const getBackgroundImage = () => {
+    if (theme === 'light') {
+      return 'url(/images/backgrounds/stribebg_white.png)'
+    }
+    return 'url(/images/backgrounds/stribebg.png)'
+  }
+
   return (
-    <div className={styles.page}>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: '100vh',
+      backgroundImage: getBackgroundImage(),
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      backgroundAttachment: 'fixed',
+      overflowX: 'hidden',
+      overflowY: 'auto',
+      paddingBottom: '80px'
+    }}>
       {renderHeader()}
       {renderSearchBar()}
       {renderCategoryTabs()}

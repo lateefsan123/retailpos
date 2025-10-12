@@ -16,7 +16,8 @@ import {
   Settings,
   ChevronDown,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Database
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -44,6 +45,7 @@ const NAV_SECTIONS: Record<NavSectionKey, { title: string; items: NavItemConfig[
     items: [
       { path: '/suppliers', label: 'Suppliers', icon: Truck },
       { path: '/promotions', label: 'Promotions', icon: Tag },
+      { path: '/product-database', label: 'Product Database', icon: Database },
       { path: '/side-businesses', label: 'Side Businesses', icon: Briefcase },
       { path: '/reminders', label: 'Reminders', icon: Bell },
       { path: '/admin', label: 'Admin', icon: Settings }
@@ -59,7 +61,6 @@ const Navigation = ({ allowedPaths }: NavigationProps) => {
   const location = useLocation()
   const { isCollapsed, setIsCollapsed } = useNav()
   const { canAccessRoute } = useRole()
-  const isSalesPage = location.pathname.startsWith('/sales')
   const [openSections, setOpenSections] = useState<Record<NavSectionKey, boolean>>({
     core: true,
     management: true
@@ -374,7 +375,7 @@ const Navigation = ({ allowedPaths }: NavigationProps) => {
     <aside style={asideStyle}>
       <div style={brandContainerStyle}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
-          <i className="fa-kit fa-test fa-4x" style={{ color: '#B197FC' }}></i>
+          <i className="fa-kit fa-test fa-4x" style={{ color: '#fca5a5' }}></i>
         </div>
         <h1 style={brandSecondaryTextStyle}>
           Tillpoint POS

@@ -86,11 +86,11 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
       <div
         className="dashboardCard"
         style={{
-          background: '#ffffff',
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
           borderRadius: '18px',
           padding: '24px',
           boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
-          border: '1px solid #e5e7eb'
+          border: '1px solid #9ca3af'
         }}
       >
         <style>{`@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}} .skeleton{background-image:linear-gradient(90deg,#e5e7eb 0px,#f3f4f6 40px,#e5e7eb 80px);background-size:600px 100%;animation:shimmer 1.2s infinite linear;border-radius:8px}`}</style>
@@ -135,11 +135,11 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
       <div
         className="dashboardCard"
         style={{
-          background: '#ffffff',
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
           borderRadius: '18px',
           padding: '24px',
           boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
-          border: '1px solid #e5e7eb',
+          border: '1px solid #9ca3af',
           minHeight: '120px',
           display: 'flex',
           alignItems: 'center',
@@ -158,7 +158,7 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
     <div
       className="dashboardCard"
       style={{
-        background: '#ffffff',
+        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
         borderRadius: '18px',
         padding: '24px',
         boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
@@ -214,7 +214,7 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
 
       {/* Visualization + List */}
       {topProducts.length === 0 ? (
-        <div style={{ textAlign: 'center', color: '#7d8d86', padding: '16px' }}>
+        <div style={{ textAlign: 'center', color: '#1a1a1a', padding: '16px' }}>
           No products for {getPeriodLabel(activePeriod)}
         </div>
       ) : (
@@ -260,11 +260,11 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
                 </text>
               </svg>
             ) : (
-              <div style={{ color: '#7d8d86', fontSize: '12px', padding: '16px', textAlign: 'center' }}>
+              <div style={{ color: '#1a1a1a', fontSize: '12px', padding: '16px', textAlign: 'center' }}>
                 No revenue recorded in this period
               </div>
             )}
-            <div style={{ textAlign: 'center', color: '#64748b', fontSize: '12px' }}>
+            <div style={{ textAlign: 'center', color: '#1a1a1a', fontSize: '12px' }}>
               Share of revenue · {getPeriodLabel(activePeriod)}
             </div>
           </div>
@@ -284,9 +284,9 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
                     alignItems: 'center',
                     gap: '12px',
                     padding: '12px',
-                    background: '#ffffff',
+                    background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
                     borderRadius: '10px',
-                    border: '1px solid #e5e7eb',
+                    border: '1px solid #9ca3af',
                     boxShadow: '0 1px 2px rgba(148, 163, 184, 0.12)'
                   }}
                 >
@@ -340,7 +340,7 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
                         {displayPercentage}%
                       </span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748b' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#1a1a1a' }}>
                       <span>{product.quantity_sold} sold</span>
                       <span>{formatCurrency(product.total_sales)}</span>
                     </div>

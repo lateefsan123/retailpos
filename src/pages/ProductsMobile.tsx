@@ -4,6 +4,7 @@ import { X } from 'lucide-react'
 import { useBusinessId } from '../hooks/useBusinessId'
 import { useBranch } from '../contexts/BranchContext'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
 import { formatCurrency } from '../utils/currency'
 import { useSuppliers } from '../hooks/useSuppliers'
 import { useProductsData } from '../hooks/data/useProductsData'
@@ -42,6 +43,7 @@ const ProductsMobile = () => {
   const { suppliers } = useSuppliers(businessId, selectedBranchId)
   const { data: productsData, isLoading, error, refetch } = useProductsData()
   const { user } = useAuth()
+  const { theme } = useTheme()
   
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -170,8 +172,28 @@ const ProductsMobile = () => {
     )
   }
 
+  // Theme-aware background configuration
+  const getBackgroundImage = () => {
+    if (theme === 'light') {
+      return 'url(/images/backgrounds/stribebg_white.png)'
+    }
+    return 'url(/images/backgrounds/stribebg.png)'
+  }
+
   return (
-    <div className={styles.page}>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: '100vh',
+      backgroundImage: getBackgroundImage(),
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      backgroundAttachment: 'fixed',
+      overflowX: 'hidden',
+      overflowY: 'auto',
+      paddingBottom: '80px'
+    }}>
       {/* Slide-out Navigation Overlay */}
       <div className={`${styles.overlay} ${showNav ? styles.open : ''}`} onClick={() => setShowNav(false)}>
         <div className={`${styles.slideNav} ${showNav ? styles.open : ''}`}>

@@ -6,6 +6,7 @@ import { BranchProvider, useBranch } from './contexts/BranchContext'
 import { NavProvider } from './contexts/NavContext'
 import { RoleProvider } from './contexts/RoleContext'
 import { PinProvider } from './contexts/PinContext'
+import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { useNavCollapse } from './hooks/useNavCollapse'
 import ProtectedRoute from './components/ProtectedRoute'
 import RoleProtectedRoute from './components/RoleProtectedRoute'
@@ -37,10 +38,12 @@ import Promotions from './pages/Promotions'
 import VerificationAdmin from './pages/VerificationAdmin'
 import CustomerLoyalty from './pages/CustomerLoyalty'
 import TransactionsMobile from './pages/TransactionsMobile'
+import ProductDatabase from './pages/ProductDatabase'
 
 const AppContent = () => {
   const location = useLocation()
   const { isSwitchingBranch, switchingToBranch } = useBranch()
+  const { theme } = useTheme()
   const isMobileDashboard = location.pathname.startsWith('/dashboard-mobile') || location.pathname.startsWith('/products-mobile') || location.pathname.startsWith('/transactions-mobile') || location.pathname.startsWith('/sales-mobile')
   useNavCollapse()
 
@@ -60,6 +63,14 @@ const AppContent = () => {
     )
   }
 
+  // Theme-aware background configuration - only background image changes
+  const getBackgroundImage = () => {
+    if (theme === 'light') {
+      return 'url(images/backgrounds/stribebg_white.png)'
+    }
+    return 'url(images/backgrounds/stribebg.png)'
+  }
+
   return (
     <>
       <div style={{ 
@@ -68,7 +79,7 @@ const AppContent = () => {
         color: '#1a1a1a', 
         display: 'flex', 
         overflow: 'hidden',
-        backgroundImage: 'url(/images/backgrounds/tillpoint-bg-v2-3840x2160.webp)',
+        backgroundImage: getBackgroundImage(),
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
@@ -161,6 +172,11 @@ const AppContent = () => {
                   <Promotions />
                 </RoleProtectedRoute>
               } />
+              <Route path="/product-database" element={
+                <RoleProtectedRoute requiredPermission="canManageProducts">
+                  <ProductDatabase />
+                </RoleProtectedRoute>
+              } />
               <Route path="/transaction/:transactionId" element={<TransactionDetail />} />
             </Routes>
           </div>
@@ -191,39 +207,41 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <BusinessProvider>
-          <BranchProvider>
-            <RoleProvider>
-              <NavProvider>
-                <PinProvider>
-                <Router basename="/">
-                  <MobileRedirect>
-                    <DesktopRedirect>
-                      <Routes>
-                        <Route path="/" element={<RootRedirect />} />
-                        <Route path="/landing" element={<Landing />} />
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/login-mobile" element={<LoginMobile />} />
-                        <Route path="/signup" element={<Signup />} />
-                        <Route path="/signup-mobile" element={<SignupMobile />} />
-                        <Route path="/select-user" element={<SelectUser />} />
-                        <Route path="/select-user-mobile" element={<SelectUserMobile />} />
-                        <Route path="/*" element={
-                          <ProtectedRoute>
-                            <AppContent />
-                          </ProtectedRoute>
-                        } />
-                      </Routes>
-                    </DesktopRedirect>
-                  </MobileRedirect>
-                </Router>
-                </PinProvider>
-              </NavProvider>
-            </RoleProvider>
-          </BranchProvider>
-        </BusinessProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <BusinessProvider>
+            <BranchProvider>
+              <RoleProvider>
+                <NavProvider>
+                  <PinProvider>
+                  <Router basename="/">
+                    <MobileRedirect>
+                      <DesktopRedirect>
+                        <Routes>
+                          <Route path="/" element={<RootRedirect />} />
+                          <Route path="/landing" element={<Landing />} />
+                          <Route path="/login" element={<Login />} />
+                          <Route path="/login-mobile" element={<LoginMobile />} />
+                          <Route path="/signup" element={<Signup />} />
+                          <Route path="/signup-mobile" element={<SignupMobile />} />
+                          <Route path="/select-user" element={<SelectUser />} />
+                          <Route path="/select-user-mobile" element={<SelectUserMobile />} />
+                          <Route path="/*" element={
+                            <ProtectedRoute>
+                              <AppContent />
+                            </ProtectedRoute>
+                          } />
+                        </Routes>
+                      </DesktopRedirect>
+                    </MobileRedirect>
+                  </Router>
+                  </PinProvider>
+                </NavProvider>
+              </RoleProvider>
+            </BranchProvider>
+          </BusinessProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   )
 }

@@ -2601,7 +2601,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             display: 'flex', 
             alignItems: 'flex-end',
             gap: '0px',
-            overflowX: 'auto',
+            flexWrap: 'wrap',
             paddingBottom: '0px',
             borderBottom: '2px solid #e5e7eb'
           }}>
@@ -2654,7 +2654,6 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
                     transition: 'all 0.2s ease',
-                    minWidth: '120px',
                     position: 'relative',
                     zIndex: isSelected ? 2 : 1,
                     marginBottom: isSelected ? '-2px' : '0px'

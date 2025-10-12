@@ -50,7 +50,7 @@ const LowStockCard = ({ product, onRestock, onQuickRestock }: LowStockCardProps)
 
   return (
     <div style={{
-      background: '#ffffff',
+      background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
       borderRadius: '12px',
       padding: '16px',
       border: '1px solid rgba(125, 141, 134, 0.2)',
@@ -140,7 +140,7 @@ const LowStockCard = ({ product, onRestock, onQuickRestock }: LowStockCardProps)
           
           <p style={{
             fontSize: '12px',
-            color: '#7d8d86',
+            color: '#1a1a1a',
             margin: '0 0 8px 0'
           }}>
             {product.category}
@@ -156,13 +156,13 @@ const LowStockCard = ({ product, onRestock, onQuickRestock }: LowStockCardProps)
             </span>
             <span style={{
               fontSize: '12px',
-              color: '#7d8d86'
+              color: '#1a1a1a'
             }}>
               •
             </span>
             <span style={{
               fontSize: '12px',
-              color: '#7d8d86'
+              color: '#1a1a1a'
             }}>
               Reorder at: {product.reorder_level}
             </span>
