@@ -345,8 +345,15 @@ const ProductsMobile = () => {
       <div className={styles.productsList}>
         {filteredProducts.length === 0 ? (
           <div className={styles.emptyState}>
-            <p>No products found</p>
-            {searchQuery && <p className={styles.emptyStateSub}>Try adjusting your search or filters</p>}
+            <img 
+              src="/images/vectors/no products.png" 
+              alt="No products" 
+              style={{ 
+                width: '240px', 
+                height: 'auto',
+                opacity: 0.85
+              }} 
+            />
           </div>
         ) : (
           filteredProducts.map(product => {

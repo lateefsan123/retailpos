@@ -9,6 +9,7 @@ import { useProductsData } from '../hooks/data/useProductsData'
 import { useBranch } from '../contexts/BranchContext'
 import { useTheme } from '../contexts/ThemeContext'
 import BranchSelector from '../components/BranchSelector'
+import PageHeader from '../components/PageHeader'
 import LowStockSection from '../components/dashboard/LowStockSection'
 import ProductAnalyticsSection from '../components/dashboard/ProductAnalyticsSection'
 import SalesChart from '../components/dashboard/SalesChart'
@@ -1128,34 +1129,12 @@ const Dashboard = () => {
   return (
     <div style={{ padding: '0' }}>
       {/* Dashboard Header */}
-      <div style={{
-        marginBottom: '32px'
-      }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '24px'
-        }}>
-          <div>
-            <h1 style={{
-              fontSize: '32px',
-              fontWeight: 'bold',
-              color: theme === 'light' ? '#1a1a1a' : '#ffffff',
-              margin: '0 0 8px 0'
-            }}>
-              Dashboard
-            </h1>
-          </div>
-          <BranchSelector size="md" />
-        </div>
-        {/* Full width line below header */}
-        <div style={{
-          width: '100%',
-          height: '2px',
-          backgroundColor: theme === 'light' ? '#6b7280' : '#ffffff'
-        }}></div>
-      </div>
+      <PageHeader
+        title="Dashboard Overview"
+        subtitle="Monitor your business performance and key metrics"
+      >
+        <BranchSelector size="md" />
+      </PageHeader>
 
       {/* Header Controls */}
       <div style={{ 
@@ -1498,31 +1477,19 @@ const Dashboard = () => {
               ) : (
                 <div style={{ 
                   textAlign: 'center', 
-                  padding: '20px', 
+                  padding: '40px 20px', 
                   color: '#1a1a1a',
                   fontSize: '14px'
                 }}>
-                  {(() => {
-                    switch (activePeriod) {
-                      case 'today': {
-                        const today = new Date()
-                        const isToday = selectedDate.toDateString() === today.toDateString()
-                        return isToday ? 'No recent transactions' : `No transactions on ${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-                      }
-                      case 'yesterday':
-                        return 'No transactions yesterday'
-                      case 'week':
-                        return 'No transactions this week'
-                      case 'last7':
-                        return 'No transactions in the last 7 days'
-                      case 'month':
-                        return 'No transactions this month'
-                      case 'last30':
-                        return 'No transactions in the last 30 days'
-                      default:
-                        return 'No recent transactions'
-                    }
-                  })()}
+                  <img 
+                    src="/images/vectors/dashboard.png" 
+                    alt="No transactions" 
+                    style={{ 
+                      width: '260px', 
+                      height: 'auto',
+                      opacity: 0.75
+                    }} 
+                  />
                 </div>
               )}
             </div>

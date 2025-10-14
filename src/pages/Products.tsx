@@ -5,10 +5,12 @@ import { useAuth } from '../contexts/AuthContext'
 import { useBusinessId } from '../hooks/useBusinessId'
 import { useBranch } from '../contexts/BranchContext'
 import BranchSelector from '../components/BranchSelector'
+import PageHeader from '../components/PageHeader'
 import { formatCurrency } from '../utils/currency'
 import styles from './Products.module.css'
 import { useSuppliers } from '../hooks/useSuppliers'
 import AddProductModal from '../components/modals/AddProductModal'
+import EditProductModal from '../components/modals/EditProductModal'
 import { printProductLabel, printBulkLabels } from '../utils/labelUtils'
 
 async function uploadProductImage(file: File, productId: string, businessId: number | null) {
@@ -1543,39 +1545,117 @@ const Products = () => {
       minHeight: '100vh'
     }}>
       {/* Header */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        paddingBottom: '24px',
-        marginBottom: '32px',
-        borderBottom: '3px solid #d1d5db'
-      }}>
-        <div>
-          <h1 style={{
-            fontSize: '32px',
-            fontWeight: 'bold',
-            color: '#1a1a1a',
-            margin: '0 0 8px 0'
-          }}>
-            Inventory Management
-          </h1>
-          <p style={{
-            fontSize: '16px',
-            color: '#6b7280',
-            margin: 0
-          }}>
-            Manage your product inventory, stock levels, and suppliers
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <BranchSelector size="md" />
-          {/* Print Label Toggle */}
+      <PageHeader
+        title="Inventory Management"
+        subtitle="Manage your product inventory, stock levels, and suppliers"
+      >
+        <BranchSelector size="md" />
+        {/* Print Label Toggle */}
+        <button
+          onClick={handleTogglePrintMode}
+          className={`${styles.bulkPrintToggle} ${isPrintMode ? styles.active : ''}`}
+          style={{
+            background: isPrintMode ? '#111827' : '#111827',
+            color: '#f1f0e4',
+            border: 'none',
+            padding: '12px 24px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '14px',
+            fontWeight: '500',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+          }}
+          onMouseEnter={(e) => {
+            (e.target as HTMLButtonElement).style.background = '#374151'
+          }}
+          onMouseLeave={(e) => {
+            (e.target as HTMLButtonElement).style.background = isPrintMode ? '#111827' : '#111827'
+          }}
+        >
+          <i className="fa-solid fa-print" style={{ fontSize: '16px' }}></i>
+          <span>{isPrintMode ? 'Exit Print Mode' : 'Print Labels'}</span>
+        </button>
+
+        {/* Bulk Print Actions */}
+        {isPrintMode && (
+          <>
+            <button
+              onClick={handleSelectAllProducts}
+              className={`${styles.bulkActionButton} ${styles.secondary}`}
+              style={{
+                background: selectedProductsForPrint.size === products.length ? '#6b7c73' : '#111827',
+                color: '#f1f0e4',
+                border: 'none',
+                padding: '10px 18px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+              }}
+              onMouseEnter={(e) => {
+                (e.target as HTMLButtonElement).style.background = '#6b7c73'
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLButtonElement).style.background = selectedProductsForPrint.size === products.length ? '#6b7c73' : '#111827'
+              }}
+            >
+              <i className="fa-solid fa-check-double" style={{ fontSize: '14px' }}></i>
+              <span>{selectedProductsForPrint.size === products.length ? 'Deselect All' : 'Select All'}</span>
+            </button>
+
+            <button
+              onClick={handlePrintSelectedLabels}
+              disabled={selectedProductsForPrint.size === 0}
+              className={`${styles.bulkActionButton} ${styles.primary} ${selectedProductsForPrint.size === 0 ? styles.disabled : ''}`}
+              style={{
+                background: selectedProductsForPrint.size === 0 ? '#9ca3af' : '#111827',
+                color: '#f1f0e4',
+                border: 'none',
+                padding: '10px 18px',
+                borderRadius: '8px',
+                cursor: selectedProductsForPrint.size === 0 ? 'not-allowed' : 'pointer',
+                fontSize: '13px',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+              }}
+              onMouseEnter={(e) => {
+                if (selectedProductsForPrint.size > 0) {
+                  (e.target as HTMLButtonElement).style.background = '#6b7c73'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedProductsForPrint.size > 0) {
+                  (e.target as HTMLButtonElement).style.background = '#111827'
+                }
+              }}
+            >
+              <i className="fa-solid fa-print" style={{ fontSize: '14px' }}></i>
+              <span>Print Selected ({selectedProductsForPrint.size})</span>
+            </button>
+          </>
+        )}
+
+        {/* Add Product Button */}
+        {hasPermission('canManageProducts') && (
           <button
-            onClick={handleTogglePrintMode}
-            className={`${styles.bulkPrintToggle} ${isPrintMode ? styles.active : ''}`}
+            onClick={() => {
+              setShowAddModal(true)
+            }}
             style={{
-              background: isPrintMode ? '#111827' : '#111827',
+              background: '#111827',
               color: '#f1f0e4',
               border: 'none',
               padding: '12px 24px',
@@ -1586,124 +1666,23 @@ const Products = () => {
               alignItems: 'center',
               gap: '8px',
               fontSize: '14px',
-              fontWeight: '500',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+              fontWeight: '500'
             }}
             onMouseEnter={(e) => {
               (e.target as HTMLButtonElement).style.background = '#374151'
+              setLilyMessage("Click this button to add a new product to your inventory! You'll need to fill in details like name, price, stock quantity, and reorder level.")
+              setShowLilyMessage(true)
             }}
             onMouseLeave={(e) => {
-              (e.target as HTMLButtonElement).style.background = isPrintMode ? '#111827' : '#111827'
+              (e.target as HTMLButtonElement).style.background = '#111827'
+              setShowLilyMessage(false)
             }}
           >
-            <i className="fa-solid fa-print" style={{ fontSize: '16px' }}></i>
-            <span>{isPrintMode ? 'Exit Print Mode' : 'Print Labels'}</span>
+            <i className="fa-solid fa-plus" style={{ fontSize: '16px' }}></i>
+            <span>Add Product</span>
           </button>
-
-          {/* Bulk Print Actions */}
-          {isPrintMode && (
-            <>
-              <button
-                onClick={handleSelectAllProducts}
-                className={`${styles.bulkActionButton} ${styles.secondary}`}
-                style={{
-                  background: selectedProductsForPrint.size === products.length ? '#6b7c73' : '#111827',
-                  color: '#f1f0e4',
-                  border: 'none',
-                  padding: '10px 18px',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.2s ease',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-                }}
-                onMouseEnter={(e) => {
-                  (e.target as HTMLButtonElement).style.background = '#6b7c73'
-                }}
-                onMouseLeave={(e) => {
-                  (e.target as HTMLButtonElement).style.background = selectedProductsForPrint.size === products.length ? '#6b7c73' : '#111827'
-                }}
-              >
-                <i className="fa-solid fa-check-double" style={{ fontSize: '14px' }}></i>
-                <span>{selectedProductsForPrint.size === products.length ? 'Deselect All' : 'Select All'}</span>
-              </button>
-
-              <button
-                onClick={handlePrintSelectedLabels}
-                disabled={selectedProductsForPrint.size === 0}
-                className={`${styles.bulkActionButton} ${styles.primary} ${selectedProductsForPrint.size === 0 ? styles.disabled : ''}`}
-                style={{
-                  background: selectedProductsForPrint.size === 0 ? '#9ca3af' : '#111827',
-                  color: '#f1f0e4',
-                  border: 'none',
-                  padding: '10px 18px',
-                  borderRadius: '8px',
-                  cursor: selectedProductsForPrint.size === 0 ? 'not-allowed' : 'pointer',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.2s ease',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-                }}
-                onMouseEnter={(e) => {
-                  if (selectedProductsForPrint.size > 0) {
-                    (e.target as HTMLButtonElement).style.background = '#6b7c73'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (selectedProductsForPrint.size > 0) {
-                    (e.target as HTMLButtonElement).style.background = '#111827'
-                  }
-                }}
-              >
-                <i className="fa-solid fa-print" style={{ fontSize: '14px' }}></i>
-                <span>Print Selected ({selectedProductsForPrint.size})</span>
-              </button>
-            </>
-          )}
-
-          {/* Add Product Button */}
-          {hasPermission('canManageProducts') && (
-            <button
-              onClick={() => {
-                setShowAddModal(true)
-              }}
-              style={{
-                background: '#111827',
-                color: '#f1f0e4',
-                border: 'none',
-                padding: '12px 24px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontSize: '14px',
-                fontWeight: '500'
-              }}
-              onMouseEnter={(e) => {
-                (e.target as HTMLButtonElement).style.background = '#374151'
-                setLilyMessage("Click this button to add a new product to your inventory! You'll need to fill in details like name, price, stock quantity, and reorder level.")
-                setShowLilyMessage(true)
-              }}
-              onMouseLeave={(e) => {
-                (e.target as HTMLButtonElement).style.background = '#111827'
-                setShowLilyMessage(false)
-              }}
-            >
-              <i className="fa-solid fa-plus" style={{ fontSize: '16px' }}></i>
-              <span>Add Product</span>
-            </button>
-          )}
-        </div>
-      </div>
+        )}
+      </PageHeader>
 
       {/* Stats Cards */}
       <div style={{
@@ -2377,7 +2356,7 @@ const Products = () => {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
              <thead style={{ 
                background: '#111827',
-               borderBottom: '4px solid #7d8d86'
+               borderBottom: '4px solid #6b7280'
              }}>
                <tr>
                  {isPrintMode && (
@@ -2388,8 +2367,8 @@ const Products = () => {
                      fontSize: '12px', 
                      fontWeight: '600', 
                      textTransform: 'uppercase',
-                     borderBottom: '4px solid #7d8d86',
-                     borderRight: '2px solid #7d8d86',
+                     borderBottom: '4px solid #6b7280',
+                     borderRight: '2px solid #6b7280',
                      width: '50px'
                    }}>
                      <input
@@ -2410,8 +2389,8 @@ const Products = () => {
                    fontSize: '12px', 
                    fontWeight: '600', 
                    textTransform: 'uppercase',
-                   borderBottom: '4px solid #7d8d86',
-                   borderRight: '2px solid #7d8d86'
+                   borderBottom: '4px solid #6b7280',
+                   borderRight: '2px solid #6b7280'
                  }}>
                    Product
                  </th>
@@ -2422,8 +2401,8 @@ const Products = () => {
                    fontSize: '12px', 
                    fontWeight: '600', 
                    textTransform: 'uppercase',
-                   borderBottom: '4px solid #7d8d86',
-                   borderRight: '2px solid #7d8d86'
+                   borderBottom: '4px solid #6b7280',
+                   borderRight: '2px solid #6b7280'
                  }}>
                    Category
                  </th>
@@ -2434,8 +2413,8 @@ const Products = () => {
                    fontSize: '12px', 
                    fontWeight: '600', 
                    textTransform: 'uppercase',
-                   borderBottom: '4px solid #7d8d86',
-                   borderRight: '2px solid #7d8d86'
+                   borderBottom: '4px solid #6b7280',
+                   borderRight: '2px solid #6b7280'
                  }}>
                    Price
                  </th>
@@ -2446,8 +2425,8 @@ const Products = () => {
                    fontSize: '12px', 
                    fontWeight: '600', 
                    textTransform: 'uppercase',
-                   borderBottom: '4px solid #7d8d86',
-                   borderRight: '2px solid #7d8d86'
+                   borderBottom: '4px solid #6b7280',
+                   borderRight: '2px solid #6b7280'
                  }}>
                    Stock
                  </th>
@@ -2458,8 +2437,8 @@ const Products = () => {
                    fontSize: '12px', 
                    fontWeight: '600', 
                    textTransform: 'uppercase',
-                   borderBottom: '4px solid #7d8d86',
-                   borderRight: '2px solid #7d8d86'
+                   borderBottom: '4px solid #6b7280',
+                   borderRight: '2px solid #6b7280'
                  }}>
                    Status
                  </th>
@@ -2470,7 +2449,7 @@ const Products = () => {
                    fontSize: '12px', 
                    fontWeight: '600', 
                    textTransform: 'uppercase',
-                   borderBottom: '4px solid #7d8d86'
+                   borderBottom: '4px solid #6b7280'
                  }}>
                    Actions
                  </th>
@@ -2480,9 +2459,15 @@ const Products = () => {
               {filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan={isPrintMode ? 7 : 6} style={{ padding: '40px', textAlign: 'center', color: '#7d8d86' }}>
-                    <i className="fa-solid fa-boxes-stacked" style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}></i>
-                    <p style={{ fontSize: '16px', margin: 0 }}>No products found</p>
-                    <p style={{ fontSize: '14px', margin: '8px 0 0 0' }}>Add your first product to get started!</p>
+                    <img 
+                      src="/images/vectors/no products.png" 
+                      alt="No products" 
+                      style={{ 
+                        width: '300px', 
+                        height: 'auto',
+                        opacity: 0.8
+                      }} 
+                    />
                   </td>
                 </tr>
               ) : (
@@ -2685,12 +2670,13 @@ const Products = () => {
       <div style={{ 
         marginTop: '16px', 
         fontSize: '14px', 
-        color: '#7d8d86',
+        color: '#000000',
         textAlign: 'center',
         padding: '12px',
         borderRadius: '8px',
         border: '1px solid #e5e7eb',
-        marginBottom: '16px'
+        marginBottom: '16px',
+        backgroundColor: '#ffffff'
       }}>
         {totalProducts > 0 ? (
           <>
@@ -3493,7 +3479,28 @@ const Products = () => {
       )}
 
       {/* Edit Product Modal */}
-      {showEditModal && editingProduct && (
+      <EditProductModal
+        isOpen={showEditModal}
+        onClose={() => {
+          resetForm()
+          setShowEditModal(false)
+        }}
+        onProductUpdated={(product) => {
+          // Refresh the products list
+          fetchProducts(currentPage, itemsPerPage, searchTerm, selectedCategory, activeSummaryFilter)
+          setShowEditModal(false)
+        }}
+        editingProduct={editingProduct}
+        categories={categories}
+        onCategoryAdded={(category) => {
+          if (!categories.includes(category)) {
+            // This will be handled by the modal component
+          }
+        }}
+      />
+
+      {/* Old Edit Product Modal - Remove this section */}
+      {false && (
         <div style={{
           position: 'fixed',
           top: 0,

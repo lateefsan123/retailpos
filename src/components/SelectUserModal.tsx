@@ -22,7 +22,7 @@ interface SelectUserModalProps {
 }
 
 const SelectUserModal: React.FC<SelectUserModalProps> = ({ isOpen, onClose, onUserSwitch }) => {
-  const { user, switchUser } = useAuth();
+  const { user } = useAuth();
 
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,10 +31,7 @@ const SelectUserModal: React.FC<SelectUserModalProps> = ({ isOpen, onClose, onUs
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [showPinPrompt, setShowPinPrompt] = useState(false);
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState('');
-  const [pinVerified, setPinVerified] = useState(false);
+  // PIN state removed
   const [usePinAuth, setUsePinAuth] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
 
@@ -44,12 +41,7 @@ const SelectUserModal: React.FC<SelectUserModalProps> = ({ isOpen, onClose, onUs
     }
   }, [isOpen, user?.business_id]);
 
-  useEffect(() => {
-    // Show PIN prompt on modal open if user has a PIN
-    if (isOpen && user?.pin && !pinVerified) {
-      setShowPinPrompt(true);
-    }
-  }, [isOpen, user?.pin, pinVerified]);
+  // PIN prompt completely disabled
 
   const fetchUsers = async () => {
     if (!user?.business_id) return;
@@ -105,6 +97,7 @@ const SelectUserModal: React.FC<SelectUserModalProps> = ({ isOpen, onClose, onUs
 
   const handleUserSelect = (u: User) => {
     setSelectedUser(u);
+    // Skip PIN prompt entirely - go straight to password view
     setShowPasswordView(true);
     setPassword('');
     setPasswordError('');
@@ -146,23 +139,7 @@ const SelectUserModal: React.FC<SelectUserModalProps> = ({ isOpen, onClose, onUs
     setShowUserDropdown(false);
   };
 
-  const handlePinSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pinInput) {
-      setPinError('Please enter your PIN');
-      return;
-    }
-
-    // Check if the entered PIN matches the current user's PIN
-    if (user?.pin && user.pin === pinInput) {
-      setShowPinPrompt(false);
-      setPinVerified(true);
-      setPinInput('');
-      setPinError('');
-    } else {
-      setPinError('Invalid PIN. Please try again.');
-    }
-  };
+  // PIN functionality removed
 
   const getRoleColor = (role: string) => {
     switch (role.toLowerCase()) {
@@ -293,128 +270,7 @@ const SelectUserModal: React.FC<SelectUserModalProps> = ({ isOpen, onClose, onUs
 
             {/* Content */}
             <div>
-              {showPinPrompt ? (
-                <div>
-                  <div
-                    style={{
-                      background: 'rgba(255,255,255,0.05)',
-                      borderRadius: 8,
-                      padding: 24,
-                      marginBottom: 24,
-                      textAlign: 'center',
-                    }}
-                  >
-                  <div style={{ marginBottom: 16 }}>
-                      <i className="fa-solid fa-lock" style={{ fontSize: '48px', color: '#7d8d86', marginBottom: '16px' }} />
-                      <h3 style={{ color: '#ffffff', fontSize: '24px', margin: '0 0 8px 0' }}>
-                        PIN Required
-                      </h3>
-                      <p style={{ color: '#9ca3af', fontSize: '16px', margin: 0 }}>
-                        Enter your PIN to access the user system
-                      </p>
-                    </div>
-
-                    <form onSubmit={handlePinSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: '300px', margin: '0 auto' }}>
-                      <div>
-                        <input
-                          type="password"
-                          value={pinInput}
-                          onChange={(e) => {
-                            setPinInput(e.target.value);
-                            if (pinError) setPinError('');
-                          }}
-                          style={{
-                            width: '200px',
-                            padding: 12,
-                            background: '#1a202c',
-                            border: '1px solid #4a5568',
-                            borderRadius: 8,
-                            color: '#ffffff',
-                            fontSize: 18,
-                            boxSizing: 'border-box',
-                            textAlign: 'center',
-                            letterSpacing: '2px',
-                          }}
-                          placeholder="Enter PIN"
-                          maxLength={6}
-                          required
-                          autoFocus
-                        />
-                        {pinError && (
-                          <div
-                            style={{
-                              background: '#fef2f2',
-                              border: '1px solid #fecaca',
-                              borderRadius: 6,
-                              padding: '8px 12px',
-                              marginTop: 8,
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 8,
-                            }}
-                          >
-                            <i className="fa-solid fa-exclamation-triangle" style={{ color: '#dc2626', fontSize: 14 }} />
-                            <p style={{ fontSize: 14, color: '#dc2626', margin: 0, fontWeight: 500 }}>{pinError}</p>
-                          </div>
-                        )}
-                      </div>
-
-                      <div style={{ display: 'flex', gap: 12 }}>
-                        <button
-                          type="button"
-                          onClick={onClose}
-                          style={{
-                            flex: 1,
-                            padding: '12px 16px',
-                            background: '#4a5568',
-                            border: '1px solid #4a5568',
-                            borderRadius: 8,
-                            color: '#ffffff',
-                            fontSize: 18,
-                            fontWeight: 500,
-                            cursor: 'pointer',
-                            transition: 'background 0.2s ease',
-                          }}
-                          onMouseEnter={(e) => {
-                            (e.currentTarget as HTMLButtonElement).style.background = '#6b7280';
-                          }}
-                          onMouseLeave={(e) => {
-                            (e.currentTarget as HTMLButtonElement).style.background = '#4a5568';
-                          }}
-                        >
-                          Cancel
-                        </button>
-
-                        <button
-                          type="submit"
-                          style={{
-                            flex: 1,
-                            padding: '12px 16px',
-                            background: '#7d8d86',
-                            border: '2px solid #7d8d86',
-                            borderRadius: 8,
-                            color: '#000000',
-                            fontSize: 18,
-                            fontWeight: 'bold',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                          }}
-                          onMouseEnter={(e) => {
-                            (e.currentTarget as HTMLButtonElement).style.background = '#3e3f29';
-                            (e.currentTarget as HTMLButtonElement).style.borderColor = '#3e3f29';
-                          }}
-                          onMouseLeave={(e) => {
-                            (e.currentTarget as HTMLButtonElement).style.background = '#7d8d86';
-                            (e.currentTarget as HTMLButtonElement).style.borderColor = '#7d8d86';
-                          }}
-                        >
-                          Verify PIN
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              ) : showPasswordView ? (
+              {showPasswordView ? (
                 <div style={{ 
                   display: 'flex', 
                   flexDirection: 'column',

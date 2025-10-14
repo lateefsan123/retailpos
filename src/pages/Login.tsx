@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useDeviceDetection } from '../hooks/useDeviceDetection';
 import styles from './Login.module.css';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { login, loading } = useAuth();
+  const { login } = useAuth();
   const { isMobile, isTablet } = useDeviceDetection();
+  const location = useLocation();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -19,6 +20,25 @@ const Login: React.FC = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showResetSuccess, setShowResetSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (location.state && typeof location.state === 'object') {
+      const { message, email: prefillEmail } = location.state as { message?: string; email?: string };
+
+      if (message) {
+        setErrors({ general: message });
+      }
+
+      if (prefillEmail) {
+        setFormData(prev => ({
+          ...prev,
+          email: prefillEmail,
+        }));
+      }
+
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location, navigate]);
 
   const validateEmail = (email: string) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -95,25 +115,31 @@ const Login: React.FC = () => {
     if (validateLoginForm()) {
       setIsSubmitting(true);
       
-      // Use full login functionality
-      const success = await login(formData.email, formData.password);
-      if (success) {
-        // Check if this is the verification admin
-        if (formData.email === 'lateefsanusi67@gmail.com') {
-          // Redirect verification admin directly to their page
-          navigate('/verification-admin');
-        } else {
-          // Redirect to appropriate select user page based on device
-          if (isMobile || isTablet) {
-            navigate('/select-user-mobile');
+      try {
+        // Use full login functionality
+        const success = await login(formData.email, formData.password);
+        if (success) {
+          // Check if this is the verification admin
+          if (formData.email === 'lateefsanusi67@gmail.com') {
+            // Redirect verification admin directly to their page
+            navigate('/verification-admin');
           } else {
-            navigate('/select-user');
+            // Redirect to appropriate select user page based on device
+            if (isMobile || isTablet) {
+              navigate('/select-user-mobile');
+            } else {
+              navigate('/select-user');
+            }
           }
+        } else {
+          setErrors({ general: 'Invalid email or password' });
         }
-      } else {
-        setErrors({ general: 'Invalid email or password' });
+      } catch (error) {
+        console.error('Login error:', error);
+        setErrors({ general: 'An error occurred during login. Please try again.' });
+      } finally {
+        setIsSubmitting(false);
       }
-      setIsSubmitting(false);
     }
   };
 

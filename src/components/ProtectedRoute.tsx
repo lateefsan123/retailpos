@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, supabaseUser, loading } = useAuth()
+  const { user, loading } = useAuth()
 
   if (loading) {
     return (
@@ -20,8 +20,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     )
   }
 
-  // Allow access if either user or supabaseUser exists
-  if (!user && !supabaseUser) {
+  if (!user) {
     return <Login />
   }
 

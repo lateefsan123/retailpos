@@ -5,6 +5,7 @@ import { useRole } from '../contexts/RoleContext'
 import { usePromotions } from '../hooks/usePromotions'
 import { useProducts } from '../hooks/derived/useProducts'
 import { Promotion, PromotionRequest, Product } from '../types/multitenant'
+import PageHeader from '../components/PageHeader'
 import styles from './Promotions.module.css'
 
 const Promotions: React.FC = () => {
@@ -176,68 +177,47 @@ const Promotions: React.FC = () => {
   return (
     <div className={styles.promotionsContainer}>
       {/* Page Header */}
+      <PageHeader
+        title="Promotions & Discounts"
+        subtitle="Create and manage promotional campaigns"
+      >
+        <button
+          onClick={() => { resetForm(); setShowModal(true) }}
+          style={{
+            padding: '16px 32px',
+            background: '#1a1a1a',
+            color: '#f1f0e4',
+            border: 'none',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: '600',
+            transition: 'all 0.2s ease',
+            boxShadow: '0 4px 12px rgba(26, 26, 26, 0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#374151'
+            e.currentTarget.style.transform = 'translateY(-2px)'
+            e.currentTarget.style.boxShadow = '0 6px 16px rgba(26, 26, 26, 0.2)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = '#1a1a1a'
+            e.currentTarget.style.transform = 'translateY(0)'
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(26, 26, 26, 0.15)'
+          }}
+        >
+          <i className="fas fa-plus" />
+          Create Promotion
+        </button>
+      </PageHeader>
+
+      {/* Stats Summary */}
       <div style={{
         marginBottom: '40px'
       }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          marginBottom: '16px'
-        }}>
-          <div>
-            <h1 style={{ 
-              fontSize: '36px', 
-              fontWeight: '800', 
-              margin: '0 0 8px 0', 
-              color: '#1a1a1a',
-              letterSpacing: '-0.02em'
-            }}>
-              <i className="fas fa-tags" style={{ marginRight: '16px', color: '#7c3aed' }} />
-              Promotions & Discounts
-            </h1>
-            <p style={{
-              fontSize: '18px', 
-              color: '#1a1a1a', 
-              margin: 0,
-              fontWeight: '600'
-            }}>
-              Manage your promotional campaigns and discount offers
-            </p>
-          </div>
-          <button
-            onClick={() => { resetForm(); setShowModal(true) }}
-            style={{
-              padding: '16px 32px',
-              background: '#1a1a1a',
-              color: '#f1f0e4',
-              border: 'none',
-              borderRadius: '12px',
-              cursor: 'pointer',
-              fontSize: '16px',
-              fontWeight: '600',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 4px 12px rgba(26, 26, 26, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#374151'
-              e.currentTarget.style.transform = 'translateY(-2px)'
-              e.currentTarget.style.boxShadow = '0 6px 16px rgba(26, 26, 26, 0.2)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#1a1a1a'
-              e.currentTarget.style.transform = 'translateY(0)'
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(26, 26, 26, 0.15)'
-            }}
-          >
-            <i className="fas fa-plus" />
-            Create Promotion
-          </button>
-        </div>
-        
         {/* Stats Summary */}
         <div style={{
           display: 'grid',

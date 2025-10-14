@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { useBranch } from '../contexts/BranchContext';
+import PageHeader from '../components/PageHeader';
 import styles from './Reminders.module.css';
 
 interface Reminder {
@@ -761,15 +762,10 @@ export default function Reminders() {
     return (
     <div className={styles.container}>
       {/* Header */}
-      <div className={styles.header}>
-        <div className={styles.title}>
-          <h1>
-            <i className="fa-solid fa-sticky-note" style={{ marginRight: '0.75rem' }}></i>
-            Reminders
-          </h1>
-          <p>Click and drag to move reminders around • Right-click to edit</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Reminders & Tasks"
+        subtitle="Manage your reminders and scheduled tasks"
+      />
 
       <div className={styles.mainContent}>
         {/* Date Navigation */}
@@ -1047,15 +1043,15 @@ export default function Reminders() {
         {getFilteredReminders().length === 0 && (
           <div className={styles.emptyState}>
             <div className={styles.emptyStateContent}>
-              <div className={styles.emptyStateIcon}>
-                <i className="fa-solid fa-sticky-note"></i>
-              </div>
-              <h3 className={styles.emptyStateTitle}>
-                No reminders for this date
-              </h3>
-              <p>
-                Click "Add Reminder" to create your first reminder for {currentDate.toLocaleDateString()}
-              </p>
+              <img 
+                src="/images/vectors/reminders.png" 
+                alt="No reminders" 
+                style={{ 
+                  width: '280px', 
+                  height: 'auto',
+                  opacity: 0.85
+                }} 
+              />
             </div>
           </div>
         )}

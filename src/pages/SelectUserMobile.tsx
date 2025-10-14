@@ -42,10 +42,7 @@ const SelectUserMobile: React.FC = () => {
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [showPinPrompt, setShowPinPrompt] = useState(false);
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState('');
-  const [pinVerified, setPinVerified] = useState(false);
+  // PIN state removed
   const [usePinAuth, setUsePinAuth] = useState(false);
 
   useEffect(() => {
@@ -55,12 +52,7 @@ const SelectUserMobile: React.FC = () => {
     }
   }, [user?.business_id]);
 
-  useEffect(() => {
-    // Show PIN prompt on component mount if user has a PIN
-    if (user?.pin && !pinVerified) {
-      setShowPinPrompt(true);
-    }
-  }, [user?.pin, pinVerified]);
+  // PIN prompt completely disabled
 
   const fetchUsers = async () => {
     if (!user?.business_id) return;
@@ -138,6 +130,7 @@ const SelectUserMobile: React.FC = () => {
 
   const handleUserSelect = (u: User) => {
     setSelectedUser(u);
+    // Skip PIN prompt entirely - go straight to password entry
     setPassword('');
     setPasswordError('');
     setUsePinAuth(false);
@@ -210,73 +203,9 @@ const SelectUserMobile: React.FC = () => {
     });
   };
 
-  const handlePinSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pinInput) {
-      setPinError('Please enter your PIN');
-      return;
-    }
+  // PIN functionality removed
 
-    // Check if the entered PIN matches the current user's PIN
-    if (user?.pin && user.pin === pinInput) {
-      setShowPinPrompt(false);
-      setPinVerified(true);
-      setPinInput('');
-      setPinError('');
-    } else {
-      setPinError('Invalid PIN. Please try again.');
-    }
-  };
-
-  // PIN Verification Screen
-  if (showPinPrompt) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.pinContainer}>
-          <div className={styles.pinIcon}>
-            <i className="fa-solid fa-lock"></i>
-          </div>
-          <h2 className={styles.pinTitle}>PIN Required</h2>
-          <p className={styles.pinSubtitle}>Enter your PIN to access the system</p>
-
-          <form onSubmit={handlePinSubmit} className={styles.pinForm}>
-            <input
-              type="password"
-              value={pinInput}
-              onChange={(e) => {
-                setPinInput(e.target.value);
-                if (pinError) setPinError('');
-              }}
-              className={styles.pinInput}
-              placeholder="Enter PIN"
-              maxLength={6}
-              required
-              autoFocus
-            />
-            {pinError && (
-              <div className={styles.error}>
-                <i className="fa-solid fa-exclamation-triangle"></i>
-                {pinError}
-              </div>
-            )}
-
-            <div className={styles.pinButtons}>
-              <button
-                type="button"
-                onClick={() => navigate('/login-mobile')}
-                className={styles.btnSecondary}
-              >
-                Back to Login
-              </button>
-              <button type="submit" className={styles.btnPrimary}>
-                Verify PIN
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  }
+  // PIN functionality removed
 
   // Branch Selection Screen
   if (showBranchSelection && branches.length > 0) {

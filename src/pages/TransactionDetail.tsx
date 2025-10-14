@@ -1355,6 +1355,18 @@ const TransactionDetail = () => {
                 ? item.totalPrice // Use the grouped total price
                 : currentQuantity * item.unit_price
               
+              // Debug logging
+              console.log('Item debug:', {
+                product_name: item.product_name,
+                quantity: item.quantity,
+                totalQuantity: item.totalQuantity,
+                currentQuantity,
+                unit_price: item.unit_price,
+                totalPrice: item.totalPrice,
+                currentTotal,
+                is_weighted: item.is_weighted
+              })
+              
               return (
                 <div key={index} style={{
                   background: 'white',
@@ -1397,7 +1409,7 @@ const TransactionDetail = () => {
                     }}>
                       {!item.product_image && (
                         <>
-                          {item.is_weighted && item.weight ? `${item.weight}${item.weight_unit}` : item.totalQuantity}
+                          {item.is_weighted && item.weight ? `${item.weight}${item.weight_unit}` : currentQuantity}
                           {item.is_weighted && (
                             <div style={{
                               position: 'absolute',

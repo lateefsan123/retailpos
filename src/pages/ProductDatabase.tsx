@@ -626,9 +626,15 @@ function TableView({ rows, selectedIds, toggleSelect, onInspect, onAdd }: { rows
 function EmptyState() {
   return (
     <div className={styles.emptyState}>
-      <ImageIcon className={styles.emptyStateIcon}/>
-      <div className={styles.emptyStateTitle}>No products found</div>
-      <div className={styles.emptyStateText}>Try a different search or clear some filters.</div>
+      <img 
+        src="/images/vectors/no products.png" 
+        alt="No products" 
+        style={{ 
+          width: '300px', 
+          height: 'auto',
+          opacity: 0.8
+        }} 
+      />
     </div>
   );
 }

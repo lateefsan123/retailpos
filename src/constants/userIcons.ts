@@ -26,12 +26,16 @@ export const ICON_PACKS: Record<string, IconPack> = {
   modern: {
     name: 'Modern Pack',
     icons: [
-      { name: 'icon10', label: 'Icon 10' },
-      { name: 'icon11', label: 'Icon 11' },
-      { name: 'icon12', label: 'Icon 12' },
-      { name: 'icon13', label: 'Icon 13' },
-      { name: 'icon14', label: 'Icon 14' },
-      { name: 'icon15', label: 'Icon 15' }
+      { name: 'alex', label: 'Alex' },
+      { name: 'asim', label: 'Asim' },
+      { name: 'chisom', label: 'Chisom' },
+      { name: 'erika', label: 'Erika' },
+      { name: 'fatima', label: 'Fatima' },
+      { name: 'john', label: 'John' },
+      { name: 'mike', label: 'Mike' },
+      { name: 'naomi', label: 'Naomi' },
+      { name: 'samira', label: 'Samira' },
+      { name: 'terell', label: 'Terell' }
     ]
   }
 }

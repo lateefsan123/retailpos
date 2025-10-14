@@ -1,0 +1,44 @@
+/* Form Grid Styles */
+.grid {
+  display: grid;
+  width: 100%;
+}
+
+/* Columns */
+.columns-1 {
+  grid-template-columns: 1fr;
+}
+
+.columns-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.columns-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.columns-4 {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
+/* Gaps */
+.gap-small {
+  gap: 12px;
+}
+
+.gap-medium {
+  gap: 16px;
+}
+
+.gap-large {
+  gap: 20px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .columns-2,
+  .columns-3,
+  .columns-4 {
+    grid-template-columns: 1fr;
+  }
+}

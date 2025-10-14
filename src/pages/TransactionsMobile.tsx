@@ -525,20 +525,15 @@ const TransactionsMobile = () => {
 
         {!transactionsLoading && filteredTransactions.length === 0 && (
           <div className={styles.emptyState}>
-            <div style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '50%',
-              background: '#f3f4f6',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 16px'
-            }}>
-              <Receipt size={26} color="#9ca3af" />
-            </div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: '0 0 8px' }}>No transactions found</h3>
-            <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>Try adjusting your filters or date range.</p>
+            <img 
+              src="/images/vectors/transactions.png" 
+              alt="No transactions" 
+              style={{ 
+                width: '260px', 
+                height: 'auto',
+                opacity: 0.85
+              }} 
+            />
           </div>
         )}
 

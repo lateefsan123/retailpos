@@ -102,6 +102,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [showCategorySuggestions, setShowCategorySuggestions] = useState(false)
+  const [hasFormChanged, setHasFormChanged] = useState(false)
 
   const resetForm = () => {
     setNewProduct({
@@ -124,11 +125,17 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
     setSelectedImage(null)
     setImagePreview(null)
     setShowCategorySuggestions(false)
+    setHasFormChanged(false)
   }
 
   const handleClose = () => {
     resetForm()
     onClose()
+  }
+
+  const handleInputChange = (field: string, value: any) => {
+    setNewProduct(prev => ({ ...prev, [field]: value }))
+    setHasFormChanged(true)
   }
 
   const getCategorySuggestions = (input: string) => {
@@ -148,6 +155,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
     const file = e.target.files?.[0]
     if (file) {
       setSelectedImage(file)
+      setHasFormChanged(true)
       const reader = new FileReader()
       reader.onload = (e) => {
         setImagePreview(e.target?.result as string)
@@ -159,6 +167,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   const removeImage = () => {
     setSelectedImage(null)
     setImagePreview(null)
+    setHasFormChanged(true)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -261,7 +270,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
         </div>
 
         <div className={styles.modalBody}>
-          <form onSubmit={handleSubmit}>
+          <div className={styles.formContent}>
+            <form onSubmit={handleSubmit}>
             {error && (
               <div className={styles.errorMessage}>
                 {error}
@@ -277,7 +287,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                   type="text"
                   required
                   value={newProduct.product_name}
-                  onChange={(e) => setNewProduct({...newProduct, product_name: e.target.value})}
+                  onChange={(e) => handleInputChange('product_name', e.target.value)}
                   className={styles.formInput}
                   placeholder="e.g., Plantain Chips, Jollof Rice Mix"
                 />
@@ -293,7 +303,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                     required
                     value={newProduct.category}
                     onChange={(e) => {
-                      setNewProduct({...newProduct, category: e.target.value})
+                      handleInputChange('category', e.target.value)
                       setShowCategorySuggestions(e.target.value.length >= 2)
                     }}
                     onFocus={() => setShowCategorySuggestions(newProduct.category.length >= 2)}
@@ -330,7 +340,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                   type="checkbox"
                   id="is_weighted"
                   checked={newProduct.is_weighted}
-                  onChange={(e) => setNewProduct({...newProduct, is_weighted: e.target.checked})}
+                  onChange={(e) => handleInputChange('is_weighted', e.target.checked)}
                   className={styles.weightCheckbox}
                 />
                 <label htmlFor="is_weighted" className={styles.weightLabel}>
@@ -346,7 +356,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                     </label>
                     <select
                       value={newProduct.weight_unit}
-                      onChange={(e) => setNewProduct({...newProduct, weight_unit: e.target.value})}
+                      onChange={(e) => handleInputChange('weight_unit', e.target.value)}
                       className={styles.formSelect}
                     >
                       <option value="kg">Kilograms (kg)</option>
@@ -365,7 +375,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                       min="0"
                       required
                       value={newProduct.price_per_unit}
-                      onChange={(e) => setNewProduct({...newProduct, price_per_unit: parseFloat(e.target.value)})}
+                      onChange={(e) => handleInputChange('price_per_unit', parseFloat(e.target.value))}
                       className={styles.formInput}
                       placeholder="0.00"
                     />
@@ -385,7 +395,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                   min="0"
                   required
                   value={newProduct.price}
-                  onChange={(e) => setNewProduct({...newProduct, price: parseFloat(e.target.value)})}
+                  onChange={(e) => handleInputChange('price', parseFloat(e.target.value))}
                   className={styles.formInput}
                   placeholder="0.00"
                 />
@@ -400,7 +410,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                   min="0"
                   required
                   value={newProduct.stock_quantity}
-                  onChange={(e) => setNewProduct({...newProduct, stock_quantity: parseInt(e.target.value)})}
+                  onChange={(e) => handleInputChange('stock_quantity', parseInt(e.target.value))}
                   className={styles.formInput}
                   placeholder="100"
                 />
@@ -536,31 +546,34 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
               </label>
               <textarea
                 value={newProduct.description}
-                onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
+                onChange={(e) => handleInputChange('description', e.target.value)}
                 className={styles.formTextarea}
                 placeholder="e.g., Crispy plantain chips made from fresh plantains, perfect for snacking"
                 rows={3}
               />
             </div>
 
-            <div className={styles.modalFooter}>
-              <button
-                type="button"
-                onClick={handleClose}
-                className={styles.cancelButton}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className={styles.addButton}
-              >
-                <i className={`fa-solid fa-plus ${styles.addButtonIcon}`}></i>
-                {loading ? 'Adding...' : 'Add Product'}
-              </button>
-            </div>
           </form>
+          </div>
+        </div>
+
+        <div className={styles.modalFooter}>
+          <button
+            type="button"
+            onClick={handleClose}
+            className={styles.cancelButton}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={loading}
+            className={`${styles.addButton} ${hasFormChanged ? styles.active : ''}`}
+            onClick={handleSubmit}
+          >
+            <i className={`fa-solid fa-plus ${styles.addButtonIcon}`}></i>
+            {loading ? 'Adding...' : 'Add Product'}
+          </button>
         </div>
       </div>
     </div>

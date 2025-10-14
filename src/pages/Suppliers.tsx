@@ -662,13 +662,15 @@ const Suppliers = () => {
             </div>
           ) : filteredSuppliers.length === 0 ? (
             <div className={styles.emptyState}>
-              <i className={`fa-solid fa-truck ${styles.emptyIcon}`}></i>
-              <h3 className={styles.emptyTitle}>
-                No suppliers found
-              </h3>
-              <p className={styles.emptyText}>
-                {searchTerm ? 'Try adjusting your search terms' : 'Add your first supplier to get started'}
-              </p>
+              <img 
+                src="/images/vectors/suppliers.png" 
+                alt="No suppliers" 
+                style={{ 
+                  width: '300px', 
+                  height: 'auto',
+                  opacity: 0.85
+                }} 
+              />
             </div>
           ) : (
             <div style={{ overflow: 'auto' }}>

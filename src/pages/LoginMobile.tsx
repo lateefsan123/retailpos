@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useDeviceDetection } from '../hooks/useDeviceDetection';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
@@ -9,6 +9,7 @@ const LoginMobile: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const { isMobile, isTablet } = useDeviceDetection();
+  const location = useLocation();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -17,6 +18,25 @@ const LoginMobile: React.FC = () => {
   const [errors, setErrors] = useState<any>({});
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (location.state && typeof location.state === 'object') {
+      const { message, email: prefillEmail } = location.state as { message?: string; email?: string };
+
+      if (message) {
+        setErrors({ general: message });
+      }
+
+      if (prefillEmail) {
+        setFormData(prev => ({
+          ...prev,
+          email: prefillEmail,
+        }));
+      }
+
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location, navigate]);
 
   const validateEmail = (email: string) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -66,8 +86,8 @@ const LoginMobile: React.FC = () => {
     if (validateLoginForm()) {
       setIsSubmitting(true);
       
-      const success = await login(formData.email, formData.password);
-      if (success) {
+      const result = await login(formData.email, formData.password);
+      if (result.success) {
         if (formData.email === 'lateefsanusi67@gmail.com') {
           navigate('/verification-admin');
         } else {
@@ -78,7 +98,20 @@ const LoginMobile: React.FC = () => {
           }
         }
       } else {
-        setErrors({ general: 'Invalid email or password' });
+        let message = result.message;
+
+        if (!message) {
+          if (result.needsEmailVerification) {
+            const friendlyEmail = formData.email.trim();
+            message = result.verificationEmailSent
+              ? `Please verify your email before signing in. We just sent a new confirmation link to ${friendlyEmail}.`
+              : 'Please verify your email before signing in. Check your inbox (and spam folder) for the confirmation email.';
+          } else {
+            message = 'Invalid email or password';
+          }
+        }
+
+        setErrors({ general: message });
       }
       setIsSubmitting(false);
     }
@@ -192,4 +225,3 @@ const LoginMobile: React.FC = () => {
 };
 
 export default LoginMobile;
-

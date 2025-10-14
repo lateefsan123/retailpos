@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { ChevronLeft, User, Briefcase, Mail, Phone, Lock, Building, MapPin, Clock, DollarSign, Smile } from 'lucide-react';
 import styles from './SignupMobile.module.css';
 import { ALL_USER_ICONS, DEFAULT_ICON_NAME } from '../constants/userIcons';
+import IconDropdown from '../components/IconDropdown';
 
 const SignupMobile: React.FC = () => {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ const SignupMobile: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string>('');
 
   const [formData, setFormData] = useState({
     // Step 1: Account Setup
@@ -53,8 +55,6 @@ const SignupMobile: React.FC = () => {
     }));
     if (error) setError(null);
   };
-
-  const selectedOwnerIcon = ALL_USER_ICONS.find(icon => icon.name === formData.ownerIcon) || ALL_USER_ICONS[0];
 
   const validateStep = (step: number): boolean => {
     switch (step) {
@@ -127,7 +127,6 @@ const SignupMobile: React.FC = () => {
         formData.firstName,
         formData.lastName,
         formData.email,
-        formData.phone,
         formData.businessType,
         formData.businessDescription,
         formData.businessAddress,
@@ -141,18 +140,12 @@ const SignupMobile: React.FC = () => {
       );
 
       if (result.success) {
-        if (result.pendingApproval) {
-          setCurrentStep(4); // Show success screen
-        } else {
-          navigate('/login', {
-            state: {
-              message: 'Account created successfully! Please sign in.',
-              email: formData.email
-            }
-          });
-        }
+        // Registration successful - redirect to login
+        setError(null);
+        // Navigate to login page
+        navigate('/login-mobile');
       } else {
-        throw new Error('Failed to create account. Please try again.');
+        throw new Error(result.error || 'Failed to create account. Please try again.');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during signup');
@@ -278,34 +271,14 @@ const SignupMobile: React.FC = () => {
           </div>
         </div>
 
-        <div className={styles.iconSection}>
-          <div className={styles.iconSectionHeader}>
-            <div className={styles.iconPreview}>
-              <img src={`/images/icons/${selectedOwnerIcon.name}.png`} alt={selectedOwnerIcon.label} />
-            </div>
-            <div>
-              <p className={styles.iconTitle}>Choose Owner Icon</p>
-              <span className={styles.iconSubtitle}>Selected: {selectedOwnerIcon.label}</span>
-            </div>
-          </div>
-          <div className={styles.iconGrid}>
-            {ALL_USER_ICONS.map((icon) => {
-              const isSelected = icon.name === formData.ownerIcon;
-              return (
-                <button
-                  key={icon.name}
-                  type="button"
-                  onClick={() => handleIconSelect(icon.name)}
-                  className={`${styles.iconButton} ${isSelected ? styles.iconButtonSelected : ''}`}
-                >
-                  <div className={styles.iconImageWrapper}>
-                    <img src={`/images/icons/${icon.name}.png`} alt={icon.label} />
-                  </div>
-                  <span className={styles.iconLabel}>{icon.label}</span>
-                </button>
-              );
-            })}
-          </div>
+        <div className={styles.inputGroup}>
+          <label className={styles.label}>Owner Icon</label>
+          <IconDropdown
+            options={ALL_USER_ICONS}
+            value={formData.ownerIcon}
+            onChange={handleIconSelect}
+            placeholder="Select character"
+          />
         </div>
       </div>
     </div>
@@ -489,19 +462,64 @@ const SignupMobile: React.FC = () => {
 
   const renderStep4 = () => (
     <div className={styles.successContainer}>
-      <div className={styles.successIcon}>
-        <i className="fa-solid fa-check"></i>
+      <div className={styles.successIcon} style={{ backgroundColor: '#d1fae5', border: '3px solid #10b981' }}>
+        <Mail size={32} style={{ color: '#10b981' }} />
       </div>
-      <h2 className={styles.successTitle}>Registration Submitted!</h2>
+      <h2 className={styles.successTitle}>Check Your Email</h2>
       <p className={styles.successText}>
-        Your account is now pending admin approval. You will be able to log in once an administrator approves your registration.
+        We've sent a verification email to <strong>{userEmail}</strong>
       </p>
-      <p className={styles.successSubtext}>
-        Please check back later or contact support if you have any questions.
-      </p>
-      <button onClick={() => navigate('/login-mobile')} className={styles.btnPrimary}>
-        Back to Login
-      </button>
+      
+      <div style={{ 
+        backgroundColor: '#f3f4f6', 
+        padding: '1rem', 
+        borderRadius: '8px', 
+        marginBottom: '1.5rem',
+        textAlign: 'left'
+      }}>
+        <h4 style={{ marginBottom: '0.5rem', color: '#374151', fontSize: '0.9rem', fontWeight: '600' }}>
+          Next Steps:
+        </h4>
+        <ol style={{ margin: 0, paddingLeft: '1rem', color: '#6b7280', fontSize: '0.8rem', lineHeight: '1.5' }}>
+          <li style={{ marginBottom: '0.25rem' }}>Check your email inbox (and spam folder)</li>
+          <li style={{ marginBottom: '0.25rem' }}>Click the verification link in the email</li>
+          <li style={{ marginBottom: '0.25rem' }}>Your account will be activated after admin approval</li>
+          <li>You'll receive a confirmation email once approved</li>
+        </ol>
+      </div>
+      
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <button 
+          onClick={() => navigate('/login-mobile', { 
+            state: { 
+              message: 'Please check your email and verify your account before signing in.',
+              email: userEmail 
+            } 
+          })} 
+          className={styles.btnPrimary}
+        >
+          Go to Login
+        </button>
+        
+        <button 
+          onClick={() => {
+            setError('Verification email resent! Please check your inbox.');
+          }}
+          style={{
+            padding: '0.75rem 1.5rem',
+            borderRadius: '8px',
+            backgroundColor: 'transparent',
+            border: '2px solid #7d8d86',
+            color: '#7d8d86',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            fontSize: '0.9rem'
+          }}
+        >
+          Resend Email
+        </button>
+      </div>
     </div>
   );
 
@@ -596,4 +614,3 @@ const SignupMobile: React.FC = () => {
 };
 
 export default SignupMobile;
-

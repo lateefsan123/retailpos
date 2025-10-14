@@ -416,29 +416,15 @@ const Transactions: React.FC = () => {
               padding: '60px 20px',
               color: '#6b7280'
             }}>
-              <i className="fa-solid fa-receipt" style={{
-                fontSize: '48px',
-                marginBottom: '16px',
-                display: 'block',
-                color: '#d1d5db'
-              }}></i>
-              <h3 style={{
-                fontSize: '18px',
-                fontWeight: '600',
-                color: '#374151',
-                margin: '0 0 8px 0'
-              }}>
-                No transactions found
-              </h3>
-              <p style={{
-                fontSize: '14px',
-                margin: 0
-              }}>
-                {searchTerm || paymentFilter !== 'all' || partialPaymentFilter !== 'all' || dateFilter !== 'all' || selectedDate
-                  ? 'Try adjusting your filters to see more results.'
-                  : 'No transactions have been recorded yet.'
-                }
-              </p>
+              <img 
+                src="/images/vectors/transactions.png" 
+                alt="No transactions" 
+                style={{ 
+                  width: '300px', 
+                  height: 'auto',
+                  opacity: 0.8
+                }} 
+              />
             </div>
           )}
         </Card>

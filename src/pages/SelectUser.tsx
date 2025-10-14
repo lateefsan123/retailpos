@@ -59,12 +59,7 @@ const SelectUser: React.FC = () => {
     }
   }, [user?.business_id]);
 
-  useEffect(() => {
-    // Show PIN prompt on component mount if user has a PIN
-    if (user?.pin && !pinVerified) {
-      setShowPinPrompt(true);
-    }
-  }, [user?.pin, pinVerified]);
+  // PIN prompt completely disabled
 
   const fetchUsers = async () => {
     if (!user?.business_id) return;
@@ -142,6 +137,7 @@ const SelectUser: React.FC = () => {
 
   const handleUserSelect = (u: User) => {
     setSelectedUser(u);
+    // Skip PIN prompt entirely - go straight to password view
     setShowPasswordView(true);
     setPassword('');
     setPasswordError('');
@@ -258,12 +254,33 @@ const SelectUser: React.FC = () => {
       return;
     }
 
-    // Check if the entered PIN matches the current user's PIN
-    if (user?.pin && user.pin === pinInput) {
+    // Verify PIN using bcrypt if hashed, otherwise fallback to plaintext
+    let isValid = false;
+    
+    try {
+      if (user?.pin_hash) {
+        // Use bcrypt verification for hashed PIN
+        const bcrypt = await import('bcryptjs');
+        isValid = await bcrypt.compare(pinInput, user.pin_hash);
+      } else if (user?.pin) {
+        // Legacy plaintext comparison
+        isValid = user.pin === pinInput;
+      }
+    } catch (error) {
+      console.error('Error verifying PIN:', error);
+      isValid = false;
+    }
+
+    if (isValid) {
       setShowPinPrompt(false);
       setPinVerified(true);
       setPinInput('');
       setPinError('');
+      // After successful PIN verification, proceed to password view
+      setShowPasswordView(true);
+      setPassword('');
+      setPasswordError('');
+      setUsePinAuth(true); // Use PIN auth for this user
     } else {
       setPinError('Invalid PIN. Please try again.');
     }
@@ -419,7 +436,7 @@ const SelectUser: React.FC = () => {
                         PIN Required
                       </h3>
                       <p style={{ color: '#9ca3af', fontSize: '16px', margin: 0 }}>
-                        Enter your PIN to access the user system
+                        Enter PIN for {selectedUser?.username || 'this user'}
                       </p>
                     </div>
 
@@ -472,7 +489,10 @@ const SelectUser: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            navigate('/login');
+                            setShowPinPrompt(false);
+                            setSelectedUser(null);
+                            setPinInput('');
+                            setPinError('');
                           }}
                           style={{
                             flex: 1,
@@ -493,7 +513,7 @@ const SelectUser: React.FC = () => {
                             (e.currentTarget as HTMLButtonElement).style.background = '#4a5568';
                           }}
                         >
-                          Back to Login
+                          Back to Users
                         </button>
 
                         <button

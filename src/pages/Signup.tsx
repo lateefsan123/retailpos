@@ -3,6 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import SidebarStepper from "./Sidebarstepper";
 import { useAuth } from "../contexts/AuthContext";
 import { ALL_USER_ICONS, DEFAULT_ICON_NAME } from "../constants/userIcons";
+import IconDropdown from "../components/IconDropdown";
+import { testSupabaseConnection } from "../utils/testSupabase";
+import { simpleSupabaseTest } from "../utils/simpleSupabaseTest";
 
 const steps = [
   {
@@ -30,6 +33,14 @@ const steps = [
     ),
   },
   {
+    label: "Email Verification",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: 20, height: 20 }}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+      </svg>
+    ),
+  },
+  {
     label: "Finish",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: 20, height: 20 }}>
@@ -43,6 +54,8 @@ const Signup: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string>('');
+  const [testingConnection, setTestingConnection] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
   
@@ -87,6 +100,33 @@ const Signup: React.FC = () => {
     }));
   };
 
+  const handleTestConnection = async () => {
+    setTestingConnection(true);
+    setError(null);
+    
+    try {
+      // Try simple test first
+      const simpleResult = await simpleSupabaseTest();
+      if (simpleResult.success) {
+        setError("✅ Basic Supabase connection works! Trying full test...");
+        
+        // If simple test passes, try full test
+        const fullResult = await testSupabaseConnection();
+        if (fullResult.success) {
+          setError("✅ All Supabase tests passed! You can now try registering.");
+        } else {
+          setError("❌ Full test failed: " + fullResult.error);
+        }
+      } else {
+        setError("❌ Basic connection failed: " + simpleResult.error);
+      }
+    } catch (err) {
+      setError("❌ Test failed: " + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -127,7 +167,6 @@ const Signup: React.FC = () => {
         formData.firstName,
         formData.lastName,
         formData.email,
-        formData.phone,
         formData.businessType,
         formData.businessDescription,
         formData.businessAddress,
@@ -141,23 +180,12 @@ const Signup: React.FC = () => {
       );
 
       if (result.success) {
-        if (result.pendingApproval) {
-          // Show pending approval message
-          setError(null);
-          const pendingMessage = `Registration submitted successfully!\n\nYour account is now pending admin approval. You will be able to log in once an administrator approves your registration.\n\nPlease check back later or contact support if you have any questions.`;
-          setError(pendingMessage);
-          // Don't redirect - let user see the message
-        } else {
-          // Redirect to login immediately if no admin credentials
-          navigate('/login', { 
-            state: { 
-              message: 'Account created successfully! Please sign in.',
-              email: formData.email 
-            } 
-          });
-        }
+        // Registration successful - redirect to login
+        setError(null);
+        // Navigate to login page
+        navigate('/login');
       } else {
-        throw new Error("Failed to create account. Please try again.");
+        throw new Error(result.error || "Failed to create account. Please try again.");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred during signup");
@@ -172,17 +200,6 @@ const Signup: React.FC = () => {
     backgroundColor: "#7d8d86",
     border: "none",
     color: "#f1f0e4",
-    fontWeight: "600",
-    cursor: "pointer",
-    transition: "background-color 0.2s ease",
-  };
-
-  const secondaryButtonStyle = {
-    padding: "0.65rem 1.5rem",
-    borderRadius: "9999px",
-    backgroundColor: "#e5e7eb",
-    border: "none",
-    color: "#3e3f29",
     fontWeight: "600",
     cursor: "pointer",
     transition: "background-color 0.2s ease",
@@ -361,9 +378,9 @@ const Signup: React.FC = () => {
           {/* Error/Success Display */}
           {error && (
             <div style={{
-              backgroundColor: "#fef2f2",
-              border: "1px solid #fecaca",
-              color: "#dc2626",
+              backgroundColor: error.includes("✅") ? "#f0fdf4" : "#fef2f2",
+              border: error.includes("✅") ? "1px solid #bbf7d0" : "1px solid #fecaca",
+              color: error.includes("✅") ? "#166534" : "#dc2626",
               padding: "1rem",
               borderRadius: "12px",
               marginBottom: "1.5rem",
@@ -372,6 +389,32 @@ const Signup: React.FC = () => {
               textAlign: "left"
             }}>
               {error}
+            </div>
+          )}
+
+          {/* Test Connection Button */}
+          {currentStep === 1 && (
+            <div style={{ marginBottom: "1.5rem", textAlign: "center" }}>
+              <button
+                type="button"
+                onClick={handleTestConnection}
+                disabled={testingConnection}
+                style={{
+                  padding: "0.5rem 1rem",
+                  borderRadius: "8px",
+                  backgroundColor: "#f3f4f6",
+                  border: "1px solid #d1d5db",
+                  color: "#374151",
+                  fontSize: "0.875rem",
+                  cursor: testingConnection ? "not-allowed" : "pointer",
+                  opacity: testingConnection ? 0.7 : 1
+                }}
+              >
+                {testingConnection ? "Testing..." : "🔍 Test Supabase Connection"}
+              </button>
+              <p style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.5rem" }}>
+                Click this if registration is failing
+              </p>
             </div>
           )}
 
@@ -525,62 +568,14 @@ const Signup: React.FC = () => {
                         }} 
                       />
                     </div>
-                    <div style={{ marginTop: "0.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                      <p style={{ margin: 0, fontWeight: 600, color: "#1f2937" }}>Choose Owner Icon</p>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))", gap: "0.75rem" }}>
-                        {ALL_USER_ICONS.map((icon) => {
-                          const isSelected = icon.name === formData.ownerIcon;
-                          return (
-                            <button
-                              key={icon.name}
-                              type="button"
-                              onClick={() => handleIconSelect(icon.name)}
-                              style={{
-                                borderRadius: "12px",
-                                border: isSelected ? "2px solid #7d8d86" : "1px solid #d1d5db",
-                                backgroundColor: isSelected ? "#eef4f2" : "#ffffff",
-                                padding: "10px 8px",
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                gap: "8px",
-                                cursor: "pointer",
-                                boxShadow: isSelected ? "0 8px 20px rgba(125, 141, 134, 0.25)" : "0 2px 6px rgba(15, 23, 42, 0.05)",
-                                transition: "all 0.2s ease",
-                                color: "#1f2937"
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.transform = "translateY(-2px)";
-                                e.currentTarget.style.boxShadow = isSelected ? "0 10px 24px rgba(125, 141, 134, 0.3)" : "0 4px 12px rgba(15, 23, 42, 0.08)";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = "translateY(0)";
-                                e.currentTarget.style.boxShadow = isSelected ? "0 8px 20px rgba(125, 141, 134, 0.25)" : "0 2px 6px rgba(15, 23, 42, 0.05)";
-                              }}
-                            >
-                              <div style={{
-                                width: "52px",
-                                height: "52px",
-                                borderRadius: "50%",
-                                overflow: "hidden",
-                                backgroundColor: "#f3f4f6",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center"
-                              }}>
-                                <img
-                                  src={`/images/icons/${icon.name}.png`}
-                                  alt={icon.label}
-                                  style={{ width: "52px", height: "52px", objectFit: "cover" }}
-                                />
-                              </div>
-                              <span style={{ fontSize: "0.75rem", fontWeight: isSelected ? 600 : 500, textAlign: "center" }}>
-                                {icon.label}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
+                    <div style={{ marginTop: "0.5rem" }}>
+                      <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, color: "#1f2937" }}>Owner Icon</label>
+                      <IconDropdown
+                        options={ALL_USER_ICONS}
+                        value={formData.ownerIcon}
+                        onChange={handleIconSelect}
+                        placeholder="Select character"
+                      />
                     </div>
             </>
           )}
@@ -809,6 +804,98 @@ const Signup: React.FC = () => {
           )}
 
           {currentStep === 4 && (
+            <div style={{ padding: "2rem", textAlign: "center" }}>
+              <div style={{ 
+                width: "80px", 
+                height: "80px", 
+                borderRadius: "50%", 
+                backgroundColor: "#d1fae5", 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center", 
+                margin: "0 auto 1.5rem",
+                border: "3px solid #10b981"
+              }}>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="#10b981" style={{ width: 40, height: 40 }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                </svg>
+              </div>
+              
+              <h3 style={{ marginBottom: "1rem", color: "#374151", fontSize: "1.5rem", fontWeight: "600" }}>
+                Check Your Email
+              </h3>
+              
+              <p style={{ marginBottom: "1.5rem", color: "#6b7280", fontSize: "1rem", lineHeight: "1.6" }}>
+                We've sent a verification email to <strong style={{ color: "#374151" }}>{userEmail}</strong>
+              </p>
+              
+              <div style={{ 
+                backgroundColor: "#f3f4f6", 
+                padding: "1.5rem", 
+                borderRadius: "12px", 
+                marginBottom: "2rem",
+                textAlign: "left"
+              }}>
+                <h4 style={{ marginBottom: "0.75rem", color: "#374151", fontSize: "1rem", fontWeight: "600" }}>
+                  Next Steps:
+                </h4>
+                <ol style={{ margin: 0, paddingLeft: "1.25rem", color: "#6b7280", fontSize: "0.9rem", lineHeight: "1.6" }}>
+                  <li style={{ marginBottom: "0.5rem" }}>Check your email inbox (and spam folder)</li>
+                  <li style={{ marginBottom: "0.5rem" }}>Click the verification link in the email</li>
+                  <li style={{ marginBottom: "0.5rem" }}>Your account will be activated after admin approval</li>
+                  <li>You'll receive a confirmation email once approved</li>
+                </ol>
+              </div>
+              
+              <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+                <button 
+                  type="button"
+                  onClick={() => navigate('/login', { 
+                    state: { 
+                      message: 'Please check your email and verify your account before signing in.',
+                      email: userEmail 
+                    } 
+                  })}
+                  style={{
+                    padding: "0.75rem 1.5rem",
+                    borderRadius: "8px",
+                    backgroundColor: "#7d8d86",
+                    border: "none",
+                    color: "#f1f0e4",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "background-color 0.2s ease",
+                    fontSize: "0.9rem"
+                  }}
+                >
+                  Go to Login
+                </button>
+                
+                <button 
+                  type="button"
+                  onClick={() => {
+                    // Resend verification email logic could go here
+                    setError("Verification email resent! Please check your inbox.");
+                  }}
+                  style={{
+                    padding: "0.75rem 1.5rem",
+                    borderRadius: "8px",
+                    backgroundColor: "transparent",
+                    border: "2px solid #7d8d86",
+                    color: "#7d8d86",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    fontSize: "0.9rem"
+                  }}
+                >
+                  Resend Email
+                </button>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 5 && (
                   <div style={{ padding: "1.5rem", backgroundColor: "#f8fafc", borderRadius: "12px" }}>
                     <h3 style={{ marginBottom: "1rem", color: "#374151", fontSize: "1.25rem" }}>Review Your Information</h3>
                     <div style={{ display: "grid", gap: "0.75rem" }}>
@@ -882,7 +969,7 @@ const Signup: React.FC = () => {
                   <div />
                 )}
 
-                {currentStep === steps.length ? (
+                {currentStep === 3 ? (
                   <button 
                     type="submit"
                     disabled={isSubmitting}
@@ -897,11 +984,15 @@ const Signup: React.FC = () => {
                   >
                     {isSubmitting ? "Creating Account..." : "Submit"}
                   </button>
+                ) : currentStep === 4 ? (
+                  <div />
+                ) : currentStep === 5 ? (
+                  <div />
                 ) : (
                   <div />
                 )}
 
-                {currentStep < steps.length ? (
+                {currentStep < 3 ? (
                   <button 
                     type="button" 
                     onClick={() => setCurrentStep(currentStep + 1)} 

@@ -5,6 +5,7 @@ import { useBusinessId } from '../hooks/useBusinessId'
 import { useBranch } from '../contexts/BranchContext'
 import VaultModal from '../components/VaultModal'
 import BranchSelector from '../components/BranchSelector'
+import PageHeader from '../components/PageHeader'
 import PendingRegistrations from '../components/PendingRegistrations'
 import { ICON_PACKS, DEFAULT_ICON_NAME } from '../constants/userIcons'
 
@@ -26,6 +27,7 @@ interface NewUser {
   role: string
   icon: string
   branch_id?: number
+  pin?: string
 }
 
 interface Branch {
@@ -89,6 +91,20 @@ const Admin = () => {
   const [loading, setLoading] = useState(true)
   const [showVaultModal, setShowVaultModal] = useState(false)
   const [showPendingRegistrations, setShowPendingRegistrations] = useState(false)
+
+  // Reset form to default values
+  const resetNewUserForm = () => {
+    setNewUser({
+      username: '',
+      password: '',
+      role: 'Cashier',
+      icon: DEFAULT_ICON_NAME,
+      branch_id: selectedBranchId || undefined,
+      pin: ''
+    })
+    setError('')
+    setSelectedIconPack('default')
+  }
 
   useEffect(() => {
     if (!businessLoading && businessId) {
@@ -207,6 +223,15 @@ const Admin = () => {
       return
     }
 
+    // Validate PIN if provided
+    if (newUser.pin && newUser.pin.trim()) {
+      if (!/^\d{4,6}$/.test(newUser.pin)) {
+        setError('PIN must be 4-6 digits')
+        setIsSubmitting(false)
+        return
+      }
+    }
+
     if (!businessId) {
       setError('Business ID is not available. Please refresh the page and try again.')
       setIsSubmitting(false)
@@ -214,23 +239,15 @@ const Admin = () => {
     }
 
     try {
-      console.log('Adding user with data:', {
-        username: newUser.username,
-        role: newUser.role,
-        icon: newUser.icon,
-        business_id: businessId
-      })
-
       // Check if username already exists within this business
       const { data: existingUser, error: checkError } = await supabase
         .from('users')
         .select('user_id')
         .eq('username', newUser.username.trim())
         .eq('business_id', businessId)
-        .single()
+        .maybeSingle()
 
-      if (checkError && checkError.code !== 'PGRST116') {
-        // PGRST116 is "no rows returned" which is expected if username doesn't exist
+      if (checkError) {
         console.error('Error checking username:', checkError)
         throw new Error('Failed to check if username exists')
       }
@@ -239,10 +256,7 @@ const Admin = () => {
         throw new Error('Username already exists. Please choose a different username.')
       }
 
-      const passwordHash = hashPassword(newUser.password)
-      console.log('Creating user with password:', newUser.password)
-      console.log('Generated hash:', passwordHash)
-      console.log('Hash type:', typeof passwordHash)
+      const passwordHash = await hashPassword(newUser.password)
 
       // Prepare user data - only include icon if column exists
       const userData: any = {
@@ -252,6 +266,13 @@ const Admin = () => {
         active: true,
         business_id: businessId,
         branch_id: newUser.branch_id
+      }
+
+      // Hash and add PIN if provided
+      if (newUser.pin && newUser.pin.trim()) {
+        const pinHash = await hashPassword(newUser.pin)
+        userData.pin_hash = pinHash
+        userData.pin = newUser.pin // Keep legacy pin for backward compatibility
       }
 
       // Only add icon if the column exists (will be handled by database migration)
@@ -287,8 +308,6 @@ const Admin = () => {
       if (!data || data.length === 0) {
         throw new Error('No data returned from insert operation')
       }
-
-      console.log('User added successfully:', data[0])
 
       // Reset form and close modal
       setNewUser({
@@ -358,7 +377,8 @@ const Admin = () => {
       password: '', // Don't pre-fill password
       role: user.role,
       icon: user.icon || DEFAULT_ICON_NAME,
-      branch_id: user.branch_id
+      branch_id: user.branch_id,
+      pin: '' // Don't pre-fill PIN for security
     })
     setShowEditModal(true)
   }
@@ -380,11 +400,19 @@ const Admin = () => {
 
       // Only update password if provided
       if (newUser.password.trim()) {
-        const newPasswordHash = hashPassword(newUser.password)
-        console.log('Updating user password:', newUser.password)
-        console.log('Generated hash:', newPasswordHash)
-        console.log('Hash type:', typeof newPasswordHash)
+        const newPasswordHash = await hashPassword(newUser.password)
         updateData.password_hash = newPasswordHash
+      }
+
+      // Only update PIN if provided
+      if (newUser.pin && newUser.pin.trim()) {
+        // Validate PIN format
+        if (!/^\d{4,6}$/.test(newUser.pin)) {
+          throw new Error('PIN must be 4-6 digits')
+        }
+        const newPinHash = await hashPassword(newUser.pin)
+        updateData.pin_hash = newPinHash
+        updateData.pin = newUser.pin // Keep legacy pin for backward compatibility
       }
 
       const { error } = await supabase
@@ -402,7 +430,9 @@ const Admin = () => {
         username: '',
         password: '',
         role: 'Cashier',
-        icon: DEFAULT_ICON_NAME
+        icon: DEFAULT_ICON_NAME,
+        branch_id: selectedBranchId || undefined,
+        pin: ''
       })
       setEditingUser(null)
       setShowEditModal(false)
@@ -464,8 +494,6 @@ const Admin = () => {
       if (!data || data.length === 0) {
         throw new Error('No data returned from insert operation')
       }
-
-      console.log('Branch added successfully:', data[0])
 
       // Reset form and close modal
       setNewBranch({
@@ -598,103 +626,76 @@ const Admin = () => {
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
 
       {/* Header */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginBottom: '32px'
-      }}>
-        <div>
-          <h1 style={{ 
-            fontSize: '32px', 
-            fontWeight: '900', 
-            color: '#000000',
-            margin: '0 0 8px 0'
-          }}>
-            <i className="fa-solid fa-users-cog" style={{ marginRight: '12px', color: '#000000' }}></i>
-            User Management
-          </h1>
-          <p style={{ 
-            color: '#000000', 
-            margin: '0',
+      <PageHeader
+        title="User Management"
+        subtitle="Manage system users and their permissions"
+      >
+        <BranchSelector size="sm" />
+        <button
+          onClick={() => setShowPendingRegistrations(!showPendingRegistrations)}
+          style={{
+            background: showPendingRegistrations ? '#7d8d86' : '#e5e7eb',
+            color: showPendingRegistrations ? 'white' : '#000000',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '12px 24px',
             fontSize: '18px',
-            fontWeight: '700'
-          }}>
-            Manage system users and their permissions
-          </p>
-        </div>
+            fontWeight: '700',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <i className="fa-solid fa-user-plus"></i>
+          Pending Registrations
+        </button>
+        <button
+          onClick={() => {
+            resetNewUserForm()
+            setShowAddModal(true)
+          }}
+          style={{
+            background: '#7d8d86',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '12px 24px',
+            fontSize: '18px',
+            fontWeight: '700',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <i className="fa-solid fa-plus"></i>
+          Add User
+        </button>
         
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-end' }}>
-          {/* Branch Selector */}
-          <BranchSelector size="sm" />
-          
-          {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '12px' }}>
-          <button
-            onClick={() => setShowPendingRegistrations(!showPendingRegistrations)}
-            style={{
-              background: showPendingRegistrations ? '#7d8d86' : '#e5e7eb',
-              color: showPendingRegistrations ? 'white' : '#000000',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '12px 24px',
-              fontSize: '18px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <i className="fa-solid fa-user-plus"></i>
-            Pending Registrations
-          </button>
-          <button
-            onClick={() => setShowAddModal(true)}
-            style={{
-              background: '#7d8d86',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '12px 24px',
-              fontSize: '18px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <i className="fa-solid fa-plus"></i>
-            Add User
-          </button>
-          
-          <button
-            onClick={() => setShowAddBranchModal(true)}
-            style={{
-              background: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '12px 24px',
-              fontSize: '16px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <i className="fa-solid fa-building"></i>
-            Add Branch
-          </button>
-          
-          </div>
-        </div>
-      </div>
+        <button
+          onClick={() => setShowAddBranchModal(true)}
+          style={{
+            background: '#3b82f6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '12px 24px',
+            fontSize: '16px',
+            fontWeight: '700',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <i className="fa-solid fa-building"></i>
+          Add Branch
+        </button>
+      </PageHeader>
 
       {/* Error Display */}
       {error && (
@@ -750,9 +751,15 @@ const Admin = () => {
             textAlign: 'center',
             color: '#000000'
           }}>
-            <i className="fa-solid fa-users" style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}></i>
-            <p style={{ fontSize: '20px', margin: '0 0 8px 0' }}>No users found</p>
-            <p style={{ fontSize: '16px', margin: '0' }}>Add your first user to get started</p>
+            <img 
+              src="/images/vectors/manage users.png" 
+              alt="No users" 
+              style={{ 
+                width: '300px', 
+                height: 'auto',
+                opacity: 0.85
+              }} 
+            />
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -1255,7 +1262,10 @@ const Admin = () => {
                 Add New User
               </h2>
               <button
-                onClick={() => setShowAddModal(false)}
+                onClick={() => {
+                  resetNewUserForm()
+                  setShowAddModal(false)
+                }}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -1320,6 +1330,47 @@ const Admin = () => {
                   }}
                   placeholder="Enter password"
                 />
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '8px',
+                  fontWeight: '700',
+                  color: '#000000'
+                }}>
+                  PIN (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={newUser.pin || ''}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    // Only allow numbers and limit to 6 digits
+                    if (value === '' || /^\d{0,6}$/.test(value)) {
+                      setNewUser({ ...newUser, pin: value })
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    boxSizing: 'border-box'
+                  }}
+                  placeholder="4-6 digit PIN for quick login (optional)"
+                  maxLength={6}
+                />
+                <p style={{
+                  fontSize: '12px',
+                  color: '#6b7280',
+                  marginTop: '4px',
+                  marginBottom: 0
+                }}>
+                  <i className="fa-solid fa-info-circle" style={{ marginRight: '4px' }}></i>
+                  PIN allows quick user switching without entering the full password
+                </p>
               </div>
 
               <div style={{ marginBottom: '20px' }}>
@@ -1680,6 +1731,47 @@ const Admin = () => {
                    }}
                    placeholder="Enter new password (optional)"
                  />
+               </div>
+
+               <div style={{ marginBottom: '20px' }}>
+                 <label style={{
+                   display: 'block',
+                   marginBottom: '8px',
+                   fontWeight: '700',
+                   color: '#000000'
+                 }}>
+                   PIN (Optional)
+                 </label>
+                 <input
+                   type="text"
+                   value={newUser.pin || ''}
+                   onChange={(e) => {
+                     const value = e.target.value
+                     // Only allow numbers and limit to 6 digits
+                     if (value === '' || /^\d{0,6}$/.test(value)) {
+                       setNewUser({ ...newUser, pin: value })
+                     }
+                   }}
+                   style={{
+                     width: '100%',
+                     padding: '12px 16px',
+                     border: '2px solid #d1d5db',
+                     borderRadius: '8px',
+                     fontSize: '16px',
+                     boxSizing: 'border-box'
+                   }}
+                   placeholder="4-6 digit PIN for quick login (optional)"
+                   maxLength={6}
+                 />
+                 <p style={{
+                   fontSize: '12px',
+                   color: '#6b7280',
+                   marginTop: '4px',
+                   marginBottom: 0
+                 }}>
+                   <i className="fa-solid fa-info-circle" style={{ marginRight: '4px' }}></i>
+                   Leave blank to keep current PIN, or enter new PIN to update
+                 </p>
                </div>
 
                <div style={{ marginBottom: '20px' }}>

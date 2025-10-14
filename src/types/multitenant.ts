@@ -31,6 +31,7 @@ export interface User {
   business_id: number
   auth_user_id?: string // UUID from Supabase auth
   pin?: string // User PIN for quick authentication
+  pin_hash?: string // Hashed PIN for secure authentication
 }
 
 // =====================================================

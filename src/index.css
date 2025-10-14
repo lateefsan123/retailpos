@@ -1,6 +1,118 @@
 @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&display=swap');
 
+/* Global Header Styles */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-header);
+  margin: 0;
+}
+
+.page-header {
+  color: var(--text-header);
+}
+
+/* Utility classes for theme-aware text colors */
+.text-header {
+  color: var(--text-header);
+}
+
+.text-primary {
+  color: var(--text-primary);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-placeholder {
+  color: var(--text-placeholder);
+}
+
+.text-disabled {
+  color: var(--text-disabled);
+}
+
+/* Form System CSS Custom Properties */
+:root {
+  /* Light Theme */
+  --modal-bg: #ffffff;
+  --modal-border: #e5e7eb;
+  --modal-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --modal-footer-shadow: rgba(0, 0, 0, 0.1);
+  --text-primary: #000000;
+  --text-secondary: #6b7280;
+  --text-disabled: #9ca3af;
+  --text-placeholder: #9ca3af;
+  --text-header: #000000;
+  --border-color: #d1d5db;
+  --hover-bg: rgba(0, 0, 0, 0.05);
+  --input-bg: #ffffff;
+  --input-bg-focus: #ffffff;
+  --input-bg-disabled: #f9fafb;
+  --input-border: #d1d5db;
+  --primary-color: #4f46e5;
+  --primary-bg: #4f46e5;
+  --primary-text: #ffffff;
+  --primary-bg-hover: #4338ca;
+  --secondary-bg: #f9fafb;
+  --secondary-text: #374151;
+  --secondary-border: #d1d5db;
+  --secondary-bg-hover: #f3f4f6;
+  --secondary-border-hover: #9ca3af;
+  --danger-bg: #ef4444;
+  --danger-text: #ffffff;
+  --danger-bg-hover: #dc2626;
+  --checkbox-bg: #000000;
+  --checkbox-border: #6b7280;
+  --error-bg: #fef2f2;
+  --error-bg-light: #fef7f7;
+  --error-border: #fecaca;
+  --error-text: #dc2626;
+  --scrollbar-track: #f9fafb;
+  --scrollbar-thumb: #d1d5db;
+  --scrollbar-thumb-hover: #9ca3af;
+}
+
+[data-theme="dark"] {
+  /* Dark Theme */
+  --modal-bg: #1e1e1e;
+  --modal-border: #3a3a3a;
+  --modal-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  --modal-footer-shadow: rgba(0, 0, 0, 0.3);
+  --text-primary: #ffffff;
+  --text-secondary: #d1d5db;
+  --text-disabled: #6b7280;
+  --text-placeholder: #9ca3af;
+  --text-header: #ffffff;
+  --border-color: #3a3a3a;
+  --hover-bg: rgba(255, 255, 255, 0.1);
+  --input-bg: #1a1a1a;
+  --input-bg-focus: #1a1a1a;
+  --input-bg-disabled: #2a2a2a;
+  --input-border: #3a3a3a;
+  --primary-color: #4f46e5;
+  --primary-bg: #4f46e5;
+  --primary-text: #ffffff;
+  --primary-bg-hover: #4338ca;
+  --secondary-bg: #3a3a3a;
+  --secondary-text: #ffffff;
+  --secondary-border: #3a3a3a;
+  --secondary-bg-hover: #4a4a4a;
+  --secondary-border-hover: #6b7280;
+  --danger-bg: #ef4444;
+  --danger-text: #ffffff;
+  --danger-bg-hover: #dc2626;
+  --checkbox-bg: #000000;
+  --checkbox-border: #3a3a3a;
+  --error-bg: #1f2937;
+  --error-bg-light: #374151;
+  --error-border: #7f1d1d;
+  --error-text: #fca5a5;
+  --scrollbar-track: #1e1e1e;
+  --scrollbar-thumb: #3a3a3a;
+  --scrollbar-thumb-hover: #4a4a4a;
+}
+
 body {
   margin: 0;
   padding: 0;

@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { useBranch } from '../contexts/BranchContext'
 import SearchContainer from '../components/SearchContainer'
+import PageHeader from '../components/PageHeader'
 import styles from './SideBusinesses.module.css'
 
 async function uploadSideBusinessImage(file: File, businessId: string, userId: number) {
@@ -831,11 +832,10 @@ const SideBusinesses = () => {
 
   return (
     <div className={styles.sideBusinessesContainer}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>
-          <i className="fa-solid fa-briefcase"></i>
-          Side Businesses
-        </h1>
+      <PageHeader
+        title="Side Businesses"
+        subtitle="Manage your additional business locations"
+      >
         <button
           onClick={() => setShowAddBusiness(true)}
           className={styles.primaryButton}
@@ -843,7 +843,7 @@ const SideBusinesses = () => {
           <i className="fa-solid fa-plus"></i>
           Add Business
         </button>
-      </div>
+      </PageHeader>
 
       {/* Search Container with integrated search bar */}
       <SearchContainer
