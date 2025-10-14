@@ -345,7 +345,7 @@ const Transactions: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
-            color: '#1a1a1a',
+            color: 'var(--text-primary)',
             fontSize: '14px',
             flexWrap: 'wrap'
           }}>

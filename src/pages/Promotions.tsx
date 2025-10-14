@@ -226,11 +226,11 @@ const Promotions: React.FC = () => {
           marginTop: '24px'
         }}>
           <div style={{
-            background: '#ffffff',
+            background: 'var(--bg-card)',
             padding: '20px',
             borderRadius: '12px',
-            border: '2px solid #d1d5db',
-            boxShadow: '0 2px 8px rgba(62, 63, 41, 0.08)'
+            border: 'var(--border-primary)',
+            boxShadow: 'var(--shadow-card)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{
@@ -246,7 +246,7 @@ const Promotions: React.FC = () => {
               </div>
               <div>
                 <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 4px 0', fontWeight: '500' }}>Active</p>
-                <p style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a1a', margin: 0 }}>
+                <p style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
                   {filteredPromotions.filter(p => {
                     const now = new Date()
                     const startDate = new Date(p.start_date)
@@ -259,11 +259,11 @@ const Promotions: React.FC = () => {
           </div>
           
           <div style={{
-            background: '#ffffff',
+            background: 'var(--bg-card)',
             padding: '20px',
             borderRadius: '12px',
-            border: '2px solid #d1d5db',
-            boxShadow: '0 2px 8px rgba(62, 63, 41, 0.08)'
+            border: 'var(--border-primary)',
+            boxShadow: 'var(--shadow-card)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{
@@ -279,7 +279,7 @@ const Promotions: React.FC = () => {
               </div>
               <div>
                 <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 4px 0', fontWeight: '500' }}>Inactive</p>
-                <p style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a1a', margin: 0 }}>
+                <p style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
                   {filteredPromotions.filter(p => !p.active).length}
                 </p>
               </div>
@@ -287,11 +287,11 @@ const Promotions: React.FC = () => {
           </div>
           
           <div style={{
-            background: '#ffffff',
+            background: 'var(--bg-card)',
             padding: '20px',
             borderRadius: '12px',
-            border: '2px solid #d1d5db',
-            boxShadow: '0 2px 8px rgba(62, 63, 41, 0.08)'
+            border: 'var(--border-primary)',
+            boxShadow: 'var(--shadow-card)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{
@@ -307,7 +307,7 @@ const Promotions: React.FC = () => {
               </div>
               <div>
                 <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 4px 0', fontWeight: '500' }}>Expired</p>
-                <p style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a1a', margin: 0 }}>
+                <p style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
                   {filteredPromotions.filter(p => {
                     const now = new Date()
                     const endDate = new Date(p.end_date)
@@ -339,7 +339,7 @@ const Promotions: React.FC = () => {
               </div>
               <div>
                 <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 4px 0', fontWeight: '500' }}>Upcoming</p>
-                <p style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a1a', margin: 0 }}>
+                <p style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
                   {filteredPromotions.filter(p => {
                     const now = new Date()
                     const startDate = new Date(p.start_date)

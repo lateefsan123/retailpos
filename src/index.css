@@ -32,6 +32,37 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-disabled);
 }
 
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #374151;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #6b7280;
+  border-radius: 4px;
+  border: 1px solid #374151;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+::-webkit-scrollbar-corner {
+  background: #374151;
+}
+
+/* Firefox scrollbar styles */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #6b7280 #374151;
+}
+
 /* Form System CSS Custom Properties */
 :root {
   /* Light Theme */
@@ -44,6 +75,7 @@ h1, h2, h3, h4, h5, h6 {
   --text-disabled: #9ca3af;
   --text-placeholder: #9ca3af;
   --text-header: #000000;
+  --text-muted: #9ca3af;
   --border-color: #d1d5db;
   --hover-bg: rgba(0, 0, 0, 0.05);
   --input-bg: #ffffff;
@@ -71,6 +103,19 @@ h1, h2, h3, h4, h5, h6 {
   --scrollbar-track: #f9fafb;
   --scrollbar-thumb: #d1d5db;
   --scrollbar-thumb-hover: #9ca3af;
+  
+  /* Container Standardization - Light Mode */
+  --bg-primary: #f5f5f5;
+  --bg-container: #ffffff;
+  --bg-card: #ffffff;
+  --bg-table: #ffffff;
+  --bg-nested: #f9fafb;
+  --border-primary: 2px solid #d1d5db;
+  --border-subtle: 1px solid #e5e7eb;
+  --border-accent: 3px solid #bca88d;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-elevated: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-hover: 0 10px 15px rgba(0, 0, 0, 0.1);
 }
 
 [data-theme="dark"] {
@@ -84,6 +129,7 @@ h1, h2, h3, h4, h5, h6 {
   --text-disabled: #6b7280;
   --text-placeholder: #9ca3af;
   --text-header: #ffffff;
+  --text-muted: #9ca3af;
   --border-color: #3a3a3a;
   --hover-bg: rgba(255, 255, 255, 0.1);
   --input-bg: #1a1a1a;
@@ -111,6 +157,19 @@ h1, h2, h3, h4, h5, h6 {
   --scrollbar-track: #1e1e1e;
   --scrollbar-thumb: #3a3a3a;
   --scrollbar-thumb-hover: #4a4a4a;
+  
+  /* Container Standardization - Dark Mode */
+  --bg-primary: #3C3C3C;
+  --bg-container: #2a2a2a;
+  --bg-card: #262626;
+  --bg-table: #2a2a2a;
+  --bg-nested: #222222;
+  --border-primary: 2px solid #4a4a4a;
+  --border-subtle: 1px solid #444444;
+  --border-accent: 3px solid #bca88d;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-elevated: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-hover: 0 10px 15px rgba(0, 0, 0, 0.5);
 }
 
 body {

@@ -18,7 +18,7 @@
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background: #f9fafb;
+  background: var(--bg-nested);
 }
 
 .loadingContent {
@@ -51,11 +51,11 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 32px;
-  background: #ffffff;
+  background: var(--bg-container);
   padding: 24px;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 2px solid #d1d5db;
+  box-shadow: var(--shadow-card);
+  border: var(--border-primary);
 }
 
 .headerContent {
@@ -66,14 +66,14 @@
   margin: 0 0 8px 0;
   font-size: 28px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
 }
 
 .headerTitleIcon {
   margin-right: 12px;
-  color: #1a1a1a;
+  color: var(--text-primary);
 }
 
 .headerSubtitle {
@@ -102,8 +102,8 @@
   padding: 10px 18px;
   border-radius: 10px;
   border: 2px solid #d1d5db;
-  background: #ffffff;
-  color: #374151;
+  background: var(--bg-card);
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -155,12 +155,12 @@
 
 /* Filters Section */
 .filtersContainer {
-  background: #ffffff;
+  background: var(--bg-container);
   padding: 20px;
   border-radius: 12px;
   margin-bottom: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 2px solid #d1d5db;
+  box-shadow: var(--shadow-card);
+  border: var(--border-primary);
 }
 
 .filtersContent {
@@ -183,8 +183,8 @@
   border: 2px solid #e5e7eb;
   border-radius: 8px;
   font-size: 16px;
-  background: #ffffff;
-  color: #1a1a1a;
+  background: var(--bg-card);
+  color: var(--text-primary);
   box-sizing: border-box;
   outline: none;
   transition: border-color 0.2s ease;
@@ -300,11 +300,11 @@
 
 /* Suppliers List */
 .suppliersList {
-  background: #ffffff;
+  background: var(--bg-container);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
-  border: 2px solid #d1d5db;
+  border: var(--border-primary);
 }
 
 /* Loading State in List */
@@ -354,7 +354,7 @@
 }
 
 .tableHeader {
-  background: #f9fafb;
+  background: var(--bg-nested);
   border-bottom: 2px solid #d1d5db;
 }
 
@@ -362,7 +362,7 @@
   padding: 16px;
   text-align: left;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
 }
 
 .tableHeaderCellCenter {
@@ -376,7 +376,7 @@
 }
 
 .tableRow:hover {
-  background: #f9fafb;
+  background: var(--bg-nested);
 }
 
 .tableCell {
@@ -420,7 +420,7 @@
 
 .supplierName {
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   margin-bottom: 4px;
   display: flex;
   align-items: center;

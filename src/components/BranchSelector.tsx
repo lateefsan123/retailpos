@@ -200,7 +200,7 @@ const BranchSelector: React.FC<BranchSelectorProps> = ({
           display: 'block',
           fontSize: '14px',
           fontWeight: '500',
-          color: '#374151',
+          color: 'var(--text-secondary)',
           marginBottom: '4px'
         }}>
           Current Branch

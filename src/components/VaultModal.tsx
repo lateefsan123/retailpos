@@ -24,7 +24,7 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
   const [isUnlocked, setIsUnlocked] = useState(false)
   const [vaultId, setVaultId] = useState<number | null>(null)
   const [vaultEntries, setVaultEntries] = useState<VaultEntry[]>([])
-  const [showEntries, setShowEntries] = useState(false)
+  const [, setShowEntries] = useState(false)
   const [isCreatingVault, setIsCreatingVault] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newEntry, setNewEntry] = useState({
@@ -202,7 +202,7 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
       // For now, store as plain text (we'll implement encryption later)
       // TODO: Implement proper PGP_SYM_ENCRYPT when encryption is added
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('vault_entries')
         .insert([{
           vault_id: vaultId,
@@ -389,9 +389,9 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
               left: 0,
               right: 0,
               bottom: 0,
-              background: 'rgba(0, 0, 0, 0.8)',
+              background: 'rgba(0, 0, 0, 0.7)',
               zIndex: 999,
-              backdropFilter: 'blur(4px)'
+              backdropFilter: 'blur(6px)'
             }}
             onClick={onClose}
           />
@@ -412,27 +412,42 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
             tabIndex={-1}
           >
           <div style={{
-            background: '#ffffff',
+            background: 'linear-gradient(135deg, rgba(10, 10, 10, 0.98), rgba(20, 20, 20, 0.98))',
             borderRadius: '20px',
             padding: '40px',
-            boxShadow: '0 20px 40px rgba(62, 63, 41, 0.15)',
-            border: '1px solid rgba(125, 141, 134, 0.2)',
-            color: '#3e3f29'
+            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            backdropFilter: 'blur(20px)',
+            color: '#ffffff'
           }}>
-            <p style={{
-              color: '#7d8d86',
-              fontSize: '16px',
-              marginBottom: '30px'
+            <div style={{
+              marginBottom: '40px'
             }}>
-              {isCreatingVault ? 'Creating your vault...' : 'Enter your 4-digit PIN'}
-            </p>
+              <h2 style={{
+                color: '#ffffff',
+                fontSize: '24px',
+                fontWeight: '700',
+                margin: '0 0 8px 0',
+                textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'
+              }}>
+                Password Vault
+              </h2>
+              <p style={{
+                color: 'rgba(255, 255, 255, 0.7)',
+                fontSize: '14px',
+                margin: '0',
+                fontWeight: '400'
+              }}>
+                {isCreatingVault ? 'Creating your secure vault...' : 'Enter your 4-digit PIN to continue'}
+              </p>
+            </div>
             
             {/* PIN Display */}
             <div style={{
               display: 'flex',
               justifyContent: 'center',
               gap: '12px',
-              marginBottom: '30px'
+              marginBottom: '40px'
             }}>
               {[0, 1, 2, 3].map((index) => (
                 <div
@@ -441,11 +456,12 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                     width: '16px',
                     height: '16px',
                     borderRadius: '50%',
-                    border: '2px solid rgba(125, 141, 134, 0.3)',
-                    background: index < pin.length ? 'linear-gradient(135deg, #7d8d86, #3e3f29)' : 'transparent',
-                    borderColor: index < pin.length ? '#3e3f29' : 'rgba(125, 141, 134, 0.3)',
+                    border: '2px solid rgba(255, 255, 255, 0.3)',
+                    background: index < pin.length ? '#ffffff' : 'transparent',
+                    borderColor: index < pin.length ? '#ffffff' : 'rgba(255, 255, 255, 0.3)',
                     transform: index < pin.length ? 'scale(1.1)' : 'scale(1)',
-                    transition: 'all 0.3s ease'
+                    transition: 'all 0.3s ease',
+                    boxShadow: index < pin.length ? '0 0 10px rgba(255, 255, 255, 0.5)' : 'none'
                   }}
                 />
               ))}
@@ -466,26 +482,27 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                     width: '70px',
                     height: '70px',
                     borderRadius: '50%',
-                    background: '#ffffff',
-                    border: '2px solid rgba(125, 141, 134, 0.2)',
-                    color: '#3e3f29',
+                    background: 'linear-gradient(135deg, rgba(15, 15, 15, 0.95), rgba(25, 25, 25, 0.95))',
+                    border: '2px solid rgba(255, 255, 255, 0.15)',
+                    color: '#ffffff',
                     fontSize: '24px',
                     fontWeight: '600',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
-                    boxShadow: '0 4px 8px rgba(62, 63, 41, 0.1)'
+                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                    backdropFilter: 'blur(5px)'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #7d8d86, #3e3f29)'
-                    e.currentTarget.style.color = '#f1f0e4'
-                    e.currentTarget.style.transform = 'translateY(-2px)'
-                    e.currentTarget.style.boxShadow = '0 6px 12px rgba(62, 63, 41, 0.15)'
+                    e.currentTarget.style.setProperty('background', 'linear-gradient(135deg, rgba(30, 30, 30, 0.95), rgba(45, 45, 45, 0.95))', 'important')
+                    e.currentTarget.style.setProperty('transform', 'translateY(-2px)', 'important')
+                    e.currentTarget.style.setProperty('box-shadow', '0 6px 12px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 255, 255, 0.08)', 'important')
+                    e.currentTarget.style.setProperty('border-color', 'rgba(255, 255, 255, 0.3)', 'important')
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#ffffff'
-                    e.currentTarget.style.color = '#3e3f29'
-                    e.currentTarget.style.transform = 'translateY(0)'
-                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(62, 63, 41, 0.1)'
+                    e.currentTarget.style.setProperty('background', 'linear-gradient(135deg, rgba(15, 15, 15, 0.95), rgba(25, 25, 25, 0.95))', 'important')
+                    e.currentTarget.style.setProperty('transform', 'translateY(0)', 'important')
+                    e.currentTarget.style.setProperty('box-shadow', '0 4px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)', 'important')
+                    e.currentTarget.style.setProperty('border-color', 'rgba(255, 255, 255, 0.15)', 'important')
                   }}
                 >
                   {num}
@@ -497,27 +514,28 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                   width: '70px',
                   height: '70px',
                   borderRadius: '50%',
-                  background: '#ffffff',
-                  border: '2px solid rgba(125, 141, 134, 0.2)',
-                  color: '#3e3f29',
+                  background: 'linear-gradient(135deg, rgba(15, 15, 15, 0.95), rgba(25, 25, 25, 0.95))',
+                  border: '2px solid rgba(255, 255, 255, 0.15)',
+                  color: '#ffffff',
                   fontSize: '24px',
                   fontWeight: '600',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
-                  boxShadow: '0 4px 8px rgba(62, 63, 41, 0.1)',
+                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(5px)',
                   gridColumn: '2'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, #7d8d86, #3e3f29)'
-                  e.currentTarget.style.color = '#f1f0e4'
-                  e.currentTarget.style.transform = 'translateY(-2px)'
-                  e.currentTarget.style.boxShadow = '0 6px 12px rgba(62, 63, 41, 0.15)'
+                  e.currentTarget.style.setProperty('background', 'linear-gradient(135deg, rgba(30, 30, 30, 0.95), rgba(45, 45, 45, 0.95))', 'important')
+                  e.currentTarget.style.setProperty('transform', 'translateY(-2px)', 'important')
+                  e.currentTarget.style.setProperty('box-shadow', '0 6px 12px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 255, 255, 0.08)', 'important')
+                  e.currentTarget.style.setProperty('border-color', 'rgba(255, 255, 255, 0.3)', 'important')
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#ffffff'
-                  e.currentTarget.style.color = '#3e3f29'
-                  e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(62, 63, 41, 0.1)'
+                  e.currentTarget.style.setProperty('background', 'linear-gradient(135deg, rgba(15, 15, 15, 0.95), rgba(25, 25, 25, 0.95))', 'important')
+                  e.currentTarget.style.setProperty('transform', 'translateY(0)', 'important')
+                  e.currentTarget.style.setProperty('box-shadow', '0 4px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)', 'important')
+                  e.currentTarget.style.setProperty('border-color', 'rgba(255, 255, 255, 0.15)', 'important')
                 }}
               >
                 0
@@ -539,17 +557,21 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                   fontWeight: '600',
                   cursor: 'pointer',
                   transition: 'all 0.3s ease',
-                  background: 'transparent',
-                  color: '#7d8d86',
-                  border: '2px solid rgba(125, 141, 134, 0.3)'
+                  background: 'linear-gradient(135deg, rgba(20, 20, 20, 0.9), rgba(35, 35, 35, 0.9))',
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  border: '2px solid rgba(255, 255, 255, 0.2)'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(125, 141, 134, 0.1)'
-                  e.currentTarget.style.borderColor = '#7d8d86'
+                  e.currentTarget.style.setProperty('background', 'linear-gradient(135deg, rgba(35, 35, 35, 0.95), rgba(55, 55, 55, 0.95))', 'important')
+                  e.currentTarget.style.setProperty('border-color', 'rgba(255, 255, 255, 0.4)', 'important')
+                  e.currentTarget.style.setProperty('transform', 'translateY(-2px)', 'important')
+                  e.currentTarget.style.setProperty('color', '#ffffff', 'important')
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent'
-                  e.currentTarget.style.borderColor = 'rgba(125, 141, 134, 0.3)'
+                  e.currentTarget.style.setProperty('background', 'linear-gradient(135deg, rgba(20, 20, 20, 0.9), rgba(35, 35, 35, 0.9))', 'important')
+                  e.currentTarget.style.setProperty('border-color', 'rgba(255, 255, 255, 0.2)', 'important')
+                  e.currentTarget.style.setProperty('transform', 'translateY(0)', 'important')
+                  e.currentTarget.style.setProperty('color', 'rgba(255, 255, 255, 0.8)', 'important')
                 }}
               >
                 Clear
@@ -564,20 +586,23 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                   fontWeight: '600',
                   cursor: pin.length === 4 ? 'pointer' : 'not-allowed',
                   transition: 'all 0.3s ease',
-                  background: 'linear-gradient(135deg, #7d8d86, #3e3f29)',
-                  color: '#f1f0e4',
-                  border: '2px solid transparent',
-                  opacity: pin.length === 4 ? 1 : 0.5
+                  background: 'linear-gradient(135deg, #ffffff, #e8e8e8)',
+                  color: '#1a1a1a',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  opacity: pin.length === 4 ? 1 : 0.5,
+                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)'
                 }}
                 onMouseEnter={(e) => {
                   if (pin.length === 4) {
-                    e.currentTarget.style.transform = 'translateY(-2px)'
-                    e.currentTarget.style.boxShadow = '0 8px 16px rgba(62, 63, 41, 0.2)'
+                    e.currentTarget.style.setProperty('transform', 'translateY(-2px)', 'important')
+                    e.currentTarget.style.setProperty('box-shadow', '0 8px 16px rgba(255, 255, 255, 0.4), 0 0 25px rgba(255, 255, 255, 0.2)', 'important')
+                    e.currentTarget.style.setProperty('border-color', '#ffffff', 'important')
                   }
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.boxShadow = 'none'
+                  e.currentTarget.style.setProperty('transform', 'translateY(0)', 'important')
+                  e.currentTarget.style.setProperty('box-shadow', '0 4px 8px rgba(0, 0, 0, 0.3)', 'important')
+                  e.currentTarget.style.setProperty('border-color', 'rgba(255, 255, 255, 0.3)', 'important')
                 }}
               >
                 {isCreatingVault ? 'Creating...' : 'Unlock'}
@@ -593,14 +618,14 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                 fontSize: '14px',
                 fontWeight: '500',
                 background: statusType === 'success' 
-                  ? 'rgba(125, 141, 134, 0.1)' 
-                  : 'rgba(220, 53, 69, 0.1)',
+                  ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(240, 240, 240, 0.08))' 
+                  : 'rgba(220, 53, 69, 0.15)',
                 color: statusType === 'success' 
-                  ? '#3e3f29' 
-                  : '#dc3545',
+                  ? 'rgba(255, 255, 255, 0.9)' 
+                  : '#ff6b6b',
                 border: statusType === 'success' 
-                  ? '1px solid rgba(125, 141, 134, 0.3)' 
-                  : '1px solid rgba(220, 53, 69, 0.3)'
+                  ? '1px solid rgba(255, 255, 255, 0.15)' 
+                  : '1px solid rgba(255, 107, 107, 0.3)'
               }}>
                 {statusMessage}
               </div>
@@ -612,31 +637,47 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
 
       {/* Vault Interior - Shows when unlocked */}
       {isUnlocked && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: 1000,
-            maxWidth: '900px',
-            width: '95%',
-            maxHeight: '70vh',
-            minHeight: '500px',
-            overflowY: 'auto',
-            textAlign: 'center'
-          }}
-          onKeyDown={handleKeyDown}
-          tabIndex={-1}
-        >
-          <div style={{
-            background: '#ffffff',
-            borderRadius: '20px',
-            padding: '30px',
-            border: '1px solid rgba(125, 141, 134, 0.2)',
-            boxShadow: '0 20px 40px rgba(62, 63, 41, 0.15)',
-            color: '#3e3f29'
-          }}>
+        <>
+          {/* Dark Overlay for Vault Interior */}
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0, 0, 0, 0.7)',
+              zIndex: 999,
+              backdropFilter: 'blur(6px)'
+            }}
+            onClick={onClose}
+          />
+          <div 
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 1000,
+              maxWidth: '900px',
+              width: '95%',
+              maxHeight: '70vh',
+              minHeight: '500px',
+              overflowY: 'auto',
+              textAlign: 'center'
+            }}
+            onKeyDown={handleKeyDown}
+            tabIndex={-1}
+          >
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(10, 10, 10, 0.98), rgba(20, 20, 20, 0.98))',
+              borderRadius: '20px',
+              padding: '30px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+              backdropFilter: 'blur(20px)',
+              color: '#ffffff'
+            }}>
             {/* Vault Header */}
             <div style={{
               display: 'flex',
@@ -644,22 +685,23 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
               alignItems: 'center',
               marginBottom: '30px',
               paddingBottom: '20px',
-              borderBottom: '2px solid rgba(125, 141, 134, 0.3)'
+              borderBottom: '2px solid rgba(255, 255, 255, 0.1)'
             }}>
               <h2 style={{
-                color: '#3e3f29',
+                color: '#ffffff',
                 fontSize: '24px',
                 fontWeight: '700',
-                margin: 0
+                margin: 0,
+                textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'
               }}>
-                <i className="fa-solid fa-vault" style={{ marginRight: '10px', color: '#7d8d86' }}></i>
+                <i className="fa-solid fa-vault" style={{ marginRight: '10px', color: 'rgba(255, 255, 255, 0.8)' }}></i>
                 Password Vault
               </h2>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <button
                   onClick={() => setShowPinManagement(true)}
                   style={{
-                    background: '#dc3545',
+                    background: 'linear-gradient(135deg, #dc3545, #c82333)',
                     color: '#ffffff',
                     border: 'none',
                     borderRadius: '20px',
@@ -670,15 +712,18 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                     transition: 'all 0.3s ease',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px'
+                    gap: '6px',
+                    boxShadow: '0 4px 8px rgba(220, 53, 69, 0.3)'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#c82333'
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #c82333, #a71e2a)'
                     e.currentTarget.style.transform = 'translateY(-2px)'
+                    e.currentTarget.style.boxShadow = '0 6px 12px rgba(220, 53, 69, 0.4)'
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#dc3545'
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #dc3545, #c82333)'
                     e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(220, 53, 69, 0.3)'
                   }}
                 >
                   <i className="fa-solid fa-key"></i>
@@ -687,9 +732,9 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                 <button
                   onClick={() => setShowReports(true)}
                   style={{
-                    background: '#7d8d86',
+                    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))',
                     color: '#ffffff',
-                    border: 'none',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
                     borderRadius: '20px',
                     padding: '8px 16px',
                     fontSize: '14px',
@@ -701,11 +746,13 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                     gap: '6px'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#3e3f29'
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08))'
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
                     e.currentTarget.style.transform = 'translateY(-2px)'
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#7d8d86'
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))'
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'
                     e.currentTarget.style.transform = 'translateY(0)'
                   }}
                 >
@@ -715,9 +762,9 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                 <button
                   onClick={onClose}
                   style={{
-                    background: 'none',
-                    border: '2px solid #7d8d86',
-                    color: '#3e3f29',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '2px solid rgba(255, 255, 255, 0.2)',
+                    color: '#ffffff',
                     width: '40px',
                     height: '40px',
                     borderRadius: '50%',
@@ -726,13 +773,13 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                     transition: 'all 0.3s ease'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#7d8d86'
-                    e.currentTarget.style.color = '#ffffff'
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)'
                     e.currentTarget.style.transform = 'rotate(90deg)'
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'none'
-                    e.currentTarget.style.color = '#3e3f29'
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'
                     e.currentTarget.style.transform = 'rotate(0deg)'
                   }}
                 >
@@ -746,9 +793,9 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
               <button
                 onClick={() => setShowAddForm(!showAddForm)}
                 style={{
-                  background: '#7d8d86',
+                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08))',
                   color: '#ffffff',
-                  border: 'none',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
                   borderRadius: '25px',
                   padding: '12px 24px',
                   fontSize: '16px',
@@ -758,15 +805,20 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  margin: '0 auto'
+                  margin: '0 auto',
+                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#3e3f29'
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.12))'
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
                   e.currentTarget.style.transform = 'translateY(-2px)'
+                  e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.4)'
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#7d8d86'
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08))'
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'
                   e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)'
                 }}
               >
                 <i className="fa-solid fa-plus"></i>
@@ -777,18 +829,20 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
             {/* Add Password Form */}
             {showAddForm && (
               <div style={{
-                background: 'rgba(125, 141, 134, 0.1)',
+                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04))',
                 borderRadius: '15px',
                 padding: '20px',
                 marginBottom: '20px',
-                border: '1px solid rgba(125, 141, 134, 0.2)'
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                backdropFilter: 'blur(10px)'
               }}>
                 <h3 style={{
-                  color: '#3e3f29',
+                  color: '#ffffff',
                   fontSize: '18px',
                   fontWeight: '600',
                   marginBottom: '15px',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'
                 }}>
                   Add New Password
                 </h3>
@@ -801,21 +855,22 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                     onChange={(e) => setNewEntry({...newEntry, title: e.target.value})}
                     style={{
                       padding: '12px 16px',
-                      border: '2px solid rgba(125, 141, 134, 0.3)',
+                      border: '2px solid rgba(255, 255, 255, 0.2)',
                       borderRadius: '10px',
-                      background: '#ffffff',
-                      color: '#3e3f29',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      color: '#ffffff',
                       fontSize: '16px',
                       outline: 'none',
-                      transition: 'all 0.3s ease'
+                      transition: 'all 0.3s ease',
+                      backdropFilter: 'blur(5px)'
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = '#7d8d86'
-                      e.target.style.background = '#ffffff'
+                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.4)'
+                      e.target.style.background = 'rgba(255, 255, 255, 0.08)'
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = 'rgba(125, 141, 134, 0.3)'
-                      e.target.style.background = '#ffffff'
+                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'
+                      e.target.style.background = 'rgba(255, 255, 255, 0.05)'
                     }}
                   />
                   
@@ -826,21 +881,22 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                     onChange={(e) => setNewEntry({...newEntry, username: e.target.value})}
                     style={{
                       padding: '12px 16px',
-                      border: '2px solid rgba(125, 141, 134, 0.3)',
+                      border: '2px solid rgba(255, 255, 255, 0.2)',
                       borderRadius: '10px',
-                      background: '#ffffff',
-                      color: '#3e3f29',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      color: '#ffffff',
                       fontSize: '16px',
                       outline: 'none',
-                      transition: 'all 0.3s ease'
+                      transition: 'all 0.3s ease',
+                      backdropFilter: 'blur(5px)'
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = '#7d8d86'
-                      e.target.style.background = '#ffffff'
+                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.4)'
+                      e.target.style.background = 'rgba(255, 255, 255, 0.08)'
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = 'rgba(125, 141, 134, 0.3)'
-                      e.target.style.background = '#ffffff'
+                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'
+                      e.target.style.background = 'rgba(255, 255, 255, 0.05)'
                     }}
                   />
                   
@@ -851,21 +907,22 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                     onChange={(e) => setNewEntry({...newEntry, password: e.target.value})}
                     style={{
                       padding: '12px 16px',
-                      border: '2px solid rgba(125, 141, 134, 0.3)',
+                      border: '2px solid rgba(255, 255, 255, 0.2)',
                       borderRadius: '10px',
-                      background: '#ffffff',
-                      color: '#3e3f29',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      color: '#ffffff',
                       fontSize: '16px',
                       outline: 'none',
-                      transition: 'all 0.3s ease'
+                      transition: 'all 0.3s ease',
+                      backdropFilter: 'blur(5px)'
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = '#7d8d86'
-                      e.target.style.background = '#ffffff'
+                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.4)'
+                      e.target.style.background = 'rgba(255, 255, 255, 0.08)'
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = 'rgba(125, 141, 134, 0.3)'
-                      e.target.style.background = '#ffffff'
+                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'
+                      e.target.style.background = 'rgba(255, 255, 255, 0.05)'
                     }}
                   />
                   
@@ -876,21 +933,22 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                     onChange={(e) => setNewEntry({...newEntry, website: e.target.value})}
                     style={{
                       padding: '12px 16px',
-                      border: '2px solid rgba(125, 141, 134, 0.3)',
+                      border: '2px solid rgba(255, 255, 255, 0.2)',
                       borderRadius: '10px',
-                      background: '#ffffff',
-                      color: '#3e3f29',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      color: '#ffffff',
                       fontSize: '16px',
                       outline: 'none',
-                      transition: 'all 0.3s ease'
+                      transition: 'all 0.3s ease',
+                      backdropFilter: 'blur(5px)'
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = '#7d8d86'
-                      e.target.style.background = '#ffffff'
+                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.4)'
+                      e.target.style.background = 'rgba(255, 255, 255, 0.08)'
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = 'rgba(125, 141, 134, 0.3)'
-                      e.target.style.background = '#ffffff'
+                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'
+                      e.target.style.background = 'rgba(255, 255, 255, 0.05)'
                     }}
                   />
                   
@@ -959,21 +1017,23 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
             }}>
               {/* Saved Passwords Section */}
               <div style={{
-                background: 'rgba(125, 141, 134, 0.1)',
+                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04))',
                 borderRadius: '15px',
                 padding: '20px',
-                border: '1px solid rgba(125, 141, 134, 0.2)'
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                backdropFilter: 'blur(10px)'
               }}>
                 <div style={{
-                  color: '#3e3f29',
+                  color: '#ffffff',
                   fontSize: '18px',
                   fontWeight: '600',
                   marginBottom: '15px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '10px'
+                  gap: '10px',
+                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'
                 }}>
-                  <i className="fa-solid fa-shield-halved"></i>
+                  <i className="fa-solid fa-shield-halved" style={{ color: 'rgba(255, 255, 255, 0.8)' }}></i>
                   Saved Passwords
                 </div>
                 
@@ -981,22 +1041,23 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {vaultEntries.map((entry) => (
                       <div key={entry.entry_id} style={{
-                        background: '#ffffff',
+                        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))',
                         borderRadius: '10px',
                         padding: '15px',
-                        border: '1px solid rgba(125, 141, 134, 0.2)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
                         transition: 'all 0.3s ease',
                         cursor: 'pointer',
-                        position: 'relative'
+                        position: 'relative',
+                        backdropFilter: 'blur(5px)'
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(125, 141, 134, 0.1)'
-                        e.currentTarget.style.borderColor = '#7d8d86'
+                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04))'
+                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'
                         e.currentTarget.style.transform = 'translateY(-2px)'
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#ffffff'
-                        e.currentTarget.style.borderColor = 'rgba(125, 141, 134, 0.2)'
+                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))'
+                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'
                         e.currentTarget.style.transform = 'translateY(0)'
                       }}
                       >
@@ -1037,7 +1098,7 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                         </button>
                         
                         <div style={{
-                          color: '#3e3f29',
+                          color: '#ffffff',
                           fontWeight: '600',
                           marginBottom: '5px',
                           paddingRight: '30px'
@@ -1045,21 +1106,22 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                           {entry.label}
                         </div>
                         <div style={{
-                          color: '#7d8d86',
+                          color: 'rgba(255, 255, 255, 0.7)',
                           fontSize: '14px',
                           marginBottom: '8px'
                         }}>
                           {entry.email}
                         </div>
                         <div style={{
-                          color: '#3e3f29',
+                          color: '#ffffff',
                           fontSize: '14px',
                           fontFamily: 'monospace',
                           marginBottom: '8px',
                           padding: '4px 8px',
-                          background: 'rgba(125, 141, 134, 0.1)',
+                          background: 'rgba(255, 255, 255, 0.05)',
                           borderRadius: '4px',
-                          wordBreak: 'break-all'
+                          wordBreak: 'break-all',
+                          border: '1px solid rgba(255, 255, 255, 0.1)'
                         }}>
                           {visiblePasswords.has(entry.entry_id) ? entry.password : '••••••••'}
                         </div>
@@ -1148,10 +1210,10 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
                   <div style={{
                     textAlign: 'center',
                     padding: '20px',
-                    color: '#bca88d',
+                    color: 'rgba(255, 255, 255, 0.6)',
                     fontSize: '14px'
                   }}>
-                    <i className="fa-solid fa-folder-open" style={{ fontSize: '24px', marginBottom: '8px', display: 'block' }}></i>
+                    <i className="fa-solid fa-folder-open" style={{ fontSize: '24px', marginBottom: '8px', display: 'block', color: 'rgba(255, 255, 255, 0.4)' }}></i>
                     No passwords saved yet
                   </div>
                 )}
@@ -1160,6 +1222,7 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
             </div>
           </div>
         </div>
+        </>
       )}
 
       {/* Delete Confirmation Modal */}
@@ -1474,7 +1537,7 @@ const VaultModal = ({ isOpen, onClose }: VaultModalProps) => {
           isOpen={showReports}
           onClose={() => setShowReports(false)}
           vaultEntries={vaultEntries}
-          businessId={user?.business_id}
+          businessId={user?.business_id || undefined}
         />
     </>
   )

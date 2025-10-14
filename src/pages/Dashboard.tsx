@@ -1199,8 +1199,8 @@ const Dashboard = () => {
                   padding: '8px 14px',
                   borderRadius: '999px',
                   border: isActive ? '2px solid #1a1a1a' : '2px solid #d1d5db',
-                  background: isActive ? '#1a1a1a' : '#ffffff',
-                  color: isActive ? '#f1f0e4' : '#1f2937',
+                  background: isActive ? '#1a1a1a' : 'var(--bg-card)',
+                  color: isActive ? '#f1f0e4' : 'var(--text-primary)',
                   fontSize: '12px',
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -1227,11 +1227,11 @@ const Dashboard = () => {
           <div
             key={index}
             style={{
-              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              background: 'var(--bg-card)',
               borderRadius: '8px',
               padding: '24px',
-              border: '2px solid #9ca3af',
-              boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
+              border: 'var(--border-primary)',
+              boxShadow: 'var(--shadow-card)',
               display: 'flex',
               flexDirection: 'column',
               gap: '16px',
@@ -1239,7 +1239,7 @@ const Dashboard = () => {
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '16px', fontWeight: 600, color: '#475569' }}>{card.title}</span>
+              <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>{card.title}</span>
               <div style={{
                 width: '44px',
                 height: '44px',
@@ -1254,10 +1254,10 @@ const Dashboard = () => {
                 <i className={card.icon}></i>
               </div>
             </div>
-            <div style={{ fontSize: '32px', fontWeight: 700, color: '#111827', letterSpacing: '-0.02em' }}>
+            <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
               {card.value}
             </div>
-            <div style={{ fontSize: '13px', fontWeight: 500, color: '#1a1a1a', lineHeight: 1.5 }}>
+            <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
               {card.subtitle}
             </div>
           </div>
@@ -1272,11 +1272,11 @@ const Dashboard = () => {
         marginBottom: '32px'
       }}>
         <div style={{
-          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+          background: 'var(--bg-card)',
           borderRadius: '8px',
           padding: '24px',
-           border: '1px solid #9ca3af',
-          boxShadow: '0 8px 24px rgba(15, 23, 42, 0.05)'
+           border: 'var(--border-primary)',
+          boxShadow: 'var(--shadow-card)'
         }}>
           <LowStockSection />
         </div>
@@ -1298,11 +1298,11 @@ const Dashboard = () => {
           <div 
             className="dashboardCard"
             style={{
-              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              background: 'var(--bg-card)',
               borderRadius: '8px',
               padding: '24px',
-              boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
-               border: '1px solid #9ca3af'
+              boxShadow: 'var(--shadow-card)',
+               border: 'var(--border-primary)'
             }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1320,7 +1320,7 @@ const Dashboard = () => {
               <h3 style={{ 
                 fontSize: '20px', 
                 fontWeight: '600', 
-                color: '#1a1a1a', 
+                color: 'var(--text-primary)', 
                 margin: 0 
               }}>
                 {(() => {
@@ -1411,14 +1411,14 @@ const Dashboard = () => {
                       <p style={{ 
                         fontSize: '14px', 
                         fontWeight: '600', 
-                        color: '#1a1a1a', 
+                        color: 'var(--text-primary)', 
                         margin: '0 0 2px 0' 
                       }}>
                         #TXN-{transaction.sale_id.toString().padStart(6, '0')}
                       </p>
                       <p style={{ 
                         fontSize: '12px', 
-                        color: '#1a1a1a', 
+                        color: 'var(--text-secondary)', 
                         margin: 0 
                       }}>
                         {transaction.items_count} item{transaction.items_count !== 1 ? 's' : ''} | {transaction.payment_method}
@@ -1446,7 +1446,7 @@ const Dashboard = () => {
                           </p>
                           <p style={{ 
                             fontSize: '11px', 
-                            color: '#1a1a1a', 
+                            color: 'var(--text-secondary)', 
                             margin: '0 0 2px 0',
                             fontWeight: '500'
                           }}>
@@ -1465,7 +1465,7 @@ const Dashboard = () => {
                         <p style={{ 
                           fontSize: '14px', 
                           fontWeight: '600', 
-                          color: '#1a1a1a', 
+                          color: 'var(--text-primary)', 
                           margin: 0 
                         }}>
                           {formatCurrency(transaction.total_amount)}
@@ -1478,7 +1478,7 @@ const Dashboard = () => {
                 <div style={{ 
                   textAlign: 'center', 
                   padding: '40px 20px', 
-                  color: '#1a1a1a',
+                  color: 'var(--text-secondary)',
                   fontSize: '14px'
                 }}>
                   <img 

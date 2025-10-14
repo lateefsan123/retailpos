@@ -21,12 +21,12 @@
 .title h1 {
   font-size: 1.875rem;
   font-weight: 900;
-  color: #000000;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
 }
 
 .title p {
-  color: #000000;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -103,7 +103,7 @@
 .currentDate {
   font-size: 1.125rem;
   font-weight: 800;
-  color: #000000;
+  color: var(--text-primary);
   min-width: 8rem;
   text-align: center;
 }
@@ -119,8 +119,8 @@
 .filterButton {
   padding: 0.5rem 1rem;
   border: 2px solid #d1d5db;
-  background: white;
-  color: #000000;
+  background: var(--bg-card);
+  color: var(--text-primary);
   border-radius: 0.5rem;
   cursor: pointer;
   transition: background-color 0.2s;
@@ -129,7 +129,7 @@
 }
 
 .filterButton:hover {
-  background: #f3f4f6;
+  background: var(--bg-nested);
 }
 
 .filterButtonActive {

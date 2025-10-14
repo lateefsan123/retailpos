@@ -17,7 +17,7 @@
 .pageTitle {
   font-size: 36px;
   font-weight: 800;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin: 0;
   display: flex;
   align-items: center;
@@ -25,7 +25,7 @@
 }
 
 .pageTitle i {
-  color: #1a1a1a;
+  color: var(--text-primary);
 }
 
 .primaryButton {
@@ -60,16 +60,16 @@
 
 
 .statisticsCard {
-  background: #ffffff;
-  border: 2px solid #d1d5db;
+  background: var(--bg-card);
+  border: var(--border-primary);
   border-radius: 12px;
   padding: 20px;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-card);
 }
 
 .statisticsCard:hover {
-  background: #f9f9f9;
+  background: var(--bg-nested);
 }
 
 .statisticsCardContent {
@@ -84,7 +84,7 @@
 
 .statisticsLabel {
   font-size: 16px;
-  color: #1a1a1a;
+  color: var(--text-secondary);
   margin: 0 0 4px 0;
   font-weight: 700;
 }
@@ -92,7 +92,7 @@
 .statisticsValue {
   font-size: 28px;
   font-weight: 800;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -126,20 +126,20 @@
 
 /* Content Panels */
 .contentPanel {
-  background: #ffffff;
-  border: 2px solid #d1d5db;
+  background: var(--bg-container);
+  border: var(--border-primary);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-card);
   transition: all 0.2s ease;
 }
 
 .contentPanel:hover {
-  background: #f9f9f9;
+  background: var(--bg-nested);
 }
 
 .contentPanelHeader {
-  background: #f9fafb;
+  background: var(--bg-nested);
   padding: 16px 20px;
   border-bottom: 1px solid #e5e7eb;
   display: flex;
@@ -200,7 +200,7 @@
 }
 
 .listItemCard:hover {
-  background: #f9f9f9;
+  background: var(--bg-nested);
 }
 
 .listItemCardContent {

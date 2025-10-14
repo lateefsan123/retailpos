@@ -1691,31 +1691,31 @@ const Products = () => {
         gap: '20px',
         marginBottom: '32px',
         padding: '20px',
-        background: 'rgba(248, 250, 252, 0.9)',
+        background: 'var(--bg-container)',
         borderRadius: '12px',
-        boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
-        border: '1px solid #e5e7eb',
+        boxShadow: 'var(--shadow-card)',
+        border: 'var(--border-primary)',
         backdropFilter: 'blur(10px)'
       }}>
         <div 
           onClick={() => handleSummaryCardClick('totalProducts')}
           style={{
-            background: activeSummaryFilter === 'totalProducts' ? '#f0f8f0' : '#f8fafc',
+            background: activeSummaryFilter === 'totalProducts' ? '#f0f8f0' : 'var(--bg-card)',
             borderRadius: '12px',
             padding: '20px',
-            boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
+            boxShadow: 'var(--shadow-card)',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
             border: activeSummaryFilter === 'totalProducts' ? '2px solid #7d8d86' : '2px solid transparent'
           }}
           onMouseEnter={(e) => {
             if (activeSummaryFilter !== 'totalProducts') {
-                (e.target as HTMLDivElement).style.background = '#f1f5f9'
+                (e.target as HTMLDivElement).style.background = 'var(--bg-nested)'
             }
           }}
           onMouseLeave={(e) => {
             if (activeSummaryFilter !== 'totalProducts') {
-                (e.target as HTMLDivElement).style.background = '#f8fafc'
+                (e.target as HTMLDivElement).style.background = 'var(--bg-card)'
             }
           }}
         >
@@ -1732,10 +1732,10 @@ const Products = () => {
               <i className="fa-solid fa-boxes-stacked" style={{ fontSize: '18px', color: '#f1f0e4' }}></i>
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#000000', margin: '0 0 4px 0' }}>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
                 {summaryStats.totalProducts}
               </p>
-              <p style={{ fontSize: '12px', color: '#000000', margin: 0, fontWeight: '700' }}>Total Products</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-primary)', margin: 0, fontWeight: '700' }}>Total Products</p>
             </div>
           </div>
         </div>
@@ -1743,22 +1743,22 @@ const Products = () => {
         <div 
           onClick={() => handleSummaryCardClick('inStock')}
           style={{
-            background: activeSummaryFilter === 'inStock' ? '#f0fdf4' : '#f8fafc',
+            background: activeSummaryFilter === 'inStock' ? '#f0fdf4' : 'var(--bg-card)',
             borderRadius: '12px',
             padding: '20px',
-            boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
+            boxShadow: 'var(--shadow-card)',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
             border: activeSummaryFilter === 'inStock' ? '2px solid #10b981' : '2px solid transparent'
           }}
           onMouseEnter={(e) => {
             if (activeSummaryFilter !== 'inStock') {
-                (e.target as HTMLDivElement).style.background = '#f1f5f9'
+                (e.target as HTMLDivElement).style.background = 'var(--bg-nested)'
             }
           }}
           onMouseLeave={(e) => {
             if (activeSummaryFilter !== 'inStock') {
-                (e.target as HTMLDivElement).style.background = '#f8fafc'
+                (e.target as HTMLDivElement).style.background = 'var(--bg-card)'
             }
           }}
         >
@@ -1775,10 +1775,10 @@ const Products = () => {
               <i className="fa-solid fa-circle-check" style={{ fontSize: '18px', color: 'white' }}></i>
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#000000', margin: '0 0 4px 0' }}>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
                 {summaryStats.inStock}
               </p>
-              <p style={{ fontSize: '12px', color: '#000000', margin: 0, fontWeight: '700' }}>In Stock</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-primary)', margin: 0, fontWeight: '700' }}>In Stock</p>
             </div>
           </div>
         </div>
@@ -1786,22 +1786,22 @@ const Products = () => {
         <div 
           onClick={() => handleSummaryCardClick('lowStock')}
           style={{
-            background: activeSummaryFilter === 'lowStock' ? '#fffbeb' : '#f8fafc',
+            background: activeSummaryFilter === 'lowStock' ? '#fffbeb' : 'var(--bg-card)',
             borderRadius: '12px',
             padding: '20px',
-            boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
+            boxShadow: 'var(--shadow-card)',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
             border: activeSummaryFilter === 'lowStock' ? '2px solid #f59e0b' : '2px solid transparent'
           }}
           onMouseEnter={(e) => {
             if (activeSummaryFilter !== 'lowStock') {
-                (e.target as HTMLDivElement).style.background = '#f1f5f9'
+                (e.target as HTMLDivElement).style.background = 'var(--bg-nested)'
             }
           }}
           onMouseLeave={(e) => {
             if (activeSummaryFilter !== 'lowStock') {
-                (e.target as HTMLDivElement).style.background = '#f8fafc'
+                (e.target as HTMLDivElement).style.background = 'var(--bg-card)'
             }
           }}
         >
@@ -1818,10 +1818,10 @@ const Products = () => {
               <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: '18px', color: 'white' }}></i>
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#000000', margin: '0 0 4px 0' }}>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
                 {summaryStats.lowStock}
               </p>
-              <p style={{ fontSize: '12px', color: '#000000', margin: 0, fontWeight: '700' }}>Low Stock</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-primary)', margin: 0, fontWeight: '700' }}>Low Stock</p>
             </div>
           </div>
         </div>
@@ -1829,22 +1829,22 @@ const Products = () => {
         <div 
           onClick={() => handleSummaryCardClick('outOfStock')}
           style={{
-            background: activeSummaryFilter === 'outOfStock' ? '#fef2f2' : '#f8fafc',
+            background: activeSummaryFilter === 'outOfStock' ? '#fef2f2' : 'var(--bg-card)',
             borderRadius: '12px',
             padding: '20px',
-            boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
+            boxShadow: 'var(--shadow-card)',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
             border: activeSummaryFilter === 'outOfStock' ? '2px solid #ef4444' : '2px solid transparent'
           }}
           onMouseEnter={(e) => {
             if (activeSummaryFilter !== 'outOfStock') {
-                (e.target as HTMLDivElement).style.background = '#f1f5f9'
+                (e.target as HTMLDivElement).style.background = 'var(--bg-nested)'
             }
           }}
           onMouseLeave={(e) => {
             if (activeSummaryFilter !== 'outOfStock') {
-                (e.target as HTMLDivElement).style.background = '#f8fafc'
+                (e.target as HTMLDivElement).style.background = 'var(--bg-card)'
             }
           }}
         >
@@ -1861,10 +1861,10 @@ const Products = () => {
               <i className="fa-solid fa-circle-xmark" style={{ fontSize: '18px', color: 'white' }}></i>
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#000000', margin: '0 0 4px 0' }}>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
                 {summaryStats.outOfStock}
               </p>
-              <p style={{ fontSize: '12px', color: '#000000', margin: 0, fontWeight: '700' }}>Out of Stock</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-primary)', margin: 0, fontWeight: '700' }}>Out of Stock</p>
             </div>
           </div>
         </div>
@@ -1935,20 +1935,20 @@ const Products = () => {
                   <div
                     key={product.product_id}
                     style={{
-                      background: 'white',
+                      background: 'var(--bg-card)',
                       borderRadius: '8px',
                       padding: '16px',
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                      boxShadow: 'var(--shadow-card)',
                       border: '1px solid #fbbf24',
                       transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                     }}
                     onMouseEnter={(e) => {
                       (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'
-                      ;(e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)'
+                      ;(e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-elevated)'
                     }}
                     onMouseLeave={(e) => {
                       (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'
-                      ;(e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)'
+                      ;(e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-card)'
                     }}
                   >
                     <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
@@ -1981,7 +1981,7 @@ const Products = () => {
                         <h3 style={{
                           fontSize: '16px',
                           fontWeight: 'bold',
-                          color: '#1a1a1a',
+                          color: 'var(--text-primary)',
                           margin: '0 0 4px 0',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -1991,7 +1991,7 @@ const Products = () => {
                         </h3>
                         <p style={{
                           fontSize: '13px',
-                          color: '#6b7280',
+                          color: 'var(--text-secondary)',
                           margin: '0 0 4px 0'
                         }}>
                           {product.category}
@@ -2345,11 +2345,11 @@ const Products = () => {
 
         {/* Products Table */}
         <div style={{
-          background: 'rgba(248, 250, 252, 0.9)',
+          background: 'var(--bg-container)',
           borderRadius: '12px',
           overflow: 'hidden',
-          boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-          border: '2px solid #d1d5db',
+          boxShadow: 'var(--shadow-card)',
+          border: 'var(--border-primary)',
           backdropFilter: 'blur(10px)'
         }}>
         <div style={{ overflowX: 'auto' }}>
@@ -2484,7 +2484,7 @@ const Products = () => {
                     onClick={isPrintMode ? undefined : () => handleProductClick(product)}
                     onMouseEnter={(e) => {
                       if (!isPrintMode) {
-                        (e.currentTarget as HTMLTableRowElement).style.background = '#f3f4f6'
+                        (e.currentTarget as HTMLTableRowElement).style.background = 'var(--bg-nested)'
                       }
                     }}
                     onMouseLeave={(e) => {
@@ -2557,8 +2557,8 @@ const Products = () => {
                       </td>
                       <td style={{ padding: '16px', borderRight: '2px solid rgba(125, 141, 134, 0.25)' }}>
                         <span style={{
-                          background: '#f3f4f6',
-                          color: '#000000',
+                          background: 'var(--bg-nested)',
+                          color: 'var(--text-primary)',
                           padding: '4px 8px',
                           borderRadius: '4px',
                           fontSize: '12px',
@@ -2586,7 +2586,7 @@ const Products = () => {
                         <p style={{ fontSize: '14px', fontWeight: '400', color: '#3e3f29', margin: 0 }}>
                           {product.stock_quantity}
                         </p>
-                        <p style={{ fontSize: '12px', color: '#000000', margin: 0, fontWeight: '500' }}>
+                        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, fontWeight: '500' }}>
                           Reorder: {product.reorder_level}
                         </p>
                       </td>
@@ -2670,13 +2670,13 @@ const Products = () => {
       <div style={{ 
         marginTop: '16px', 
         fontSize: '14px', 
-        color: '#000000',
+        color: 'var(--text-primary)',
         textAlign: 'center',
         padding: '12px',
         borderRadius: '8px',
         border: '1px solid #e5e7eb',
         marginBottom: '16px',
-        backgroundColor: '#ffffff'
+        backgroundColor: 'var(--bg-card)'
       }}>
         {totalProducts > 0 ? (
           <>
@@ -2739,7 +2739,7 @@ const Products = () => {
                 padding: '8px 12px',
                       border: '2px solid #000000',
                 borderRadius: '6px',
-                background: currentPage === 1 ? '#f3f4f6' : 'white',
+                background: currentPage === 1 ? 'var(--bg-nested)' : 'var(--bg-card)',
                 color: currentPage === 1 ? '#9ca3af' : '#3e3f29',
                 cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
                 fontSize: '14px',
@@ -2747,12 +2747,12 @@ const Products = () => {
               }}
               onMouseEnter={(e) => {
                 if (currentPage !== 1) {
-                  (e.target as HTMLButtonElement).style.background = '#f8f9fa'
+                  (e.target as HTMLButtonElement).style.background = 'var(--bg-nested)'
                 }
               }}
               onMouseLeave={(e) => {
                 if (currentPage !== 1) {
-                  (e.target as HTMLButtonElement).style.background = '#f8fafc'
+                  (e.target as HTMLButtonElement).style.background = 'var(--bg-card)'
                 }
               }}
             >
@@ -2782,7 +2782,7 @@ const Products = () => {
                       padding: '8px 12px',
                       border: '2px solid #000000',
                       borderRadius: '6px',
-                      background: currentPage === pageNum ? '#111827' : 'white',
+                      background: currentPage === pageNum ? '#111827' : 'var(--bg-card)',
                       color: currentPage === pageNum ? '#f1f0e4' : '#3e3f29',
                       cursor: 'pointer',
                       fontSize: '14px',
@@ -2792,12 +2792,12 @@ const Products = () => {
                     }}
                     onMouseEnter={(e) => {
                       if (currentPage !== pageNum) {
-                        (e.target as HTMLButtonElement).style.background = '#f8f9fa'
+                        (e.target as HTMLButtonElement).style.background = 'var(--bg-nested)'
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (currentPage !== pageNum) {
-                        (e.target as HTMLButtonElement).style.background = '#f8fafc'
+                        (e.target as HTMLButtonElement).style.background = 'var(--bg-card)'
                       }
                     }}
                   >
@@ -2814,7 +2814,7 @@ const Products = () => {
                 padding: '8px 12px',
                       border: '2px solid #000000',
                 borderRadius: '6px',
-                background: currentPage === totalPages ? '#f3f4f6' : 'white',
+                background: currentPage === totalPages ? 'var(--bg-nested)' : 'var(--bg-card)',
                 color: currentPage === totalPages ? '#9ca3af' : '#3e3f29',
                 cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
                 fontSize: '14px',
@@ -2822,12 +2822,12 @@ const Products = () => {
               }}
               onMouseEnter={(e) => {
                 if (currentPage !== totalPages) {
-                  (e.target as HTMLButtonElement).style.background = '#f8f9fa'
+                  (e.target as HTMLButtonElement).style.background = 'var(--bg-nested)'
                 }
               }}
               onMouseLeave={(e) => {
                 if (currentPage !== totalPages) {
-                  (e.target as HTMLButtonElement).style.background = '#f8fafc'
+                  (e.target as HTMLButtonElement).style.background = 'var(--bg-card)'
                 }
               }}
             >
