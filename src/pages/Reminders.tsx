@@ -2,29 +2,25 @@ import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { useBranch } from '../contexts/BranchContext';
+import { useRole } from '../contexts/RoleContext';
 import PageHeader from '../components/PageHeader';
+import TaskAssignmentModal from '../components/TaskAssignmentModal';
+import TasksList from '../components/TasksList';
+import { Reminder, NewTask } from '../types/multitenant';
 import styles from './Reminders.module.css';
 
-interface Reminder {
-  reminder_id: number;
-  owner_id: number;
-  title: string;
-  body: string;
-  remind_date: string;
-  created_at: string;
-  resolved?: boolean;
-  x?: number;
-  y?: number;
-  rotation?: number;
-  sale_id?: number; // Link to transaction for payment reminders
-  transactionResolved?: boolean; // Whether the linked transaction has been resolved
-  isEditing?: boolean;
-  color?: string;
+interface User {
+  user_id: number;
+  username: string;
+  role: string;
+  icon?: string;
+  full_name?: string;
 }
 
 export default function Reminders() {
   const { user, currentUserId } = useAuth();
   const { selectedBranchId } = useBranch();
+  const { hasPermission, userRole } = useRole();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [draggedNote, setDraggedNote] = useState<Reminder | null>(null);
@@ -51,13 +47,14 @@ export default function Reminders() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarDate, setCalendarDate] = useState(new Date());
-  const [showLilyMessage, setShowLilyMessage] = useState(false);
-  const [lilyMessage, setLilyMessage] = useState("Hi! I'm Lily, your reminder assistant! I can help you understand how to manage your reminders. Hover over different elements to learn more! Double-click me to disable me.");
-  const [lilyEnabled, setLilyEnabled] = useState(() => {
-    const saved = localStorage.getItem('lilyEnabled');
-    return saved !== null ? JSON.parse(saved) : true;
-  });
   const [showResolved, setShowResolved] = useState(true);
+  
+  // New state for task functionality
+  const [viewMode, setViewMode] = useState<'reminders' | 'tasks'>('reminders');
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [editingTask, setEditingTask] = useState<Reminder | null>(null);
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [showTaskNotification, setShowTaskNotification] = useState(false);
 
   const colors = {
     yellow: { bg: styles.noteYellow, border: styles.noteYellow, shadow: styles.noteYellow },
@@ -157,54 +154,7 @@ export default function Reminders() {
     return days;
   };
 
-  const toggleLily = () => {
-    const newState = !lilyEnabled;
-    setLilyEnabled(newState);
-    localStorage.setItem('lilyEnabled', JSON.stringify(newState));
-    if (newState) {
-      setLilyMessage("Hi! I'm back! I can help you understand how to manage your reminders. Hover over different elements to learn more! Double-click me to disable me.");
-      setShowLilyMessage(true);
-    }
-  };
 
-  const LilyMascot = () => {
-    if (!lilyEnabled) return null;
-    
-    return (
-      <div className={styles.lilyMascot}>
-        {/* Speech Bubble */}
-        {showLilyMessage && (
-          <div className={styles.lilySpeechBubble}>
-            <p>{lilyMessage}</p>
-            <div className={styles.lilySpeechTail}></div>
-          </div>
-        )}
-        
-        {/* Lily Image */}
-        <div 
-          className={styles.lilyImage}
-          onClick={() => {
-            if (showLilyMessage) {
-              // If message is showing, clicking toggles it off
-              setShowLilyMessage(false);
-            } else {
-              // If message is not showing, clicking toggles it on
-              setShowLilyMessage(true);
-            }
-          }}
-          onDoubleClick={() => {
-            // Double click to disable Lily
-            toggleLily();
-          }}
-        >
-          <img 
-            src={user?.icon ? `/images/icons/${user.icon}.png` : "/images/backgrounds/lily.png"} 
-            alt={user?.icon || "Lily"} 
-          />
-        </div>
-      </div>
-    );
-  };
 
   const getFilteredReminders = () => {
     const current = new Date(currentDate);
@@ -218,8 +168,9 @@ export default function Reminders() {
 
       const dateMatches = reminderDate.getTime() === current.getTime();
       const resolvedFilter = showResolved || (!reminder.resolved && !reminder.transactionResolved);
+      const isReminder = !reminder.is_task; // Only show reminders, not tasks
 
-      return dateMatches && resolvedFilter;
+      return dateMatches && resolvedFilter && isReminder;
     });
   };
 
@@ -263,7 +214,11 @@ export default function Reminders() {
         .from('reminders')
         .select(`
           *,
-          sales!left(partial_payment, remaining_amount)
+          sales!left(partial_payment, remaining_amount),
+          assigned_to_user:users!assigned_to(user_id, username, role, icon, full_name),
+          assigned_by_user:users!assigned_by(user_id, username, role, icon, full_name),
+          completed_by_user:users!completed_by(user_id, username, role, icon, full_name),
+          product:products!product_id(product_id, name, category, price, stock_quantity, image_url, sku)
         `)
         .eq('business_id', user.business_id);
 
@@ -278,7 +233,22 @@ export default function Reminders() {
         throw error;
       }
 
-      console.log('Fetched reminders from database:', data);
+      // Fetch notes counts for all tasks in parallel
+      const taskIds = (data || [])
+        .filter(r => r.is_task)
+        .map(r => r.reminder_id);
+
+      let notesCounts: Record<number, number> = {};
+      if (taskIds.length > 0) {
+        // Supabase count head query per task; batch by reducing round-trips
+        await Promise.all(taskIds.map(async (id) => {
+          const { count } = await supabase
+            .from('task_notes')
+            .select('note_id', { count: 'exact', head: true })
+            .eq('task_id', id);
+          notesCounts[id] = count || 0;
+        }));
+      }
 
       // Add UI properties to each reminder and check transaction status
       const remindersWithUI = data?.map((reminder, index) => {
@@ -289,6 +259,7 @@ export default function Reminders() {
         
         return {
           ...reminder,
+          notesCount: reminder.is_task ? (notesCounts[reminder.reminder_id] || 0) : undefined,
           x: Math.random() * 400 + 50,
           y: Math.random() * 300 + 50,
           rotation: (Math.random() - 0.5) * 6,
@@ -298,7 +269,6 @@ export default function Reminders() {
         };
       }) || [];
 
-      console.log('Reminders with UI properties:', remindersWithUI);
       setReminders(remindersWithUI);
     } catch (error) {
       console.error('Error fetching reminders:', error);
@@ -306,6 +276,48 @@ export default function Reminders() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Fetch available users for task assignment
+  const fetchUsers = async () => {
+    try {
+      if (!user?.business_id) {
+        setAvailableUsers([]);
+        return;
+      }
+
+      let query = supabase
+        .from('users')
+        .select('user_id, username, role, icon, full_name')
+        .eq('business_id', user.business_id)
+        .eq('active', true)
+        .order('username');
+
+      if (selectedBranchId) {
+        query = query.eq('branch_id', selectedBranchId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching users:', error);
+        return;
+      }
+
+      setAvailableUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  // Check for pending tasks assigned to current user
+  const checkPendingTasks = () => {
+    const pendingTasks = reminders.filter(reminder => 
+      reminder.is_task && 
+      reminder.assigned_to === currentUserId && 
+      !reminder.resolved
+    );
+    setShowTaskNotification(pendingTasks.length > 0);
   };
 
   useEffect(() => {
@@ -322,8 +334,8 @@ export default function Reminders() {
           setOfflineMode(true);
           setLoading(false);
         } else {
-          console.log('Table exists, fetching reminders...');
           fetchReminders();
+          fetchUsers();
         }
       } catch (err) {
         console.error('Table test failed:', err);
@@ -338,8 +350,14 @@ export default function Reminders() {
   useEffect(() => {
     if (user?.business_id) {
       fetchReminders();
+      fetchUsers();
     }
   }, [selectedBranchId]);
+
+  // Check for pending tasks when reminders change
+  useEffect(() => {
+    checkPendingTasks();
+  }, [reminders, currentUserId]);
 
   const openAddReminderModal = () => {
     setModalForm({
@@ -479,26 +497,17 @@ export default function Reminders() {
   };
 
   const updateReminder = async (id: number, updates: Partial<Reminder>) => {
-    console.log('updateReminder called with:', { id, updates, offlineMode });
     // Update local state first
     setReminders(reminders.map(reminder => 
       reminder.reminder_id === id ? { ...reminder, ...updates } : reminder
     ));
 
     if (offlineMode) {
-      console.log('Offline mode - skipping database update');
       return;
     }
 
     try {
       if (updates.title || updates.body || updates.remind_date || updates.resolved !== undefined) {
-        console.log('Updating database with:', {
-          title: updates.title,
-          body: updates.body,
-          remind_date: updates.remind_date,
-          resolved: updates.resolved
-        });
-        
         const { error } = await supabase
           .from('reminders')
           .update({
@@ -511,8 +520,6 @@ export default function Reminders() {
 
         if (error) {
           console.error('Error updating reminder in database:', error);
-        } else {
-          console.log('Successfully updated reminder in database');
         }
       }
     } catch (error) {
@@ -688,7 +695,6 @@ export default function Reminders() {
                 onContextMenu={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log('Note right-clicked for reminder:', reminder.reminder_id);
                   setEditingReminder(reminder);
                   setEditForm({
                     title: reminder.title,
@@ -711,12 +717,14 @@ export default function Reminders() {
                     </span>
                   )}
                 </div>
-                <div className={`${styles.noteDate} ${isOverdue ? styles.noteDateOverdue : isDueToday ? styles.noteDateToday : ''}`}>
-                  <i className="fa-solid fa-calendar" style={{ marginRight: '0.25rem' }}></i>
-                  {new Date(reminder.remind_date).toLocaleDateString()}
-                  {isOverdue && <span style={{ color: '#dc2626', marginLeft: '0.5rem', fontWeight: '700' }}>OVERDUE</span>}
-                  {isDueToday && !isOverdue && <span style={{ color: '#d97706', marginLeft: '0.5rem', fontWeight: '700' }}>TODAY</span>}
-                </div>
+                {viewMode === 'reminders' && (
+                  <div className={`${styles.noteDate} ${isOverdue ? styles.noteDateOverdue : isDueToday ? styles.noteDateToday : ''}`}>
+                    <i className="fa-solid fa-calendar" style={{ marginRight: '0.25rem' }}></i>
+                    {new Date(reminder.remind_date).toLocaleDateString()}
+                    {isOverdue && <span style={{ color: '#dc2626', marginLeft: '0.5rem', fontWeight: '700' }}>OVERDUE</span>}
+                    {isDueToday && !isOverdue && <span style={{ color: '#d97706', marginLeft: '0.5rem', fontWeight: '700' }}>TODAY</span>}
+                  </div>
+                )}
                 <div
                   className={`${styles.noteBody} ${reminder.resolved || reminder.transactionResolved ? styles.noteBodyResolved : ''}`}
                   style={{ fontFamily: 'Comic Sans MS, cursive, sans-serif' }}
@@ -747,6 +755,185 @@ export default function Reminders() {
     );
   };
 
+  // Task-related functions
+
+  const getFilteredTasks = () => {
+    return reminders.filter(reminder => reminder.is_task);
+  };
+
+  const openAddTaskModal = () => {
+    setEditingTask(null);
+    setShowTaskModal(true);
+  };
+
+  const closeTaskModal = () => {
+    setShowTaskModal(false);
+    setEditingTask(null);
+  };
+
+  const createTask = async (taskData: NewTask) => {
+    if (!hasPermission('canAssignTasks')) {
+      throw new Error('You do not have permission to assign tasks');
+    }
+
+    const newTask = {
+      ...taskData,
+      owner_id: currentUserId ? parseInt(currentUserId) : 1,
+      business_id: user?.business_id || 1,
+      branch_id: selectedBranchId,
+      assigned_by: currentUserId ? parseInt(currentUserId) : 1,
+      is_task: true,
+      resolved: false
+    };
+
+    if (offlineMode) {
+      const tempId = Date.now();
+      setReminders([...reminders, { 
+        ...newTask, 
+        reminder_id: tempId, 
+        created_at: new Date().toISOString(),
+        is_task: true
+      }]);
+      closeTaskModal();
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('reminders')
+        .insert([newTask])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating task:', error);
+        throw error;
+      }
+
+      // Add UI properties to the new task
+      const taskWithUI = {
+        ...data,
+        x: Math.random() * 400 + 50,
+        y: Math.random() * 300 + 50,
+        rotation: (Math.random() - 0.5) * 6,
+        isEditing: false,
+        color: 'blue'
+      };
+
+      setReminders([...reminders, taskWithUI]);
+      closeTaskModal();
+    } catch (error) {
+      console.error('Error creating task:', error);
+      throw error;
+    }
+  };
+
+  const editTask = (task: Reminder) => {
+    setEditingTask(task);
+    setShowTaskModal(true);
+  };
+
+  const updateTask = async (taskData: NewTask) => {
+    if (!editingTask) return;
+
+    const updates = {
+      title: taskData.title,
+      body: taskData.body,
+      remind_date: taskData.remind_date,
+      assigned_to: taskData.assigned_to,
+      priority: taskData.priority,
+      notes: taskData.notes,
+      product_id: taskData.product_id,
+      task_icon: taskData.task_icon
+    };
+
+    // Update local state first
+    setReminders(reminders.map(reminder => 
+      reminder.reminder_id === editingTask.reminder_id 
+        ? { ...reminder, ...updates } 
+        : reminder
+    ));
+
+    if (offlineMode) {
+      closeTaskModal();
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('reminders')
+        .update(updates)
+        .eq('reminder_id', editingTask.reminder_id);
+
+      if (error) {
+        console.error('Error updating task:', error);
+        throw error;
+      }
+
+      closeTaskModal();
+    } catch (error) {
+      console.error('Error updating task:', error);
+      throw error;
+    }
+  };
+
+  const completeTask = async (taskId: number) => {
+    const task = reminders.find(r => r.reminder_id === taskId);
+    if (!task) return;
+
+    const updates = {
+      resolved: true,
+      completed_by: currentUserId ? parseInt(currentUserId) : 1,
+      completed_at: new Date().toISOString()
+    };
+
+    // Update local state first
+    setReminders(reminders.map(reminder => 
+      reminder.reminder_id === taskId 
+        ? { ...reminder, ...updates } 
+        : reminder
+    ));
+
+    if (offlineMode) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('reminders')
+        .update(updates)
+        .eq('reminder_id', taskId);
+
+      if (error) {
+        console.error('Error completing task:', error);
+      }
+    } catch (error) {
+      console.error('Error completing task:', error);
+    }
+  };
+
+  const deleteTask = async (taskId: number) => {
+    // Update local state first
+    setReminders(reminders.filter(reminder => reminder.reminder_id !== taskId));
+
+    if (offlineMode) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('reminders')
+        .delete()
+        .eq('reminder_id', taskId);
+
+      if (error) {
+        console.error('Error deleting task:', error);
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
+  };
+
   // Loading state hidden - always show content
   // if (loading) {
   //   return (
@@ -767,69 +954,88 @@ export default function Reminders() {
         subtitle="Manage your reminders and scheduled tasks"
       />
 
-      <div className={styles.mainContent}>
-        {/* Date Navigation */}
-        <div className={styles.dateNavigation}>
-          <button
-            onClick={goToPreviousDay}
-            className={styles.navButton}
-            onMouseEnter={() => {
-              if (lilyEnabled) {
-                setLilyMessage("Click this arrow to go to the previous day! This helps you navigate through your reminders day by day.");
-                setShowLilyMessage(true);
-              }
-            }}
-            onMouseLeave={() => {
-              if (lilyEnabled) {
-                setShowLilyMessage(false);
-              }
-            }}
+      {/* Task Notification Banner */}
+      {showTaskNotification && (
+        <div className={styles.taskNotification}>
+          <div className={styles.notificationContent}>
+            <i className="fa-solid fa-bell"></i>
+            <span>
+              You have {reminders.filter(r => r.is_task && r.assigned_to === currentUserId && !r.resolved).length} pending task(s)
+            </span>
+            <button 
+              onClick={() => setViewMode('tasks')}
+              className={styles.viewTasksButton}
+            >
+              View Tasks
+            </button>
+          </div>
+          <button 
+            onClick={() => setShowTaskNotification(false)}
+            className={styles.dismissButton}
           >
-            <i className="fa-solid fa-chevron-left"></i>
+            <i className="fa-solid fa-times"></i>
           </button>
-          
-          <div 
-            className={styles.currentDate} 
-            onClick={() => setShowCalendar(!showCalendar)} 
-            style={{ cursor: 'pointer' }}
-            onMouseEnter={() => {
-              if (lilyEnabled) {
-                setLilyMessage("Click on this date to open the calendar modal! You can see all your reminders and navigate to any date quickly.");
-                setShowLilyMessage(true);
-              }
-            }}
-            onMouseLeave={() => {
-              if (lilyEnabled) {
-                setShowLilyMessage(false);
-              }
-            }}
-          >
-            {currentDate.toLocaleDateString('en-US', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
         </div>
-          
-          <button
-            onClick={goToNextDay}
-            className={styles.navButton}
-            onMouseEnter={() => {
-              if (lilyEnabled) {
-                setLilyMessage("Click this arrow to go to the next day! This helps you navigate through your reminders day by day.");
-                setShowLilyMessage(true);
-              }
-            }}
-            onMouseLeave={() => {
-              if (lilyEnabled) {
-                setShowLilyMessage(false);
-              }
-            }}
-          >
-            <i className="fa-solid fa-chevron-right"></i>
-          </button>
+      )}
+
+      {/* Tab Switcher */}
+      <div className={styles.tabSwitcher}>
+        <div className={`${styles.toggleLabel} ${viewMode === 'reminders' ? styles.active : ''}`}>
+          <i className="fa-solid fa-sticky-note"></i>
+          Reminders
+        </div>
+        <label className={styles.toggleContainer}>
+          <input
+            type="checkbox"
+            className={styles.toggleInput}
+            checked={viewMode === 'tasks'}
+            onChange={() => setViewMode(viewMode === 'reminders' ? 'tasks' : 'reminders')}
+          />
+          <span className={styles.toggleSlider}></span>
+        </label>
+        <div className={`${styles.toggleLabel} ${viewMode === 'tasks' ? styles.active : ''}`}>
+          <i className="fa-solid fa-tasks"></i>
+          Tasks
+          {reminders.filter(r => r.is_task && r.assigned_to === currentUserId && !r.resolved).length > 0 && (
+            <span className={styles.taskCount}>
+              {reminders.filter(r => r.is_task && r.assigned_to === currentUserId && !r.resolved).length}
+            </span>
+          )}
+        </div>
       </div>
+
+      <div className={styles.mainContent}>
+        {/* Date Navigation - Only show on reminders tab */}
+        {viewMode === 'reminders' && (
+          <div className={styles.dateNavigation}>
+            <button
+              onClick={goToPreviousDay}
+              className={styles.navButton}
+            >
+              <i className="fa-solid fa-chevron-left"></i>
+            </button>
+            
+            <div 
+              className={styles.currentDate} 
+              onClick={() => setShowCalendar(!showCalendar)} 
+              style={{ cursor: 'pointer' }}
+            >
+              {currentDate.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+          </div>
+            
+            <button
+              onClick={goToNextDay}
+              className={styles.navButton}
+            >
+              <i className="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+        )}
 
         {/* Calendar Modal */}
         {showCalendar && (
@@ -931,129 +1137,107 @@ export default function Reminders() {
 
         {/* Controls */}
         <div className={styles.controls}>
-          <button
-            onClick={openAddReminderModal}
-            className={`${styles.button} ${styles.buttonPrimary}`}
-            onMouseEnter={() => {
-              if (lilyEnabled) {
-                setLilyMessage("Click this button to add a new reminder! You can set the title, content, date, and color for your reminder.");
-                setShowLilyMessage(true);
-              }
-            }}
-            onMouseLeave={() => {
-              if (lilyEnabled) {
-                setShowLilyMessage(false);
-              }
-            }}
-          >
-            <i className="fa-solid fa-plus-circle"></i>
-            <span style={{ marginLeft: '0.5rem' }}>Add Reminder</span>
-          </button>
+          {viewMode === 'reminders' && (
+            <button
+              onClick={openAddReminderModal}
+              className={`${styles.button} ${styles.buttonPrimary}`}
+            >
+              <i className="fa-solid fa-plus-circle"></i>
+              <span style={{ marginLeft: '0.5rem' }}>Add Reminder</span>
+            </button>
+          )}
           
-          <button
-            onClick={() => {
-              const container = document.getElementById('sticky-container');
-              if (container) {
-                const containerRect = container.getBoundingClientRect();
-                setReminders(reminders.map(reminder => ({
-                  ...reminder,
-                  x: Math.random() * (containerRect.width - 224) + 20,
-                  y: Math.random() * (containerRect.height - 224) + 20,
-                  rotation: (Math.random() - 0.5) * 6
-                })));
-              }
-            }}
-            className={`${styles.button} ${styles.buttonSecondary}`}
-            onMouseEnter={() => {
-              if (lilyEnabled) {
-                setLilyMessage("Click this button to shuffle all your reminders around! This gives them new random positions on the board.");
-                setShowLilyMessage(true);
-              }
-            }}
-            onMouseLeave={() => {
-              if (lilyEnabled) {
-                setShowLilyMessage(false);
-              }
-            }}
-          >
-            <i className="fa-solid fa-random"></i>
-            <span style={{ marginLeft: '0.5rem' }}>Shuffle</span>
-          </button>
+          {viewMode === 'reminders' && (
+            <button
+              onClick={() => {
+                const container = document.getElementById('sticky-container');
+                if (container) {
+                  const containerRect = container.getBoundingClientRect();
+                  setReminders(reminders.map(reminder => ({
+                    ...reminder,
+                    x: Math.random() * (containerRect.width - 224) + 20,
+                    y: Math.random() * (containerRect.height - 224) + 20,
+                    rotation: (Math.random() - 0.5) * 6
+                  })));
+                }
+              }}
+              className={`${styles.button} ${styles.buttonSecondary}`}
+            >
+              <i className="fa-solid fa-random"></i>
+              <span style={{ marginLeft: '0.5rem' }}>Shuffle</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => setShowResolved(!showResolved)}
-            className={`${styles.button} ${showResolved ? styles.buttonPrimary : styles.buttonSecondary}`}
-            onMouseEnter={() => {
-              if (lilyEnabled) {
-                setLilyMessage(showResolved ? "Click to hide completed reminders and focus on what's still pending!" : "Click to show all reminders including completed ones!");
-                setShowLilyMessage(true);
-              }
-            }}
-            onMouseLeave={() => {
-              if (lilyEnabled) {
-                setShowLilyMessage(false);
-              }
-            }}
-          >
-            <i className={`fa-solid ${showResolved ? 'fa-eye' : 'fa-eye-slash'}`}></i>
-            <span style={{ marginLeft: '0.5rem' }}>
-              {showResolved ? 'Show All' : 'Hide Completed'}
-            </span>
-          </button>
+          {viewMode === 'reminders' && (
+            <button
+              onClick={() => setShowResolved(!showResolved)}
+              className={`${styles.button} ${showResolved ? styles.buttonPrimary : styles.buttonSecondary}`}
+            >
+              <i className={`fa-solid ${showResolved ? 'fa-eye' : 'fa-eye-slash'}`}></i>
+              <span style={{ marginLeft: '0.5rem' }}>
+                {showResolved ? 'Show All' : 'Hide Completed'}
+              </span>
+            </button>
+          )}
 
-          {reminders.length > 0 && (
+          {viewMode === 'reminders' && reminders.filter(r => !r.is_task).length > 0 && (
             <button
               onClick={() => setShowConfirmDialog(true)}
               className={`${styles.button} ${styles.buttonDanger}`}
-              onMouseEnter={() => {
-                if (lilyEnabled) {
-                  setLilyMessage("Click this button to remove all reminders at once! Be careful - this action cannot be undone.");
-                  setShowLilyMessage(true);
-                }
-              }}
-              onMouseLeave={() => {
-                if (lilyEnabled) {
-                  setShowLilyMessage(false);
-                }
-              }}
             >
               <i className="fa-solid fa-trash-can"></i>
-              <span style={{ marginLeft: '0.5rem' }}>Clear All</span>
+              <span style={{ marginLeft: '0.5rem' }}>Clear All Reminders</span>
             </button>
           )}
         </div>
 
-        {/* Notes Container */}
-      <div 
-        id="sticky-container"
-        className={styles.notesContainer}
-        style={{ minHeight: '600px' }}
-      >
-        {/* Grid pattern background */}
-        <div className={styles.gridBackground}>
-          <div className={styles.gridPattern}></div>
-        </div>
-
-        {/* Render filtered reminders */}
-        {getFilteredReminders().map(reminder => (
-          <StickyNote key={reminder.reminder_id} reminder={reminder} />
-        ))}
-
-        {/* Instructions when no reminders */}
-        {getFilteredReminders().length === 0 && (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyStateContent}>
-              <img 
-                src="/images/vectors/reminders.png" 
-                alt="No reminders" 
-                style={{ 
-                  width: '280px', 
-                  height: 'auto',
-                  opacity: 0.85
-                }} 
-              />
+        {/* Content Container */}
+        {viewMode === 'reminders' ? (
+          <div 
+            id="sticky-container"
+            className={styles.notesContainer}
+          >
+            {/* Grid pattern background */}
+            <div className={styles.gridBackground}>
+              <div className={styles.gridPattern}></div>
             </div>
+
+            {/* Render filtered reminders */}
+            {getFilteredReminders().map(reminder => (
+              <StickyNote key={reminder.reminder_id} reminder={reminder} />
+            ))}
+
+            {/* Instructions when no reminders */}
+            {getFilteredReminders().length === 0 && (
+              <div className={styles.emptyState}>
+                <div className={styles.emptyStateContent}>
+                  <img 
+                    src="/images/vectors/reminders.png" 
+                    alt="No reminders" 
+                    style={{ 
+                      width: '280px', 
+                      height: 'auto',
+                      opacity: 0.85
+                    }} 
+                  />
+                </div>
+              </div>
+            )}
           </div>
+        ) : (
+          <TasksList
+            tasks={getFilteredTasks()}
+            currentUserId={currentUserId ? parseInt(currentUserId) : 1}
+            userRole={userRole}
+            onEditTask={editTask}
+            onCompleteTask={completeTask}
+            onDeleteTask={deleteTask}
+            onAddTask={hasPermission('canAssignTasks') ? openAddTaskModal : undefined}
+            availableUsers={availableUsers}
+            businessId={user?.business_id || 1}
+            branchId={selectedBranchId || undefined}
+            onTasksChange={fetchReminders}
+          />
         )}
 
         {/* Drag cursor indicator */}
@@ -1075,22 +1259,22 @@ export default function Reminders() {
 
       {/* Add Reminder Modal */}
       {showModal && (
-        <div className={styles.modalOverlay}>
+        <div className={`${styles.modalOverlay} ${styles.open}`}>
           <div className={styles.modal}>
             <div className={styles.modalHeader}>
-              <div className={styles.modalTitle}>
-                <h2>
-                  <i className="fa-solid fa-sticky-note" style={{ marginRight: '0.5rem', color: '#fbbf24' }}></i>
-                  Create New Reminder
-                </h2>
-                <button
-                  onClick={closeModal}
-                  className={styles.modalClose}
-                >
-                  <i className="fa-solid fa-times" style={{ fontSize: '1.25rem' }}></i>
-                </button>
-              </div>
+              <h2 className={styles.modalTitle}>
+                <i className="fa-solid fa-sticky-note" style={{ marginRight: '0.5rem', color: '#fbbf24' }}></i>
+                Create New Reminder
+              </h2>
+              <button
+                onClick={closeModal}
+                className={styles.modalClose}
+              >
+                <i className="fa-solid fa-times"></i>
+              </button>
+            </div>
 
+            <div className={styles.modalBody}>
               <form onSubmit={(e) => { e.preventDefault(); addReminder(); }} className={styles.modalForm}>
                 {/* Error Display */}
                 {error && (
@@ -1193,24 +1377,27 @@ export default function Reminders() {
                   </div>
                 )}
 
-                {/* Action Buttons */}
-                <div className={styles.modalActions}>
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className={`${styles.modalButton} ${styles.modalButtonCancel}`}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className={`${styles.modalButton} ${styles.modalButtonSubmit}`}
-                  >
-                    <i className="fa-solid fa-plus"></i>
-                    Create Reminder
-                  </button>
-                </div>
               </form>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <div className={styles.modalActions}>
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className={`${styles.modalButton} ${styles.modalButtonCancel}`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  onClick={(e) => { e.preventDefault(); addReminder(); }}
+                  className={`${styles.modalButton} ${styles.modalButtonSubmit}`}
+                >
+                  <i className="fa-solid fa-plus"></i>
+                  Create Reminder
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1218,22 +1405,22 @@ export default function Reminders() {
 
         {/* Edit Reminder Modal */}
         {showEditModal && editingReminder && (
-          <div className={styles.modalOverlay}>
+          <div className={`${styles.modalOverlay} ${styles.open}`}>
             <div className={styles.modal}>
               <div className={styles.modalHeader}>
-                <div className={styles.modalTitle}>
-                  <h2>
-                    <i className="fa-solid fa-edit" style={{ marginRight: '0.5rem', color: '#fbbf24' }}></i>
-                    Edit Reminder
-                  </h2>
-                  <button
-                    onClick={closeEditModal}
-                    className={styles.modalClose}
-                  >
-                    <i className="fa-solid fa-times" style={{ fontSize: '1.25rem' }}></i>
-                  </button>
-                </div>
+                <h2 className={styles.modalTitle}>
+                  <i className="fa-solid fa-edit" style={{ marginRight: '0.5rem', color: '#fbbf24' }}></i>
+                  Edit Reminder
+                </h2>
+                <button
+                  onClick={closeEditModal}
+                  className={styles.modalClose}
+                >
+                  <i className="fa-solid fa-times"></i>
+                </button>
+              </div>
 
+              <div className={styles.modalBody}>
                 <form onSubmit={(e) => { e.preventDefault(); updateReminderFromModal(); }} className={styles.modalForm}>
                   {/* Error Display */}
                   {error && (
@@ -1356,35 +1543,38 @@ export default function Reminders() {
                     </div>
                   )}
 
-                  {/* Action Buttons */}
-                  <div className={styles.modalActions}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        deleteReminder(editingReminder.reminder_id);
-                        closeEditModal();
-                      }}
-                      className={`${styles.modalButton} ${styles.modalButtonDanger}`}
-                    >
-                      <i className="fa-solid fa-trash"></i>
-                      Delete
-                    </button>
-                    <button
-                      type="button"
-                      onClick={closeEditModal}
-                      className={`${styles.modalButton} ${styles.modalButtonCancel}`}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className={`${styles.modalButton} ${styles.modalButtonSubmit}`}
-                    >
-                      <i className="fa-solid fa-save"></i>
-                      Update Reminder
-                    </button>
-                  </div>
                 </form>
+              </div>
+
+              <div className={styles.modalFooter}>
+                <div className={styles.modalActions}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      deleteReminder(editingReminder.reminder_id);
+                      closeEditModal();
+                    }}
+                    className={`${styles.modalButton} ${styles.modalButtonDanger}`}
+                  >
+                    <i className="fa-solid fa-trash"></i>
+                    Delete
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeEditModal}
+                    className={`${styles.modalButton} ${styles.modalButtonCancel}`}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    onClick={(e) => { e.preventDefault(); updateReminderFromModal(); }}
+                    className={`${styles.modalButton} ${styles.modalButtonSubmit}`}
+                  >
+                    <i className="fa-solid fa-save"></i>
+                    Update Reminder
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1420,10 +1610,15 @@ export default function Reminders() {
             </div>
           </div>
         )}
-      </div>
 
-      {/* Lily Mascot */}
-      <LilyMascot />
+        {/* Task Assignment Modal */}
+        <TaskAssignmentModal
+          open={showTaskModal}
+          onClose={closeTaskModal}
+          onSave={editingTask ? updateTask : createTask}
+          editingTask={editingTask}
+          availableUsers={availableUsers}
+        />
     </div>
   );
 }

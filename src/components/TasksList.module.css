@@ -1,0 +1,1304 @@
+/* Tasks UI - Modern Design with Dark Mode Support */
+
+* {
+  box-sizing: border-box;
+}
+
+.container {
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+  margin: 0;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+/* Header */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(62, 63, 41, 0.1);
+}
+
+.headerContent {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.viewToggle {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(125, 141, 134, 0.1);
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(125, 141, 134, 0.2);
+}
+
+.viewButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  background: rgba(125, 141, 134, 0.1);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  color: inherit;
+  opacity: 0.8;
+}
+
+.viewButton:hover {
+  opacity: 1;
+  background: rgba(125, 141, 134, 0.15);
+}
+
+.viewButtonActive {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.darkModeToggle {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 1px solid rgba(125, 141, 134, 0.3);
+  background: rgba(125, 141, 134, 0.1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  color: #ffffff;
+}
+
+.darkModeToggle:hover {
+  background: rgba(125, 141, 134, 0.2);
+  transform: scale(1.05);
+  border-color: rgba(125, 141, 134, 0.5);
+}
+
+/* Week Strip */
+.weekStrip {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  width: 100%;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(26, 26, 26, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 2px solid rgba(125, 141, 134, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.weekNavButton {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(125, 141, 134, 0.3);
+  background: rgba(125, 141, 134, 0.1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.weekNavButton:hover {
+  background: rgba(125, 141, 134, 0.2);
+  border-color: rgba(125, 141, 134, 0.5);
+}
+
+.weekDays {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.weekDay {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid;
+  position: relative;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.weekDay:hover {
+  background: rgba(125, 141, 134, 0.1);
+  transform: translateY(-1px);
+}
+
+.weekDayToday {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+
+.weekDaySelected {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+  background: rgba(99, 102, 241, 0.15) !important;
+  transform: translateY(-2px);
+}
+
+.weekDayName {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+  font-weight: 600;
+}
+
+.weekDayDate {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 0.125rem;
+}
+
+.weekDayBadge {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.625rem;
+  min-width: 1.125rem;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.todayButton {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(125, 141, 134, 0.3);
+  background: rgba(125, 141, 134, 0.1);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.todayButton:hover {
+  background: rgba(125, 141, 134, 0.2);
+  border-color: rgba(125, 141, 134, 0.5);
+}
+
+/* Date Filter Indicator */
+.dateFilterIndicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  margin: 0 1rem;
+  background: rgba(125, 141, 134, 0.08);
+  border: 1px solid rgba(125, 141, 134, 0.2);
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.dateFilterIndicator span {
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.clearDateButton {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(99, 102, 241, 0.2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  opacity: 0.8;
+}
+
+.clearDateButton:hover {
+  background: rgba(99, 102, 241, 0.3);
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+/* Filters */
+.filtersCard {
+  position: sticky;
+  top: 4.5rem;
+  z-index: 15;
+  width: 100%;
+  padding: 1rem;
+  background: rgba(26, 26, 26, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(125, 141, 134, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.filtersRow {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.searchBox {
+  width: 280px;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchBox i {
+  position: absolute;
+  left: 0.75rem;
+  opacity: 0.7;
+  font-size: 0.875rem;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+  border: 1px solid rgba(125, 141, 134, 0.3);
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  outline: none;
+  background: rgba(125, 141, 134, 0.1);
+  transition: all 0.2s ease;
+  color: #ffffff;
+}
+
+.searchInput:focus {
+  border-color: rgba(125, 141, 134, 0.5);
+  background: rgba(125, 141, 134, 0.15);
+}
+
+.searchInput::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.assigneeSelect {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.assigneeSelect i {
+  position: absolute;
+  left: 0.75rem;
+  opacity: 0.7;
+  font-size: 0.875rem;
+  pointer-events: none;
+}
+
+.assigneeSelect select {
+  padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+  border: 1px solid rgba(125, 141, 134, 0.3);
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  background: rgba(125, 141, 134, 0.1);
+  cursor: pointer;
+  outline: none;
+  color: #ffffff;
+}
+
+.assigneeSelect select option {
+  background: #000000;
+  color: #ffffff;
+  padding: 0.5rem;
+}
+
+.chipsRow {
+  display: flex;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.chipLabel {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+  font-weight: 600;
+}
+
+.filterChip {
+  padding: 0.5rem 0.875rem;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(125, 141, 134, 0.3);
+  background: rgba(125, 141, 134, 0.08);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+.filterChip:hover {
+  background: rgba(125, 141, 134, 0.15);
+  opacity: 1;
+  border-color: rgba(125, 141, 134, 0.5);
+}
+
+.filterChipActive {
+  background: rgba(99, 102, 241, 0.2) !important;
+  border-color: rgba(99, 102, 241, 0.4) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+  transform: translateY(-1px);
+}
+
+.priorityDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+}
+
+.activeFilters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-top: 1px solid rgba(125, 141, 134, 0.2);
+  margin-top: 0.5rem;
+}
+
+.clearX {
+  margin-left: 0.5rem;
+  opacity: 0.7;
+}
+
+.clearAllButton {
+  padding: 0.375rem 0.75rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.1);
+  color: rgba(239, 68, 68, 0.9);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.clearAllButton:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+
+/* Content */
+.content {
+  width: 100%;
+  padding: 0 1rem 2rem 1rem;
+}
+
+/* Table View */
+.tableCard {
+  overflow: hidden;
+  background: transparent;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  width: 100%;
+  max-width: 100%;
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 1rem;
+}
+
+.table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: transparent;
+}
+
+.table th {
+  padding: 1.5rem 1rem 1.25rem 1rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.8;
+  font-weight: 600;
+  border-bottom: 2px solid rgba(125, 141, 134, 0.2);
+}
+
+.table tbody tr {
+  border-bottom: 1px solid rgba(125, 141, 134, 0.15);
+  transition: all 0.15s ease;
+}
+
+.table tbody tr:hover {
+  background: rgba(125, 141, 134, 0.05);
+}
+
+.table td {
+  padding: 1.5rem 1rem;
+  vertical-align: middle;
+}
+
+.quickAddRow {
+  background: rgba(16, 185, 129, 0.02) !important;
+}
+
+.quickAddRow:hover {
+  background: rgba(16, 185, 129, 0.03) !important;
+}
+
+.quickAddRow input {
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid rgba(125, 141, 134, 0.3);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  outline: none;
+  background: rgba(125, 141, 134, 0.1);
+  color: #ffffff;
+}
+
+.quickAddRow input:focus {
+  border-color: rgba(125, 141, 134, 0.5);
+  background: rgba(125, 141, 134, 0.15);
+}
+
+.quickAddRow input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.quickAddLabel {
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+.addButton {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  opacity: 0.6;
+}
+
+.addButton:hover {
+  background: rgba(125, 141, 134, 0.15);
+  opacity: 1;
+}
+
+.addButton:active {
+  transform: scale(0.95);
+}
+
+.taskRow {
+  cursor: pointer;
+}
+
+.bandCell {
+  padding: 0 !important;
+}
+
+.band {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.75rem;
+  border-radius: 0.5rem;
+  height: calc(100% + 2rem);
+  margin: -1rem 0.5rem;
+  min-height: 3rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.8125rem;
+}
+
+.titleCell {
+  font-weight: 500;
+}
+
+.iconCell {
+  width: 5rem;
+  text-align: center;
+  padding: 1.5rem 0.5rem !important;
+}
+
+.taskIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin: 0 auto;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.taskIcon:hover {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.taskIconImage {
+  font-size: 1.25rem;
+}
+
+.titleContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.taskTitle {
+  font-weight: 600;
+  color: inherit;
+}
+
+.titleBadges {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.overdueBadge {
+  background: #dc2626;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.descCell {
+  opacity: 0.8;
+  max-width: 22.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userCell {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  transition: all 0.2s ease;
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+}
+
+.userCell:hover {
+  background: rgba(125, 141, 134, 0.1);
+  transform: translateY(-1px);
+}
+
+.userName {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.dateBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.dateBadge i {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.priorityBadge,
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.priorityBadge {
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.statusPill i {
+  font-size: 0.75rem;
+}
+
+.statusSelect {
+  background: transparent;
+  border: none;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  cursor: pointer;
+  outline: none;
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.75rem;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 0.75rem;
+  padding-right: 1.75rem;
+}
+
+.statusSelect:hover {
+  opacity: 0.9;
+}
+
+.statusSelect option {
+  background: rgba(0, 0, 0, 0.9);
+  padding: 0.5rem;
+}
+
+.notesCount {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.notesCount i {
+  opacity: 0.8;
+}
+
+.notesBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(125, 141, 134, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+  transition: all 0.2s ease;
+  border: 1px solid rgba(125, 141, 134, 0.3);
+  backdrop-filter: blur(5px);
+}
+
+.notesBadge:hover {
+  background: rgba(125, 141, 134, 0.25);
+  color: rgba(255, 255, 255, 1);
+}
+
+.notesBadge i {
+  font-size: 0.625rem;
+  opacity: 0.8;
+}
+
+.productBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid rgba(125, 141, 134, 0.3);
+  backdrop-filter: blur(5px);
+  margin-right: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.productBadge:hover {
+  background: rgba(125, 141, 134, 0.25);
+}
+
+.productBadge i {
+  font-size: 0.625rem;
+  opacity: 0.8;
+}
+
+.productInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  background: rgba(125, 141, 134, 0.05);
+  border: 1px solid rgba(125, 141, 134, 0.1);
+}
+
+.productImage {
+  flex-shrink: 0;
+  background: rgba(125, 141, 134, 0.1);
+  border: 1px solid rgba(125, 141, 134, 0.2);
+}
+
+.actionsCell {
+  width: 6rem;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 0.5rem;
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+}
+
+.taskRow:hover .actionButtons {
+  opacity: 0.8;
+}
+
+.actionButtons button {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  opacity: 1;
+}
+
+.actionButtons button:hover {
+  background: rgba(125, 141, 134, 0.15);
+  opacity: 1;
+}
+
+.actionButtons button:active {
+  transform: scale(0.95);
+}
+
+/* Board View */
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.75rem;
+}
+
+.boardColumn {
+  padding: 1rem;
+  min-height: 20rem;
+  background: transparent;
+}
+
+.columnHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.columnTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.columnCount {
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+.columnContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.taskCard {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(125, 141, 134, 0.15);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(125, 141, 134, 0.05);
+}
+
+.taskCard:hover {
+  background: rgba(125, 141, 134, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(125, 141, 134, 0.1);
+}
+
+.taskCardHeader {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.taskCardTitle {
+  font-weight: 500;
+  font-size: 0.875rem;
+  flex: 1;
+}
+
+.taskCardDesc {
+  font-size: 0.8125rem;
+  opacity: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin-bottom: 0.5rem;
+}
+
+.taskCardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+/* Drawer */
+.drawerOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 40;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.drawer {
+  position: fixed;
+  right: 0;
+  top: 0;
+  height: 100vh;
+  width: min(35rem, 92vw);
+  overflow-y: auto;
+  z-index: 50;
+  animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, rgba(5, 5, 8, 0.95), rgba(10, 10, 15, 0.98));
+  backdrop-filter: blur(25px) saturate(1.8);
+  box-shadow: -4px 0 35px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.drawerHeader h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.drawerHeader button {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: rgba(125, 141, 134, 0.1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.125rem;
+  transition: all 0.2s ease;
+  opacity: 0.8;
+}
+
+.drawerHeader button:hover {
+  background: rgba(125, 141, 134, 0.2);
+  opacity: 1;
+}
+
+.drawerContent {
+  padding: 1.5rem;
+}
+
+.drawerSection {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(125, 141, 134, 0.15);
+  margin-bottom: 1rem;
+}
+
+.drawerSection h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.drawerSection p {
+  margin: 0;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+.assignedUser {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.userDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.userName {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.userRole {
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.completedTask {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+.notesList {
+  display: flex;
+    flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.noNotes {
+  font-size: 0.875rem;
+  opacity: 0.7;
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.loadingNotes {
+  font-size: 0.875rem;
+  opacity: 0.7;
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.noteItem {
+  display: flex;
+  gap: 0.75rem;
+    align-items: flex-start;
+}
+
+.noteContent {
+  flex: 1;
+}
+
+.noteMeta {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin-bottom: 0.25rem;
+}
+
+.noteText {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background: rgba(0, 0, 0, 0.03);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.addNoteBox {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.addNoteBox input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(125, 141, 134, 0.3);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  outline: none;
+  background: rgba(125, 141, 134, 0.1);
+  color: #ffffff;
+}
+
+.addNoteBox input:focus {
+  border-color: rgba(125, 141, 134, 0.5);
+  background: rgba(125, 141, 134, 0.15);
+}
+
+.addNoteBox input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.addNoteBox button {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.addNoteBox button:hover {
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.drawerActions {
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.drawerButton {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: rgba(125, 141, 134, 0.1);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  opacity: 0.8;
+}
+
+.drawerButton:hover {
+  background: rgba(125, 141, 134, 0.2);
+  opacity: 1;
+}
+
+.drawerButton:last-child {
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.drawerButton:last-child:hover {
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Task Card Actions */
+.taskCardActions {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  margin-top: auto;
+}
+
+.taskCardButton {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  border: none;
+  background: rgba(125, 141, 134, 0.1);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  opacity: 0.8;
+}
+
+.taskCardButton:hover {
+  background: rgba(125, 141, 134, 0.2);
+  opacity: 1;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .headerContent {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .weekStrip {
+    flex-direction: column;
+    padding: 1rem 0.5rem;
+  }
+
+  .weekDays {
+    overflow-x: auto;
+  }
+
+  .filtersCard {
+    padding: 1rem 0.5rem;
+  }
+
+  .filtersRow {
+    flex-direction: column;
+  }
+
+  .content {
+    padding: 0 0.5rem 2rem 0.5rem;
+  }
+
+  .board {
+    grid-template-columns: 1fr;
+  }
+
+  .drawer {
+    width: 100vw;
+  }
+
+  .tableWrapper {
+    overflow-x: auto;
+  }
+
+  .table {
+    min-width: 64rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .weekStrip {
+    padding: 1.5rem 2rem;
+  }
+
+  .filtersCard {
+    padding: 2rem 2rem 1rem 2rem;
+  }
+
+  .content {
+    padding: 0 2rem 2rem 2rem;
+  }
+
+  .iconCell {
+    width: 4rem;
+    padding: 1.5rem 0.25rem !important;
+  }
+
+  .taskIcon {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  
+  .taskIconImage {
+    font-size: 1.125rem;
+  }
+}

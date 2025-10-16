@@ -11,6 +11,7 @@ export interface RolePermissions {
   canUploadImages: boolean
   canLookupProducts: boolean
   canLookupCustomers: boolean
+  canAssignTasks: boolean
 }
 
 // Role definitions
@@ -23,7 +24,8 @@ const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     canChangeSettings: true,
     canUploadImages: true,
     canLookupProducts: true,
-    canLookupCustomers: true
+    canLookupCustomers: true,
+    canAssignTasks: true
   },
   Owner: {
     canManageUsers: true,
@@ -33,7 +35,8 @@ const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     canChangeSettings: true,
     canUploadImages: true,
     canLookupProducts: true,
-    canLookupCustomers: true
+    canLookupCustomers: true,
+    canAssignTasks: true
   },
   Manager: {
     canManageUsers: false,
@@ -43,7 +46,8 @@ const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     canChangeSettings: false,
     canUploadImages: true,
     canLookupProducts: true,
-    canLookupCustomers: true
+    canLookupCustomers: true,
+    canAssignTasks: true
   },
   Cashier: {
     canManageUsers: false,
@@ -53,7 +57,8 @@ const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     canChangeSettings: false,
     canUploadImages: false,
     canLookupProducts: true,
-    canLookupCustomers: true
+    canLookupCustomers: true,
+    canAssignTasks: false
   }
 }
 
@@ -62,6 +67,7 @@ interface RoleContextType {
   permissions: RolePermissions
   hasPermission: (permission: keyof RolePermissions) => boolean
   canAccessRoute: (route: string) => boolean
+  canAssignToUser: (targetUserRole: string) => boolean
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined)
@@ -109,11 +115,33 @@ export const RoleProvider = ({ children }: RoleProviderProps) => {
     }
   }
 
+  const canAssignToUser = (targetUserRole: string): boolean => {
+    // Must have task assignment permission
+    if (!hasPermission('canAssignTasks')) {
+      return false
+    }
+
+    // Owner and Admin can assign to anyone
+    if (userRole === 'Owner' || userRole === 'Admin') {
+      return true
+    }
+
+    // Manager cannot assign to Owner or Admin
+    if (userRole === 'Manager') {
+      const targetRole = targetUserRole.charAt(0).toUpperCase() + targetUserRole.slice(1).toLowerCase()
+      return targetRole !== 'Owner' && targetRole !== 'Admin'
+    }
+
+    // Cashier cannot assign tasks
+    return false
+  }
+
   const value: RoleContextType = {
     userRole,
     permissions,
     hasPermission,
-    canAccessRoute
+    canAccessRoute,
+    canAssignToUser
   }
 
   return (

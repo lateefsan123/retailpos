@@ -233,6 +233,24 @@ export interface SideBusinessSale {
 // REMINDER TYPES (Updated)
 // =====================================================
 
+export interface TaskNote {
+  note_id: number
+  task_id: number
+  author_id: number
+  text: string
+  created_at: string
+  business_id: number
+  // UI properties from joins
+  author?: {
+    user_id: number
+    username: string
+    full_name?: string
+    icon?: string
+  }
+}
+
+export type TaskStatus = 'Pending' | 'In Progress' | 'Review' | 'Completed'
+
 export interface Reminder {
   reminder_id: number
   owner_id: number
@@ -240,15 +258,90 @@ export interface Reminder {
   body: string
   remind_date: string
   created_at: string
-  resolved: boolean
-  business_id: number // Multi-tenant support
+  resolved?: boolean
+  business_id?: number // Multi-tenant support
   sale_id?: number // Link to transaction for payment reminders
+  // Task assignment fields
+  assigned_to?: number
+  assigned_by?: number
+  is_task?: boolean
+  completed_by?: number
+  completed_at?: string
+  branch_id?: number | null
+  priority?: 'Low' | 'Medium' | 'High'
+  notes?: string // Simple notes field
+  status?: TaskStatus // Task status for kanban
+  taskNotes?: TaskNote[] // Array of task notes with authors
+  notesCount?: number // Cached count of notes for quick display
+  // Product and icon assignment
+  product_id?: string // Optional product assignment
+  task_icon?: string // Icon for task categorization
+  // UI fields
+  x?: number
+  y?: number
+  rotation?: number
+  transactionResolved?: boolean
+  isEditing?: boolean
+  color?: string
+  assigned_to_user?: {
+    user_id: number
+    username: string
+    role: string
+    icon?: string
+    full_name?: string
+  }
+  assigned_by_user?: {
+    user_id: number
+    username: string
+    role: string
+    icon?: string
+    full_name?: string
+  }
+  completed_by_user?: {
+    user_id: number
+    username: string
+    role: string
+    icon?: string
+    full_name?: string
+  }
+  // Product information for assigned product
+  product?: {
+    product_id: string
+    name: string
+    category?: string
+    price: number
+    stock_quantity: number
+    image_url?: string
+    sku?: string
+  }
 }
 
 export interface NewReminder {
   title: string
   body: string
   remind_date: string
+}
+
+export interface NewTask {
+  title: string
+  body: string
+  remind_date: string
+  assigned_to: number
+  priority?: 'Low' | 'Medium' | 'High'
+  notes?: string
+  product_id?: string
+  task_icon?: string
+}
+
+export interface TaskFilters {
+  assignedTo?: number
+  status?: TaskStatus | 'All'
+  priority?: 'Low' | 'Medium' | 'High' | 'All'
+  search?: string
+  dateRange?: {
+    start: string
+    end: string
+  }
 }
 
 // =====================================================
