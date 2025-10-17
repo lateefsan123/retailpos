@@ -78,7 +78,7 @@
 
 .headerSubtitle {
   margin: 0;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 16px;
 }
 
@@ -101,8 +101,8 @@
   gap: 8px;
   padding: 10px 18px;
   border-radius: 10px;
-  border: 2px solid #d1d5db;
-  background: var(--bg-card);
+  border: 2px solid #374151;
+  background: var(--bg-nested);
   color: var(--text-secondary);
   font-size: 14px;
   font-weight: 600;
@@ -180,10 +180,10 @@
 .searchInput {
   width: 100%;
   padding: 12px 16px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid #374151;
   border-radius: 8px;
   font-size: 16px;
-  background: var(--bg-card);
+  background: var(--bg-nested);
   color: var(--text-primary);
   box-sizing: border-box;
   outline: none;
@@ -200,7 +200,7 @@
   gap: 8px;
   cursor: pointer;
   font-size: 16px;
-  color: #374151;
+  color: var(--text-secondary);
   white-space: nowrap;
   min-width: fit-content;
 }
@@ -209,21 +209,24 @@
   width: 18px;
   height: 18px;
   accent-color: #1a1a1a;
+  background: var(--bg-nested);
+  border: 2px solid #374151;
+  border-radius: 4px;
 }
 
 /* Vehicle Legend */
 .vehicleLegend {
   margin-top: 16px;
   padding: 12px;
-  background: #f9fafb;
+  background: var(--bg-nested);
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #374151;
 }
 
 .legendTitle {
   font-size: 14px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
@@ -243,7 +246,7 @@
   width: 24px;
   height: 24px;
   border-radius: 6px;
-  background: #f3f4f6;
+  background: var(--bg-card);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -251,7 +254,7 @@
 }
 
 .legendIconTruck {
-  border-color: #1a1a1a;
+  border-color: #ffffff;
 }
 
 .legendIconVan {
@@ -263,7 +266,7 @@
 }
 
 .legendIconTruck i {
-  color: #1a1a1a;
+  color: #ffffff;
 }
 
 .legendIconVan i {
@@ -272,12 +275,12 @@
 
 .legendLabel {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .legendNote {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-style: italic;
 }
 
@@ -394,7 +397,7 @@
   width: 40px;
   height: 40px;
   border-radius: 8px;
-  background: #f3f4f6;
+  background: var(--bg-card);
   display: flex;
   align-items: center;
   justify-content: center;

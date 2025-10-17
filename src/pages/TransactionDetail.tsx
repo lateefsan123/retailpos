@@ -700,11 +700,12 @@ const TransactionDetail = () => {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        minHeight: '400px'
+        minHeight: '400px',
+        background: 'var(--bg-primary)'
       }}>
         <div style={{
           textAlign: 'center',
-          color: '#4b5563'
+          color: 'var(--text-secondary)'
         }}>
           <i className="fa-solid fa-exclamation-triangle" style={{
             fontSize: '48px',
@@ -720,7 +721,7 @@ const TransactionDetail = () => {
   }
 
   return (
-    <div style={{ padding: '0' }}>
+    <>
       {/* Header */}
       <div style={{
         display: 'flex',
@@ -735,19 +736,19 @@ const TransactionDetail = () => {
               background: 'none',
               border: 'none',
               fontSize: '24px',
-              color: '#1f2937',
+              color: 'var(--text-primary)',
               cursor: 'pointer',
               padding: '8px',
               borderRadius: '8px',
               transition: 'all 0.2s ease'
             }}
             onMouseEnter={(e) => {
-              (e.target as HTMLButtonElement).style.background = '#f3f4f6'
-              (e.target as HTMLButtonElement).style.color = '#1f2937'
+              (e.target as HTMLButtonElement).style.background = 'rgba(255, 255, 255, 0.1)'
+              (e.target as HTMLButtonElement).style.color = 'var(--text-primary)'
             }}
             onMouseLeave={(e) => {
               (e.target as HTMLButtonElement).style.background = 'none'
-              (e.target as HTMLButtonElement).style.color = '#3e3f29'
+              (e.target as HTMLButtonElement).style.color = 'var(--text-primary)'
             }}
           >
             <i className="fa-solid fa-arrow-left"></i>
@@ -756,7 +757,7 @@ const TransactionDetail = () => {
             <h1 style={{
               fontSize: '32px',
               fontWeight: 'bold',
-              color: '#1f2937',
+              color: 'var(--text-primary)',
               margin: '0 0 8px 0',
               display: 'flex',
               alignItems: 'center',
@@ -767,11 +768,11 @@ const TransactionDetail = () => {
                 <span style={{
                   fontSize: '14px',
                   fontWeight: 'normal',
-                  background: '#f3f4f6',
-                  color: '#374151',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  color: 'var(--text-primary)',
                   padding: '4px 8px',
                   borderRadius: '4px',
-                  border: '1px solid #e5e7eb'
+                  border: '1px solid rgba(255, 255, 255, 0.2)'
                 }}>
                   <i className="fa-solid fa-briefcase" style={{ marginRight: '4px' }}></i>
                   Side Business
@@ -780,7 +781,7 @@ const TransactionDetail = () => {
             </h1>
             <p style={{
               fontSize: '16px',
-              color: '#4b5563',
+              color: 'var(--text-secondary)',
               margin: 0
             }}>
               {formatDate(transaction.datetime)}
@@ -792,9 +793,9 @@ const TransactionDetail = () => {
             onClick={() => setShowRefundModal(true)}
             disabled={refundLoading || !currentBusiness?.business_id || !selectedBranchId}
             style={{
-              background: refundLoading || !currentBusiness?.business_id || !selectedBranchId ? '#d1d5db' : '#111827',
-              color: refundLoading || !currentBusiness?.business_id || !selectedBranchId ? '#9ca3af' : '#f1f0e4',
-              border: 'none',
+              background: refundLoading || !currentBusiness?.business_id || !selectedBranchId ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.85)',
+              color: refundLoading || !currentBusiness?.business_id || !selectedBranchId ? 'var(--text-secondary)' : '#ffffff',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
               padding: '12px 24px',
               borderRadius: '8px',
               fontSize: '14px',
@@ -807,12 +808,14 @@ const TransactionDetail = () => {
             }}
             onMouseEnter={(e) => {
               if (!refundLoading && currentBusiness?.business_id && selectedBranchId) {
-                (e.target as HTMLButtonElement).style.background = '#374151'
+                (e.target as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.95)'
+                (e.target as HTMLButtonElement).style.transform = 'translateY(-1px)'
               }
             }}
             onMouseLeave={(e) => {
               if (!refundLoading && currentBusiness?.business_id && selectedBranchId) {
-                (e.target as HTMLButtonElement).style.background = '#111827'
+                (e.target as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.85)'
+                (e.target as HTMLButtonElement).style.transform = 'translateY(0)'
               }
             }}
           >
@@ -822,9 +825,9 @@ const TransactionDetail = () => {
           <button
             onClick={handleDeleteTransaction}
             style={{
-              background: '#6b7280',
-              color: '#f1f0e4',
-              border: 'none',
+              background: 'rgba(0, 0, 0, 0.85)',
+              color: '#ffffff',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
               padding: '12px 24px',
               borderRadius: '8px',
               fontSize: '14px',
@@ -836,10 +839,12 @@ const TransactionDetail = () => {
               gap: '8px'
             }}
             onMouseEnter={(e) => {
-              (e.target as HTMLButtonElement).style.background = '#4b5563'
+              (e.target as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.95)'
+              (e.target as HTMLButtonElement).style.transform = 'translateY(-1px)'
             }}
             onMouseLeave={(e) => {
-              (e.target as HTMLButtonElement).style.background = '#6b7280'
+              (e.target as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.85)'
+              (e.target as HTMLButtonElement).style.transform = 'translateY(0)'
             }}
           >
             <i className="fa-solid fa-trash" style={{ fontSize: '14px' }}></i>
@@ -851,9 +856,9 @@ const TransactionDetail = () => {
                 onClick={handleSave}
                 disabled={saving}
                 style={{
-                  background: saving ? '#9ca3af' : '#111827',
-                  color: '#f1f0e4',
-                  border: 'none',
+                  background: saving ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.85)',
+                  color: saving ? 'var(--text-secondary)' : '#ffffff',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
                   padding: '12px 24px',
                   borderRadius: '8px',
                   fontSize: '14px',
@@ -866,12 +871,14 @@ const TransactionDetail = () => {
                 }}
                 onMouseEnter={(e) => {
                   if (!saving) {
-                    (e.target as HTMLButtonElement).style.background = '#374151'
+                    (e.target as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.95)'
+                    (e.target as HTMLButtonElement).style.transform = 'translateY(-1px)'
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!saving) {
-                    (e.target as HTMLButtonElement).style.background = '#111827'
+                    (e.target as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.85)'
+                    (e.target as HTMLButtonElement).style.transform = 'translateY(0)'
                   }
                 }}
               >
@@ -885,9 +892,9 @@ const TransactionDetail = () => {
                 onClick={handleCancel}
                 disabled={saving}
                 style={{
-                  background: '#6b7280',
-                  color: '#f1f0e4',
-                  border: 'none',
+                  background: 'rgba(0, 0, 0, 0.85)',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
                   padding: '12px 24px',
                   borderRadius: '8px',
                   fontSize: '14px',
@@ -900,12 +907,14 @@ const TransactionDetail = () => {
                 }}
                 onMouseEnter={(e) => {
                   if (!saving) {
-                    (e.target as HTMLButtonElement).style.background = '#4b5563'
+                    (e.target as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.95)'
+                    (e.target as HTMLButtonElement).style.transform = 'translateY(-1px)'
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!saving) {
-                    (e.target as HTMLButtonElement).style.background = '#6b7280'
+                    (e.target as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.85)'
+                    (e.target as HTMLButtonElement).style.transform = 'translateY(0)'
                   }
                 }}
               >
@@ -918,9 +927,9 @@ const TransactionDetail = () => {
               <button
                 onClick={fetchTransactionDetails}
                 style={{
-                  background: '#111827',
-                  color: '#f1f0e4',
-                  border: 'none',
+                  background: 'rgba(0, 0, 0, 0.85)',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
                   padding: '12px 24px',
                   borderRadius: '8px',
                   fontSize: '14px',
@@ -932,10 +941,12 @@ const TransactionDetail = () => {
                   gap: '8px'
                 }}
                 onMouseEnter={(e) => {
-                  (e.target as HTMLButtonElement).style.background = '#374151'
+                  (e.target as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.95)'
+                  (e.target as HTMLButtonElement).style.transform = 'translateY(-1px)'
                 }}
                 onMouseLeave={(e) => {
-                  (e.target as HTMLButtonElement).style.background = '#111827'
+                  (e.target as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.85)'
+                  (e.target as HTMLButtonElement).style.transform = 'translateY(0)'
                 }}
                 title={`Last refreshed: ${new Date(lastRefreshTime).toLocaleTimeString()}`}
               >
@@ -945,9 +956,9 @@ const TransactionDetail = () => {
               <button
                 onClick={handleEdit}
                 style={{
-                  background: '#111827',
-                  color: '#f1f0e4',
-                  border: 'none',
+                  background: 'rgba(0, 0, 0, 0.85)',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
                   padding: '12px 24px',
                   borderRadius: '8px',
                   fontSize: '14px',
@@ -959,10 +970,12 @@ const TransactionDetail = () => {
                   gap: '8px'
                 }}
                 onMouseEnter={(e) => {
-                  (e.target as HTMLButtonElement).style.background = '#374151'
+                  (e.target as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.95)'
+                  (e.target as HTMLButtonElement).style.transform = 'translateY(-1px)'
                 }}
                 onMouseLeave={(e) => {
-                  (e.target as HTMLButtonElement).style.background = '#111827'
+                  (e.target as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.85)'
+                  (e.target as HTMLButtonElement).style.transform = 'translateY(0)'
                 }}
               >
                 <i className="fa-solid fa-edit" style={{ fontSize: '14px' }}></i>
@@ -975,12 +988,12 @@ const TransactionDetail = () => {
 
       {/* Transaction Summary Card */}
       <div style={{
-        background: '#ffffff',
+        background: 'var(--bg-card)',
         borderRadius: '16px',
         padding: '24px',
         marginBottom: '24px',
-        border: '1px solid rgba(125, 141, 134, 0.2)',
-        boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)'
+        border: 'var(--border-primary)',
+        boxShadow: 'var(--shadow-elevated)'
       }}>
         <div style={{
           display: 'grid',
@@ -991,7 +1004,7 @@ const TransactionDetail = () => {
             <p style={{
               fontSize: '14px',
               fontWeight: '500',
-              color: '#4b5563',
+              color: 'var(--text-secondary)',
               margin: '0 0 8px 0'
             }}>
               Total Amount
@@ -999,7 +1012,7 @@ const TransactionDetail = () => {
             <p style={{
               fontSize: '28px',
               fontWeight: 'bold',
-              color: '#1f2937',
+              color: 'var(--text-primary)',
               margin: 0
             }}>
               €{transaction.total_amount.toFixed(2)}
@@ -1009,7 +1022,7 @@ const TransactionDetail = () => {
             <p style={{
               fontSize: '14px',
               fontWeight: '500',
-              color: '#4b5563',
+              color: 'var(--text-secondary)',
               margin: '0 0 8px 0'
             }}>
               Payment Method
@@ -1021,9 +1034,9 @@ const TransactionDetail = () => {
                 style={{
                   fontSize: '16px',
                   fontWeight: '600',
-                  color: '#1f2937',
-                  background: '#f9fafb',
-                  border: '2px solid #e5e7eb',
+                  color: 'var(--text-primary)',
+                  background: 'var(--bg-input)',
+                  border: 'var(--input-border)',
                   borderRadius: '8px',
                   padding: '8px 12px',
                   width: '100%',
@@ -1038,7 +1051,7 @@ const TransactionDetail = () => {
               <p style={{
                 fontSize: '18px',
                 fontWeight: '600',
-                color: '#1f2937',
+                color: 'var(--text-primary)',
                 margin: 0,
                 textTransform: 'capitalize'
               }}>
@@ -1050,7 +1063,7 @@ const TransactionDetail = () => {
             <p style={{
               fontSize: '14px',
               fontWeight: '500',
-              color: '#4b5563',
+              color: 'var(--text-secondary)',
               margin: '0 0 8px 0'
             }}>
               Customer
@@ -1062,9 +1075,9 @@ const TransactionDetail = () => {
                 style={{
                   fontSize: '16px',
                   fontWeight: '600',
-                  color: '#1f2937',
-                  background: '#f9fafb',
-                  border: '2px solid #e5e7eb',
+                  color: 'var(--text-primary)',
+                  background: 'var(--bg-input)',
+                  border: 'var(--input-border)',
                   borderRadius: '8px',
                   padding: '8px 12px',
                   width: '100%',
@@ -1082,7 +1095,7 @@ const TransactionDetail = () => {
               <p style={{
                 fontSize: '18px',
                 fontWeight: '600',
-                color: '#1f2937',
+                color: 'var(--text-primary)',
                 margin: 0
               }}>
                 {transaction.customer_name || 'Walk-in Customer'}
@@ -1093,7 +1106,7 @@ const TransactionDetail = () => {
             <p style={{
               fontSize: '14px',
               fontWeight: '500',
-              color: '#4b5563',
+              color: 'var(--text-secondary)',
               margin: '0 0 8px 0'
             }}>
               Cashier
@@ -1101,7 +1114,7 @@ const TransactionDetail = () => {
             <p style={{
               fontSize: '18px',
               fontWeight: '600',
-              color: '#1f2937',
+              color: 'var(--text-primary)',
               margin: 0
             }}>
               {transaction.cashier_name || 'System'}
@@ -1111,7 +1124,7 @@ const TransactionDetail = () => {
             <p style={{
               fontSize: '14px',
               fontWeight: '500',
-              color: '#4b5563',
+              color: 'var(--text-secondary)',
               margin: '0 0 8px 0'
             }}>
               Items Count
@@ -1119,7 +1132,7 @@ const TransactionDetail = () => {
             <p style={{
               fontSize: '18px',
               fontWeight: '600',
-              color: '#1f2937',
+              color: 'var(--text-primary)',
               margin: 0
             }}>
               {items.length} items
@@ -1130,7 +1143,7 @@ const TransactionDetail = () => {
               <p style={{
                 fontSize: '14px',
                 fontWeight: '500',
-                color: '#4b5563',
+                color: 'var(--text-secondary)',
                 margin: '0 0 8px 0'
               }}>
                 Discount Applied
@@ -1284,7 +1297,7 @@ const TransactionDetail = () => {
                 width: '100%',
                 minHeight: '80px',
                 fontSize: '14px',
-                color: '#1f2937',
+                color: 'var(--text-primary)',
                 background: '#f9fafb',
                 border: '2px solid #e5e7eb',
                 borderRadius: '8px',
@@ -1296,7 +1309,7 @@ const TransactionDetail = () => {
           ) : (
             <p style={{
               fontSize: '16px',
-              color: '#1f2937',
+              color: 'var(--text-primary)',
               margin: 0,
               fontStyle: transaction.notes ? 'normal' : 'italic',
               opacity: transaction.notes ? 1 : 0.6
@@ -1309,16 +1322,16 @@ const TransactionDetail = () => {
 
       {/* Transaction Items */}
       <div style={{
-        background: '#ffffff',
+        background: 'var(--bg-card)',
         borderRadius: '16px',
         padding: '24px',
-        border: '1px solid rgba(125, 141, 134, 0.2)',
-        boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)'
+        border: 'var(--border-primary)',
+        boxShadow: 'var(--shadow-elevated)'
       }}>
         <h2 style={{
           fontSize: '24px',
           fontWeight: '600',
-          color: '#1f2937',
+          color: 'var(--text-primary)',
           margin: '0 0 24px 0',
           display: 'flex',
           alignItems: 'center',
@@ -1369,10 +1382,10 @@ const TransactionDetail = () => {
               
               return (
                 <div key={index} style={{
-                  background: 'white',
+                  background: 'var(--bg-card)',
                   borderRadius: '12px',
                   padding: '16px',
-                  border: '1px solid rgba(125, 141, 134, 0.1)',
+                  border: 'var(--border-primary)',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
@@ -1527,14 +1540,14 @@ const TransactionDetail = () => {
                       <p style={{
                         fontSize: '16px',
                         fontWeight: '600',
-                        color: '#1f2937',
+                        color: 'var(--text-primary)',
                         margin: '0 0 4px 0'
                       }}>
                         {item.product_name}
                       </p>
                       <p style={{
                         fontSize: '14px',
-                        color: '#4b5563',
+                        color: 'var(--text-secondary)',
                         margin: 0
                       }}>
                         {item.product_category} • {
@@ -1571,7 +1584,7 @@ const TransactionDetail = () => {
           <div style={{
             textAlign: 'center',
             padding: '40px',
-            color: '#4b5563'
+            color: 'var(--text-secondary)'
           }}>
             <i className="fa-solid fa-box" style={{
               fontSize: '48px',
@@ -1598,7 +1611,7 @@ const TransactionDetail = () => {
           currentUserId={user?.user_id}
         />
       )}
-    </div>
+    </>
   )
 }
 

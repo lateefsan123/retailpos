@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useBusinessId } from '../hooks/useBusinessId'
 import { useBranch } from '../contexts/BranchContext'
 import { useRole } from '../contexts/RoleContext'
 import { usePromotions } from '../hooks/usePromotions'
 import { useProducts } from '../hooks/derived/useProducts'
-import { Promotion, PromotionRequest, Product } from '../types/multitenant'
+import { Promotion, PromotionRequest } from '../types/multitenant'
 import PageHeader from '../components/PageHeader'
 import styles from './Promotions.module.css'
 
@@ -12,8 +12,8 @@ const Promotions: React.FC = () => {
   const { businessId } = useBusinessId()
   const { selectedBranchId } = useBranch()
   const { hasPermission } = useRole()
-  const { promotions, loading, error, createPromotion, updatePromotion, deletePromotion, togglePromotion, getPromotionStats } = usePromotions(businessId, selectedBranchId)
-  const { products } = useProducts(businessId, selectedBranchId)
+  const { promotions, loading, error, createPromotion, updatePromotion, deletePromotion, togglePromotion, getPromotionStats } = usePromotions(businessId || null, selectedBranchId || null)
+  const { products } = useProducts()
 
   const [showModal, setShowModal] = useState(false)
   const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(null)
@@ -183,31 +183,7 @@ const Promotions: React.FC = () => {
       >
         <button
           onClick={() => { resetForm(); setShowModal(true) }}
-          style={{
-            padding: '16px 32px',
-            background: '#1a1a1a',
-            color: '#f1f0e4',
-            border: 'none',
-            borderRadius: '12px',
-            cursor: 'pointer',
-            fontSize: '16px',
-            fontWeight: '600',
-            transition: 'all 0.2s ease',
-            boxShadow: '0 4px 12px rgba(26, 26, 26, 0.15)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#374151'
-            e.currentTarget.style.transform = 'translateY(-2px)'
-            e.currentTarget.style.boxShadow = '0 6px 16px rgba(26, 26, 26, 0.2)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = '#1a1a1a'
-            e.currentTarget.style.transform = 'translateY(0)'
-            e.currentTarget.style.boxShadow = '0 4px 12px rgba(26, 26, 26, 0.15)'
-          }}
+          className={styles.createButton}
         >
           <i className="fas fa-plus" />
           Create Promotion
@@ -215,139 +191,65 @@ const Promotions: React.FC = () => {
       </PageHeader>
 
       {/* Stats Summary */}
-      <div style={{
-        marginBottom: '40px'
-      }}>
-        {/* Stats Summary */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '16px',
-          marginTop: '24px'
-        }}>
-          <div style={{
-            background: 'var(--bg-card)',
-            padding: '20px',
-            borderRadius: '12px',
-            border: 'var(--border-primary)',
-            boxShadow: 'var(--shadow-card)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                background: '#d1fae5',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <i className="fas fa-play" style={{ fontSize: '18px', color: '#10b981' }}></i>
-              </div>
-              <div>
-                <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 4px 0', fontWeight: '500' }}>Active</p>
-                <p style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
-                  {filteredPromotions.filter(p => {
-                    const now = new Date()
-                    const startDate = new Date(p.start_date)
-                    const endDate = new Date(p.end_date)
-                    return p.active && startDate <= now && endDate >= now
-                  }).length}
-                </p>
-              </div>
-            </div>
+      <div className={styles.statsContainer}>
+        <div className={styles.statItem}>
+          <div className={`${styles.statIcon} ${styles.statIconActive}`}>
+            <i className="fas fa-play"></i>
           </div>
-          
-          <div style={{
-            background: 'var(--bg-card)',
-            padding: '20px',
-            borderRadius: '12px',
-            border: 'var(--border-primary)',
-            boxShadow: 'var(--shadow-card)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                background: '#fef3c7',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <i className="fas fa-pause" style={{ fontSize: '18px', color: '#f59e0b' }}></i>
-              </div>
-              <div>
-                <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 4px 0', fontWeight: '500' }}>Inactive</p>
-                <p style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
-                  {filteredPromotions.filter(p => !p.active).length}
-                </p>
-              </div>
-            </div>
+          <div>
+            <p className={styles.statLabel}>Active</p>
+            <p className={styles.statValue}>
+              {filteredPromotions.filter(p => {
+                const now = new Date()
+                const startDate = new Date(p.start_date)
+                const endDate = new Date(p.end_date)
+                return p.active && startDate <= now && endDate >= now
+              }).length}
+            </p>
           </div>
-          
-          <div style={{
-            background: 'var(--bg-card)',
-            padding: '20px',
-            borderRadius: '12px',
-            border: 'var(--border-primary)',
-            boxShadow: 'var(--shadow-card)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                background: '#fee2e2',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <i className="fas fa-clock" style={{ fontSize: '18px', color: '#dc2626' }}></i>
-              </div>
-              <div>
-                <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 4px 0', fontWeight: '500' }}>Expired</p>
-                <p style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
-                  {filteredPromotions.filter(p => {
-                    const now = new Date()
-                    const endDate = new Date(p.end_date)
-                    return endDate < now
-                  }).length}
-                </p>
-              </div>
-            </div>
+        </div>
+        
+        <div className={styles.statItem}>
+          <div className={`${styles.statIcon} ${styles.statIconInactive}`}>
+            <i className="fas fa-pause"></i>
           </div>
-          
-          <div style={{
-            background: '#ffffff',
-            padding: '20px',
-            borderRadius: '12px',
-            border: '2px solid #d1d5db',
-            boxShadow: '0 2px 8px rgba(62, 63, 41, 0.08)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                background: '#dbeafe',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <i className="fas fa-calendar" style={{ fontSize: '18px', color: '#3b82f6' }}></i>
-              </div>
-              <div>
-                <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 4px 0', fontWeight: '500' }}>Upcoming</p>
-                <p style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
-                  {filteredPromotions.filter(p => {
-                    const now = new Date()
-                    const startDate = new Date(p.start_date)
-                    return startDate > now
-                  }).length}
-                </p>
-              </div>
-            </div>
+          <div>
+            <p className={styles.statLabel}>Inactive</p>
+            <p className={styles.statValue}>
+              {filteredPromotions.filter(p => !p.active).length}
+            </p>
+          </div>
+        </div>
+        
+        <div className={styles.statItem}>
+          <div className={`${styles.statIcon} ${styles.statIconExpired}`}>
+            <i className="fas fa-clock"></i>
+          </div>
+          <div>
+            <p className={styles.statLabel}>Expired</p>
+            <p className={styles.statValue}>
+              {filteredPromotions.filter(p => {
+                const now = new Date()
+                const endDate = new Date(p.end_date)
+                return endDate < now
+              }).length}
+            </p>
+          </div>
+        </div>
+        
+        <div className={styles.statItem}>
+          <div className={`${styles.statIcon} ${styles.statIconUpcoming}`}>
+            <i className="fas fa-calendar"></i>
+          </div>
+          <div>
+            <p className={styles.statLabel}>Upcoming</p>
+            <p className={styles.statValue}>
+              {filteredPromotions.filter(p => {
+                const now = new Date()
+                const startDate = new Date(p.start_date)
+                return startDate > now
+              }).length}
+            </p>
           </div>
         </div>
       </div>
@@ -411,20 +313,11 @@ const Promotions: React.FC = () => {
 
       {/* Error Message */}
       {error && (
-        <div style={{
-          background: '#fee2e2',
-          border: '2px solid #dc2626',
-          color: '#991b1b',
-          padding: '16px',
-          borderRadius: '12px',
-          marginBottom: '24px',
-          textAlign: 'center',
-          boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)'
-        }}>
-          <i className="fas fa-exclamation-triangle" style={{ marginRight: '8px' }} />
+        <div className={styles.errorMessage}>
+          <i className={`fas fa-exclamation-triangle ${styles.errorIcon}`} />
           {error}
           {error.includes('table not found') && (
-            <div style={{ marginTop: '8px', fontSize: '14px' }}>
+            <div className={styles.errorDetails}>
               <strong>To fix this:</strong>
               <br />
               1. Go to your Supabase dashboard
@@ -439,98 +332,34 @@ const Promotions: React.FC = () => {
 
       {/* Promotions Section */}
       <div>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '24px'
-        }}>
-          <h2 style={{
-            fontSize: '20px',
-            fontWeight: '600',
-            color: '#1a1a1a',
-            margin: 0,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <i className="fas fa-tags" style={{ fontSize: '16px', color: '#7d8d86' }}></i>
+        <div className={styles.promotionsHeader}>
+          <h2 className={styles.promotionsTitle}>
+            <i className={`fas fa-tags ${styles.promotionsTitleIcon}`}></i>
             All Promotions
-            <span style={{
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#ffffff',
-              background: '#1a1a1a',
-              padding: '4px 8px',
-              borderRadius: '12px',
-              marginLeft: '8px'
-            }}>
+            <span className={styles.promotionsCount}>
               {filteredPromotions.length}
             </span>
           </h2>
         </div>
 
         {loading ? (
-          <div style={{
-            background: '#ffffff',
-            padding: '60px',
-            borderRadius: '16px',
-            textAlign: 'center',
-            boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-            border: '2px solid #d1d5db'
-          }}>
-            <i className="fas fa-spinner fa-spin" style={{ fontSize: '32px', color: '#7c3aed', marginBottom: '16px' }} />
-            <p style={{ fontSize: '16px', color: '#6b7280', margin: 0 }}>Loading promotions...</p>
+          <div className={styles.loadingContainer}>
+            <i className={`fas fa-spinner fa-spin ${styles.loadingSpinner}`} />
+            <p className={styles.loadingText}>Loading promotions...</p>
           </div>
         ) : filteredPromotions.length === 0 && !error ? (
-          <div style={{
-            background: '#ffffff',
-            padding: '60px',
-            borderRadius: '16px',
-            textAlign: 'center',
-            boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-            border: '2px solid #d1d5db'
-          }}>
-            <i className="fas fa-tags" style={{ fontSize: '48px', color: '#7d8d86', marginBottom: '16px' }} />
-            <h3 style={{ fontSize: '20px', color: '#1a1a1a', marginBottom: '8px', fontWeight: '600' }}>No promotions found</h3>
-            <p style={{ fontSize: '16px', color: '#6b7280', marginBottom: '24px' }}>
+          <div className={styles.emptyContainer}>
+            <i className={`fas fa-tags ${styles.emptyIcon}`} />
+            <h3 className={styles.emptyTitle}>No promotions found</h3>
+            <p className={styles.emptyText}>
               {searchTerm || filterStatus !== 'all' 
                 ? 'Try adjusting your search or filter criteria' 
                 : 'Create your first promotion to get started'
               }
             </p>
-            {(!searchTerm && filterStatus === 'all') && (
-              <button
-                onClick={() => { resetForm(); setShowModal(true) }}
-                style={{
-                  padding: '12px 24px',
-                  background: '#1a1a1a',
-                  color: '#f1f0e4',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '15px',
-                  fontWeight: '600',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#374151'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#1a1a1a'
-                }}
-              >
-                <i className="fas fa-plus" style={{ marginRight: '8px' }} />
-                Create Your First Promotion
-              </button>
-            )}
           </div>
         ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))',
-            gap: '24px'
-          }}>
+          <div className={styles.promotionsGrid}>
           {filteredPromotions.map(promo => {
             const now = new Date()
             const startDate = new Date(promo.start_date)
@@ -542,88 +371,35 @@ const Promotions: React.FC = () => {
             return (
               <div
                 key={promo.promotion_id}
-                style={{
-                  background: '#ffffff',
-                  borderRadius: '16px',
-                  padding: '24px',
-                  boxShadow: '0 4px 12px rgba(62, 63, 41, 0.1)',
-                  border: `2px solid ${isActive ? '#1a1a1a' : isExpired ? '#dc2626' : '#d1d5db'}`,
-                  transition: 'all 0.3s ease',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-4px)'
-                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(62, 63, 41, 0.15)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(62, 63, 41, 0.1)'
-                }}
+                className={`${styles.promotionCard} ${isActive ? styles.promotionCardActive : isExpired ? styles.promotionCardExpired : ''}`}
               >
                 {/* Status Badge */}
-                <div style={{ marginBottom: '12px' }}>
-                  <span style={{
-                    padding: '6px 12px',
-                    borderRadius: '999px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    background: isActive ? '#1a1a1a' : isExpired ? '#fee2e2' : isUpcoming ? '#dbeafe' : '#f3f4f6',
-                    color: isActive ? '#ffffff' : isExpired ? '#991b1b' : isUpcoming ? '#1e40af' : '#1a1a1a',
-                    border: `1px solid ${isActive ? '#1a1a1a' : isExpired ? '#dc2626' : isUpcoming ? '#3b82f6' : '#d1d5db'}`
-                  }}>
+                <div className={styles.statusBadge}>
+                  <span className={`${isActive ? styles.statusActive : isExpired ? styles.statusExpired : isUpcoming ? styles.statusUpcoming : styles.statusInactive}`}>
                     {isActive ? '🟢 Active' : isExpired ? '⚫ Expired' : isUpcoming ? '🔵 Upcoming' : '⚪ Inactive'}
                   </span>
                 </div>
 
                 {/* Promotion Name */}
-                <h3 style={{ 
-                  fontSize: '20px', 
-                  fontWeight: '700', 
-                  marginBottom: '8px', 
-                  color: '#1a1a1a',
-                  lineHeight: '1.3'
-                }}>
+                <h3 className={styles.promotionName}>
                   {promo.name}
                 </h3>
 
                 {/* Description */}
                 {promo.description && (
-                  <p style={{ 
-                    color: '#6b7280', 
-                    fontSize: '14px', 
-                    marginBottom: '16px',
-                    lineHeight: '1.5'
-                  }}>
+                  <p className={styles.promotionDescription}>
                     {promo.description}
                   </p>
                 )}
 
                 {/* Discount Info */}
-                <div style={{
-                  background: '#f9fafb',
-                  padding: '16px',
-                  borderRadius: '12px',
-                  marginBottom: '16px',
-                  border: '1px solid #e5e7eb',
-                  textAlign: 'center'
-                }}>
-                  <div style={{ 
-                    fontSize: '28px', 
-                    fontWeight: '800', 
-                    color: '#7c3aed',
-                    marginBottom: '4px',
-                    letterSpacing: '-0.02em'
-                  }}>
+                <div className={styles.discountInfo}>
+                  <div className={styles.discountValue}>
                     {promo.discount_type === 'percentage'
                       ? `${promo.discount_value}% OFF`
                       : `$${promo.discount_value.toFixed(2)} OFF`}
                   </div>
-                  <div style={{ 
-                    fontSize: '13px', 
-                    color: '#6b7280', 
-                    fontWeight: '500'
-                  }}>
+                  <div className={styles.discountScope}>
                     {promo.applies_to === 'all'
                       ? 'All Products'
                       : `${promo.products?.length || 0} Specific Products`}
@@ -631,33 +407,16 @@ const Promotions: React.FC = () => {
                 </div>
 
                 {/* Dates */}
-                <div style={{ 
-                  fontSize: '13px', 
-                  color: '#6b7280', 
-                  marginBottom: '16px',
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '8px'
-                }}>
-                  <div style={{
-                    padding: '8px',
-                    background: '#f3f4f6',
-                    borderRadius: '6px',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ fontSize: '11px', fontWeight: '600', color: '#374151', marginBottom: '2px' }}>START</div>
-                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#1a1a1a' }}>
+                <div className={styles.datesContainer}>
+                  <div className={styles.dateBox}>
+                    <div className={styles.dateLabel}>START</div>
+                    <div className={styles.dateValue}>
                       {new Date(promo.start_date).toLocaleDateString()}
                     </div>
                   </div>
-                  <div style={{
-                    padding: '8px',
-                    background: '#f3f4f6',
-                    borderRadius: '6px',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ fontSize: '11px', fontWeight: '600', color: '#374151', marginBottom: '2px' }}>END</div>
-                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#1a1a1a' }}>
+                  <div className={styles.dateBox}>
+                    <div className={styles.dateLabel}>END</div>
+                    <div className={styles.dateValue}>
                       {new Date(promo.end_date).toLocaleDateString()}
                     </div>
                   </div>
@@ -665,27 +424,19 @@ const Promotions: React.FC = () => {
 
                 {/* Conditions */}
                 {(promo.min_purchase_amount > 0 || promo.usage_limit) && (
-                  <div style={{
-                    fontSize: '12px',
-                    color: '#92400e',
-                    padding: '12px',
-                    background: '#fef3c7',
-                    borderRadius: '8px',
-                    marginBottom: '16px',
-                    border: '1px solid #f59e0b'
-                  }}>
-                    <div style={{ fontSize: '11px', fontWeight: '600', color: '#92400e', marginBottom: '4px' }}>
+                  <div className={styles.conditionsContainer}>
+                    <div className={styles.conditionsTitle}>
                       CONDITIONS
                     </div>
                     {promo.min_purchase_amount > 0 && (
-                      <div style={{ marginBottom: '2px' }}>
-                        <i className="fas fa-dollar-sign" style={{ marginRight: '4px' }}></i>
+                      <div className={styles.conditionItem}>
+                        <i className="fas fa-dollar-sign"></i>
                         Min. purchase: ${promo.min_purchase_amount.toFixed(2)}
                       </div>
                     )}
                     {promo.usage_limit && (
-                      <div>
-                        <i className="fas fa-users" style={{ marginRight: '4px' }}></i>
+                      <div className={styles.conditionItem}>
+                        <i className="fas fa-users"></i>
                         Usage: {promo.usage_count || 0}/{promo.usage_limit}
                       </div>
                     )}
@@ -693,104 +444,31 @@ const Promotions: React.FC = () => {
                 )}
 
                 {/* Actions */}
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div className={styles.actionsContainer}>
                   <button
                     onClick={() => handleEdit(promo)}
-                    style={{
-                      flex: 1,
-                      padding: '8px 12px',
-                      background: '#f3f4f6',
-                      color: '#1a1a1a',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#e5e7eb'
-                      e.currentTarget.style.borderColor = '#9ca3af'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = '#f3f4f6'
-                      e.currentTarget.style.borderColor = '#d1d5db'
-                    }}
+                    className={`${styles.actionButton} ${styles.actionButtonEdit}`}
                   >
-                    <i className="fas fa-edit" /> Edit
+                    <i className={`fas fa-edit ${styles.actionButtonIcon}`} /> Edit
                   </button>
                   <button
                     onClick={() => handleToggle(promo.promotion_id, promo.active)}
-                    style={{
-                      flex: 1,
-                      padding: '8px 12px',
-                      background: promo.active ? '#fef3c7' : '#d1fae5',
-                      color: promo.active ? '#92400e' : '#065f46',
-                      border: `1px solid ${promo.active ? '#f59e0b' : '#10b981'}`,
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = promo.active ? '#fde68a' : '#a7f3d0'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = promo.active ? '#fef3c7' : '#d1fae5'
-                    }}
+                    className={`${styles.actionButton} ${promo.active ? styles.actionButtonToggle : styles.actionButtonToggleActive}`}
                   >
-                    <i className={`fas fa-${promo.active ? 'pause' : 'play'}`} />
+                    <i className={`fas fa-${promo.active ? 'pause' : 'play'} ${styles.actionButtonIcon}`} />
                     {promo.active ? ' Pause' : ' Activate'}
                   </button>
                   <button
                     onClick={() => viewStats(promo)}
-                    style={{
-                      flex: 1,
-                      padding: '8px 12px',
-                      background: '#f3f4f6',
-                      color: '#1a1a1a',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#e5e7eb'
-                      e.currentTarget.style.borderColor = '#9ca3af'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = '#f3f4f6'
-                      e.currentTarget.style.borderColor = '#d1d5db'
-                    }}
+                    className={`${styles.actionButton} ${styles.actionButtonStats}`}
                   >
-                    <i className="fas fa-chart-line" /> Stats
+                    <i className={`fas fa-chart-line ${styles.actionButtonIcon}`} /> Stats
                   </button>
                   <button
                     onClick={() => handleDelete(promo.promotion_id)}
-                    style={{
-                      padding: '8px 12px',
-                      background: '#fee2e2',
-                      color: '#991b1b',
-                      border: '1px solid #fecaca',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#fecaca'
-                      e.currentTarget.style.borderColor = '#f87171'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = '#fee2e2'
-                      e.currentTarget.style.borderColor = '#fecaca'
-                    }}
+                    className={styles.actionButtonDelete}
                   >
-                    <i className="fas fa-trash" />
+                    <i className={`fas fa-trash ${styles.actionButtonIcon}`} />
                   </button>
                 </div>
               </div>
@@ -802,45 +480,25 @@ const Promotions: React.FC = () => {
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }}>
-          <div style={{
-            background: '#ffffff',
-            borderRadius: '16px',
-            padding: '32px',
-            maxWidth: '600px',
-            width: '100%',
-            maxHeight: '90vh',
-            overflow: 'auto',
-            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
-            border: '1px solid rgba(125, 141, 134, 0.2)'
-          }}>
-            <h2 style={{ 
-              marginBottom: '24px', 
-              fontSize: '24px', 
-              fontWeight: '600', 
-              color: '#1a1a1a',
-              paddingBottom: '16px',
-              borderBottom: '1px solid #e5e7eb'
-            }}>
-              {editingPromotion ? 'Edit Promotion' : 'Create Promotion'}
-            </h2>
+        <div className={`${styles.modalOverlay} ${styles.open}`}>
+          <div className={styles.modalContent}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>
+                {editingPromotion ? 'Edit Promotion' : 'Create Promotion'}
+              </h2>
+              <button
+                onClick={() => { setShowModal(false); resetForm() }}
+                className={styles.closeButton}
+              >
+                <i className="fa-solid fa-times"></i>
+              </button>
+            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className={styles.modalBody}>
+              <div className={styles.modalForm}>
               {/* Name */}
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1a1a1a' }}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
                   Promotion Name *
                 </label>
                 <input
@@ -848,28 +506,13 @@ const Promotions: React.FC = () => {
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="e.g., Summer Sale 2025"
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '2px solid #1a1a1a',
-                    borderRadius: '8px',
-                    fontSize: '15px',
-                    boxSizing: 'border-box',
-                    background: '#ffffff',
-                    color: '#1a1a1a'
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#3b82f6'
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = '#1a1a1a'
-                  }}
+                  className={styles.formInput}
                 />
               </div>
 
               {/* Description */}
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1a1a1a' }}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
                   Description
                 </label>
                 <textarea
@@ -877,52 +520,27 @@ const Promotions: React.FC = () => {
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Optional description"
                   rows={2}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '2px solid #1a1a1a',
-                    borderRadius: '8px',
-                    fontSize: '15px',
-                    boxSizing: 'border-box',
-                    resize: 'vertical',
-                    background: '#ffffff',
-                    color: '#1a1a1a'
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#3b82f6'
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = '#1a1a1a'
-                  }}
+                  className={styles.formTextarea}
                 />
               </div>
 
               {/* Discount Type & Value */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1a1a1a' }}>
+              <div className={styles.formGrid}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
                     Discount Type *
                   </label>
                   <select
                     value={formData.discount_type}
                     onChange={(e) => setFormData(prev => ({ ...prev, discount_type: e.target.value as 'percentage' | 'fixed_amount' }))}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      border: '2px solid #1a1a1a',
-                      borderRadius: '8px',
-                      fontSize: '15px',
-                      cursor: 'pointer',
-                      background: '#ffffff',
-                      color: '#1a1a1a'
-                    }}
+                    className={styles.formSelect}
                   >
                     <option value="percentage">Percentage (%)</option>
                     <option value="fixed_amount">Fixed Amount ($)</option>
                   </select>
                 </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1a1a1a' }}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
                     Discount Value *
                   </label>
                   <input
@@ -932,82 +550,46 @@ const Promotions: React.FC = () => {
                     min="0"
                     max={formData.discount_type === 'percentage' ? 100 : undefined}
                     step="0.01"
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      border: '2px solid #1a1a1a',
-                      borderRadius: '8px',
-                      fontSize: '15px',
-                      boxSizing: 'border-box',
-                      background: '#ffffff',
-                      color: '#1a1a1a'
-                    }}
-                    onFocus={(e) => {
-                      e.currentTarget.style.borderColor = '#3b82f6'
-                    }}
-                    onBlur={(e) => {
-                      e.currentTarget.style.borderColor = '#1a1a1a'
-                    }}
+                    className={styles.formInput}
                   />
                 </div>
               </div>
 
               {/* Dates */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>
+              <div className={styles.formGrid}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
                     Start Date *
                   </label>
                   <input
                     type="date"
                     value={formData.start_date}
                     onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '8px',
-                      fontSize: '15px',
-                      boxSizing: 'border-box'
-                    }}
+                    className={styles.formInput}
                   />
                 </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
                     End Date *
                   </label>
                   <input
                     type="date"
                     value={formData.end_date}
                     onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '8px',
-                      fontSize: '15px',
-                      boxSizing: 'border-box'
-                    }}
+                    className={styles.formInput}
                   />
                 </div>
               </div>
 
               {/* Applies To */}
-              <div>
-                <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
                   Applies To *
                 </label>
                 <select
                   value={formData.applies_to}
                   onChange={(e) => setFormData(prev => ({ ...prev, applies_to: e.target.value as 'all' | 'specific' }))}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '8px',
-                    fontSize: '15px',
-                    cursor: 'pointer'
-                  }}
+                  className={styles.formSelect}
                 >
                   <option value="all">All Products</option>
                   <option value="specific">Specific Products</option>
@@ -1016,33 +598,19 @@ const Promotions: React.FC = () => {
 
               {/* Product Selection (if specific) */}
               {formData.applies_to === 'specific' && (
-                <div style={{
-                  border: '2px solid #e5e7eb',
-                  borderRadius: '8px',
-                  padding: '12px',
-                  maxHeight: '200px',
-                  overflow: 'auto'
-                }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+                <div className={styles.productSelection}>
+                  <label className={styles.productSelectionLabel}>
                     Select Products ({selectedProducts.length} selected)
                   </label>
                   {products.map(product => (
                     <label
                       key={product.product_id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '8px',
-                        cursor: 'pointer',
-                        borderRadius: '6px',
-                        background: selectedProducts.includes(product.product_id) ? '#eff6ff' : 'transparent'
-                      }}
+                      className={`${styles.productItem} ${selectedProducts.includes(product.product_id) ? styles.productItemSelected : ''}`}
                     >
                       <input
                         type="checkbox"
                         checked={selectedProducts.includes(product.product_id)}
                         onChange={() => toggleProduct(product.product_id)}
-                        style={{ marginRight: '8px' }}
                       />
                       <span>{product.name} - ${product.price.toFixed(2)}</span>
                     </label>
@@ -1051,9 +619,9 @@ const Promotions: React.FC = () => {
               )}
 
               {/* Optional Fields */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>
+              <div className={styles.formGrid}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
                     Min. Purchase ($)
                   </label>
                   <input
@@ -1062,18 +630,11 @@ const Promotions: React.FC = () => {
                     onChange={(e) => setFormData(prev => ({ ...prev, min_purchase_amount: Number(e.target.value) }))}
                     min="0"
                     step="0.01"
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '8px',
-                      fontSize: '15px',
-                      boxSizing: 'border-box'
-                    }}
+                    className={styles.formInput}
                   />
                 </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
                     Usage Limit
                   </label>
                   <input
@@ -1082,22 +643,15 @@ const Promotions: React.FC = () => {
                     onChange={(e) => setFormData(prev => ({ ...prev, usage_limit: e.target.value ? Number(e.target.value) : undefined }))}
                     min="0"
                     placeholder="Unlimited"
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '8px',
-                      fontSize: '15px',
-                      boxSizing: 'border-box'
-                    }}
+                    className={styles.formInput}
                   />
                 </div>
               </div>
 
               {/* Max Discount */}
               {formData.discount_type === 'percentage' && (
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
                     Max Discount Amount ($)
                   </label>
                   <input
@@ -1107,77 +661,37 @@ const Promotions: React.FC = () => {
                     min="0"
                     step="0.01"
                     placeholder="No limit"
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '8px',
-                      fontSize: '15px',
-                      boxSizing: 'border-box'
-                    }}
+                    className={styles.formInput}
                   />
                 </div>
               )}
 
               {/* Active Toggle */}
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+              <label className={styles.formCheckbox}>
                 <input
                   type="checkbox"
                   checked={formData.active}
                   onChange={(e) => setFormData(prev => ({ ...prev, active: e.target.checked }))}
-                  style={{ marginRight: '8px' }}
                 />
-                <span style={{ fontWeight: '600' }}>Active Promotion</span>
+                <span>Active Promotion</span>
               </label>
 
-              {/* Buttons */}
-              <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-                <button
-                  onClick={handleSubmit}
-                  style={{
-                    flex: 1,
-                    padding: '12px 24px',
-                    background: '#1a1a1a',
-                    color: '#f1f0e4',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '15px',
-                    fontWeight: '600',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#374151'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#1a1a1a'
-                  }}
-                >
-                  {editingPromotion ? 'Update Promotion' : 'Create Promotion'}
-                </button>
-                <button
-                  onClick={() => { setShowModal(false); resetForm() }}
-                  style={{
-                    padding: '12px 24px',
-                    background: '#7d8d86',
-                    color: '#f1f0e4',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '15px',
-                    fontWeight: '600',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#374151'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#7d8d86'
-                  }}
-                >
-                  Cancel
-                </button>
               </div>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button
+                onClick={() => { setShowModal(false); resetForm() }}
+                className={styles.modalButtonSecondary}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmit}
+                className={`${styles.modalButton} ${styles.modalButtonPrimary}`}
+              >
+                {editingPromotion ? 'Update Promotion' : 'Create Promotion'}
+              </button>
             </div>
           </div>
         </div>
@@ -1185,119 +699,65 @@ const Promotions: React.FC = () => {
 
       {/* Stats Modal */}
       {statsPromotion && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}
+        <div className={`${styles.modalOverlay} ${styles.open}`}
           onClick={() => setStatsPromotion(null)}
         >
-          <div style={{
-            background: '#ffffff',
-            borderRadius: '16px',
-            padding: '32px',
-            maxWidth: '500px',
-            width: '100%',
-            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
-            border: '1px solid rgba(125, 141, 134, 0.2)'
-          }}
+          <div className={styles.statsModalContent}
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 style={{ 
-              marginBottom: '24px', 
-              fontSize: '24px', 
-              fontWeight: '600', 
-              color: '#1a1a1a',
-              paddingBottom: '16px',
-              borderBottom: '1px solid #e5e7eb'
-            }}>
-              {statsPromotion.name} - Statistics
-            </h2>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>
+                {statsPromotion.name} - Statistics
+              </h2>
+              <button
+                onClick={() => setStatsPromotion(null)}
+                className={styles.closeButton}
+              >
+                <i className="fa-solid fa-times"></i>
+              </button>
+            </div>
 
             {statsPromotion.stats ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{
-                  padding: '16px',
-                  background: '#f9fafb',
-                  borderRadius: '8px',
-                  border: '1px solid #e5e7eb'
-                }}>
-                  <div style={{ fontSize: '14px', color: '#6b7280' }}>Total Applications</div>
-                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a1a' }}>
+              <div className={styles.statsGrid}>
+                <div className={styles.statItem}>
+                  <div className={styles.statItemLabel}>Total Applications</div>
+                  <div className={styles.statItemValue}>
                     {statsPromotion.stats.total_applications}
                   </div>
                 </div>
-                <div style={{
-                  padding: '16px',
-                  background: '#f9fafb',
-                  borderRadius: '8px',
-                  border: '1px solid #e5e7eb'
-                }}>
-                  <div style={{ fontSize: '14px', color: '#6b7280' }}>Total Discount Given</div>
-                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#dc2626' }}>
+                <div className={styles.statItem}>
+                  <div className={styles.statItemLabel}>Total Discount Given</div>
+                  <div className={`${styles.statItemValue} ${styles.statItemValueDiscount}`}>
                     ${statsPromotion.stats.total_discount_given.toFixed(2)}
                   </div>
                 </div>
-                <div style={{
-                  padding: '16px',
-                  background: '#f9fafb',
-                  borderRadius: '8px',
-                  border: '1px solid #e5e7eb'
-                }}>
-                  <div style={{ fontSize: '14px', color: '#6b7280' }}>Sales with Promotion</div>
-                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a1a' }}>
+                <div className={styles.statItem}>
+                  <div className={styles.statItemLabel}>Sales with Promotion</div>
+                  <div className={styles.statItemValue}>
                     {statsPromotion.stats.total_sales}
                   </div>
                 </div>
-                <div style={{
-                  padding: '16px',
-                  background: '#f9fafb',
-                  borderRadius: '8px',
-                  border: '1px solid #e5e7eb'
-                }}>
-                  <div style={{ fontSize: '14px', color: '#6b7280' }}>Avg. Discount Per Sale</div>
-                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a1a' }}>
+                <div className={styles.statItem}>
+                  <div className={styles.statItemLabel}>Avg. Discount Per Sale</div>
+                  <div className={styles.statItemValue}>
                     ${statsPromotion.stats.avg_discount_per_sale.toFixed(2)}
                   </div>
                 </div>
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '20px' }}>
-                <i className="fas fa-spinner fa-spin" style={{ fontSize: '32px', color: '#7c3aed' }} />
+              <div className={styles.statsLoading}>
+                <i className={`fas fa-spinner fa-spin ${styles.statsSpinner}`} />
               </div>
             )}
 
-            <button
-              onClick={() => setStatsPromotion(null)}
-              style={{
-                marginTop: '20px',
-                padding: '12px 24px',
-                background: '#7d8d86',
-                color: '#f1f0e4',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '15px',
-                fontWeight: '600',
-                width: '100%',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#374151'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#7d8d86'
-              }}
-            >
-              Close
-            </button>
+            <div className={styles.modalFooter}>
+              <button
+                onClick={() => setStatsPromotion(null)}
+                className={styles.statsCloseButton}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

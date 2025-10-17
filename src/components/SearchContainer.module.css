@@ -1,179 +1,211 @@
-/* Search Container */
+/* Search Container - Tasks Page Style */
 .searchContainer {
-  background: #f9fafb;
-  border: 2px solid #d1d5db;
-  border-radius: 12px;
-  padding: 20px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
   margin-bottom: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
 }
 
-/* Search Bar Section */
+/* Hairline toolbar */
 .searchBarSection {
-  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: transparent;
+  margin-bottom: 0;
 }
 
 .searchBarWrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 1rem;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
 }
 
 .searchInputWrapper {
   position: relative;
+  width: 280px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 2px;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  width: 280px;
 }
 
-.searchInputWrapper:focus-within {
-  border-color: #7d8d86;
-  box-shadow: 0 0 0 3px rgba(125, 141, 134, 0.1);
-}
 
 .searchIcon {
   position: absolute;
-  left: 12px;
-  color: #1a1a1a;
-  font-size: 14px;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 1rem;
+  width: 1rem;
+  color: var(--text-secondary);
   pointer-events: none;
   z-index: 1;
 }
 
 .searchInput {
   width: 100%;
-  padding: 10px 12px 10px 36px;
-  border: none;
-  background: transparent;
-  color: #1a1a1a;
-  font-size: 14px;
-  font-weight: 600;
+  height: 2.25rem;
+  padding: 0 0.75rem 0 2.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  background: var(--input-bg);
+  color: var(--text-primary);
   outline: none;
+  font-size: inherit;
   font-family: inherit;
+  box-sizing: border-box;
 }
 
 .searchInput::placeholder {
-  color: #1a1a1a;
-  font-weight: 500;
+  color: var(--text-placeholder);
 }
 
 .clearButton {
   position: absolute;
-  right: 8px;
+  right: 0.5rem;
   background: none;
   border: none;
-  color: #9ca3af;
+  color: var(--text-secondary);
   cursor: pointer;
-  padding: 6px;
-  border-radius: 4px;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .clearButton:hover {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--hover-bg);
+  color: var(--text-primary);
 }
 
 .searchResults {
-  padding-left: 2px;
+  margin-left: 0.5rem;
 }
 
 .resultsCount {
-  color: #6b7280;
-  font-size: 12px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
   font-weight: 500;
 }
 
-/* Filters Section */
+/* Filters Section - Inline with search */
 .filtersSection {
-  border-top: 1px solid #e5e7eb;
-  padding-top: 16px;
+  border-top: none;
+  padding-top: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .filtersContainer {
   display: flex;
-  gap: 12px;
+  gap: 0.5rem;
   align-items: center;
   flex-wrap: wrap;
 }
 
-.filterGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.filterLabel {
-  font-size: 12px;
-  font-weight: 500;
-  color: #374151;
-  margin: 0;
-}
 
 .filterSelect {
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #374151;
-  font-size: 14px;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--input-border);
+  border-radius: 0.5rem;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 0.875rem;
   cursor: pointer;
   outline: none;
-  transition: border-color 0.2s ease;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  box-sizing: border-box;
   min-width: 120px;
 }
 
-.filterSelect:focus {
-  border-color: #7d8d86;
+.filterSelect:hover {
+  border-color: var(--border-color);
+}
+
+.filterSelect option {
+  background: #ffffff !important;
+  color: #000000 !important;
+  padding: 0.5rem;
+}
+
+[data-theme="dark"] .filterSelect option {
+  background: #1a1a1a !important;
+  color: #ffffff !important;
+}
+
+.filterSelect option:hover,
+.filterSelect option:focus,
+.filterSelect option:checked {
+  background: #f3f4f6 !important;
+  color: #000000 !important;
+}
+
+[data-theme="dark"] .filterSelect option:hover,
+[data-theme="dark"] .filterSelect option:focus,
+[data-theme="dark"] .filterSelect option:checked {
+  background: #2a2a2a !important;
+  color: #ffffff !important;
 }
 
 .sortToggleButton {
-  background: #ffffff;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  padding: 8px 12px;
+  height: 2.25rem;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--input-border);
+  border-radius: 0.5rem;
+  padding: 0 0.75rem;
   cursor: pointer;
-  transition: border-color 0.2s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 40px;
+  min-width: 2.25rem;
+  font-family: inherit;
+  box-sizing: border-box;
 }
 
 .sortToggleButton:hover {
-  border-color: #7d8d86;
+  border-color: var(--primary-color);
 }
 
 .clearFiltersButton {
-  background: #dc2626;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-size: 12px;
+  height: 2.25rem;
+  background: var(--input-bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--input-border);
+  border-radius: 0.5rem;
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-left: 8px;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+  font-family: inherit;
+  box-sizing: border-box;
 }
 
 .clearFiltersButton:hover {
-  background: #b91c1c;
+  background: var(--hover-bg);
+  border-color: var(--primary-color);
+  color: var(--text-primary);
 }
 
 

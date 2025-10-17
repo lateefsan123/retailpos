@@ -15,9 +15,9 @@ const PageHeader: React.FC<PageHeaderProps> = ({
 }) => {
   return (
     <div style={{ 
-      padding: '24px 32px', 
-      borderBottom: '1px solid #e5e7eb',
-      background: '#f9fafb'
+      padding: '32px', 
+      borderBottom: 'var(--border-subtle)',
+      background: 'var(--bg-container)'
     }}>
       <div style={{ 
         display: 'flex', 
@@ -29,18 +29,18 @@ const PageHeader: React.FC<PageHeaderProps> = ({
           <h1 style={{
             fontSize: '28px',
             fontWeight: '600',
-            color: '#1f2937',
+            color: 'var(--text-primary)',
             margin: '0 0 8px 0'
           }}>
             {icon && (
-              <i className={icon} style={{ marginRight: '12px', color: '#7d8d86' }}></i>
+              <i className={icon} style={{ marginRight: '12px', color: 'var(--text-secondary)' }}></i>
             )}
             {title}
           </h1>
           {subtitle && (
             <p style={{
               fontSize: '16px',
-              color: '#6b7280',
+              color: 'var(--text-secondary)',
               margin: '0'
             }}>
               {subtitle}

@@ -12,7 +12,7 @@ import styles from './Suppliers.module.css'
 
 // Vehicle icon colors and types
 const VEHICLE_COLORS = [
-  '#1a1a1a', // Black
+  '#ffffff', // White (was black - better for dark theme)
   '#dc2626', // Red
   '#2563eb', // Blue
   '#16a34a', // Green

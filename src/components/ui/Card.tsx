@@ -5,7 +5,7 @@ interface CardProps {
   className?: string
   style?: React.CSSProperties
   padding?: 'sm' | 'md' | 'lg'
-  background?: 'white' | 'gray'
+  background?: 'white' | 'gray' | 'dark'
   hover?: boolean
 }
 
@@ -19,14 +19,18 @@ const Card: React.FC<CardProps> = ({
 }) => {
   const baseStyles: React.CSSProperties = {
     borderRadius: '12px',
-    border: '1px solid #e5e7eb',
     transition: hover ? 'all 0.2s ease' : 'none',
     ...style
   }
 
   const backgroundStyles = {
-    white: { background: '#ffffff' },
-    gray: { background: '#f9fafb' }
+    white: { background: '#ffffff', border: '1px solid #e5e7eb', boxShadow: 'none' },
+    gray: { background: 'var(--bg-container)', border: 'var(--border-subtle)', boxShadow: 'var(--shadow-card)' },
+    dark: { 
+      background: 'var(--bg-card)', 
+      border: 'var(--border-primary)', 
+      boxShadow: 'var(--shadow-card)'
+    }
   }
 
   const paddingStyles = {
@@ -45,18 +49,6 @@ const Card: React.FC<CardProps> = ({
     <div
       className={className}
       style={cardStyles}
-      onMouseEnter={(e) => {
-        if (hover) {
-          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)'
-          e.currentTarget.style.transform = 'translateY(-2px)'
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (hover) {
-          e.currentTarget.style.boxShadow = 'none'
-          e.currentTarget.style.transform = 'translateY(0)'
-        }
-      }}
     >
       {children}
     </div>

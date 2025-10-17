@@ -52,19 +52,22 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '16px',
-        padding: '16px',
-        background: transaction.partial_payment ? '#fef2f2' : '#ffffff',
-        borderRadius: '8px',
-        border: transaction.partial_payment ? '2px solid #dc2626' : '2px solid #374151',
+        gap: '20px',
+        padding: '20px',
+        background: transaction.partial_payment ? 'rgba(220, 38, 38, 0.1)' : 'var(--bg-card)',
+        borderRadius: '12px',
+        border: transaction.partial_payment ? '2px solid #dc2626' : 'var(--border-primary)',
         cursor: 'pointer',
-        transition: 'none',
+        transition: 'all 0.3s ease',
         position: 'relative',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-        marginBottom: '12px'
+        boxShadow: 'var(--shadow-card)'
       }}
-      onMouseEnter={() => {}}
-      onMouseLeave={() => {}}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = 'var(--border-color)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = transaction.partial_payment ? '#dc2626' : 'var(--border-primary)'
+      }}
     >
       {/* Transaction ID */}
       <div style={{
@@ -74,11 +77,12 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
         <div style={{
           fontSize: '12px',
           fontWeight: '600',
-          color: '#7d8d86',
-          background: '#f3f4f6',
+          color: 'var(--text-secondary)',
+          background: 'var(--secondary-bg)',
           padding: '4px 8px',
-          borderRadius: '4px',
-          display: 'inline-block'
+          borderRadius: '6px',
+          display: 'inline-block',
+          border: 'var(--border-subtle)'
         }}>
           #{transaction.sale_id.toString().slice(-6)}
         </div>
@@ -86,7 +90,7 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
           <div style={{
             fontSize: '10px',
             fontWeight: '600',
-            color: '#ffffff',
+            color: 'var(--text-primary)',
             background: '#dc2626',
             padding: '2px 6px',
             borderRadius: '3px',
@@ -102,7 +106,7 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
       <div style={{
         minWidth: '140px',
         fontSize: '14px',
-        color: '#6b7280'
+        color: 'var(--text-secondary)'
       }}>
         {formatDate(transaction.datetime)}
       </div>
@@ -112,8 +116,8 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
         flex: 1,
         minWidth: '120px',
         fontSize: '14px',
-        color: '#374151',
-        fontWeight: '500'
+        color: 'var(--text-primary)',
+        fontWeight: '600'
       }}>
         {transaction.customer_name}
       </div>
@@ -122,7 +126,7 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
       <div style={{
         minWidth: '100px',
         fontSize: '14px',
-        color: '#6b7280'
+        color: 'var(--text-secondary)'
       }}>
         {transaction.cashier_name}
       </div>
@@ -134,7 +138,7 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
         alignItems: 'center',
         gap: '6px',
         fontSize: '14px',
-        color: '#374151'
+        color: 'var(--text-primary)'
       }}>
         <i className={getPaymentMethodIcon(transaction.payment_method)} style={{ color: '#7d8d86' }}></i>
         <span style={{ textTransform: 'capitalize' }}>

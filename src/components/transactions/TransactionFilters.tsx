@@ -45,7 +45,7 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '16px',
+        gap: '20px',
         alignItems: 'end'
       }}>
         {/* Search */}
@@ -54,7 +54,7 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
             display: 'block',
             fontSize: '14px',
             fontWeight: '500',
-            color: '#374151',
+            color: 'var(--text-primary)',
             marginBottom: '6px'
           }}>
             Search Transactions
@@ -67,10 +67,11 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
             style={{
               width: '100%',
               padding: '8px 12px',
-              border: '1px solid #d1d5db',
+              border: 'var(--input-border)',
               borderRadius: '6px',
               fontSize: '14px',
-              background: '#ffffff'
+              background: 'var(--input-bg)',
+              color: '#ffffff'
             }}
           />
         </div>
@@ -81,7 +82,7 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
             display: 'block',
             fontSize: '14px',
             fontWeight: '500',
-            color: '#374151',
+            color: 'var(--text-primary)',
             marginBottom: '6px'
           }}>
             Payment Method
@@ -92,10 +93,11 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
             style={{
               width: '100%',
               padding: '8px 12px',
-              border: '1px solid #d1d5db',
+              border: 'var(--input-border)',
               borderRadius: '6px',
               fontSize: '14px',
-              background: '#ffffff'
+              background: 'var(--input-bg)',
+              color: '#ffffff'
             }}
           >
             <option value="all">All Methods</option>
@@ -111,7 +113,7 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
             display: 'block',
             fontSize: '14px',
             fontWeight: '500',
-            color: '#374151',
+            color: 'var(--text-primary)',
             marginBottom: '6px'
           }}>
             Payment Type
@@ -122,10 +124,11 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
             style={{
               width: '100%',
               padding: '8px 12px',
-              border: '1px solid #d1d5db',
+              border: 'var(--input-border)',
               borderRadius: '6px',
               fontSize: '14px',
-              background: '#ffffff'
+              background: 'var(--input-bg)',
+              color: '#ffffff'
             }}
           >
             <option value="all">All Payments</option>
@@ -140,7 +143,7 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
             display: 'block',
             fontSize: '14px',
             fontWeight: '500',
-            color: '#374151',
+            color: 'var(--text-primary)',
             marginBottom: '6px'
           }}>
             Date Range
@@ -151,10 +154,11 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
             style={{
               width: '100%',
               padding: '8px 12px',
-              border: '1px solid #d1d5db',
+              border: 'var(--input-border)',
               borderRadius: '6px',
               fontSize: '14px',
-              background: '#ffffff'
+              background: 'var(--input-bg)',
+              color: '#ffffff'
             }}
           >
             <option value="all">All Time</option>
@@ -172,7 +176,7 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
               display: 'block',
               fontSize: '14px',
               fontWeight: '500',
-              color: '#374151',
+              color: 'var(--text-primary)',
               marginBottom: '6px'
             }}>
               Select Date
@@ -182,10 +186,11 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
               style={{
                 width: '100%',
                 padding: '8px 12px',
-                border: '1px solid #d1d5db',
+                border: 'var(--input-border)',
                 borderRadius: '6px',
                 fontSize: '14px',
-                background: '#ffffff',
+                background: 'var(--input-bg)',
+              color: 'var(--text-primary)',
                 cursor: 'pointer',
                 textAlign: 'left'
               }}
@@ -209,7 +214,7 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
             display: 'block',
             fontSize: '14px',
             fontWeight: '500',
-            color: '#374151',
+            color: 'var(--text-primary)',
             marginBottom: '6px'
           }}>
             Items Per Page
@@ -220,10 +225,11 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
             style={{
               width: '100%',
               padding: '8px 12px',
-              border: '1px solid #d1d5db',
+              border: 'var(--input-border)',
               borderRadius: '6px',
               fontSize: '14px',
-              background: '#ffffff'
+              background: 'var(--input-bg)',
+              color: '#ffffff'
             }}
           >
             <option value={10}>10</option>
@@ -249,12 +255,13 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
           zIndex: 1000
         }}>
           <div style={{
-            background: '#ffffff',
+            background: 'rgba(0, 0, 0, 0.95)',
             borderRadius: '12px',
             padding: '24px',
             maxWidth: '400px',
             width: '90%',
-            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)'
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+            border: '1px solid rgba(255, 255, 255, 0.1)'
           }}>
             {/* Calendar Header */}
             <div style={{
@@ -279,7 +286,7 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
               <h3 style={{
                 fontSize: '18px',
                 fontWeight: '600',
-                color: '#1f2937',
+                color: 'var(--text-primary)',
                 margin: 0
               }}>
                 {calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
@@ -311,7 +318,7 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
                   textAlign: 'center',
                   fontSize: '12px',
                   fontWeight: '600',
-                  color: '#6b7280',
+                  color: '#7d8d86',
                   padding: '8px 4px'
                 }}>
                   {day}
@@ -335,8 +342,8 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
                     key={index}
                     onClick={() => onCalendarDateSelect(day)}
                     style={{
-                      background: isSelected ? '#7d8d86' : 'transparent',
-                      color: isSelected ? '#f1f0e4' : isCurrentMonth ? '#3e3f29' : '#bca88d',
+                      background: isSelected ? '#1a1a1a' : 'transparent',
+                      color: isSelected ? '#ffffff' : isCurrentMonth ? '#ffffff' : '#7d8d86',
                       border: isToday ? '2px solid #7d8d86' : '1px solid transparent',
                       borderRadius: '8px',
                       padding: '8px',
@@ -362,8 +369,8 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({
               <button
                 onClick={() => onCalendarDateSelect(new Date())}
                 style={{
-                  background: '#7d8d86',
-                  color: '#ffffff',
+                  background: 'var(--input-bg)',
+                  color: 'var(--text-primary)',
                   border: 'none',
                   borderRadius: '6px',
                   padding: '8px 16px',

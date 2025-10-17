@@ -141,11 +141,25 @@
 }
 
 .statCard {
-  background: white;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
   padding: 24px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-card);
   border: var(--border-primary);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.statCard.active {
+  background: rgba(125, 141, 134, 0.2);
+  border: var(--border-accent);
 }
 
 .statCardHeader {

@@ -7,13 +7,6 @@ import PageHeader from '../components/PageHeader'
 import styles from './SideBusinesses.module.css'
 
 async function uploadSideBusinessImage(file: File, businessId: string, userId: number) {
-  console.log("🔄 Starting image upload for side business:", businessId)
-  console.log("📁 File details:", {
-    name: file.name,
-    size: file.size,
-    type: file.type
-  })
-  console.log("👤 User ID:", userId)
   
   try {
     // User authentication is handled by the calling component
@@ -21,19 +14,15 @@ async function uploadSideBusinessImage(file: File, businessId: string, userId: n
       console.error("❌ No user ID provided")
       return null
     }
-    console.log("✅ User ID provided:", userId)
     
     // Check available buckets
     const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets()
     if (bucketsError) {
       console.error("❌ Error listing buckets:", bucketsError)
-    } else {
-      console.log("📦 Available buckets:", buckets?.map(b => b.name))
     }
     
     // Upload original file directly to Supabase Storage
     const fileName = `sidebusiness-images/${businessId}.${file.name.split('.').pop()}`
-    console.log("📤 Uploading to Supabase Storage:", fileName)
 
     const { error: uploadError } = await supabase.storage
       .from('products') // Using 'products' bucket
@@ -52,10 +41,8 @@ async function uploadSideBusinessImage(file: File, businessId: string, userId: n
       .from('products')
       .getPublicUrl(fileName)
 
-    console.log("✅ Image uploaded successfully:", publicUrl)
 
     // Update database with public URL
-    console.log("💾 Updating database with public URL...")
     const { error: dbError } = await supabase
       .from('side_businesses')
       .update({ image_url: publicUrl })
@@ -64,8 +51,6 @@ async function uploadSideBusinessImage(file: File, businessId: string, userId: n
     if (dbError) {
       console.error("❌ DB update failed:", dbError)
       return null
-    } else {
-      console.log("✅ Database updated with public URL")
     }
 
     return publicUrl
@@ -190,6 +175,50 @@ const SideBusinesses = () => {
   })
   const [showEditItemModal, setShowEditItemModal] = useState(false)
   const [editingItem, setEditingItem] = useState<SideBusinessItem | null>(null)
+  const [showItemDetail, setShowItemDetail] = useState(false)
+  const [selectedItem, setSelectedItem] = useState<SideBusinessItem | null>(null)
+  const [itemDetailTab, setItemDetailTab] = useState<'details' | 'revenue'>('details')
+
+  const selectedItemSales = selectedItem
+    ? sales.filter(sale => sale.item_id === selectedItem.item_id)
+    : []
+
+  const itemRevenueMetrics = (() => {
+    if (!selectedItem) return null
+    const now = new Date()
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const startOfWeek = new Date(startOfToday)
+    startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay())
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+
+    const totalSales = selectedItemSales.length
+    const totalRevenue = selectedItemSales.reduce((sum, s) => sum + s.total_amount, 0)
+
+    const todayRevenue = selectedItemSales
+      .filter(s => new Date(s.date_time) >= startOfToday)
+      .reduce((sum, s) => sum + s.total_amount, 0)
+
+    const weeklyRevenue = selectedItemSales
+      .filter(s => new Date(s.date_time) >= startOfWeek)
+      .reduce((sum, s) => sum + s.total_amount, 0)
+
+    const monthlyRevenue = selectedItemSales
+      .filter(s => new Date(s.date_time) >= startOfMonth)
+      .reduce((sum, s) => sum + s.total_amount, 0)
+
+    const avgSale = totalSales > 0 ? totalRevenue / totalSales : 0
+    const lastSale = selectedItemSales[0] || null
+
+    return {
+      totalSales,
+      totalRevenue,
+      todayRevenue,
+      weeklyRevenue,
+      monthlyRevenue,
+      avgSale,
+      lastSaleDate: lastSale ? new Date(lastSale.date_time) : null
+    }
+  })()
 
   // Form states
   const [newBusiness, setNewBusiness] = useState({
@@ -448,7 +477,6 @@ const SideBusinesses = () => {
 
   const handleDeleteSale = async (saleId: number) => {
     try {
-      console.log("🗑️ Starting delete for sale:", saleId)
       
       const { error } = await supabase
         .from('side_business_sales')
@@ -460,7 +488,6 @@ const SideBusinesses = () => {
         throw error
       }
       
-      console.log("✅ Sale deleted successfully")
       setSaleToDelete(null)
       fetchData()
     } catch (err) {
@@ -471,7 +498,6 @@ const SideBusinesses = () => {
 
   const handleDeleteBusiness = async (businessId: number) => {
     try {
-      console.log("🗑️ Starting delete for business:", businessId)
       
       // First delete all sales for items in this business
       const { data: items, error: itemsError } = await supabase
@@ -484,11 +510,9 @@ const SideBusinesses = () => {
         throw itemsError
       }
 
-      console.log("📦 Found items to delete:", items?.length || 0)
 
       if (items && items.length > 0) {
         const itemIds = items.map(item => item.item_id)
-        console.log("🛒 Deleting sales for items:", itemIds)
         
         const { error: salesError } = await supabase
           .from('side_business_sales')
@@ -499,11 +523,9 @@ const SideBusinesses = () => {
           console.error("❌ Error deleting sales:", salesError)
           throw salesError
         }
-        console.log("✅ Sales deleted successfully")
       }
 
       // Delete all items in this business
-      console.log("📦 Deleting items for business:", businessId)
       const { error: itemsDeleteError } = await supabase
         .from('side_business_items')
         .delete()
@@ -513,10 +535,8 @@ const SideBusinesses = () => {
         console.error("❌ Error deleting items:", itemsDeleteError)
         throw itemsDeleteError
       }
-      console.log("✅ Items deleted successfully")
 
       // Finally delete the business
-      console.log("🏢 Deleting business:", businessId)
       const { error } = await supabase
         .from('side_businesses')
         .delete()
@@ -526,7 +546,6 @@ const SideBusinesses = () => {
         console.error("❌ Error deleting business:", error)
         throw error
       }
-      console.log("✅ Business deleted successfully")
 
       setBusinessToDelete(null)
       fetchData()
@@ -661,6 +680,11 @@ const SideBusinesses = () => {
   const openEditItemModal = (item: SideBusinessItem) => {
     setEditingItem(item)
     setShowEditItemModal(true)
+  }
+
+  const handleItemClick = (item: SideBusinessItem) => {
+    setSelectedItem(item)
+    setShowItemDetail(true)
   }
 
   const handleEditItem = async (e: React.FormEvent) => {
@@ -849,7 +873,7 @@ const SideBusinesses = () => {
       <SearchContainer
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        searchPlaceholder="Search businesses, items, or sales..."
+        searchPlaceholder="Search..."
         showSearchResults={!!searchTerm}
         searchResultsCount={filteredItems.length + filteredBusinesses.length + filteredSales.length}
         onClearSearch={() => setSearchTerm('')}
@@ -999,7 +1023,6 @@ const SideBusinesses = () => {
                             setBusinessToDelete(business)
                           }}
                           className={`${styles.actionButton} ${styles.actionButtonDanger}`}
-                          title="Delete Business"
                         >
                           Delete
                         </button>
@@ -1124,7 +1147,6 @@ const SideBusinesses = () => {
                             setSaleToDelete(sale)
                           }}
                           className={`${styles.actionButton} ${styles.actionButtonDanger}`}
-                          title="Delete Sale"
                         >
                           Delete
                         </button>
@@ -1140,7 +1162,7 @@ const SideBusinesses = () => {
 
       {/* Add Business Modal */}
       {showAddBusiness && (
-        <div className={styles.modalOverlay}>
+        <div className={`${styles.modalOverlay} ${styles.open}`}>
           <div className={styles.modalDialog}>
             <div className={styles.modalHeader}>
               <h2 className={styles.modalDialogTitle}>Create New Business</h2>
@@ -1278,7 +1300,7 @@ const SideBusinesses = () => {
 
       {/* Add Item Modal */}
       {showAddItem && (
-        <div className={styles.modalOverlay}>
+        <div className={`${styles.modalOverlay} ${styles.open} ${styles.higherZIndex}`}>
           <div className={styles.modalDialog}>
             <h2 className={styles.modalDialogTitle}>Add Item</h2>
             <form onSubmit={handleAddItem} className={styles.modalDialogForm}>
@@ -1387,7 +1409,7 @@ const SideBusinesses = () => {
 
       {/* Add Sale Modal */}
       {showAddSale && (
-        <div className={styles.modalOverlay} style={{ zIndex: 2000 }}>
+        <div className={`${styles.modalOverlay} ${styles.higherZIndex}`}>
           <div className={styles.modalDialog}>
             <h2 className={styles.modalDialogTitle}>Record Sale</h2>
             <form onSubmit={handleAddSale} className={styles.modalDialogForm}>
@@ -1522,7 +1544,7 @@ const SideBusinesses = () => {
 
       {/* Business Detail Modal */}
       {showBusinessDetail && selectedBusiness && (
-        <div className={styles.modalOverlay}>
+        <div className={`${styles.modalOverlay} ${styles.open}`}>
           <div className={styles.modalDialog} style={{ maxWidth: '600px' }}>
             <h2 className={styles.modalDialogTitle}>Business Details</h2>
             
@@ -1646,7 +1668,6 @@ const SideBusinesses = () => {
                 <button
                   onClick={() => setShowAddItem(true)}
                   className={styles.restockButton}
-                  title="Add new item"
                 >
                   <i className="fas fa-plus"></i>
                   Add Item
@@ -1657,7 +1678,7 @@ const SideBusinesses = () => {
               ) : (
                 <div className={styles.listContainer}>
                   {items.filter(item => item.business_id === selectedBusiness.business_id).map(item => (
-                    <div key={item.item_id} className={styles.listItemCard}>
+                    <div key={item.item_id} className={styles.listItemCard} onClick={() => handleItemClick(item)}>
                       <div className={styles.listItemCardContent}>
                         <div className={styles.listItemCardMain}>
                           <h4 className={styles.listItemCardTitle}>{item.name}</h4>
@@ -1689,30 +1710,34 @@ const SideBusinesses = () => {
                         </div>
                         <div className={styles.listItemCardActions}>
                           <button
-                            onClick={() => openEditItemModal(item)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              openEditItemModal(item)
+                            }}
                             className={`${styles.actionButton} ${styles.editActionButton}`}
-                            title="Edit item"
                           >
                             <i className={`fas fa-edit ${styles.actionButtonIcon}`}></i>
                             Edit
                           </button>
                           {item.stock_qty !== null && (
                             <button
-                              onClick={() => openRestockModal(item)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                openRestockModal(item)
+                              }}
                               className={`${styles.actionButton} ${styles.restockActionButton}`}
-                              title="Restock item"
                             >
                               <i className={`fas fa-boxes-stacked ${styles.actionButtonIcon}`}></i>
                               Restock
                             </button>
                           )}
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation()
                               setNewSale(prev => ({ ...prev, item_id: item.item_id.toString() }))
                               setShowAddSale(true)
                             }}
                             className={styles.actionButton}
-                            title="Record sale"
                           >
                             <i className={`fas fa-plus ${styles.actionButtonIcon}`}></i>
                             Sale
@@ -1750,7 +1775,7 @@ const SideBusinesses = () => {
 
        {/* Delete Confirmation Modal */}
        {businessToDelete && (
-         <div className={styles.modalOverlay}>
+         <div className={`${styles.modalOverlay} ${styles.open}`}>
            <div className={styles.modalDialog}>
              <h2 className={styles.modalDialogTitle}>Delete Business</h2>
              <p className={styles.deleteConfirmationWarning}>
@@ -1783,7 +1808,7 @@ const SideBusinesses = () => {
 
        {/* Delete Sale Confirmation Modal */}
        {saleToDelete && (
-         <div className={styles.modalOverlay}>
+         <div className={`${styles.modalOverlay} ${styles.open}`}>
            <div className={styles.modalDialog}>
              <h2 className={styles.modalDialogTitle}>Delete Sale</h2>
              <p className={styles.deleteConfirmationWarning}>
@@ -1835,7 +1860,7 @@ const SideBusinesses = () => {
 
        {/* Restock Modal */}
        {showRestockModal && restockItem.item_id && (
-         <div className={styles.modalOverlay} style={{ zIndex: 2000 }}>
+         <div className={`${styles.modalOverlay} ${styles.higherZIndex}`}>
            <div className={styles.modalDialog}>
              <h2 className={styles.modalDialogTitle}>Restock Item</h2>
              <div className={styles.restockInfo}>
@@ -1890,7 +1915,7 @@ const SideBusinesses = () => {
 
        {/* Edit Item Modal */}
        {showEditItemModal && editingItem && (
-         <div className={styles.modalOverlay} style={{ zIndex: 2000 }}>
+         <div className={`${styles.modalOverlay} ${styles.open} ${styles.higherZIndex}`}>
            <div className={styles.modalDialog}>
              <h2 className={styles.modalDialogTitle}>Edit Item</h2>
              
@@ -1961,6 +1986,160 @@ const SideBusinesses = () => {
                  </button>
                </div>
              </form>
+           </div>
+         </div>
+       )}
+
+       {/* Item Detail Modal */}
+       {showItemDetail && selectedItem && (
+         <div className={`${styles.modalOverlay} ${styles.open} ${styles.higherZIndex}`}>
+           <div className={styles.modalDialog} style={{ maxWidth: '500px' }}>
+             <div className={styles.modalHeader}>
+               <h2 className={styles.modalDialogTitle}>Item Details</h2>
+               <button
+                 type="button"
+                 onClick={() => {
+                   setShowItemDetail(false)
+                   setSelectedItem(null)
+                 }}
+                 className={styles.modalCloseButton}
+               >
+                 <i className="fas fa-times"></i>
+               </button>
+             </div>
+             
+            <div className={styles.modalDialogForm}>
+              <div className={styles.itemDetailTabs}>
+                <button
+                  type="button"
+                  className={`${styles.itemTab} ${itemDetailTab === 'details' ? styles.itemTabActive : ''}`}
+                  onClick={() => setItemDetailTab('details')}
+                >
+                  Details
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.itemTab} ${itemDetailTab === 'revenue' ? styles.itemTabActive : ''}`}
+                  onClick={() => setItemDetailTab('revenue')}
+                >
+                  Revenue
+                </button>
+              </div>
+
+              {itemDetailTab === 'details' && (
+              <div className={styles.itemDetailHeader}>
+                 <div className={styles.itemDetailIcon}>
+                   <i className="fas fa-box"></i>
+                 </div>
+                 <div className={styles.itemDetailInfo}>
+                   <h3 className={styles.itemDetailName}>{selectedItem.name}</h3>
+                   <p className={styles.itemDetailBusiness}>
+                     {selectedItem.side_businesses?.name || 'Unknown Business'}
+                   </p>
+                 </div>
+               </div>
+              )}
+
+              {itemDetailTab === 'details' && (
+              <div className={styles.itemDetailStats}>
+                 <div className={styles.itemDetailStat}>
+                   <span className={styles.itemDetailStatLabel}>Price</span>
+                   <span className={styles.itemDetailStatValue}>
+                     {selectedItem.price ? `€${selectedItem.price}` : 'Custom Amount'}
+                   </span>
+                 </div>
+                 
+                 {selectedItem.stock_qty !== null && (
+                   <div className={styles.itemDetailStat}>
+                     <span className={styles.itemDetailStatLabel}>Stock Quantity</span>
+                     <span className={styles.itemDetailStatValue}>{selectedItem.stock_qty}</span>
+                   </div>
+                 )}
+                 
+                 <div className={styles.itemDetailStat}>
+                   <span className={styles.itemDetailStatLabel}>Business Type</span>
+                   <span className={styles.itemDetailStatValue}>
+                     {businesses.find(b => b.business_id === selectedItem.business_id)?.business_type || 'service'}
+                   </span>
+                 </div>
+                 
+                 <div className={styles.itemDetailStat}>
+                   <span className={styles.itemDetailStatLabel}>Created</span>
+                   <span className={styles.itemDetailStatValue}>
+                     {new Date(selectedItem.created_at).toLocaleDateString()}
+                   </span>
+                 </div>
+               </div>
+              )}
+
+              {itemDetailTab === 'details' && selectedItem.notes && (
+                 <div className={styles.itemDetailNotes}>
+                   <h4 className={styles.itemDetailNotesTitle}>Notes</h4>
+                   <p className={styles.itemDetailNotesText}>{selectedItem.notes}</p>
+                 </div>
+               )}
+
+              {itemDetailTab === 'revenue' && (
+                <div className={styles.itemRevenueSection}>
+                  <div className={styles.itemRevenueGrid}>
+                    <div className={styles.itemRevenueCard}>
+                      <span className={styles.itemRevenueLabel}>Total Revenue</span>
+                      <span className={styles.itemRevenueValue}>€{(itemRevenueMetrics?.totalRevenue || 0).toFixed(2)}</span>
+                    </div>
+                    <div className={styles.itemRevenueCard}>
+                      <span className={styles.itemRevenueLabel}>Total Sales</span>
+                      <span className={styles.itemRevenueValue}>{itemRevenueMetrics?.totalSales || 0}</span>
+                    </div>
+                    <div className={styles.itemRevenueCard}>
+                      <span className={styles.itemRevenueLabel}>Avg per Sale</span>
+                      <span className={styles.itemRevenueValue}>€{(itemRevenueMetrics?.avgSale || 0).toFixed(2)}</span>
+                    </div>
+                    <div className={styles.itemRevenueCard}>
+                      <span className={styles.itemRevenueLabel}>Today</span>
+                      <span className={styles.itemRevenueValue}>€{(itemRevenueMetrics?.todayRevenue || 0).toFixed(2)}</span>
+                    </div>
+                    <div className={styles.itemRevenueCard}>
+                      <span className={styles.itemRevenueLabel}>This Week</span>
+                      <span className={styles.itemRevenueValue}>€{(itemRevenueMetrics?.weeklyRevenue || 0).toFixed(2)}</span>
+                    </div>
+                    <div className={styles.itemRevenueCard}>
+                      <span className={styles.itemRevenueLabel}>This Month</span>
+                      <span className={styles.itemRevenueValue}>€{(itemRevenueMetrics?.monthlyRevenue || 0).toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  <div className={styles.itemRevenueMeta}>
+                    <span className={styles.itemRevenueMetaText}>
+                      Last sale: {itemRevenueMetrics?.lastSaleDate ? itemRevenueMetrics!.lastSaleDate!.toLocaleDateString() : '—'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+               <div className={styles.modalDialogActions}>
+                 <button
+                   type="button"
+                   onClick={() => {
+                     setShowItemDetail(false)
+                     setSelectedItem(null)
+                   }}
+                   className={`${styles.standardButton} ${styles.standardButtonSecondary}`}
+                 >
+                   Close
+                 </button>
+                 <button
+                   type="button"
+                   onClick={() => {
+                     setShowItemDetail(false)
+                     openEditItemModal(selectedItem)
+                   }}
+                   className={`${styles.standardButton} ${styles.standardButtonPrimary}`}
+                 >
+                   <i className="fas fa-edit" style={{ marginRight: '8px' }}></i>
+                   Edit Item
+                 </button>
+               </div>
+             </div>
            </div>
          </div>
        )}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTransactions } from '../hooks/useTransactions'
 import { useAuth } from '../contexts/AuthContext'
 import { useBranch } from '../contexts/BranchContext'
+import { useTheme } from '../contexts/ThemeContext'
 import PageLayout from '../components/ui/PageLayout'
 import PageHeader from '../components/ui/PageHeader'
 import Card from '../components/ui/Card'
@@ -15,6 +16,7 @@ const Transactions: React.FC = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { selectedBranchId } = useBranch()
+  const { theme } = useTheme()
   const { transactions, loading, error, deleteTransaction, resolvePartialPayment, fetchTransactions } = useTransactions()
   
   // Filter and search statesa
@@ -275,32 +277,30 @@ const Transactions: React.FC = () => {
 
   if (error) {
     return (
-      <PageLayout>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '400px' 
+      }}>
         <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          minHeight: '400px' 
+          fontSize: '18px', 
+          color: '#ef4444',
+          textAlign: 'center'
         }}>
-          <div style={{ 
-            fontSize: '18px', 
-            color: '#ef4444',
-            textAlign: 'center'
-          }}>
-            <i className="fa-solid fa-exclamation-triangle" style={{ 
-              fontSize: '24px',
-              marginBottom: '12px',
-              display: 'block'
-            }}></i>
-            {error}
-          </div>
+          <i className="fa-solid fa-exclamation-triangle" style={{ 
+            fontSize: '24px',
+            marginBottom: '12px',
+            display: 'block'
+          }}></i>
+          {error}
         </div>
-      </PageLayout>
+      </div>
     )
   }
 
   return (
-    <PageLayout>
+    <>
       <PageHeader
         title="Transactions"
         subtitle="View and manage all sales transactions"
@@ -316,8 +316,8 @@ const Transactions: React.FC = () => {
           <div 
             onClick={() => setShowCalendar(true)}
             style={{
-              background: '#3e3f29',
-              border: '1px solid #1a1a1a',
+              background: 'var(--secondary-bg)',
+              border: 'var(--input-border)',
               borderRadius: '8px',
               padding: '12px 16px',
               cursor: 'pointer',
@@ -325,13 +325,13 @@ const Transactions: React.FC = () => {
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              color: '#f1f0e4',
+              color: 'var(--text-primary)',
               fontSize: '14px',
               fontWeight: '500'
             }}
           >
-            <i className="fa-solid fa-calendar" style={{ fontSize: '16px', color: '#bca88d' }}></i>
-            <span style={{ color: '#bca88d' }}>
+            <i className="fa-solid fa-calendar" style={{ fontSize: '16px', color: 'var(--text-secondary)' }}></i>
+            <span style={{ color: 'var(--text-secondary)' }}>
               {selectedDate.toLocaleDateString('en-US', { 
                 month: '2-digit', 
                 day: '2-digit', 
@@ -374,9 +374,10 @@ const Transactions: React.FC = () => {
         </div>
       </PageHeader>
 
-      <div style={{ padding: '24px 32px', flex: 1 }}>
+      <div style={{ padding: '32px', flex: 1 }}>
         {/* Filters */}
-        <TransactionFilters
+        <div style={{ marginBottom: '24px' }}>
+          <TransactionFilters
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
           paymentFilter={paymentFilter}
@@ -395,11 +396,12 @@ const Transactions: React.FC = () => {
           partialPaymentFilter={partialPaymentFilter}
           setPartialPaymentFilter={setPartialPaymentFilter}
         />
+        </div>
 
-        {/* Transactions Table */}
-        <Card>
+        {/* Transactions Container */}
+        <Card background="gray" padding="lg">
           {paginatedTransactions.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {paginatedTransactions.map((transaction) => (
                 <TransactionCard
                   key={transaction.sale_id}
@@ -414,7 +416,7 @@ const Transactions: React.FC = () => {
             <div style={{
               textAlign: 'center',
               padding: '60px 20px',
-              color: '#6b7280'
+              color: 'var(--text-secondary)'
             }}>
               <img 
                 src="/images/vectors/transactions.png" 
@@ -451,7 +453,7 @@ const Transactions: React.FC = () => {
         />
 
       </div>
-    </PageLayout>
+    </>
   )
 }
 

@@ -42,10 +42,11 @@ const SearchContainer: React.FC<SearchContainerProps> = ({
 }) => {
   return (
     <div className={styles.searchContainer}>
-      {/* Search Bar */}
-      {onSearchChange && (
-        <div className={styles.searchBarSection}>
-          <div className={styles.searchBarWrapper}>
+      {/* Hairline toolbar - Tasks page style */}
+      <div className={styles.searchBarSection}>
+        <div className={styles.searchBarWrapper}>
+          {/* Search */}
+          {onSearchChange && (
             <div className={styles.searchInputWrapper}>
               <i className={`fa-solid fa-search ${styles.searchIcon}`}></i>
               <input
@@ -59,67 +60,58 @@ const SearchContainer: React.FC<SearchContainerProps> = ({
                 <button
                   onClick={onClearSearch}
                   className={styles.clearButton}
-                  title="Clear search"
                 >
                   <i className="fa-solid fa-times"></i>
                 </button>
               )}
             </div>
-            
-            {showSearchResults && searchTerm && (
-              <div className={styles.searchResults}>
-                <span className={styles.resultsCount}>
-                  {searchResultsCount} result{searchResultsCount !== 1 ? 's' : ''} found
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      
-      {/* Filters Section */}
-      {(filters.length > 0 || sortOptions.length > 0 || onSortToggle || hasActiveFilters) && (
-        <div className={styles.filtersSection}>
-          <div className={styles.filtersContainer}>
+          )}
+          
+          {/* Search Results */}
+          {showSearchResults && searchTerm && (
+            <div className={styles.searchResults}>
+              <span className={styles.resultsCount}>
+                {searchResultsCount} result{searchResultsCount !== 1 ? 's' : ''} found
+              </span>
+            </div>
+          )}
+          
+          {/* Filters - Inline with search */}
+          <div className={styles.filtersSection}>
             {filters.map((filter, index) => (
-              <div key={index} className={styles.filterGroup}>
-                <label className={styles.filterLabel}>{filter.label}:</label>
-                <select
-                  value={filter.value}
-                  onChange={(e) => filter.onChange(e.target.value)}
-                  className={styles.filterSelect}
-                >
-                  {filter.options.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <select
+                key={index}
+                value={filter.value}
+                onChange={(e) => filter.onChange(e.target.value)}
+                className={styles.filterSelect}
+              >
+                {filter.options.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             ))}
             
             {sortOptions.map((sort, index) => (
-              <div key={index} className={styles.filterGroup}>
-                <label className={styles.filterLabel}>{sort.label}:</label>
-                <select
-                  value={sort.value}
-                  onChange={(e) => sort.onChange(e.target.value)}
-                  className={styles.filterSelect}
-                >
-                  {sort.options.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <select
+                key={index}
+                value={sort.value}
+                onChange={(e) => sort.onChange(e.target.value)}
+                className={styles.filterSelect}
+              >
+                {sort.options.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             ))}
             
             {onSortToggle && (
               <button
                 onClick={onSortToggle}
                 className={styles.sortToggleButton}
-                title={`Sort ${sortOrder === 'asc' ? 'Descending' : 'Ascending'}`}
               >
                 <i className={`fa-solid fa-sort-${sortOrder === 'asc' ? 'up' : 'down'}`}></i>
               </button>
@@ -129,7 +121,6 @@ const SearchContainer: React.FC<SearchContainerProps> = ({
               <button
                 onClick={onClearFilters}
                 className={styles.clearFiltersButton}
-                title="Clear all filters"
               >
                 <i className="fa-solid fa-times"></i>
                 Clear
@@ -137,7 +128,7 @@ const SearchContainer: React.FC<SearchContainerProps> = ({
             )}
           </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

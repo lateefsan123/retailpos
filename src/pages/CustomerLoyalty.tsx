@@ -822,11 +822,11 @@ const CustomerLoyalty = () => {
 
         {/* Add/Edit Customer Modal */}
         {showAddModal && (
-          <div className={styles.modalOverlay}>
+          <div className={`${styles.modalOverlay} ${styles.open}`}>
             <div className={styles.modalContent}>
               <div className={styles.modalHeader}>
                 <h2 className={styles.modalTitle}>
-                  <i className="fa-solid fa-user" style={{ marginRight: '12px', color: '#1a1a1a' }}></i>
+                  <i className="fa-solid fa-user"></i>
                   {editingCustomer ? 'Edit Customer' : 'Add New Customer'}
                 </h2>
                 <button
@@ -841,7 +841,8 @@ const CustomerLoyalty = () => {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit}>
+              <div className={styles.modalBody}>
+                <form onSubmit={handleSubmit} className={styles.modalForm}>
                 <div className={styles.formGrid}>
                   <div>
                     <label className={styles.formLabel}>
@@ -900,6 +901,10 @@ const CustomerLoyalty = () => {
                   </div>
                 )}
 
+                </form>
+              </div>
+
+              <div className={styles.modalFooter}>
                 <div className={styles.modalActions}>
                   <button
                     type="button"
@@ -914,24 +919,25 @@ const CustomerLoyalty = () => {
                   </button>
                   <button
                     type="submit"
+                    onClick={handleSubmit}
                     className={styles.submitButton}
                   >
                     <i className="fa-solid fa-save"></i>
                     {editingCustomer ? 'Update Customer' : 'Add Customer'}
                   </button>
                 </div>
-              </form>
+              </div>
             </div>
           </div>
         )}
 
         {/* Add/Edit Prize Modal */}
         {showPrizeModal && (
-          <div className={styles.modalOverlay}>
+          <div className={`${styles.modalOverlay} ${styles.open}`}>
             <div className={styles.modalContent}>
               <div className={styles.modalHeader}>
                 <h2 className={styles.modalTitle}>
-                  <i className="fa-solid fa-gift" style={{ marginRight: '12px', color: '#f59e0b' }}></i>
+                  <i className="fa-solid fa-gift"></i>
                   {editingPrize ? 'Edit Loyalty Prize' : 'Add New Loyalty Prize'}
                 </h2>
                 <button
@@ -946,7 +952,8 @@ const CustomerLoyalty = () => {
                 </button>
               </div>
 
-              <form onSubmit={(e) => { e.preventDefault(); handlePrizeSubmit(); }}>
+              <div className={styles.modalBody}>
+                <form onSubmit={(e) => { e.preventDefault(); handlePrizeSubmit(); }} className={styles.modalForm}>
                 <div className={styles.formGrid}>
                   <div>
                     <label className={styles.formLabel}>
@@ -994,6 +1001,10 @@ const CustomerLoyalty = () => {
                   </label>
                 </div>
 
+                </form>
+              </div>
+
+              <div className={styles.modalFooter}>
                 <div className={styles.modalActions}>
                   <button
                     type="button"
@@ -1008,20 +1019,21 @@ const CustomerLoyalty = () => {
                   </button>
                   <button
                     type="submit"
+                    onClick={(e) => { e.preventDefault(); handlePrizeSubmit(); }}
                     className={styles.submitButton}
                   >
                     <i className="fa-solid fa-save"></i>
                     {editingPrize ? 'Update Prize' : 'Add Prize'}
                   </button>
                 </div>
-              </form>
+              </div>
             </div>
           </div>
         )}
 
         {/* Loyalty Management Modal */}
         {showPointsModal && selectedCustomer && (
-          <div className={styles.modalOverlay}>
+          <div className={`${styles.modalOverlay} ${styles.open}`}>
             <div className={styles.pointsModalContent}>
               <div className={styles.modalHeader}>
                 <h2 className={styles.pointsModalTitle}>

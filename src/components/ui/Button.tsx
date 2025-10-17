@@ -81,16 +81,6 @@ const Button: React.FC<ButtonProps> = ({
       disabled={disabled}
       className={className}
       style={buttonStyles}
-      onMouseEnter={(e) => {
-        if (!disabled) {
-          Object.assign(e.currentTarget.style, hoverStyles[variant])
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!disabled) {
-          Object.assign(e.currentTarget.style, variantStyles[variant])
-        }
-      }}
     >
       {children}
     </button>

@@ -57,21 +57,21 @@ const Pagination: React.FC<PaginationProps> = ({
 
   return (
     <div style={{
-      background: '#f9fafb',
+      background: 'var(--bg-container)',
       borderRadius: '12px',
-      padding: '20px',
-      marginBottom: '24px',
-      border: '1px solid #e5e7eb',
+      padding: '24px',
+      marginTop: '24px',
+      border: 'var(--border-subtle)',
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
       flexWrap: 'wrap',
-      gap: '16px'
+      gap: '20px'
     }}>
       {/* Page Info */}
       <div style={{
         fontSize: '14px',
-        color: '#7d8d86',
+        color: 'var(--text-secondary)',
         display: 'flex',
         alignItems: 'center',
         gap: '8px'
@@ -110,7 +110,7 @@ const Pagination: React.FC<PaginationProps> = ({
               {page === '...' ? (
                 <span style={{
                   padding: '8px 12px',
-                  color: '#6b7280',
+                  color: 'var(--text-secondary)',
                   fontSize: '14px'
                 }}>
                   ...
