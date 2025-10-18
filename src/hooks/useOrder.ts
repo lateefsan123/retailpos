@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Order, OrderItem, Product, SideBusinessItem } from '../types/sales'
 
-export const useOrder = () => {
+interface UseOrderOptions {
+  onStockValidation?: (product: Product, requestedQuantity: number) => boolean
+}
+
+export const useOrder = (options?: UseOrderOptions) => {
   const [order, setOrder] = useState<Order>({
     items: [],
     subtotal: 0,
@@ -40,6 +44,17 @@ export const useOrder = () => {
   }
 
   const addToOrder = (product: Product) => {
+    const existingItem = order.items.find(item => 
+      item.product?.product_id === product.product_id && !item.weight
+    )
+    
+    const requestedQuantity = existingItem ? existingItem.quantity + 1 : 1
+    
+    // Check stock validation if callback is provided
+    if (options?.onStockValidation && !options.onStockValidation(product, requestedQuantity)) {
+      return // Stock validation failed, don't add to order
+    }
+    
     setOrder(prev => {
       const existingItem = prev.items.find(item => 
         item.product?.product_id === product.product_id && !item.weight // Only match non-weighted items

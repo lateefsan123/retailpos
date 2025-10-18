@@ -16,8 +16,7 @@ import {
   Settings,
   ChevronDown,
   ChevronLeft,
-  ChevronRight,
-  Database
+  ChevronRight
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -45,7 +44,6 @@ const NAV_SECTIONS: Record<NavSectionKey, { title: string; items: NavItemConfig[
     items: [
       { path: '/suppliers', label: 'Suppliers', icon: Truck },
       { path: '/promotions', label: 'Promotions', icon: Tag },
-      { path: '/product-database', label: 'Product Database', icon: Database },
       { path: '/side-businesses', label: 'Side Businesses', icon: Briefcase },
       { path: '/reminders', label: 'Reminders', icon: Bell },
       { path: '/admin', label: 'Admin', icon: Settings }

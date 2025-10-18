@@ -50,21 +50,21 @@ const LowStockCard = ({ product, onRestock, onQuickRestock }: LowStockCardProps)
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+      background: 'var(--bg-card)',
       borderRadius: '12px',
       padding: '16px',
-      border: '1px solid rgba(125, 141, 134, 0.2)',
-      boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
+      border: 'var(--border-primary)',
+      boxShadow: 'var(--shadow-card)',
       transition: 'all 0.3s ease',
       position: 'relative'
     }}
     onMouseEnter={(e) => {
       e.currentTarget.style.transform = 'translateY(-2px)'
-      e.currentTarget.style.boxShadow = '0 4px 16px rgba(62, 63, 41, 0.15)'
+      e.currentTarget.style.boxShadow = 'var(--shadow-hover)'
     }}
     onMouseLeave={(e) => {
       e.currentTarget.style.transform = 'translateY(0)'
-      e.currentTarget.style.boxShadow = '0 2px 8px rgba(62, 63, 41, 0.1)'
+      e.currentTarget.style.boxShadow = 'var(--shadow-card)'
     }}
     >
       {/* Stock Status Badge */}
@@ -89,8 +89,8 @@ const LowStockCard = ({ product, onRestock, onQuickRestock }: LowStockCardProps)
           width: '60px',
           height: '60px',
           borderRadius: '8px',
-          background: '#f9fafb',
-          border: '1px solid rgba(125, 141, 134, 0.2)',
+          background: 'var(--bg-nested)',
+          border: 'var(--border-subtle)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -119,7 +119,7 @@ const LowStockCard = ({ product, onRestock, onQuickRestock }: LowStockCardProps)
             justifyContent: 'center',
             width: '100%',
             height: '100%',
-            color: '#7d8d86',
+            color: 'var(--text-secondary)',
             fontSize: '20px'
           }}>
             <i className="fa-solid fa-box"></i>
@@ -131,7 +131,7 @@ const LowStockCard = ({ product, onRestock, onQuickRestock }: LowStockCardProps)
           <h4 style={{
             fontSize: '14px',
             fontWeight: '600',
-            color: '#3e3f29',
+            color: 'var(--text-primary)',
             margin: '0 0 4px 0',
             lineHeight: '1.3'
           }}>
@@ -140,7 +140,7 @@ const LowStockCard = ({ product, onRestock, onQuickRestock }: LowStockCardProps)
           
           <p style={{
             fontSize: '12px',
-            color: '#1a1a1a',
+            color: 'var(--text-primary)',
             margin: '0 0 8px 0'
           }}>
             {product.category}
@@ -149,20 +149,20 @@ const LowStockCard = ({ product, onRestock, onQuickRestock }: LowStockCardProps)
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <span style={{
               fontSize: '12px',
-              color: '#3e3f29',
+              color: 'var(--text-primary)',
               fontWeight: '500'
             }}>
               Stock: {product.stock_quantity}
             </span>
             <span style={{
               fontSize: '12px',
-              color: '#1a1a1a'
+              color: 'var(--text-primary)'
             }}>
               •
             </span>
             <span style={{
               fontSize: '12px',
-              color: '#1a1a1a'
+              color: 'var(--text-primary)'
             }}>
               Reorder at: {product.reorder_level}
             </span>
@@ -213,8 +213,8 @@ const LowStockCard = ({ product, onRestock, onQuickRestock }: LowStockCardProps)
                 disabled={isRestocking}
                 style={{
                   background: 'transparent',
-                  color: '#7d8d86',
-                  border: '1px solid #7d8d86',
+                  color: 'var(--text-secondary)',
+                  border: 'var(--border-primary)',
                   borderRadius: '6px',
                   padding: '6px 12px',
                   fontSize: '12px',
@@ -232,7 +232,7 @@ const LowStockCard = ({ product, onRestock, onQuickRestock }: LowStockCardProps)
                 onMouseLeave={(e) => {
                   if (!isRestocking) {
                     e.currentTarget.style.background = 'transparent'
-                    e.currentTarget.style.color = '#7d8d86'
+                    e.currentTarget.style.color = 'var(--text-secondary)'
                   }
                 }}
               >
@@ -250,7 +250,7 @@ const LowStockCard = ({ product, onRestock, onQuickRestock }: LowStockCardProps)
                 style={{
                   width: '60px',
                   padding: '6px 8px',
-                  border: '1px solid #7d8d86',
+                  border: 'var(--border-primary)',
                   borderRadius: '6px',
                   fontSize: '12px',
                   outline: 'none'
@@ -296,7 +296,7 @@ const LowStockCard = ({ product, onRestock, onQuickRestock }: LowStockCardProps)
                 disabled={isRestocking}
                 style={{
                   background: 'transparent',
-                  color: '#7d8d86',
+                  color: 'var(--text-secondary)',
                   border: 'none',
                   fontSize: '12px',
                   cursor: isRestocking ? 'not-allowed' : 'pointer',

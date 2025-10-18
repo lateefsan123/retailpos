@@ -148,11 +148,11 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
       <div 
         className="dashboardCard"
         style={{
-          background: '#ffffff',
+          background: 'var(--bg-card)',
           borderRadius: '20px',
           padding: '28px',
-           border: '1px solid #9ca3af',
-          boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
+          border: 'var(--border-primary)',
+          boxShadow: 'var(--shadow-card)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -162,7 +162,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
-          color: '#7d8d86',
+          color: 'var(--text-secondary)',
           fontSize: '16px'
         }}>
           <i className="fa-solid fa-spinner" style={{ 
@@ -180,11 +180,11 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
       <div 
         className="dashboardCard"
         style={{
-          background: '#ffffff',
+          background: 'var(--bg-card)',
           borderRadius: '20px',
           padding: '28px',
-           border: '1px solid #9ca3af',
-          boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
+          border: 'var(--border-primary)',
+          boxShadow: 'var(--shadow-card)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -192,7 +192,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
         }}>
         <div style={{
           textAlign: 'center',
-          color: '#ef4444'
+          color: 'var(--error-color)'
         }}>
           <i className="fa-solid fa-exclamation-triangle" style={{
             fontSize: '24px',
@@ -247,11 +247,11 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
   if (currentData.length === 0 && !loading && !error) {
     return (
       <div style={{
-        background: '#ffffff',
+        background: 'var(--bg-card)',
         borderRadius: '20px',
         padding: '28px',
-           border: '1px solid #9ca3af',
-        boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
+        border: 'var(--border-primary)',
+        boxShadow: 'var(--shadow-card)',
         width: '100%',
         margin: '0',
         fontFamily: 'inherit',
@@ -292,19 +292,19 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
                 target.style.display = 'none'
                 const parent = target.parentElement
                 if (parent) {
-                  parent.innerHTML = '<i class="fa-solid fa-chart-line" style="font-size: 20px; color: #7d8d86;"></i>'
+                  parent.innerHTML = '<i class="fa-solid fa-chart-line" style="font-size: 20px; color: var(--text-secondary);"></i>'
                 }
               }}
             />
           ) : (
-            <i className="fa-solid fa-chart-line" style={{ fontSize: '20px', color: '#7d8d86' }}></i>
+            <i className="fa-solid fa-chart-line" style={{ fontSize: '20px', color: 'var(--text-secondary)' }}></i>
           )}
           </div>
           <div>
             <h2 style={{ 
               fontSize: '24px', 
               fontWeight: '600', 
-              color: '#3e3f29', 
+              color: 'var(--text-primary)', 
               margin: '0 0 4px 0'
             }}>
               Sales Overview
@@ -312,7 +312,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           {(currentBusiness?.business_name || currentBusiness?.name) && (
             <p style={{
               fontSize: '14px',
-              color: '#7d8d86',
+              color: 'var(--text-secondary)',
               margin: 0,
               fontWeight: '500'
             }}>
@@ -323,7 +323,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
         </div>
         
         <div style={{
-          color: '#7d8d86',
+          color: 'var(--text-secondary)',
           fontSize: '16px',
           marginBottom: '16px'
         }}>
@@ -354,11 +354,11 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
       <div 
         className="dashboardCard"
         style={{
-          background: '#ffffff',
+          background: 'var(--bg-card)',
           borderRadius: '20px',
           padding: '28px',
-           border: '1px solid #9ca3af',
-          boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
+          border: 'var(--border-primary)',
+          boxShadow: 'var(--shadow-card)',
           width: '100%',
           maxWidth: '1000px',
           margin: '0 auto',
@@ -394,19 +394,19 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
                 target.style.display = 'none'
                 const parent = target.parentElement
                 if (parent) {
-                  parent.innerHTML = '<i class="fa-solid fa-chart-line" style="font-size: 20px; color: #7d8d86;"></i>'
+                  parent.innerHTML = '<i class="fa-solid fa-chart-line" style="font-size: 20px; color: var(--text-secondary);"></i>'
                 }
               }}
             />
           ) : (
-            <i className="fa-solid fa-chart-line" style={{ fontSize: '20px', color: '#7d8d86' }}></i>
+            <i className="fa-solid fa-chart-line" style={{ fontSize: '20px', color: 'var(--text-secondary)' }}></i>
           )}
         </div>
         <div>
           <h2 style={{ 
             fontSize: '24px', 
             fontWeight: '600', 
-            color: '#3e3f29', 
+            color: 'var(--text-primary)', 
             margin: '0 0 4px 0'
           }}>
             Sales Overview
@@ -414,7 +414,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           {(currentBusiness?.business_name || currentBusiness?.name) && (
             <p style={{
               fontSize: '14px',
-              color: '#1a1a1a',
+              color: 'var(--text-secondary)',
               margin: 0,
               fontWeight: '500'
             }}>
@@ -427,13 +427,13 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
       {/* View Toggle */}
       <div style={{
         display: 'flex',
-        background: '#f9fafb',
+        background: 'var(--secondary-bg)',
         borderRadius: '8px',
         padding: '4px',
         gap: '4px',
         marginBottom: '24px',
         maxWidth: '300px',
-        border: '2px solid #d1d5db'
+        border: 'var(--border-primary)'
       }}>
         <button
           onClick={() => setView('weekly')}
@@ -442,8 +442,8 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
             padding: '8px 16px',
             borderRadius: '6px',
             border: 'none',
-            background: view === 'weekly' ? '#7d8d86' : 'transparent',
-            color: view === 'weekly' ? '#f1f0e4' : '#7d8d86',
+              background: view === 'weekly' ? '#7d8d86' : 'transparent',
+              color: view === 'weekly' ? '#f1f0e4' : 'var(--text-secondary)',
             fontSize: '14px',
             fontWeight: '500',
             cursor: 'pointer',
@@ -455,14 +455,14 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           }}
           onMouseEnter={(e) => {
             if (view !== 'weekly') {
-              e.currentTarget.style.background = '#e5e7eb'
-              e.currentTarget.style.color = '#3e3f29'
+              e.currentTarget.style.background = 'var(--secondary-bg)'
+              e.currentTarget.style.color = 'var(--text-primary)'
             }
           }}
           onMouseLeave={(e) => {
             if (view !== 'weekly') {
               e.currentTarget.style.background = 'transparent'
-              e.currentTarget.style.color = '#7d8d86'
+              e.currentTarget.style.color = 'var(--text-secondary)'
             }
           }}
         >
@@ -476,8 +476,8 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
             padding: '8px 16px',
             borderRadius: '6px',
             border: 'none',
-            background: view === 'hourly' ? '#7d8d86' : 'transparent',
-            color: view === 'hourly' ? '#f1f0e4' : '#7d8d86',
+              background: view === 'hourly' ? '#7d8d86' : 'transparent',
+              color: view === 'hourly' ? '#f1f0e4' : 'var(--text-secondary)',
             fontSize: '14px',
             fontWeight: '500',
             cursor: 'pointer',
@@ -489,14 +489,14 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           }}
           onMouseEnter={(e) => {
             if (view !== 'hourly') {
-              e.currentTarget.style.background = '#e5e7eb'
-              e.currentTarget.style.color = '#3e3f29'
+              e.currentTarget.style.background = 'var(--secondary-bg)'
+              e.currentTarget.style.color = 'var(--text-primary)'
             }
           }}
           onMouseLeave={(e) => {
             if (view !== 'hourly') {
               e.currentTarget.style.background = 'transparent'
-              e.currentTarget.style.color = '#7d8d86'
+              e.currentTarget.style.color = 'var(--text-secondary)'
             }
           }}
         >
@@ -510,8 +510,8 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
             padding: '8px 16px',
             borderRadius: '6px',
             border: 'none',
-            background: view === 'monthly' ? '#7d8d86' : 'transparent',
-            color: view === 'monthly' ? '#f1f0e4' : '#7d8d86',
+              background: view === 'monthly' ? '#7d8d86' : 'transparent',
+              color: view === 'monthly' ? '#f1f0e4' : 'var(--text-secondary)',
             fontSize: '14px',
             fontWeight: '500',
             cursor: 'pointer',
@@ -523,14 +523,14 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           }}
           onMouseEnter={(e) => {
             if (view !== 'monthly') {
-              e.currentTarget.style.background = '#e5e7eb'
-              e.currentTarget.style.color = '#3e3f29'
+              e.currentTarget.style.background = 'var(--secondary-bg)'
+              e.currentTarget.style.color = 'var(--text-primary)'
             }
           }}
           onMouseLeave={(e) => {
             if (view !== 'monthly') {
               e.currentTarget.style.background = 'transparent'
-              e.currentTarget.style.color = '#7d8d86'
+              e.currentTarget.style.color = 'var(--text-secondary)'
             }
           }}
         >
@@ -547,9 +547,9 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           justifyContent: 'space-between',
           marginBottom: '24px',
           padding: '12px 16px',
-          background: '#f9fafb',
+          background: 'var(--secondary-bg)',
           borderRadius: '8px',
-          border: '2px solid #d1d5db'
+          border: 'var(--border-primary)'
         }}>
           <button
             onClick={handlePreviousWeek}
@@ -559,21 +559,21 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
               gap: '6px',
               padding: '8px 12px',
               borderRadius: '6px',
-              border: '1px solid #d1d5db',
-              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-              color: '#7d8d86',
+              border: 'var(--border-primary)',
+              background: 'var(--bg-card)',
+              color: 'var(--text-primary)',
               fontSize: '14px',
               fontWeight: '500',
               cursor: 'pointer',
               transition: 'all 0.2s ease'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#f3f4f6'
-              e.currentTarget.style.borderColor = '#7d8d86'
+              e.currentTarget.style.background = 'var(--secondary-bg)'
+              e.currentTarget.style.borderColor = 'var(--text-secondary)'
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#ffffff'
-              e.currentTarget.style.borderColor = '#d1d5db'
+              e.currentTarget.style.background = 'var(--bg-card)'
+              e.currentTarget.style.borderColor = 'var(--border-primary)'
             }}
           >
             <i className="fa-solid fa-chevron-left" style={{ fontSize: '12px' }}></i>
@@ -584,7 +584,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
             <div style={{
               fontSize: '16px',
               fontWeight: '600',
-              color: '#3e3f29',
+              color: 'var(--text-primary)',
               marginBottom: '2px'
             }}>
               {getWeekRangeLabel()}
@@ -593,7 +593,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
               onClick={handleCurrentWeek}
               style={{
                 fontSize: '12px',
-                color: '#7d8d86',
+                color: 'var(--text-secondary)',
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
@@ -601,10 +601,10 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
                 transition: 'color 0.2s ease'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#3e3f29'
+                e.currentTarget.style.color = 'var(--text-primary)'
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#7d8d86'
+                e.currentTarget.style.color = 'var(--text-secondary)'
               }}
             >
               {weekOffset === 0 ? 'Current Week' : 'Go to Current Week'}
@@ -619,21 +619,21 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
               gap: '6px',
               padding: '8px 12px',
               borderRadius: '6px',
-              border: '1px solid #d1d5db',
-              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-              color: '#7d8d86',
+              border: 'var(--border-primary)',
+              background: 'var(--bg-card)',
+              color: 'var(--text-primary)',
               fontSize: '14px',
               fontWeight: '500',
               cursor: 'pointer',
               transition: 'all 0.2s ease'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#f3f4f6'
-              e.currentTarget.style.borderColor = '#7d8d86'
+              e.currentTarget.style.background = 'var(--secondary-bg)'
+              e.currentTarget.style.borderColor = 'var(--text-secondary)'
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#ffffff'
-              e.currentTarget.style.borderColor = '#d1d5db'
+              e.currentTarget.style.background = 'var(--bg-card)'
+              e.currentTarget.style.borderColor = 'var(--border-primary)'
             }}
           >
             Next Week
@@ -648,27 +648,27 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           justifyContent: 'space-between',
           marginBottom: '24px',
           padding: '12px 16px',
-          background: '#f9fafb',
+          background: 'var(--secondary-bg)',
           borderRadius: '8px',
-          border: '2px solid #d1d5db'
+          border: 'var(--border-primary)'
         }}>
           <button
             onClick={() => { const o = monthOffset - 1; setMonthOffset(o) }}
             style={{
               display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '6px',
-              border: '1px solid #d1d5db', background: '#ffffff', color: '#7d8d86', fontSize: '14px', fontWeight: 500, cursor: 'pointer'
+              border: 'var(--border-primary)', background: 'var(--bg-card)', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 500, cursor: 'pointer'
             }}
           >
             <i className="fa-solid fa-chevron-left" style={{ fontSize: '12px' }}></i>
             Previous Month
           </button>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '16px', fontWeight: 600, color: '#3e3f29', marginBottom: '2px' }}>
+            <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>
               {new Date(new Date().getFullYear(), new Date().getMonth() + monthOffset, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
             </div>
             <button
               onClick={() => { setMonthOffset(0) }}
-              style={{ fontSize: '12px', color: '#7d8d86', background: 'transparent', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ fontSize: '12px', color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
             >
               {monthOffset === 0 ? 'Current Month' : 'Go to Current Month'}
             </button>
@@ -677,7 +677,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
             onClick={() => { const o = monthOffset + 1; setMonthOffset(o) }}
             style={{
               display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '6px',
-              border: '1px solid #d1d5db', background: '#ffffff', color: '#7d8d86', fontSize: '14px', fontWeight: 500, cursor: 'pointer'
+              border: 'var(--border-primary)', background: 'var(--bg-card)', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 500, cursor: 'pointer'
             }}
           >
             Next Month
@@ -691,9 +691,9 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
         <div style={{ 
           marginBottom: '24px',
           padding: '12px',
-          background: '#f9fafb',
+          background: 'var(--secondary-bg)',
           borderRadius: '8px',
-          border: '2px solid #d1d5db'
+          border: 'var(--border-primary)'
         }}>
           <div style={{
             display: 'flex',
@@ -704,15 +704,15 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
             <label style={{
               fontSize: '14px',
               fontWeight: '500',
-              color: '#3e3f29'
+              color: 'var(--text-primary)'
             }}>
               Select Date:
             </label>
             {businessHours && (
               <div style={{
                 fontSize: '12px',
-                color: '#1a1a1a',
-                background: '#e5e7eb',
+                color: 'var(--text-primary)',
+                background: 'var(--secondary-bg)',
                 padding: '4px 8px',
                 borderRadius: '4px',
                 fontWeight: '500'
@@ -728,11 +728,11 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
             onChange={(e) => handleDateChange(e.target.value)}
             style={{
               padding: '8px 12px',
-              border: '2px solid #d1d5db',
+              border: 'var(--border-primary)',
               borderRadius: '6px',
               fontSize: '14px',
-              color: '#3e3f29',
-              background: 'white',
+              color: 'var(--text-primary)',
+              background: 'var(--bg-card)',
               outline: 'none'
             }}
           />
@@ -743,10 +743,10 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
       <div style={{
         width: '100%',
         height: '400px',
-        background: 'white',
+        background: 'var(--bg-card)',
         borderRadius: '12px',
         padding: '40px',
-        border: '2px solid #d1d5db',
+        border: 'var(--border-primary)',
         position: 'relative',
         overflow: 'visible',
         margin: '0',
@@ -764,7 +764,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           top: '40px',
           bottom: '30px',
           fontSize: '11px',
-          color: '#9ca3af',
+          color: 'var(--text-secondary)',
           fontWeight: '500',
           zIndex: 1,
           padding: '10px 0',
@@ -847,7 +847,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
                 <span style={{
                   fontSize: view === 'weekly' ? '13px' : '11px',
                   fontWeight: '500',
-                  color: '#7d8d86',
+                  color: 'var(--text-secondary)',
                   textAlign: 'center',
                   display: 'block',
                   margin: '0',
@@ -873,7 +873,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           left: tooltip.x + 10,
           top: tooltip.y - 10,
           background: 'rgba(31, 41, 55, 0.95)',
-          color: '#ffffff',
+          color: 'var(--text-primary)',
           padding: '12px 16px',
           borderRadius: '8px',
           fontSize: '12px',
@@ -913,7 +913,7 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
           <div style={{ 
             fontWeight: '600',
             fontSize: '14px',
-            color: '#60a5fa'
+            color: 'var(--primary-color)'
           }}>
             {formatCurrencyUtil(tooltip.data.totalSales)}
           </div>
@@ -936,20 +936,20 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
         justifyContent: 'center',
         gap: '16px',
         flexWrap: 'wrap',
-        background: '#f9fafb',
+        background: 'var(--secondary-bg)',
         borderRadius: '999px',
         padding: '10px 18px',
-        border: '1px solid #e5e7eb'
+        border: 'var(--border-subtle)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <div style={{ width: '12px', height: '12px', borderRadius: '4px', background: '#7d8d86' }}></div>
-          <span style={{ fontSize: '11px', color: '#334155', fontWeight: 600 }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-primary)', fontWeight: 600 }}>
             {view === 'weekly' ? 'Daily Sales' : view === 'monthly' ? 'Daily Sales (Month)' : 'Hourly Sales'}
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <i className="fa-solid fa-chart-bar" style={{ fontSize: '12px', color: '#334155' }}></i>
-          <span style={{ fontSize: '11px', color: '#334155', fontWeight: 600 }}>
+          <i className="fa-solid fa-chart-bar" style={{ fontSize: '12px', color: 'var(--text-primary)' }}></i>
+          <span style={{ fontSize: '11px', color: 'var(--text-primary)', fontWeight: 600 }}>
             Max: {formatCurrencyUtil(maxValue, {}, currentBusiness?.currency)}
           </span>
         </div>

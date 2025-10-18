@@ -43,13 +43,14 @@ import { usePromotions } from '../hooks/usePromotions'
 import { useBarcodeScanner, setModalOpen } from '../hooks/useBarcodeScanner'
 import { usePartialPayment } from '../hooks/usePartialPayment'
 import CustomerAutocomplete from '../components/CustomerAutocomplete'
+import StockAlertModal from '../components/sales/StockAlertModal'
 import { supabase } from '../lib/supabaseClient'
 
 import { formatCurrency } from '../utils/currency'
 import { formatPhoneNumber } from '../utils/phone'
 import { generateReceiptHTML, printReceipt } from '../utils/receiptUtils'
-import type { OrderItem } from '../types/sales'
-import type { Product, SideBusinessItem } from '../hooks/data/useProductsData'
+import type { OrderItem, Product as SalesProduct, SideBusinessItem as SalesSideBusinessItem } from '../types/sales'
+import type { Product as ProductsDataProduct, SideBusinessItem as ProductsDataSideBusinessItem } from '../hooks/data/useProductsData'
 import styles from './SalesMobile.module.css'
 
 
@@ -64,6 +65,32 @@ const getLocalDateTime = () => {
   const seconds = String(now.getSeconds()).padStart(2, '0')
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
+
+// Type conversion functions
+const convertProductToSalesProduct = (product: ProductsDataProduct): SalesProduct => ({
+  ...product,
+  category: product.category || 'Uncategorized',
+  business_id: product.business_id,
+  tax_rate: product.tax_rate,
+  sales_count: product.sales_count,
+  total_revenue: product.total_revenue,
+  last_sold_date: product.last_sold_date,
+  description: product.description,
+  sku: product.sku,
+  barcode: product.sku || null
+})
+
+const convertSideBusinessItemToSalesSideBusinessItem = (item: ProductsDataSideBusinessItem): SalesSideBusinessItem => ({
+  item_id: item.item_id,
+  business_id: item.business_id,
+  name: item.name,
+  price: item.price || null,
+  stock_qty: item.stock_qty || null,
+  side_businesses: {
+    name: item.name,
+    business_type: 'service'
+  }
+})
 
 
 type ActiveModal =
@@ -85,6 +112,47 @@ const SalesMobile = () => {
   const { selectedBranch, selectedBranchId } = useBranch()
   const { data: productsData, isLoading: productsLoading } = useProductsData()
   const { calculatePromotions, activePromotions } = usePromotions(businessId || null, selectedBranchId || null)
+  // Stock validation function
+  const handleStockValidation = (product: SalesProduct, requestedQuantity: number): boolean => {
+    if (product.stock_quantity < requestedQuantity) {
+      setStockAlertProduct(product)
+      setStockAlertCurrentStock(product.stock_quantity)
+      setStockAlertRequestedQuantity(requestedQuantity)
+      setShowStockAlert(true)
+      return false // Stock validation failed
+    }
+    return true // Stock validation passed
+  }
+
+  // Quick restock handler
+  const handleQuickRestock = async (product: SalesProduct, newStock: number) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ 
+          stock_quantity: newStock,
+          last_updated: new Date().toISOString()
+        })
+        .eq('product_id', product.product_id)
+        .eq('business_id', businessId)
+
+      if (error) throw error
+
+      // Update local products state if available
+      if (productsData?.products) {
+        // Note: We can't directly update productsData here as it's from a hook
+        // The products will be refreshed on next data fetch
+      }
+
+      // Now add the product to the order since stock is updated
+      addToOrder({ ...product, stock_quantity: newStock })
+      
+    } catch (error) {
+      console.error('Error updating stock:', error)
+      throw error
+    }
+  }
+
   const {
     order,
     addToOrder,
@@ -96,7 +164,7 @@ const SalesMobile = () => {
     resetOrder,
     calculateOrderTotal,
     loadExistingTransaction
-  } = useOrder()
+  } = useOrder({ onStockValidation: handleStockValidation })
   const partialPayment = usePartialPayment(order.total)
   useBarcodeScanner({
     onBarcodeScanned: barcode => {
@@ -115,11 +183,11 @@ const SalesMobile = () => {
   const [isLoadingTransaction, setIsLoadingTransaction] = useState(false)
   const [showNav, setShowNav] = useState(false)
   const [activeModal, setActiveModal] = useState<ActiveModal>(null)
-  const [pendingWeightedProduct, setPendingWeightedProduct] = useState<Product | null>(null)
+  const [pendingWeightedProduct, setPendingWeightedProduct] = useState<SalesProduct | null>(null)
   const [weightInput, setWeightInput] = useState('')
   const [weightUnit, setWeightUnit] = useState('kg')
   const [pendingItemId, setPendingItemId] = useState<string | null>(null)
-  const [pendingSideBusinessItem, setPendingSideBusinessItem] = useState<SideBusinessItem | null>(null)
+  const [pendingSideBusinessItem, setPendingSideBusinessItem] = useState<SalesSideBusinessItem | null>(null)
   const [customPriceInput, setCustomPriceInput] = useState('')
   const [customDescription, setCustomDescription] = useState('')
   const [customerName, setCustomerName] = useState('')
@@ -145,13 +213,19 @@ const SalesMobile = () => {
   const [connectedReader, setConnectedReader] = useState<any>(null)
   const [lastTerminalPaymentIntentId, setLastTerminalPaymentIntentId] = useState<string | null>(null)
   const currencyCode = selectedBranch?.currency_code || 'eur'
+  
+  // Stock alert modal state
+  const [showStockAlert, setShowStockAlert] = useState(false)
+  const [stockAlertProduct, setStockAlertProduct] = useState<SalesProduct | null>(null)
+  const [stockAlertCurrentStock, setStockAlertCurrentStock] = useState(0)
+  const [stockAlertRequestedQuantity, setStockAlertRequestedQuantity] = useState(0)
 
 
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const cashInputRef = useRef<HTMLInputElement | null>(null)
 
-  const products = productsData?.products ?? []
-  const sideBusinessItems = productsData?.sideBusinessItems ?? []
+  const products: ProductsDataProduct[] = productsData?.products ?? []
+  const sideBusinessItems: ProductsDataSideBusinessItem[] = productsData?.sideBusinessItems ?? []
   const categories = useMemo(
     () => ['all', ...Array.from(new Set((productsData?.categories ?? []).filter(Boolean)))],
     [productsData]
@@ -233,7 +307,7 @@ const SalesMobile = () => {
 
         // Map items to order format
         const existingItems: OrderItem[] = (itemsData || []).map(item => {
-          const product: Product = {
+          const product: SalesProduct = {
             product_id: item.product_id.toString(),
             name: item.products?.name || 'Unknown Product',
             price: item.price_each,
@@ -281,7 +355,7 @@ const SalesMobile = () => {
 
         if (!sideSalesError && sideSalesData) {
           const sideBusinessOrderItems: OrderItem[] = sideSalesData.map((item: any) => {
-            const sideBusinessItem: SideBusinessItem = {
+            const sideBusinessItem: SalesSideBusinessItem = {
               id: item.item_id.toString(),
               name: item.side_business_items?.name || item.name || 'Unknown Item',
               price: item.total_amount / item.quantity,
@@ -388,27 +462,29 @@ const SalesMobile = () => {
     return cashValue >= total
   }, [cashAmount, paymentMethod, total, allowPartialPayment, partialPayment.amountPaid])
 
-  const handleAddProduct = (product: Product) => {
+  const handleAddProduct = (product: ProductsDataProduct) => {
+    const salesProduct = convertProductToSalesProduct(product)
     if (product.is_weighted && product.price_per_unit && product.weight_unit) {
-      setPendingWeightedProduct(product)
+      setPendingWeightedProduct(salesProduct)
       setWeightInput('')
       setWeightUnit(product.weight_unit || 'kg')
       setPendingItemId(null)
       setActiveModal('weight')
     } else {
-      addToOrder(product)
+      addToOrder(salesProduct)
     }
   }
 
-  const handleAddSideBusinessItem = (item: SideBusinessItem) => {
+  const handleAddSideBusinessItem = (item: ProductsDataSideBusinessItem) => {
+    const salesSideBusinessItem = convertSideBusinessItemToSalesSideBusinessItem(item)
     if (item.price == null) {
-      setPendingSideBusinessItem(item)
+      setPendingSideBusinessItem(salesSideBusinessItem)
       setCustomPriceInput('')
       setCustomDescription(item.name)
       setActiveModal('customPrice')
       return
     }
-    addSideBusinessItemToOrder(item)
+    addSideBusinessItemToOrder(salesSideBusinessItem)
   }
 
   const handleWeightSubmit = () => {
@@ -441,7 +517,7 @@ const SalesMobile = () => {
     setCustomDescription('')
   }
 
-  const handleSelectSuggestion = (item: Product | SideBusinessItem) => {
+  const handleSelectSuggestion = (item: ProductsDataProduct | ProductsDataSideBusinessItem) => {
     if ('product_id' in item) {
       handleAddProduct(item)
     } else {
@@ -1353,7 +1429,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
     </div>
   )
 
-  const renderProductCard = (product: Product) => {
+  const renderProductCard = (product: ProductsDataProduct) => {
     const currentQuantity = order.items
       .filter(item => item.product?.product_id === product.product_id && !item.weight)
       .reduce((sum, item) => sum + item.quantity, 0)
@@ -1398,7 +1474,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
     )
   }
 
-  const renderSideBusinessCard = (item: SideBusinessItem) => (
+  const renderSideBusinessCard = (item: ProductsDataSideBusinessItem) => (
     <button
       key={`sb-${item.item_id}`}
       onClick={() => handleAddSideBusinessItem(item)}
@@ -2279,6 +2355,22 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
       {renderPaymentModal()}
       {renderReceiptModal()}
       {renderSideMenu()}
+      
+      {/* Stock Alert Modal */}
+      <StockAlertModal
+        isOpen={showStockAlert}
+        onClose={() => setShowStockAlert(false)}
+        product={stockAlertProduct}
+        currentStock={stockAlertCurrentStock}
+        requestedQuantity={stockAlertRequestedQuantity}
+        onQuickRestock={handleQuickRestock}
+        onCancel={() => {
+          setShowStockAlert(false)
+          setStockAlertProduct(null)
+          setStockAlertCurrentStock(0)
+          setStockAlertRequestedQuantity(0)
+        }}
+      />
     </div>
   )
 }

@@ -45,8 +45,8 @@ const Button: React.FC<ButtonProps> = ({
       border: '1px solid #d1d5db'
     },
     danger: {
-      background: '#3e3f29',
-      color: '#f1f0e4'
+      background: '#6b7280',
+      color: '#ffffff'
     },
     success: {
       background: '#10b981',
@@ -57,7 +57,7 @@ const Button: React.FC<ButtonProps> = ({
   const hoverStyles = {
     primary: { background: '#6a7a73' },
     secondary: { background: '#e5e7eb' },
-    danger: { background: '#2a2b1f' },
+    danger: { background: '#4b5563' },
     success: { background: '#059669' }
   }
 

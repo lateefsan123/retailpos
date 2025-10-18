@@ -1459,7 +1459,7 @@ const Products = () => {
           boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)',
           maxWidth: '250px',
           fontSize: '14px',
-          color: 'var(--text-primary)',
+          color: 'var(--text-primary) !important',
           position: 'relative',
           marginBottom: '8px'
         }}>
@@ -1740,10 +1740,10 @@ const Products = () => {
               <i className="fa-solid fa-boxes-stacked" style={{ fontSize: '18px', color: '#f1f0e4' }}></i>
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-primary) !important', margin: '0 0 4px 0' }}>
                 {summaryStats.totalProducts}
               </p>
-              <p style={{ fontSize: '12px', color: 'var(--text-primary)', margin: 0, fontWeight: '700' }}>Total Products</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-primary) !important', margin: 0, fontWeight: '700' }}>Total Products</p>
             </div>
           </div>
         </div>
@@ -1783,10 +1783,10 @@ const Products = () => {
               <i className="fa-solid fa-circle-check" style={{ fontSize: '18px', color: 'white' }}></i>
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-primary) !important', margin: '0 0 4px 0' }}>
                 {summaryStats.inStock}
               </p>
-              <p style={{ fontSize: '12px', color: 'var(--text-primary)', margin: 0, fontWeight: '700' }}>In Stock</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-primary) !important', margin: 0, fontWeight: '700' }}>In Stock</p>
             </div>
           </div>
         </div>
@@ -1826,10 +1826,10 @@ const Products = () => {
               <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: '18px', color: 'white' }}></i>
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-primary) !important', margin: '0 0 4px 0' }}>
                 {summaryStats.lowStock}
               </p>
-              <p style={{ fontSize: '12px', color: 'var(--text-primary)', margin: 0, fontWeight: '700' }}>Low Stock</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-primary) !important', margin: 0, fontWeight: '700' }}>Low Stock</p>
             </div>
           </div>
         </div>
@@ -1869,10 +1869,10 @@ const Products = () => {
               <i className="fa-solid fa-circle-xmark" style={{ fontSize: '18px', color: 'white' }}></i>
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-primary) !important', margin: '0 0 4px 0' }}>
                 {summaryStats.outOfStock}
               </p>
-              <p style={{ fontSize: '12px', color: 'var(--text-primary)', margin: 0, fontWeight: '700' }}>Out of Stock</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-primary) !important', margin: 0, fontWeight: '700' }}>Out of Stock</p>
             </div>
           </div>
         </div>
@@ -1900,7 +1900,7 @@ const Products = () => {
               <h2 style={{
                 fontSize: '18px',
                 fontWeight: 'bold',
-                color: '#92400e',
+                color: 'var(--text-primary) !important',
                 margin: 0
               }}>
                 Pending Products ({pendingProducts.length})
@@ -1911,7 +1911,7 @@ const Products = () => {
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#92400e',
+                color: 'var(--text-secondary)',
                 cursor: 'pointer',
                 padding: '8px',
                 borderRadius: '4px',
@@ -1928,7 +1928,7 @@ const Products = () => {
             <>
               <p style={{
                 fontSize: '14px',
-                color: '#92400e',
+                color: 'var(--text-secondary)',
                 marginBottom: '16px'
               }}>
                 These products were added from the Product Database and need confirmation. Set the price and stock levels to add them to your inventory.
@@ -1989,7 +1989,7 @@ const Products = () => {
                         <h3 style={{
                           fontSize: '16px',
                           fontWeight: 'bold',
-                          color: 'var(--text-primary)',
+                          color: 'var(--text-primary) !important',
                           margin: '0 0 4px 0',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -2124,7 +2124,7 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    color: 'var(--text-primary)',
+                    color: 'var(--text-primary) !important',
                     background: 'var(--input-bg)',
                     boxSizing: 'border-box'
                   }}
@@ -2165,7 +2165,7 @@ const Products = () => {
                     borderTop: 'none',
                     borderRadius: '0 0 8px 8px',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                    zIndex: 50,
+                    zIndex: 1002,
                     maxHeight: '300px',
                     overflow: 'auto'
                   }}>
@@ -2177,7 +2177,7 @@ const Products = () => {
                           padding: '12px',
                           cursor: 'pointer',
                           fontSize: '14px',
-                          color: 'var(--text-primary)',
+                          color: 'var(--text-primary) !important',
                           borderBottom: index < searchSuggestions.length - 1 ? '1px solid #f3f4f6' : 'none',
                           transition: 'background 0.2s ease',
                           display: 'flex',
@@ -2239,7 +2239,7 @@ const Products = () => {
                               }}>
                                 <span>{suggestion.product.category}</span>
                                 <span>?</span>
-                                <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>
+                                <span style={{ fontWeight: '500', color: 'var(--text-primary) !important' }}>
                                   {suggestion.product.is_weighted 
                                     ? `${formatCurrency(suggestion.product.price_per_unit)}/${suggestion.product.weight_unit}`
                                     : formatCurrency(suggestion.product.price)
@@ -2307,7 +2307,7 @@ const Products = () => {
                 style={{
                   padding: '10px 16px',
                   background: 'var(--bg-card)',
-                  color: 'var(--text-primary)',
+                  color: 'var(--text-primary) !important',
                   border: 'none',
                   borderRadius: '8px',
                   cursor: 'pointer',
@@ -2338,7 +2338,7 @@ const Products = () => {
                 border: '2px solid #000000',
                 borderRadius: '8px',
                 fontSize: '14px',
-                color: 'var(--text-primary)',
+                color: 'var(--text-primary) !important',
                 background: 'var(--input-bg)',
                 cursor: 'pointer'
               }}
@@ -2357,23 +2357,24 @@ const Products = () => {
         <div style={{
           background: 'var(--bg-container)',
           borderRadius: '12px',
-          overflow: 'hidden',
+          overflow: 'visible',
           boxShadow: 'var(--shadow-card)',
           border: 'var(--border-primary)',
-          backdropFilter: 'blur(10px)'
+          backdropFilter: 'blur(10px)',
+          zIndex: 1
         }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
              <thead style={{ 
                background: 'var(--bg-card)',
-               borderBottom: '4px solid #6b7280'
+               borderBottom: '1px solid rgba(107, 114, 128, 0.3)'
              }}>
                <tr>
                  {isPrintMode && (
                    <th style={{ 
                      padding: '16px', 
                      textAlign: 'center', 
-                     color: 'var(--text-primary)', 
+                     color: 'var(--text-primary) !important', 
                      fontSize: '12px', 
                      fontWeight: '600', 
                      textTransform: 'uppercase',
@@ -2395,7 +2396,7 @@ const Products = () => {
                  <th style={{ 
                    padding: '16px', 
                    textAlign: 'left', 
-                   color: 'var(--text-primary)', 
+                   color: 'var(--text-primary) !important', 
                    fontSize: '12px', 
                    fontWeight: '600', 
                    textTransform: 'uppercase',
@@ -2407,7 +2408,7 @@ const Products = () => {
                  <th style={{ 
                    padding: '16px', 
                    textAlign: 'left', 
-                   color: 'var(--text-primary)', 
+                   color: 'var(--text-primary) !important', 
                    fontSize: '12px', 
                    fontWeight: '600', 
                    textTransform: 'uppercase',
@@ -2419,7 +2420,7 @@ const Products = () => {
                  <th style={{ 
                    padding: '16px', 
                    textAlign: 'left', 
-                   color: 'var(--text-primary)', 
+                   color: 'var(--text-primary) !important', 
                    fontSize: '12px', 
                    fontWeight: '600', 
                    textTransform: 'uppercase',
@@ -2431,7 +2432,7 @@ const Products = () => {
                  <th style={{ 
                    padding: '16px', 
                    textAlign: 'left', 
-                   color: 'var(--text-primary)', 
+                   color: 'var(--text-primary) !important', 
                    fontSize: '12px', 
                    fontWeight: '600', 
                    textTransform: 'uppercase',
@@ -2443,7 +2444,7 @@ const Products = () => {
                  <th style={{ 
                    padding: '16px', 
                    textAlign: 'left', 
-                   color: 'var(--text-primary)', 
+                   color: 'var(--text-primary) !important', 
                    fontSize: '12px', 
                    fontWeight: '600', 
                    textTransform: 'uppercase',
@@ -2455,7 +2456,7 @@ const Products = () => {
                  <th style={{ 
                    padding: '16px', 
                    textAlign: 'left', 
-                   color: 'var(--text-primary)', 
+                   color: 'var(--text-primary) !important', 
                    fontSize: '12px', 
                    fontWeight: '600', 
                    textTransform: 'uppercase',
@@ -2465,10 +2466,10 @@ const Products = () => {
                  </th>
                </tr>
              </thead>
-            <tbody style={{ border: '1px solid #e5e7eb' }}>
+            <tbody>
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={isPrintMode ? 7 : 6} style={{ padding: '40px', textAlign: 'center', color: '#7d8d86' }}>
+                  <td colSpan={isPrintMode ? 7 : 6} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
                     <img 
                       src="/images/vectors/no products.png" 
                       alt="No products" 
@@ -2485,9 +2486,7 @@ const Products = () => {
                   const stockStatus = getStockStatus(product.stock_quantity, product.reorder_level)
                   return (
                     <tr key={product.product_id} style={{ 
-                      borderBottom: '2px solid #d1d5db',
-                      borderLeft: '1px solid #e5e7eb',
-                      borderRight: '1px solid #e5e7eb',
+                      borderBottom: '1px solid rgba(229, 231, 235, 0.3)',
                       transition: 'background 0.2s ease',
                       cursor: isPrintMode ? 'default' : 'pointer'
                     }}
@@ -2506,7 +2505,6 @@ const Products = () => {
                       {isPrintMode && (
                         <td style={{ 
                           padding: '16px', 
-                          borderRight: '2px solid #e5e7eb',
                           textAlign: 'center'
                         }}>
                           <input
@@ -2523,7 +2521,7 @@ const Products = () => {
                           />
                         </td>
                       )}
-                      <td style={{ padding: '16px', borderRight: '2px solid rgba(125, 141, 134, 0.25)' }}>
+                      <td style={{ padding: '16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           {product.image_url && (
                             <img
@@ -2565,10 +2563,10 @@ const Products = () => {
                           </div>
                         </div>
                       </td>
-                      <td style={{ padding: '16px', borderRight: '2px solid rgba(125, 141, 134, 0.25)' }}>
+                      <td style={{ padding: '16px' }}>
                         <span style={{
                           background: 'var(--bg-nested)',
-                          color: 'var(--text-primary)',
+                          color: 'var(--text-primary) !important',
                           padding: '4px 8px',
                           borderRadius: '4px',
                           fontSize: '12px',
@@ -2578,8 +2576,8 @@ const Products = () => {
                           {product.category}
                         </span>
                       </td>
-                      <td style={{ padding: '16px', borderRight: '2px solid rgba(125, 141, 134, 0.25)' }}>
-                        <p style={{ fontSize: '14px', fontWeight: '400', color: 'var(--text-primary)', margin: 0 }}>
+                      <td style={{ padding: '16px' }}>
+                        <p style={{ fontSize: '14px', fontWeight: '400', color: 'var(--text-primary) !important', margin: 0 }}>
                           {product.is_weighted && product.price_per_unit && product.weight_unit ? (
                             `${formatCurrency(product.price_per_unit)}/${product.weight_unit}`
                           ) : (
@@ -2587,13 +2585,13 @@ const Products = () => {
                           )}
                         </p>
                         {product.is_weighted && (
-                          <p style={{ fontSize: '12px', color: '#7d8d86', margin: '4px 0 0 0' }}>
+                          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
                             Sold by weight
                           </p>
                         )}
                       </td>
-                      <td style={{ padding: '16px', borderRight: '2px solid rgba(125, 141, 134, 0.25)' }}>
-                        <p style={{ fontSize: '14px', fontWeight: '400', color: 'var(--text-primary)', margin: 0 }}>
+                      <td style={{ padding: '16px' }}>
+                        <p style={{ fontSize: '14px', fontWeight: '400', color: 'var(--text-primary) !important', margin: 0 }}>
                           {product.stock_quantity}
                         </p>
                       </td>
@@ -2619,7 +2617,6 @@ const Products = () => {
                               handlePrintIndividualLabel(product)
                             }}
                             className={styles.actionButton}
-                            style={{ background: 'var(--bg-card)', color: 'var(--text-primary)', border: '2px solid #000000' }}
                             onMouseEnter={() => {
                               setLilyMessage(`Click to print a label for "${product.name}". This will open a print dialog with a formatted product label!`)
                               setShowLilyMessage(true)
@@ -2638,7 +2635,6 @@ const Products = () => {
                                 startEditProduct(product)
                               }}
                               className={styles.actionButton}
-                              style={{ background: 'var(--bg-card)', color: 'var(--text-primary)', border: '2px solid #000000' }}
                               onMouseEnter={() => {
                                 setLilyMessage(`Click to edit "${product.name}". You can update the price, stock quantity, reorder level, and other details!`)
                                 setShowLilyMessage(true)
@@ -2657,7 +2653,6 @@ const Products = () => {
                               setProductToDelete(product)
                             }}
                             className={styles.deleteButton}
-                            style={{ background: '#6b7280', color: '#ffffff', border: '2px solid #000000' }}
                           >
                             <i className="fa-solid fa-trash-can" style={{ marginRight: '4px' }}></i>
                             Delete
@@ -2677,7 +2672,7 @@ const Products = () => {
       <div style={{ 
         marginTop: '16px', 
         fontSize: '14px', 
-        color: 'var(--text-primary)',
+        color: 'var(--text-primary) !important',
         textAlign: 'center',
         padding: '12px',
         borderRadius: '8px',
@@ -2713,7 +2708,7 @@ const Products = () => {
         }}>
           {/* Items per page selector */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <label style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '500' }}>
+            <label style={{ fontSize: '14px', color: 'var(--text-primary) !important', fontWeight: '500' }}>
               Show:
             </label>
             <select
@@ -2724,7 +2719,7 @@ const Products = () => {
                       border: '2px solid #000000',
                 borderRadius: '6px',
                 fontSize: '14px',
-                color: 'var(--text-primary)',
+                color: 'var(--text-primary) !important',
                 cursor: 'pointer'
               }}
             >
@@ -2734,7 +2729,7 @@ const Products = () => {
               <option value={50}>50</option>
               <option value={100}>100</option>
             </select>
-            <span style={{ fontSize: '14px', color: '#7d8d86' }}>per page</span>
+            <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>per page</span>
           </div>
 
           {/* Page navigation */}
@@ -2890,7 +2885,7 @@ const Products = () => {
             boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: '600', color: 'var(--text-primary)', margin: 0 }}>
+              <h2 style={{ fontSize: '24px', fontWeight: '600', color: 'var(--text-primary) !important', margin: 0 }}>
                 Add New Product
               </h2>
               <button
@@ -2937,7 +2932,7 @@ const Products = () => {
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important', marginBottom: '8px' }}>
                     Product Name *
                   </label>
                   <input
@@ -2952,7 +2947,7 @@ const Products = () => {
                       borderRadius: '8px',
                       fontSize: '16px',
                       background: 'var(--input-bg)',
-                      color: '#1a1a1a',
+                      color: 'var(--text-primary) !important',
                       boxSizing: 'border-box'
                     }}
                     placeholder="e.g., Plantain Chips, Jollof Rice Mix"
@@ -2960,7 +2955,7 @@ const Products = () => {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important', marginBottom: '8px' }}>
                     Category *
                   </label>
                   <div style={{ position: 'relative' }}>
@@ -2984,7 +2979,7 @@ const Products = () => {
                         border: '2px solid #000000',
                         borderRadius: '8px',
                         fontSize: '14px',
-                        color: 'var(--text-primary)'
+                        color: 'var(--text-primary) !important'
                       }}
                       placeholder="e.g., Grains, Spices, Beverages"
                     />
@@ -3017,7 +3012,7 @@ const Products = () => {
                               padding: '10px 12px',
                               cursor: 'pointer',
                               fontSize: '14px',
-                              color: 'var(--text-primary)',
+                              color: 'var(--text-primary) !important',
                               borderBottom: index < getCategorySuggestions(newProduct.category).length - 1 ? '1px solid #f3f4f6' : 'none',
                               transition: 'background 0.2s ease'
                             }}
@@ -3044,7 +3039,7 @@ const Products = () => {
                     onChange={(e) => setNewProduct({...newProduct, is_weighted: e.target.checked})}
                     style={{ width: '16px', height: '16px' }}
                   />
-                  <label htmlFor="is_weighted" style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                  <label htmlFor="is_weighted" style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-primary) !important', cursor: 'pointer' }}>
                     This product is sold by weight (e.g., fruits, vegetables, meat)
                   </label>
                 </div>
@@ -3052,7 +3047,7 @@ const Products = () => {
                 {newProduct.is_weighted && (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
+                      <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important', marginBottom: '8px' }}>
                         Weight Unit *
                       </label>
                       <select
@@ -3064,7 +3059,7 @@ const Products = () => {
                           border: '2px solid #000000',
                           borderRadius: '8px',
                           fontSize: '14px',
-                          color: 'var(--text-primary)'
+                          color: 'var(--text-primary) !important'
                         }}
                       >
                         <option value="">Select unit</option>
@@ -3077,7 +3072,7 @@ const Products = () => {
                       </select>
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
+                      <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important', marginBottom: '8px' }}>
                         Price per {newProduct.weight_unit || 'unit'} *
                       </label>
                       <input
@@ -3092,7 +3087,7 @@ const Products = () => {
                           border: '2px solid #000000',
                           borderRadius: '8px',
                           fontSize: '14px',
-                          color: 'var(--text-primary)'
+                          color: 'var(--text-primary) !important'
                         }}
                         placeholder="0.00"
                       />
@@ -3103,7 +3098,7 @@ const Products = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important', marginBottom: '8px' }}>
                     Price {newProduct.is_weighted ? '(Auto-set to 0 for weighted items)' : '*'}
                   </label>
                   <input
@@ -3132,7 +3127,7 @@ const Products = () => {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important', marginBottom: '8px' }}>
                     Stock Quantity *
                   </label>
                   <input
@@ -3147,7 +3142,7 @@ const Products = () => {
                       borderRadius: '8px',
                       fontSize: '16px',
                       background: 'var(--input-bg)',
-                      color: '#1a1a1a',
+                      color: 'var(--text-primary) !important',
                       boxSizing: 'border-box'
                     }}
                     placeholder="0"
@@ -3157,7 +3152,7 @@ const Products = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important', marginBottom: '8px' }}>
                     Reorder Level *
                   </label>
                   <input
@@ -3172,7 +3167,7 @@ const Products = () => {
                       borderRadius: '8px',
                       fontSize: '16px',
                       background: 'var(--input-bg)',
-                      color: '#1a1a1a',
+                      color: 'var(--text-primary) !important',
                       boxSizing: 'border-box'
                     }}
                     placeholder="10"
@@ -3180,7 +3175,7 @@ const Products = () => {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important', marginBottom: '8px' }}>
                     Tax Rate (%)
                   </label>
                   <input
@@ -3195,7 +3190,7 @@ const Products = () => {
                       borderRadius: '8px',
                       fontSize: '16px',
                       background: 'var(--input-bg)',
-                      color: '#1a1a1a',
+                      color: 'var(--text-primary) !important',
                       boxSizing: 'border-box'
                     }}
                     placeholder="0.00"
@@ -3204,7 +3199,7 @@ const Products = () => {
               </div>
 
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)', marginBottom: '6px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary) !important', marginBottom: '6px' }}>
                   Supplier
                 </label>
                 <select
@@ -3216,7 +3211,7 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    color: 'var(--text-primary)'
+                    color: 'var(--text-primary) !important'
                   }}
                 >
                   <option value="">Select a supplier...</option>
@@ -3229,7 +3224,7 @@ const Products = () => {
               </div>
 
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)', marginBottom: '6px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary) !important', marginBottom: '6px' }}>
                   Supplier Information (Legacy)
                 </label>
                 <input
@@ -3242,14 +3237,14 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    color: 'var(--text-primary)'
+                    color: 'var(--text-primary) !important'
                   }}
                   placeholder="Legacy supplier info (optional)"
                 />
               </div>
 
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)', marginBottom: '6px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary) !important', marginBottom: '6px' }}>
                   SKU (Auto-generated if empty)
                 </label>
                 <input
@@ -3262,14 +3257,14 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    color: 'var(--text-primary)'
+                    color: 'var(--text-primary) !important'
                   }}
                   placeholder="Leave empty for auto-generation"
                 />
               </div>
 
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)', marginBottom: '6px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary) !important', marginBottom: '6px' }}>
                   Barcode
                 </label>
                 <input
@@ -3282,14 +3277,14 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    color: 'var(--text-primary)'
+                    color: 'var(--text-primary) !important'
                   }}
                   placeholder="Scan or enter barcode"
                 />
               </div>
 
               <div style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)', marginBottom: '6px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary) !important', marginBottom: '6px' }}>
                   Product Image
                 </label>
                 <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
@@ -3308,7 +3303,7 @@ const Products = () => {
                       borderRadius: '8px',
                       cursor: 'pointer',
                       fontSize: '14px',
-                      color: 'var(--text-primary)',
+                      color: 'var(--text-primary) !important',
                       textAlign: 'center',
                       transition: 'all 0.2s ease',
                       width: 'auto',
@@ -3391,7 +3386,7 @@ const Products = () => {
               </div>
 
               <div style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)', marginBottom: '6px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary) !important', marginBottom: '6px' }}>
                   Description
                 </label>
                 <textarea
@@ -3404,7 +3399,7 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    color: 'var(--text-primary)',
+                    color: 'var(--text-primary) !important',
                     resize: 'vertical'
                   }}
                   placeholder="e.g., Crispy plantain chips made from fresh plantains, perfect for snacking"
@@ -3417,7 +3412,7 @@ const Products = () => {
                   onClick={resetForm}
                   style={{
                     background: '#f3f4f6',
-                    color: 'var(--text-primary)',
+                    color: 'var(--text-primary) !important',
                     border: 'none',
                     padding: '12px 24px',
                     borderRadius: '8px',
@@ -3443,7 +3438,7 @@ const Products = () => {
                   disabled={isSubmitting}
                   style={{
                     background: isSubmitting ? '#9ca3af' : 'var(--bg-card)',
-                    color: 'var(--text-primary)',
+                    color: 'var(--text-primary) !important',
                     border: 'none',
                     padding: '12px 24px',
                     borderRadius: '8px',
@@ -3533,7 +3528,7 @@ const Products = () => {
             position: 'relative'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a1a', margin: 0 }}>
+              <h2 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-header)', margin: 0 }}>
                 Edit Product
               </h2>
               <button
@@ -3580,7 +3575,7 @@ const Products = () => {
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important', marginBottom: '8px' }}>
                     Product Name *
                   </label>
                   <input
@@ -3595,7 +3590,7 @@ const Products = () => {
                       borderRadius: '8px',
                       fontSize: '16px',
                       background: 'var(--input-bg)',
-                      color: '#1a1a1a',
+                      color: 'var(--text-primary) !important',
                       boxSizing: 'border-box'
                     }}
                     placeholder="e.g., Plantain Chips, Jollof Rice Mix"
@@ -3603,7 +3598,7 @@ const Products = () => {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important', marginBottom: '8px' }}>
                     Category *
                   </label>
                   <div style={{ position: 'relative' }}>
@@ -3627,7 +3622,7 @@ const Products = () => {
                         border: '2px solid #000000',
                         borderRadius: '8px',
                         fontSize: '14px',
-                        color: 'var(--text-primary)'
+                        color: 'var(--text-primary) !important'
                       }}
                       placeholder="e.g., Grains, Spices, Beverages"
                     />
@@ -3660,7 +3655,7 @@ const Products = () => {
                               padding: '10px 12px',
                               cursor: 'pointer',
                               fontSize: '14px',
-                              color: 'var(--text-primary)',
+                              color: 'var(--text-primary) !important',
                               borderBottom: index < getCategorySuggestions(newProduct.category).length - 1 ? '1px solid #f3f4f6' : 'none',
                               transition: 'background 0.2s ease'
                             }}
@@ -3687,7 +3682,7 @@ const Products = () => {
                     onChange={(e) => setNewProduct({...newProduct, is_weighted: e.target.checked})}
                     style={{ width: '16px', height: '16px' }}
                   />
-                  <label htmlFor="is_weighted_edit" style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                  <label htmlFor="is_weighted_edit" style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-primary) !important', cursor: 'pointer' }}>
                     This product is sold by weight (e.g., fruits, vegetables, meat)
                   </label>
                 </div>
@@ -3695,7 +3690,7 @@ const Products = () => {
                 {newProduct.is_weighted && (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
+                      <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important', marginBottom: '8px' }}>
                         Weight Unit *
                       </label>
                       <select
@@ -3707,7 +3702,7 @@ const Products = () => {
                           border: '2px solid #000000',
                           borderRadius: '8px',
                           fontSize: '14px',
-                          color: 'var(--text-primary)'
+                          color: 'var(--text-primary) !important'
                         }}
                       >
                         <option value="">Select unit</option>
@@ -3720,7 +3715,7 @@ const Products = () => {
                       </select>
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
+                      <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important', marginBottom: '8px' }}>
                         Price per {newProduct.weight_unit || 'unit'} *
                       </label>
                       <input
@@ -3735,7 +3730,7 @@ const Products = () => {
                           border: '2px solid #000000',
                           borderRadius: '8px',
                           fontSize: '14px',
-                          color: 'var(--text-primary)'
+                          color: 'var(--text-primary) !important'
                         }}
                         placeholder="0.00"
                       />
@@ -3746,7 +3741,7 @@ const Products = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important', marginBottom: '8px' }}>
                     Price {newProduct.is_weighted ? '(Auto-set to 0 for weighted items)' : '*'}
                   </label>
                   <input
@@ -3775,7 +3770,7 @@ const Products = () => {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important', marginBottom: '8px' }}>
                     Stock Quantity *
                   </label>
                   <input
@@ -3790,7 +3785,7 @@ const Products = () => {
                       borderRadius: '8px',
                       fontSize: '16px',
                       background: 'var(--input-bg)',
-                      color: '#1a1a1a',
+                      color: 'var(--text-primary) !important',
                       boxSizing: 'border-box'
                     }}
                     placeholder="0"
@@ -3800,7 +3795,7 @@ const Products = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important', marginBottom: '8px' }}>
                     Reorder Level *
                   </label>
                   <input
@@ -3815,7 +3810,7 @@ const Products = () => {
                       borderRadius: '8px',
                       fontSize: '16px',
                       background: 'var(--input-bg)',
-                      color: '#1a1a1a',
+                      color: 'var(--text-primary) !important',
                       boxSizing: 'border-box'
                     }}
                     placeholder="10"
@@ -3823,7 +3818,7 @@ const Products = () => {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important', marginBottom: '8px' }}>
                     Tax Rate (%)
                   </label>
                   <input
@@ -3838,7 +3833,7 @@ const Products = () => {
                       borderRadius: '8px',
                       fontSize: '16px',
                       background: 'var(--input-bg)',
-                      color: '#1a1a1a',
+                      color: 'var(--text-primary) !important',
                       boxSizing: 'border-box'
                     }}
                     placeholder="0.00"
@@ -3847,7 +3842,7 @@ const Products = () => {
               </div>
 
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)', marginBottom: '6px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary) !important', marginBottom: '6px' }}>
                   Supplier
                 </label>
                 <select
@@ -3859,7 +3854,7 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    color: 'var(--text-primary)'
+                    color: 'var(--text-primary) !important'
                   }}
                 >
                   <option value="">Select a supplier...</option>
@@ -3872,7 +3867,7 @@ const Products = () => {
               </div>
 
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)', marginBottom: '6px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary) !important', marginBottom: '6px' }}>
                   Supplier Information (Legacy)
                 </label>
                 <input
@@ -3885,14 +3880,14 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    color: 'var(--text-primary)'
+                    color: 'var(--text-primary) !important'
                   }}
                   placeholder="Legacy supplier info (optional)"
                 />
               </div>
 
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)', marginBottom: '6px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary) !important', marginBottom: '6px' }}>
                   SKU
                 </label>
                 <input
@@ -3905,14 +3900,14 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    color: 'var(--text-primary)'
+                    color: 'var(--text-primary) !important'
                   }}
                   placeholder="Update SKU"
                 />
               </div>
 
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)', marginBottom: '6px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary) !important', marginBottom: '6px' }}>
                   Barcode
                 </label>
                 <input
@@ -3925,14 +3920,14 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    color: 'var(--text-primary)'
+                    color: 'var(--text-primary) !important'
                   }}
                   placeholder="Scan or enter barcode"
                 />
               </div>
 
               <div style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)', marginBottom: '6px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary) !important', marginBottom: '6px' }}>
                   Product Image
                 </label>
                 <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
@@ -3951,7 +3946,7 @@ const Products = () => {
                       borderRadius: '8px',
                       cursor: 'pointer',
                       fontSize: '14px',
-                      color: 'var(--text-primary)',
+                      color: 'var(--text-primary) !important',
                       textAlign: 'center',
                       transition: 'all 0.2s ease',
                       width: 'auto',
@@ -4034,7 +4029,7 @@ const Products = () => {
               </div>
 
               <div style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)', marginBottom: '6px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary) !important', marginBottom: '6px' }}>
                   Description
                 </label>
                 <textarea
@@ -4047,7 +4042,7 @@ const Products = () => {
                     border: '2px solid #000000',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    color: 'var(--text-primary)',
+                    color: 'var(--text-primary) !important',
                     resize: 'vertical'
                   }}
                   placeholder="e.g., Crispy plantain chips made from fresh plantains, perfect for snacking"
@@ -4060,7 +4055,7 @@ const Products = () => {
                   onClick={resetForm}
                   style={{
                     background: '#f3f4f6',
-                    color: 'var(--text-primary)',
+                    color: 'var(--text-primary) !important',
                     border: 'none',
                     padding: '12px 24px',
                     borderRadius: '8px',
@@ -4086,7 +4081,7 @@ const Products = () => {
                   disabled={isSubmitting}
                   style={{
                     background: isSubmitting ? '#9ca3af' : 'var(--bg-card)',
-                    color: 'var(--text-primary)',
+                    color: 'var(--text-primary) !important',
                     border: 'none',
                     padding: '12px 24px',
                     borderRadius: '8px',
@@ -4158,7 +4153,7 @@ const Products = () => {
             backgroundPosition: 'center',
             borderRadius: '8px',
             boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
-            backgroundColor: '#ffffff'
+            backgroundColor: 'var(--modal-bg)'
           }}
           onClick={(e) => e.stopPropagation()}
           >
@@ -4173,7 +4168,7 @@ const Products = () => {
                 borderRadius: '50%',
                 background: 'rgba(255, 255, 255, 0.9)',
                 border: 'none',
-                color: 'var(--text-primary)',
+                color: 'var(--text-primary) !important',
                 cursor: 'pointer',
                 fontSize: '20px',
                 display: 'flex',
@@ -4215,7 +4210,7 @@ const Products = () => {
             <h2 style={{
               fontSize: '24px',
               fontWeight: '600',
-              color: '#1a1a1a',
+              color: 'var(--text-primary) !important',
               marginBottom: '16px',
               textAlign: 'center'
             }}>
@@ -4223,7 +4218,7 @@ const Products = () => {
             </h2>
             <p style={{
               fontSize: '16px',
-              color: '#1a1a1a',
+              color: 'var(--text-primary) !important',
               marginBottom: '8px',
               textAlign: 'center'
             }}>
@@ -4353,7 +4348,7 @@ const Products = () => {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                     <i className="fas fa-analytics" style={{ color: '#7d8d86', fontSize: '20px' }}></i>
-                    <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '700', color: '#1e293b', letterSpacing: '-0.025em' }}>
+                    <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '700', color: 'var(--text-header)', letterSpacing: '-0.025em' }}>
                       Product Insights
                     </h2>
                   </div>
@@ -4433,7 +4428,7 @@ const Products = () => {
                 <div style={{ marginBottom: '40px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
                     <i className="fas fa-chart-bar" style={{ color: '#7d8d86', fontSize: '20px' }}></i>
-                    <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: '#1e293b' }}>
+                    <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: 'var(--text-header)' }}>
                       Performance Overview
                     </h3>
                   </div>
@@ -4544,7 +4539,7 @@ const Products = () => {
                   <div style={{ marginBottom: '40px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
                       <i className="fas fa-chart-line" style={{ color: '#7d8d86', fontSize: '20px' }}></i>
-                      <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: '#1e293b' }}>
+                      <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: 'var(--text-header)' }}>
                         Sales Trends & Analytics
                       </h3>
                     </div>
@@ -4628,7 +4623,7 @@ const Products = () => {
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
                             <i className="fas fa-chart-bar" style={{ color: '#3b82f6', fontSize: '16px' }}></i>
-                            <h4 style={{ margin: 0, fontSize: '16px', color: '#1e293b', fontWeight: '600' }}>
+                            <h4 style={{ margin: 0, fontSize: '16px', color: 'var(--text-header)', fontWeight: '600' }}>
                               Daily Sales (Last 30 Days)
                             </h4>
                           </div>
@@ -4662,7 +4657,7 @@ const Products = () => {
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
                             <i className="fas fa-chart-area" style={{ color: '#10b981', fontSize: '16px' }}></i>
-                            <h4 style={{ margin: 0, fontSize: '16px', color: '#1e293b', fontWeight: '600' }}>
+                            <h4 style={{ margin: 0, fontSize: '16px', color: 'var(--text-header)', fontWeight: '600' }}>
                               Weekly Sales (Last 4 Weeks)
                             </h4>
                           </div>
@@ -4696,7 +4691,7 @@ const Products = () => {
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
                             <i className="fas fa-chart-pie" style={{ color: '#f59e0b', fontSize: '16px' }}></i>
-                            <h4 style={{ margin: 0, fontSize: '16px', color: '#1e293b', fontWeight: '600' }}>
+                            <h4 style={{ margin: 0, fontSize: '16px', color: 'var(--text-header)', fontWeight: '600' }}>
                               Monthly Sales (Last 6 Months)
                             </h4>
                           </div>
@@ -4797,7 +4792,7 @@ const Products = () => {
                 {/* Additional Stats */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '32px' }}>
                   <div style={{ padding: '20px', borderRadius: '12px' }}>
-                    <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                    <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important' }}>
                       Sales Performance
                     </h3>
                     <div style={{ fontSize: '14px', color: '#7d8d86', lineHeight: '1.6' }}>
@@ -4823,7 +4818,7 @@ const Products = () => {
                   </div>
 
                   <div style={{ padding: '20px', borderRadius: '12px' }}>
-                    <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                    <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important' }}>
                       Top Selling Days (Last 30 Days)
                     </h3>
                     {productInsights.topSellingDays.length > 0 ? (
@@ -4883,19 +4878,19 @@ const Products = () => {
                         <tbody>
                           {productInsights.recentSalesList.map((sale, index) => (
                             <tr key={index} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                              <td style={{ padding: '8px 0', color: 'var(--text-primary)' }}>
+                              <td style={{ padding: '8px 0', color: 'var(--text-primary) !important' }}>
                                 {sale.date} {sale.time}
                               </td>
-                              <td style={{ padding: '8px 0', color: 'var(--text-primary)' }}>
+                              <td style={{ padding: '8px 0', color: 'var(--text-primary) !important' }}>
                                 {sale.quantity} {sale.unit}
                               </td>
-                              <td style={{ padding: '8px 0', color: 'var(--text-primary)' }}>
+                              <td style={{ padding: '8px 0', color: 'var(--text-primary) !important' }}>
                                 {formatCurrency(sale.price)}
                               </td>
-                              <td style={{ padding: '8px 0', color: 'var(--text-primary)' }}>
+                              <td style={{ padding: '8px 0', color: 'var(--text-primary) !important' }}>
                                 {sale.customer}
                               </td>
-                              <td style={{ padding: '8px 0', color: 'var(--text-primary)' }}>
+                              <td style={{ padding: '8px 0', color: 'var(--text-primary) !important' }}>
                                 {sale.cashier}
                               </td>
                             </tr>
@@ -4939,7 +4934,7 @@ const Products = () => {
                 
                 {/* Product Info Section */}
                 <div style={{ background: 'var(--input-bg)', padding: '20px', borderRadius: '12px' }}>
-                  <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                  <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important' }}>
                     Product Information
                   </h3>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', fontSize: '14px', color: '#7d8d86' }}>
@@ -5010,7 +5005,7 @@ const Products = () => {
               <h2 style={{
                 fontSize: '20px',
                 fontWeight: 'bold',
-                color: '#1a1a1a',
+                color: 'var(--text-primary) !important',
                 margin: 0
               }}>
                 <i className="fa-solid fa-check-circle" style={{ color: '#10b981', marginRight: '8px' }}></i>
@@ -5084,7 +5079,7 @@ const Products = () => {
                   <h3 style={{
                     fontSize: '18px',
                     fontWeight: 'bold',
-                    color: '#1a1a1a',
+                    color: 'var(--text-primary) !important',
                     margin: '0 0 8px 0'
                   }}>
                     {confirmingProduct.name}

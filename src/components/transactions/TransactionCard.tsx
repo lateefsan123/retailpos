@@ -152,7 +152,7 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
         textAlign: 'right',
         fontSize: '16px',
         fontWeight: '600',
-        color: transaction.partial_payment ? '#dc2626' : '#059669'
+        color: transaction.partial_payment ? '#dc2626' : 'var(--text-primary)'
       }}>
         {transaction.partial_payment ? (
           <div>

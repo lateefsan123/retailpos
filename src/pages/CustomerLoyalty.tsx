@@ -7,6 +7,8 @@ import { useRole } from '../contexts/RoleContext'
 import BranchSelector from '../components/BranchSelector'
 import { Customer, LoyaltyPrize, Product, NewLoyaltyPrize } from '../types/multitenant'
 import { formatCurrency } from '../utils/currency'
+import { getRandomCustomerIcon, getIconFromName, getFallbackCustomerIcon } from '../utils/customerIcons'
+import CustomerIcon from '../components/CustomerIcon'
 import styles from './CustomerLoyalty.module.css'
 
 interface CustomerRequest {
@@ -16,6 +18,8 @@ interface CustomerRequest {
   phone_number: string
   email?: string
   loyalty_points?: number
+  gender?: 'male' | 'female'
+  icon?: string
 }
 
 interface CustomerWithStats extends Customer {
@@ -63,7 +67,9 @@ const CustomerLoyalty = () => {
     name: '',
     phone_number: '',
     email: '',
-    loyalty_points: 0
+    loyalty_points: 0,
+    gender: undefined,
+    icon: undefined
   })
 
   // Check permissions
@@ -159,7 +165,9 @@ const CustomerLoyalty = () => {
       const customerData: CustomerRequest = {
         ...formData,
         business_id: businessId,
-        branch_id: selectedBranchId || undefined
+        branch_id: selectedBranchId || undefined,
+        // Assign icon if not provided
+        icon: formData.icon || (formData.gender ? getRandomCustomerIcon(formData.gender) : getFallbackCustomerIcon())
       }
 
       if (editingCustomer) {
@@ -648,6 +656,10 @@ const CustomerLoyalty = () => {
                     >
                       <td className={styles.tableCell}>
                         <div className={styles.customerInfo}>
+                          <CustomerIcon 
+                            customer={customer} 
+                            size="small"
+                          />
                           <div className={styles.customerDetails}>
                             <div className={styles.customerName}>
                               {customer.name}
@@ -886,6 +898,25 @@ const CustomerLoyalty = () => {
                   />
                 </div>
 
+                <div className={styles.formGridSingle}>
+                  <label className={styles.formLabel}>
+                    Gender
+                  </label>
+                  <select
+                    value={formData.gender || ''}
+                    onChange={(e) => {
+                      const gender = e.target.value as 'male' | 'female' | ''
+                      const icon = gender ? getRandomCustomerIcon(gender) : undefined
+                      setFormData(prev => ({ ...prev, gender: gender || undefined, icon }))
+                    }}
+                    className={styles.formInput}
+                  >
+                    <option value="">Select gender (optional)</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
+                </div>
+
                 {editingCustomer && (
                   <div className={styles.formGridSingle}>
                     <label className={styles.formLabel}>
@@ -1037,6 +1068,10 @@ const CustomerLoyalty = () => {
             <div className={styles.pointsModalContent}>
               <div className={styles.modalHeader}>
                 <h2 className={styles.pointsModalTitle}>
+                  <CustomerIcon 
+                    customer={selectedCustomer} 
+                    size="medium"
+                  />
                   {selectedCustomer.name} - Loyalty Management
                 </h2>
                 <button
@@ -1066,14 +1101,16 @@ const CustomerLoyalty = () => {
               </div>
 
               {/* Points Management */}
-              <div style={{ marginBottom: '32px' }}>
+              <div className={styles.pointsManagementSection}>
                 <h3 className={styles.sectionTitle}>
-                  Loyalty Points Management
+                  <i className="fa-solid fa-coins" style={{ color: '#f59e0b', fontSize: '16px' }}></i>
+                  Points Management
                 </h3>
                 
                 <div className={styles.sectionGrid}>
                   <div className={styles.sectionItem}>
                     <label className={styles.sectionLabel}>
+                      <i className="fa-solid fa-plus" style={{ marginRight: '8px', color: '#10b981' }}></i>
                       Add Points
                     </label>
                     <div className={styles.sectionInputGroup}>
@@ -1090,6 +1127,7 @@ const CustomerLoyalty = () => {
                         disabled={!pointsToAdd || parseInt(pointsToAdd) <= 0}
                         className={`${styles.sectionButton} ${styles.sectionButtonAdd}`}
                       >
+                        <i className="fa-solid fa-plus" style={{ marginRight: '6px' }}></i>
                         Add
                       </button>
                     </div>
@@ -1097,6 +1135,7 @@ const CustomerLoyalty = () => {
 
                   <div className={styles.sectionItem}>
                     <label className={styles.sectionLabel}>
+                      <i className="fa-solid fa-minus" style={{ marginRight: '8px', color: '#ef4444' }}></i>
                       Redeem Points
                     </label>
                     <div className={styles.sectionInputGroup}>
@@ -1114,6 +1153,7 @@ const CustomerLoyalty = () => {
                         disabled={!pointsToRedeem || parseInt(pointsToRedeem) <= 0 || parseInt(pointsToRedeem) > selectedCustomer.loyalty_points}
                         className={`${styles.sectionButton} ${styles.sectionButtonRedeem}`}
                       >
+                        <i className="fa-solid fa-minus" style={{ marginRight: '6px' }}></i>
                         Redeem
                       </button>
                     </div>
@@ -1123,9 +1163,9 @@ const CustomerLoyalty = () => {
 
               {/* Available Prizes */}
               {loyaltyPrizes.length > 0 && (
-                <div style={{ marginTop: '32px' }}>
+                <div className={styles.availablePrizesSection}>
                   <h3 className={styles.sectionTitle}>
-                    <i className="fa-solid fa-gift" style={{ color: '#8b5cf6' }}></i>
+                    <i className="fa-solid fa-gift" style={{ color: '#8b5cf6', fontSize: '16px' }}></i>
                     Available Prizes
                   </h3>
                   
@@ -1168,9 +1208,9 @@ const CustomerLoyalty = () => {
               )}
 
               {/* Transaction History Section */}
-              <div style={{ marginTop: '32px' }}>
+              <div className={styles.transactionHistorySection}>
                 <h3 className={styles.sectionTitle}>
-                  <i className="fa-solid fa-history" style={{ color: '#6b7280' }}></i>
+                  <i className="fa-solid fa-history" style={{ color: '#6b7280', fontSize: '16px' }}></i>
                   Transaction History
                 </h3>
                 
@@ -1210,13 +1250,6 @@ const CustomerLoyalty = () => {
           </div>
         )}
       </div>
-
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   )
 }

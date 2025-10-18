@@ -86,11 +86,11 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
       <div
         className="dashboardCard"
         style={{
-          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+          background: 'var(--bg-card)',
           borderRadius: '18px',
           padding: '24px',
-          boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
-          border: '1px solid #9ca3af'
+          boxShadow: 'var(--shadow-card)',
+          border: 'var(--border-primary)'
         }}
       >
         <style>{`@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}} .skeleton{background-image:linear-gradient(90deg,#e5e7eb 0px,#f3f4f6 40px,#e5e7eb 80px);background-size:600px 100%;animation:shimmer 1.2s infinite linear;border-radius:8px}`}</style>
@@ -132,21 +132,21 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
 
   if (error) {
     return (
-      <div
-        className="dashboardCard"
-        style={{
-          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-          borderRadius: '18px',
-          padding: '24px',
-          boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
-          border: '1px solid #9ca3af',
-          minHeight: '120px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
-        <div style={{ textAlign: 'center', color: '#ef4444' }}>
+        <div
+          className="dashboardCard"
+          style={{
+            background: 'var(--bg-card)',
+            borderRadius: '18px',
+            padding: '24px',
+            boxShadow: 'var(--shadow-card)',
+            border: 'var(--border-primary)',
+            minHeight: '120px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+        <div style={{ textAlign: 'center', color: 'var(--error-color)' }}>
           <i className="fa-solid fa-exclamation-triangle" style={{ fontSize: '24px', marginBottom: '8px' }}></i>
           <p style={{ margin: 0, fontSize: '14px' }}>{error}</p>
         </div>
@@ -158,11 +158,11 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
     <div
       className="dashboardCard"
       style={{
-        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+        background: 'var(--bg-card)',
         borderRadius: '18px',
         padding: '24px',
-        boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
-        border: '1px solid #e5e7eb'
+        boxShadow: 'var(--shadow-card)',
+        border: 'var(--border-primary)'
       }}
     >
       {/* Header */}
@@ -172,15 +172,15 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
             width: '40px',
             height: '40px',
             borderRadius: '10px',
-            background: '#111827',
+            background: 'var(--bg-nested)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
           }}
         >
-          <i className="fa-solid fa-chart-line" style={{ fontSize: '18px', color: '#ffffff' }}></i>
+          <i className="fa-solid fa-chart-line" style={{ fontSize: '18px', color: 'var(--text-primary)' }}></i>
         </div>
-        <h3 style={{ fontSize: '20px', fontWeight: 600, color: '#3e3f29', margin: 0 }}>Top Products</h3>
+        <h3 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Top Products</h3>
       </div>
 
       {/* Tabs */}
@@ -193,8 +193,8 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
               padding: '6px 12px',
               borderRadius: '6px',
               border: '1px solid #d1d5db',
-              background: activePeriod === periodKey ? '#7d8d86' : '#ffffff',
-              color: activePeriod === periodKey ? '#f1f0e4' : '#7d8d86',
+              background: activePeriod === periodKey ? '#7d8d86' : 'var(--bg-card)',
+              color: activePeriod === periodKey ? '#f1f0e4' : 'var(--text-secondary)',
               fontSize: '12px',
               fontWeight: 600,
               cursor: 'pointer',
@@ -214,7 +214,7 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
 
       {/* Visualization + List */}
       {topProducts.length === 0 ? (
-        <div style={{ textAlign: 'center', color: '#1a1a1a', padding: '16px' }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-primary)', padding: '16px' }}>
           No products for {getPeriodLabel(activePeriod)}
         </div>
       ) : (
@@ -250,21 +250,21 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
                   cx={donutSize / 2}
                   cy={donutSize / 2}
                   r={donutRadius - donutStroke * 0.65}
-                  fill="#ffffff"
+                  fill="var(--bg-card)"
                 />
-                <text x="50%" y="48%" textAnchor="middle" style={{ fontSize: '14px', fontWeight: 600, fill: '#1f2937' }}>
+                <text x="50%" y="48%" textAnchor="middle" style={{ fontSize: '14px', fontWeight: 600, fill: 'var(--text-primary)' }}>
                   {formatCurrency(totalSalesValue)}
                 </text>
-                <text x="50%" y="63%" textAnchor="middle" style={{ fontSize: '11px', fill: '#6b7280', letterSpacing: '0.04em' }}>
+                <text x="50%" y="63%" textAnchor="middle" style={{ fontSize: '11px', fill: 'var(--text-secondary)', letterSpacing: '0.04em' }}>
                   Total
                 </text>
               </svg>
             ) : (
-              <div style={{ color: '#1a1a1a', fontSize: '12px', padding: '16px', textAlign: 'center' }}>
+              <div style={{ color: 'var(--text-primary)', fontSize: '12px', padding: '16px', textAlign: 'center' }}>
                 No revenue recorded in this period
               </div>
             )}
-            <div style={{ textAlign: 'center', color: '#1a1a1a', fontSize: '12px' }}>
+            <div style={{ textAlign: 'center', color: 'var(--text-primary)', fontSize: '12px' }}>
               Share of revenue · {getPeriodLabel(activePeriod)}
             </div>
           </div>
@@ -284,10 +284,10 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
                     alignItems: 'center',
                     gap: '12px',
                     padding: '12px',
-                    background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                    background: 'var(--bg-nested)',
                     borderRadius: '10px',
-                    border: '1px solid #9ca3af',
-                    boxShadow: '0 1px 2px rgba(148, 163, 184, 0.12)'
+                    border: 'var(--border-subtle)',
+                    boxShadow: 'var(--shadow-card)'
                   }}
                 >
                   <div
@@ -299,7 +299,7 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#ffffff',
+                      color: 'var(--text-primary)',
                       fontWeight: 700,
                       fontSize: '14px',
                       overflow: 'hidden',
@@ -333,18 +333,18 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
                   </div>
                   <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '14px', fontWeight: 600, color: '#1f2937', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {product.product_name}
                       </span>
-                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
                         {displayPercentage}%
                       </span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#1a1a1a' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-primary)' }}>
                       <span>{product.quantity_sold} sold</span>
                       <span>{formatCurrency(product.total_sales)}</span>
                     </div>
-                    <div style={{ height: '6px', borderRadius: '999px', background: '#e5e7eb', overflow: 'hidden' }}>
+                    <div style={{ height: '6px', borderRadius: '999px', background: 'var(--secondary-bg)', overflow: 'hidden' }}>
                       <div
                         style={{
                           width: `${clampedPercentage}%`,

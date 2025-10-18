@@ -8,13 +8,15 @@ import { useBusiness } from '../contexts/BusinessContext'
 import { usePromotions } from '../hooks/usePromotions'
 import { useNav } from '../contexts/NavContext'
 import { useBarcodeScanner, setModalOpen } from '../hooks/useBarcodeScanner'
-import { generateReceiptHTML as generateReceiptHTMLUtil, printReceipt as printReceiptUtil } from '../utils/receiptUtils'
+import { generateReceiptHTML as generateReceiptHTMLUtil, printReceipt as printReceiptUtil, openCashDrawer } from '../utils/receiptUtils'
 import { ttsService, TTSSettings } from '../lib/ttsService'
 import { calculateChangeBreakdown } from '../utils/changeBreakdown'
 import { RetroButton } from '../components/ui/RetroButton'
 import BranchSelector from '../components/BranchSelector'
 import Calculator from '../components/Calculator'
 import CustomerAutocomplete from '../components/CustomerAutocomplete'
+import StockAlertModal from '../components/sales/StockAlertModal'
+import AddProductModal from '../components/modals/AddProductModal'
 import styles from '../components/sales/SalesSummaryModal.module.css'
 
 // Helper function to get local time in database format
@@ -266,6 +268,10 @@ const Sales = () => {
   const [quickServiceBusiness, setQuickServiceBusiness] = useState('')
   const [serviceBusinesses, setServiceBusinesses] = useState<{business_id: number, name: string}[]>([])
   
+  // Add Product modal states
+  const [showAddProductModal, setShowAddProductModal] = useState(false)
+  
+  
   // TTS states - using the new TTS service
   const [, setTtsSettings] = useState<TTSSettings>(ttsService.getSettings())
   const [isTtsPlaying, setIsTtsPlaying] = useState(false)
@@ -288,6 +294,12 @@ const Sales = () => {
   const [existingTransactionId, setExistingTransactionId] = useState<string | null>(null)
   const [existingTransaction, setExistingTransaction] = useState<any>(null)
   const [isAddingToTransaction, setIsAddingToTransaction] = useState(false)
+  
+  // Stock alert modal state
+  const [showStockAlert, setShowStockAlert] = useState(false)
+  const [stockAlertProduct, setStockAlertProduct] = useState<Product | null>(null)
+  const [stockAlertCurrentStock, setStockAlertCurrentStock] = useState(0)
+  const [stockAlertRequestedQuantity, setStockAlertRequestedQuantity] = useState(0)
 
   useEffect(() => {
     if (businessLoading) {
@@ -482,6 +494,7 @@ const Sales = () => {
       setAmountEntered(order.total.toString())
     }
   }, [order.total, allowPartialPayment, partialAmount])
+
 
   const fetchAllProductsAndCategories = async () => {
     if (businessLoading) {
@@ -892,7 +905,8 @@ const Sales = () => {
           quantity: item.quantity,
           price: item.weight && item.calculatedPrice 
             ? item.calculatedPrice / item.quantity 
-            : item.product!.price
+            : item.product!.price,
+          category: item.product!.category
         }))
       
       if (itemsForPromotion.length > 0) {
@@ -938,7 +952,23 @@ const Sales = () => {
       return
     }
 
-    // Regular product handling
+    // Check stock availability for regular products
+    const existingItem = order.items.find(item => 
+      item.product?.product_id === product.product_id && !item.weight
+    )
+    
+    const requestedQuantity = existingItem ? existingItem.quantity + 1 : 1
+    
+    // If stock would go below 0, show stock alert modal
+    if (product.stock_quantity < requestedQuantity) {
+      setStockAlertProduct(product)
+      setStockAlertCurrentStock(product.stock_quantity)
+      setStockAlertRequestedQuantity(requestedQuantity)
+      setShowStockAlert(true)
+      return
+    }
+
+    // Regular product handling - stock is sufficient
     setOrder(prev => {
       const existingItem = prev.items.find(item => 
         item.product?.product_id === product.product_id && !item.weight // Only match non-weighted items
@@ -960,6 +990,37 @@ const Sales = () => {
         }
       }
     })
+  }
+
+  const handleQuickRestock = async (product: Product, newStock: number) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ 
+          stock_quantity: newStock,
+          last_updated: getLocalDateTime()
+        })
+        .eq('product_id', product.product_id)
+        .eq('business_id', businessId)
+
+      if (error) throw error
+
+      // Update local products state
+      setProducts(prev => 
+        prev.map(p => 
+          p.product_id === product.product_id 
+            ? { ...p, stock_quantity: newStock }
+            : p
+        )
+      )
+
+      // Now add the product to the order since stock is updated
+      addToOrder({ ...product, stock_quantity: newStock })
+      
+    } catch (error) {
+      console.error('Error updating stock:', error)
+      throw error
+    }
   }
 
   const addWeightedProductToOrder = (product: Product, weight: number) => {
@@ -1444,6 +1505,10 @@ const Sales = () => {
       alert('Please select a business before processing a sale.')
       return
     }
+
+    // Open cash drawer/till
+    console.log('Opening cash drawer...')
+    openCashDrawer()
 
     try {
       let saleData
@@ -2404,6 +2469,55 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 <i className="fa-solid fa-calculator" style={{ marginRight: '8px' }}></i>
                 Calculator
               </button>
+              
+              {/* Add Product Button */}
+              <button 
+                onClick={() => {
+                  console.log('Add Product button clicked!');
+                  setShowAddProductModal(true);
+                }}
+                style={{
+                  padding: '14px 32px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  minWidth: '120px',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                  background: '#dc2626',
+                  color: 'white'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#b91c1c';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#dc2626';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                }}
+                onMouseDown={(e) => {
+                  e.currentTarget.style.background = '#991b1b';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.2)';
+                }}
+                onMouseUp={(e) => {
+                  e.currentTarget.style.background = '#b91c1c';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.3)';
+                }}
+              >
+                <i className="fa-solid fa-plus" style={{ marginRight: '8px' }}></i>
+                Add Product
+              </button>
             </div>
           </div>
         </div>
@@ -2584,6 +2698,58 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 >
                   <i className="fa-solid fa-calculator" style={{ marginRight: '8px' }}></i>
                   Calculator
+                </button>
+                <button 
+                  onClick={() => {
+                    console.log('Add Product button clicked!');
+                    navigate('/products');
+                  }}
+                  style={{
+                    padding: '14px 32px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    fontWeight: '500',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    minWidth: '120px',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                    background: '#dc2626',
+                    color: 'white',
+                    border: '2px solid #dc2626'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#b91c1c';
+                    e.currentTarget.style.borderColor = '#b91c1c';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#dc2626';
+                    e.currentTarget.style.borderColor = '#dc2626';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                  }}
+                  onMouseDown={(e) => {
+                    e.currentTarget.style.background = '#991b1b';
+                    e.currentTarget.style.borderColor = '#991b1b';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.2)';
+                  }}
+                  onMouseUp={(e) => {
+                    e.currentTarget.style.background = '#b91c1c';
+                    e.currentTarget.style.borderColor = '#b91c1c';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.3)';
+                  }}
+                >
+                  <i className="fa-solid fa-plus" style={{ marginRight: '8px' }}></i>
+                  Add Product
                 </button>
               </div>
             </div>
@@ -3692,6 +3858,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 ))}
               </div>
             </div>
+
 
             {/* Partial Payment Toggle */}
             <div style={{ marginBottom: '24px' }}>
@@ -4850,6 +5017,38 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
           </div>
         </div>
       )}
+
+      {/* Add Product Modal */}
+      <AddProductModal
+        isOpen={showAddProductModal}
+        onClose={() => setShowAddProductModal(false)}
+        onProductAdded={(product) => {
+          // Refresh all products and categories when a new product is added
+          fetchAllProductsAndCategories()
+          setShowAddProductModal(false)
+        }}
+        categories={categories}
+        onCategoryAdded={(category) => {
+          // Add the new category to the categories list
+          setCategories(prev => [...prev, category])
+        }}
+      />
+
+      {/* Stock Alert Modal */}
+      <StockAlertModal
+        isOpen={showStockAlert}
+        onClose={() => setShowStockAlert(false)}
+        product={stockAlertProduct}
+        currentStock={stockAlertCurrentStock}
+        requestedQuantity={stockAlertRequestedQuantity}
+        onQuickRestock={handleQuickRestock}
+        onCancel={() => {
+          setShowStockAlert(false)
+          setStockAlertProduct(null)
+          setStockAlertCurrentStock(0)
+          setStockAlertRequestedQuantity(0)
+        }}
+      />
     </>
   )
 }

@@ -1,4 +1,5 @@
 import React, { CSSProperties, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useRole } from '../contexts/RoleContext'
 import { useTheme } from '../contexts/ThemeContext'
@@ -17,6 +18,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ variant = 'floating' }) => {
   const { user, logout, switchUser } = useAuth()
   const { userRole } = useRole()
   const { theme } = useTheme()
+  const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
   const [showSelectUserModal, setShowSelectUserModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
@@ -180,6 +182,11 @@ const UserMenu: React.FC<UserMenuProps> = ({ variant = 'floating' }) => {
 
   const handleChangeName = () => {
     setShowChangeNameModal(true)
+    setIsOpen(false)
+  }
+
+  const handleProductDatabase = () => {
+    navigate('/product-database')
     setIsOpen(false)
   }
 
@@ -381,6 +388,29 @@ const UserMenu: React.FC<UserMenuProps> = ({ variant = 'floating' }) => {
           >
             <i className="fa-solid fa-gear" style={{ fontSize: '16px', color: dropdownIconColor }}></i>
             <span>Settings</span>
+          </button>
+
+          <button
+            onClick={handleProductDatabase}
+            style={{
+              width: '100%',
+              textAlign: 'left',
+              padding: '12px 16px',
+              background: 'transparent',
+              border: 'none',
+              color: dropdownTextColor,
+              fontSize: '14px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              transition: 'background 0.2s ease'
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = dropdownHoverBg)}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            <i className="fa-solid fa-database" style={{ fontSize: '16px', color: dropdownIconColor }}></i>
+            <span>Product Database</span>
           </button>
 
           {user?.role?.toLowerCase() === 'owner' && (

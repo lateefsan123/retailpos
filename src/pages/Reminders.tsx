@@ -161,7 +161,7 @@ export default function Reminders() {
     // Reset time to start of day for accurate date comparison
     current.setHours(0, 0, 0, 0);
 
-    return reminders.filter(reminder => {
+    const filtered = reminders.filter(reminder => {
       const reminderDate = new Date(reminder.remind_date);
       // Reset time to start of day for accurate date comparison
       reminderDate.setHours(0, 0, 0, 0);
@@ -170,8 +170,25 @@ export default function Reminders() {
       const resolvedFilter = showResolved || (!reminder.resolved && !reminder.transactionResolved);
       const isReminder = !reminder.is_task; // Only show reminders, not tasks
 
+      // Debug logging
+      if (!dateMatches || !resolvedFilter || !isReminder) {
+        console.log('Reminder filtered out:', {
+          title: reminder.title,
+          dateMatches,
+          resolvedFilter,
+          isReminder,
+          is_task: reminder.is_task,
+          resolved: reminder.resolved,
+          transactionResolved: reminder.transactionResolved,
+          showResolved
+        });
+      }
+
       return dateMatches && resolvedFilter && isReminder;
     });
+
+    console.log('Filtered reminders:', filtered.length, 'out of', reminders.length);
+    return filtered;
   };
 
   const removeAllReminders = async () => {
@@ -426,7 +443,7 @@ export default function Reminders() {
 
     if (offlineMode) {
       const tempId = Date.now();
-      setReminders([...reminders, { ...newReminder, reminder_id: tempId, created_at: new Date().toISOString() }]);
+      setReminders([...reminders, { ...newReminder, reminder_id: tempId, created_at: new Date().toISOString(), is_task: false }]);
       closeModal();
       return;
     }
@@ -438,7 +455,7 @@ export default function Reminders() {
       } else {
         // Fall back to offline mode if no current user
         const tempId = Date.now();
-        setReminders([...reminders, { ...newReminder, reminder_id: tempId, created_at: new Date().toISOString() }]);
+        setReminders([...reminders, { ...newReminder, reminder_id: tempId, created_at: new Date().toISOString(), is_task: false }]);
         closeModal();
         return;
       }
@@ -450,7 +467,9 @@ export default function Reminders() {
           body: newReminder.body,
           remind_date: newReminder.remind_date,
           owner_id: newReminder.owner_id,
-          branch_id: newReminder.branch_id
+          business_id: newReminder.business_id,
+          branch_id: newReminder.branch_id,
+          is_task: false // Explicitly set to false for regular reminders
         }])
         .select()
         .single();
@@ -458,12 +477,12 @@ export default function Reminders() {
       if (error) {
         // Fall back to offline mode
         const tempId = Date.now();
-        setReminders([...reminders, { ...newReminder, reminder_id: tempId, created_at: new Date().toISOString() }]);
+        setReminders([...reminders, { ...newReminder, reminder_id: tempId, created_at: new Date().toISOString(), is_task: false }]);
         closeModal();
         return;
       }
 
-      setReminders([...reminders, { ...newReminder, reminder_id: data.reminder_id, created_at: new Date().toISOString() }]);
+      setReminders([...reminders, { ...newReminder, reminder_id: data.reminder_id, created_at: new Date().toISOString(), is_task: false }]);
       closeModal();
     } catch (error) {
       console.error('Error adding reminder:', error);

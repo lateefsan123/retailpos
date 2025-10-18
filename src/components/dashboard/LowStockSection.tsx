@@ -34,7 +34,7 @@ const LowStockSection = () => {
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
-          color: '#1a1a1a',
+          color: 'var(--text-primary)',
           fontSize: '16px'
         }}>
           <i className="fa-solid fa-spinner" style={{ 
@@ -57,7 +57,7 @@ const LowStockSection = () => {
       }}>
         <div style={{
           textAlign: 'center',
-          color: '#ef4444'
+          color: 'var(--error-color)'
         }}>
           <i className="fa-solid fa-exclamation-triangle" style={{
             fontSize: '24px',
@@ -92,14 +92,14 @@ const LowStockSection = () => {
             <h3 style={{ 
               fontSize: '20px', 
               fontWeight: '600', 
-              color: '#3e3f29', 
+              color: 'var(--text-primary)', 
               margin: '0 0 4px 0' 
             }}>
               Low Stock Items
             </h3>
             <p style={{ 
               fontSize: '14px', 
-              color: '#1a1a1a', 
+              color: 'var(--text-primary)', 
               margin: 0 
             }}>
               {lowStockItems.length} item{lowStockItems.length !== 1 ? 's' : ''} need{lowStockItems.length === 1 ? 's' : ''} restocking
@@ -114,8 +114,8 @@ const LowStockSection = () => {
               onClick={goToPrevious}
               disabled={!hasPrevious}
               style={{
-                background: hasPrevious ? '#7d8d86' : '#e5e7eb',
-                color: hasPrevious ? '#f1f0e4' : '#9ca3af',
+                background: hasPrevious ? '#7d8d86' : 'var(--secondary-bg)',
+                color: hasPrevious ? '#f1f0e4' : 'var(--text-secondary)',
                 border: 'none',
                 borderRadius: '6px',
                 padding: '6px 8px',
@@ -142,7 +142,7 @@ const LowStockSection = () => {
             
             <span style={{
               fontSize: '12px',
-              color: '#1a1a1a',
+              color: 'var(--text-primary)',
               fontWeight: '500',
               minWidth: '40px',
               textAlign: 'center'
@@ -154,8 +154,8 @@ const LowStockSection = () => {
               onClick={goToNext}
               disabled={!hasNext}
               style={{
-                background: hasNext ? '#7d8d86' : '#e5e7eb',
-                color: hasNext ? '#f1f0e4' : '#9ca3af',
+                background: hasNext ? '#7d8d86' : 'var(--secondary-bg)',
+                color: hasNext ? '#f1f0e4' : 'var(--text-secondary)',
                 border: 'none',
                 borderRadius: '6px',
                 padding: '6px 8px',
@@ -188,7 +188,7 @@ const LowStockSection = () => {
         <div style={{ 
           textAlign: 'center', 
           padding: '40px 20px', 
-          color: '#1a1a1a' 
+          color: 'var(--text-primary)' 
         }}>
           <i className="fa-solid fa-check-circle" style={{
             fontSize: '48px',

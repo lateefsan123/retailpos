@@ -4,29 +4,9 @@
   margin: 0 auto;
 }
 
-/* Page Header */
-.pageHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid #e5e7eb;
-}
+/* Page Header styles removed - using PageHeader component's theme-aware styling */
 
-.pageTitle {
-  font-size: 36px;
-  font-weight: 800;
-  color: var(--text-primary);
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.pageTitle i {
-  color: var(--text-primary);
-}
+/* PageTitle styles removed - using PageHeader component's theme-aware styling */
 
 .primaryButton {
   background: rgba(0, 0, 0, 0.85);
@@ -1328,29 +1308,7 @@
   to { transform: rotate(360deg); }
 }
 
-/* High-contrast text overrides for dark UI */
-.sideBusinessesContainer .contentPanelTitle,
-.sideBusinessesContainer .statisticsLabel,
-.sideBusinessesContainer .statisticsValue,
-.sideBusinessesContainer .emptyStateMessageText,
-.sideBusinessesContainer .listItemCardTitle,
-.sideBusinessesContainer .listItemCardSubtitle,
-.sideBusinessesContainer .listItemCardCount,
-.sideBusinessesContainer .listItemCardStock,
-.sideBusinessesContainer .listItemCardPrice,
-.sideBusinessesContainer .businessDetailModalName,
-.sideBusinessesContainer .businessDetailModalDescription,
-.sideBusinessesContainer .analyticsSectionTitle,
-.sideBusinessesContainer .analyticsLabel,
-.sideBusinessesContainer .analyticsValue,
-.sideBusinessesContainer .itemDetailName,
-.sideBusinessesContainer .itemDetailBusiness,
-.sideBusinessesContainer .itemDetailStatLabel,
-.sideBusinessesContainer .itemDetailStatValue,
-.sideBusinessesContainer .itemRevenueLabel,
-.sideBusinessesContainer .itemRevenueValue {
-  color: #ffffff;
-}
+/* High-contrast text overrides removed - using theme-aware CSS custom properties */
 
 /* Responsive Design */
 @media (max-width: 768px) {
@@ -1358,16 +1316,9 @@
     /* Padding handled by main App component */
   }
   
-  .pageHeader {
-    flex-direction: column;
-    gap: 16px;
-    align-items: stretch;
-  }
+  /* PageHeader responsive styles removed - using PageHeader component's responsive styling */
   
-  .pageTitle {
-    font-size: 24px;
-    text-align: center;
-  }
+  /* PageTitle responsive styles removed - using PageHeader component's responsive styling */
   
   /* SearchContainer handles its own responsive design */
   

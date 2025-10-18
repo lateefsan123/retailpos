@@ -87,6 +87,8 @@ export interface Customer {
   phone_number: string
   email?: string
   loyalty_points: number
+  gender?: 'male' | 'female'
+  icon?: string
   business_id: number // Multi-tenant support
   branch_id?: number // Branch support
 }
@@ -96,6 +98,8 @@ export interface NewCustomer {
   phone_number: string
   email?: string
   loyalty_points?: number
+  gender?: 'male' | 'female'
+  icon?: string
 }
 
 // =====================================================
@@ -647,8 +651,13 @@ export interface Promotion {
   branch_id?: number
   name: string
   description?: string
-  discount_type: 'percentage' | 'fixed_amount'
-  discount_value: number
+  promotion_type?: 'standard' | 'buy_x_discount' | 'buy_x_get_y_free'
+  discount_type?: 'percentage' | 'fixed_amount'
+  discount_value?: number
+  quantity_required?: number
+  quantity_reward?: number
+  applies_to_categories?: boolean
+  category_ids?: string[]
   start_date: string
   end_date: string
   active: boolean
@@ -668,8 +677,13 @@ export interface PromotionRequest {
   branch_id?: number
   name: string
   description?: string
-  discount_type: 'percentage' | 'fixed_amount'
-  discount_value: number
+  promotion_type?: 'standard' | 'buy_x_discount' | 'buy_x_get_y_free'
+  discount_type?: 'percentage' | 'fixed_amount'
+  discount_value?: number
+  quantity_required?: number
+  quantity_reward?: number
+  applies_to_categories?: boolean
+  category_ids?: string[]
   start_date: string
   end_date: string
   active?: boolean

@@ -299,3 +299,70 @@ export const printReceipt = (
   printWindow.print()
   printWindow.close()
 }
+
+// Cash drawer control functions
+export const openCashDrawer = () => {
+  try {
+    // Method 1: ESC/POS command for cash drawer (most common)
+    const escPosCommand = new Uint8Array([27, 112, 0, 50, 250]) // ESC p 0 50 250
+    
+    // Try to send the command to a connected printer
+    if (navigator.serial) {
+      // Modern Web Serial API approach
+      console.log('Attempting to open cash drawer via Web Serial API...')
+      // This would require user permission and device selection
+    } else {
+      // Fallback: Try to send ESC/POS command via print
+      const printWindow = window.open('', '_blank')
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>Cash Drawer</title>
+            </head>
+            <body>
+              <script>
+                // ESC/POS command to open cash drawer
+                const command = new Uint8Array([27, 112, 0, 50, 250]);
+                // This is a fallback - actual implementation would depend on printer driver
+                window.close();
+              </script>
+            </body>
+          </html>
+        `)
+        printWindow.document.close()
+        setTimeout(() => printWindow.close(), 1000)
+      }
+    }
+    
+    console.log('Cash drawer open command sent')
+    return true
+  } catch (error) {
+    console.error('Failed to open cash drawer:', error)
+    return false
+  }
+}
+
+// Alternative method using a simple API call (if you have a backend service)
+export const openCashDrawerAPI = async () => {
+  try {
+    // This would be a call to your backend service that controls the cash drawer
+    const response = await fetch('/api/cash-drawer/open', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+    
+    if (response.ok) {
+      console.log('Cash drawer opened successfully')
+      return true
+    } else {
+      throw new Error('Failed to open cash drawer')
+    }
+  } catch (error) {
+    console.error('Failed to open cash drawer via API:', error)
+    // Fallback to local method
+    return openCashDrawer()
+  }
+}

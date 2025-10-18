@@ -368,22 +368,23 @@
 }
 
 .actionButton {
-  background: rgba(0, 0, 0, 0.85);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border: 2px solid #000000;
-  padding: 6px 12px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid rgba(125, 141, 134, 0.2);
+  padding: 4px 8px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   transition: all 0.2s ease;
 }
 
 .actionButton:hover {
-  background: rgba(0, 0, 0, 0.95);
+  background: rgba(125, 141, 134, 0.1);
+  color: var(--text-primary);
+  border-color: rgba(125, 141, 134, 0.4);
 }
 
 .actionButton:active {
@@ -404,21 +405,22 @@
 }
 
 .deleteButton {
-  background: rgba(0, 0, 0, 0.85);
-  color: white;
-  border: 2px solid #000000;
-  padding: 6px 12px;
+  background: transparent;
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  padding: 4px 8px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   transition: all 0.2s ease;
 }
 
 .deleteButton:hover {
-  background: rgba(0, 0, 0, 0.95);
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.4);
 }
 
 .deleteButton:active {

@@ -41,6 +41,13 @@ export const usePromotions = (businessId: number | null, branchId: number | null
           setPromotions([])
           return
         }
+        // If column doesn't exist, show helpful message
+        if (fetchError.message.includes('column') && fetchError.message.includes('does not exist')) {
+          setError('Promotions table is missing required columns. Please run the quantity promotions migration.')
+          setPromotions([])
+          return
+        }
+        console.error('Promotion fetch error:', fetchError)
         throw fetchError
       }
 
@@ -86,7 +93,14 @@ export const usePromotions = (businessId: number | null, branchId: number | null
 
       const { data, error: fetchError } = await query
 
-      if (fetchError) throw fetchError
+      if (fetchError) {
+        // If column doesn't exist, show helpful message
+        if (fetchError.message.includes('column') && fetchError.message.includes('does not exist')) {
+          console.error('Promotions table is missing required columns. Please run the quantity promotions migration.')
+          return
+        }
+        throw fetchError
+      }
 
       const transformedData = data.map((promo: any) => ({
         ...promo,
@@ -104,10 +118,15 @@ export const usePromotions = (businessId: number | null, branchId: number | null
     try {
       const { product_ids, ...promotionData } = promotion
 
+      // Clean up undefined values for BOGO promotions
+      const cleanPromotionData = Object.fromEntries(
+        Object.entries(promotionData).filter(([_, value]) => value !== undefined)
+      )
+
       // Insert promotion
       const { data, error: insertError } = await supabase
         .from('promotions')
-        .insert([promotionData])
+        .insert([cleanPromotionData])
         .select()
         .single()
 
@@ -142,10 +161,15 @@ export const usePromotions = (businessId: number | null, branchId: number | null
     try {
       const { product_ids, ...promotionData } = updates
 
+      // Clean up undefined values for BOGO promotions
+      const cleanPromotionData = Object.fromEntries(
+        Object.entries(promotionData).filter(([_, value]) => value !== undefined)
+      )
+
       // Update promotion
       const { error: updateError } = await supabase
         .from('promotions')
-        .update({ ...promotionData, updated_at: new Date().toISOString() })
+        .update({ ...cleanPromotionData, updated_at: new Date().toISOString() })
         .eq('promotion_id', promotionId)
 
       if (updateError) throw updateError
@@ -251,7 +275,7 @@ export const usePromotions = (businessId: number | null, branchId: number | null
   }
 
   // Calculate applicable promotions for cart
-  const calculatePromotions = (items: Array<{ product_id: string; quantity: number; price: number }>, subtotal: number) => {
+  const calculatePromotions = (items: Array<{ product_id: string; quantity: number; price: number; category?: string }>, subtotal: number) => {
     const applicablePromotions: Array<{
       promotion: Promotion
       discount: number
@@ -268,28 +292,38 @@ export const usePromotions = (businessId: number | null, branchId: number | null
       let discount = 0
       let affectedItems: string[] = []
 
-      if (promo.applies_to === 'all') {
-        // Apply to entire purchase
-        if (promo.discount_type === 'percentage') {
-          discount = (subtotal * promo.discount_value) / 100
-        } else {
-          discount = promo.discount_value
-        }
-        affectedItems = items.map(item => item.product_id)
+      // Handle different promotion types
+      if (promo.promotion_type === 'buy_x_discount') {
+        discount = calculateBuyXDiscount(promo, items)
+        affectedItems = getAffectedItemsForQuantityPromo(promo, items)
+      } else if (promo.promotion_type === 'buy_x_get_y_free') {
+        discount = calculateBuyXGetYFree(promo, items)
+        affectedItems = getAffectedItemsForQuantityPromo(promo, items)
       } else {
-        // Apply to specific products
-        const promoProductIds = promo.products?.map(p => p.product_id) || []
-        const eligibleItems = items.filter(item => promoProductIds.includes(item.product_id))
-
-        if (eligibleItems.length > 0) {
-          const eligibleSubtotal = eligibleItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-
+        // Standard promotion logic (existing)
+        if (promo.applies_to === 'all') {
+          // Apply to entire purchase
           if (promo.discount_type === 'percentage') {
-            discount = (eligibleSubtotal * promo.discount_value) / 100
+            discount = (subtotal * (promo.discount_value || 0)) / 100
           } else {
-            discount = promo.discount_value
+            discount = promo.discount_value || 0
           }
-          affectedItems = eligibleItems.map(item => item.product_id)
+          affectedItems = items.map(item => item.product_id)
+        } else {
+          // Apply to specific products
+          const promoProductIds = promo.products?.map(p => p.product_id) || []
+          const eligibleItems = items.filter(item => promoProductIds.includes(item.product_id))
+
+          if (eligibleItems.length > 0) {
+            const eligibleSubtotal = eligibleItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+
+            if (promo.discount_type === 'percentage') {
+              discount = (eligibleSubtotal * (promo.discount_value || 0)) / 100
+            } else {
+              discount = promo.discount_value || 0
+            }
+            affectedItems = eligibleItems.map(item => item.product_id)
+          }
         }
       }
 
@@ -308,6 +342,102 @@ export const usePromotions = (businessId: number | null, branchId: number | null
     }
 
     return applicablePromotions
+  }
+
+  // Helper function to calculate "Buy X, Get Y% Off" discounts
+  const calculateBuyXDiscount = (promo: Promotion, items: Array<{ product_id: string; quantity: number; price: number; category?: string }>): number => {
+    if (!promo.quantity_required || !promo.discount_value) return 0
+
+    const eligibleItems = getEligibleItemsForPromo(promo, items)
+    if (eligibleItems.length === 0) return 0
+
+    // For category-based promotions, aggregate all items in the category
+    if (promo.applies_to_categories) {
+      const totalQuantity = eligibleItems.reduce((sum, item) => sum + item.quantity, 0)
+      const groups = Math.floor(totalQuantity / promo.quantity_required)
+      if (groups > 0) {
+        const discountedQuantity = groups * promo.quantity_required
+        // Use average price for category-based discounts
+        const avgPrice = eligibleItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) / totalQuantity
+        const discountPerItem = (avgPrice * promo.discount_value) / 100
+        return discountPerItem * discountedQuantity
+      }
+    } else {
+      // For product-specific promotions, group by product
+      const itemGroups = new Map<string, { quantity: number; price: number }>()
+      eligibleItems.forEach(item => {
+        const existing = itemGroups.get(item.product_id) || { quantity: 0, price: item.price }
+        existing.quantity += item.quantity
+        itemGroups.set(item.product_id, existing)
+      })
+
+      let totalDiscount = 0
+
+      // Calculate discount for each product group
+      itemGroups.forEach((group, productId) => {
+        const groups = Math.floor(group.quantity / promo.quantity_required)
+        if (groups > 0) {
+          const discountedQuantity = groups * promo.quantity_required
+          const discountPerItem = (group.price * promo.discount_value) / 100
+          totalDiscount += discountPerItem * discountedQuantity
+        }
+      })
+
+      return totalDiscount
+    }
+
+    return 0
+  }
+
+  // Helper function to calculate "Buy X, Get Y Free" discounts
+  const calculateBuyXGetYFree = (promo: Promotion, items: Array<{ product_id: string; quantity: number; price: number; category?: string }>): number => {
+    if (!promo.quantity_required || !promo.quantity_reward) return 0
+
+    const eligibleItems = getEligibleItemsForPromo(promo, items)
+    if (eligibleItems.length === 0) return 0
+
+    // Group items by product for quantity calculation
+    const itemGroups = new Map<string, { quantity: number; price: number }>()
+    eligibleItems.forEach(item => {
+      const existing = itemGroups.get(item.product_id) || { quantity: 0, price: item.price }
+      existing.quantity += item.quantity
+      itemGroups.set(item.product_id, existing)
+    })
+
+    let totalDiscount = 0
+
+    // Calculate free items for each product group
+    itemGroups.forEach((group, productId) => {
+      const completeSets = Math.floor(group.quantity / (promo.quantity_required + promo.quantity_reward))
+      if (completeSets > 0) {
+        const freeItems = completeSets * promo.quantity_reward
+        totalDiscount += group.price * freeItems
+      }
+    })
+
+    return totalDiscount
+  }
+
+  // Helper function to get eligible items for a promotion
+  const getEligibleItemsForPromo = (promo: Promotion, items: Array<{ product_id: string; quantity: number; price: number; category?: string }>) => {
+    if (promo.applies_to_categories && promo.category_ids) {
+      // Filter by categories
+      return items.filter(item => item.category && promo.category_ids?.includes(item.category))
+    } else if (promo.applies_to === 'specific' && promo.products) {
+      // Filter by specific products
+      const promoProductIds = promo.products.map(p => p.product_id)
+      return items.filter(item => promoProductIds.includes(item.product_id))
+    } else if (promo.applies_to === 'all') {
+      // All items
+      return items
+    }
+    return []
+  }
+
+  // Helper function to get affected items for quantity promotions
+  const getAffectedItemsForQuantityPromo = (promo: Promotion, items: Array<{ product_id: string; quantity: number; price: number; category?: string }>): string[] => {
+    const eligibleItems = getEligibleItemsForPromo(promo, items)
+    return eligibleItems.map(item => item.product_id)
   }
 
   // Record promotion application

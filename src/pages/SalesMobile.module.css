@@ -226,11 +226,11 @@
 
 .recentTransactionsSection {
   margin: 12px 16px 0 16px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: var(--bg-container);
+  border: var(--border-subtle);
   border-radius: 20px;
   padding: 20px 20px 12px;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+  box-shadow: var(--shadow-elevated);
   backdrop-filter: blur(14px);
 }
 
@@ -245,19 +245,19 @@
   margin: 0;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-primary);
 }
 
 .recentTransactionsSubtitle {
   margin: 4px 0 0;
   font-size: 0.8rem;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .recentTransactionsLink {
   border: none;
   background: transparent;
-  color: #1a1a1a;
+  color: var(--text-primary);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -271,7 +271,7 @@
 .recentTransactionsEmpty {
   padding: 24px 0;
   text-align: center;
-  color: #9ca3af;
+  color: var(--text-muted);
   font-size: 0.85rem;
 }
 
@@ -306,7 +306,7 @@
 }
 
 .recentTransactionButton:hover {
-  background: rgba(248, 249, 250, 0.8);
+  background: var(--hover-bg);
   margin: 0 -16px;
   padding: 16px;
   border-radius: 12px;
@@ -351,12 +351,12 @@
 .recentTransactionId {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-primary);
 }
 
 .recentTransactionMeta {
   font-size: 0.8rem;
-  color: #9ca3af;
+  color: var(--text-muted);
   text-transform: capitalize;
 }
 
@@ -388,7 +388,7 @@
   align-items: flex-end;
   gap: 2px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-primary);
   min-width: 80px;
 }
 
@@ -412,14 +412,13 @@
 }
 
 .productCard {
-  background: white;
+  background: var(--bg-card);
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  border: var(--border-subtle);
   padding: 12px;
   text-align: left;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: none;
   width: 100%;
 }
 
@@ -470,7 +469,7 @@
 
 .productName {
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   font-size: 0.875rem;
   line-height: 1.25;
   margin: 0;
@@ -493,20 +492,19 @@
 }
 
 .productStock {
-  color: #9ca3af;
+  color: var(--text-muted);
   font-size: 0.75rem;
   margin: 0;
 }
 
 .sideBusinessCard {
-  background: white;
+  background: var(--bg-card);
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  border: var(--border-subtle);
   padding: 12px;
   text-align: left;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: none;
   width: 100%;
 }
 
@@ -529,7 +527,7 @@
 
 .sideBusinessName {
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   font-size: 0.875rem;
   line-height: 1.25;
   margin: 0 0 4px 0;

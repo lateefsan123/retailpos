@@ -1053,7 +1053,7 @@ const Dashboard = () => {
       title: getSalesCardTitle(),
       value: formatCurrency(totalRevenue),
       icon: 'fa-solid fa-coins',
-      accent: '#1a1a1a',
+      accent: 'var(--text-primary)',
       subtitle: `Net: ${formatCurrency(periodSummary.netRevenue)} | Side: ${formatCurrency(periodSummary.sideRevenue)}${periodSummary.refunds > 0 ? ` | Refunds: -${formatCurrency(periodSummary.refunds)}` : ''}${topSideBusiness ? ` | Top Side: ${topSideBusiness.name}` : ''}`
     },
     {
@@ -1310,12 +1310,12 @@ const Dashboard = () => {
                   width: '40px',
                   height: '40px',
                   borderRadius: '10px',
-                  background: '#1a1a1a',
+                  background: 'var(--text-primary)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}>
-                  <i className="fa-solid fa-clock" style={{ fontSize: '18px', color: '#f1f0e4' }}></i>
+                  <i className="fa-solid fa-clock" style={{ fontSize: '18px', color: 'var(--bg-primary)' }}></i>
                 </div>
               <h3 style={{ 
                 fontSize: '20px', 
@@ -1349,8 +1349,8 @@ const Dashboard = () => {
               <button
                 onClick={() => openTransactionsModalForDate(selectedDate)}
                 style={{
-                  background: '#1a1a1a',
-                  color: '#f1f0e4',
+                  background: 'var(--text-primary)',
+                  color: 'var(--bg-primary)',
                   border: 'none',
                   padding: '8px 16px',
                   borderRadius: '8px',
@@ -1375,9 +1375,9 @@ const Dashboard = () => {
                       alignItems: 'center',
                       gap: '12px',
                       padding: '12px',
-                      background: transaction.partial_payment ? '#fef2f2' : 'white',
+                      background: transaction.partial_payment ? 'var(--error-bg-light)' : 'var(--bg-card)',
                       borderRadius: '8px',
-                      border: transaction.partial_payment ? '1px solid #fecaca' : '1px solid transparent',
+                      border: transaction.partial_payment ? 'var(--error-border)' : 'var(--border-subtle)',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease'
                     }}

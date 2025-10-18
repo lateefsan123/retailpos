@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useBusinessId } from '../hooks/useBusinessId'
 import { useBranch } from '../contexts/BranchContext'
 import { useRole } from '../contexts/RoleContext'
@@ -27,8 +27,13 @@ const Promotions: React.FC = () => {
     branch_id: selectedBranchId || undefined,
     name: '',
     description: '',
+    promotion_type: 'standard',
     discount_type: 'percentage',
     discount_value: 0,
+    quantity_required: undefined,
+    quantity_reward: undefined,
+    applies_to_categories: false,
+    category_ids: [],
     start_date: '',
     end_date: '',
     active: true,
@@ -40,6 +45,8 @@ const Promotions: React.FC = () => {
   })
 
   const [selectedProducts, setSelectedProducts] = useState<string[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [activeMenuId, setActiveMenuId] = useState<number | null>(null)
 
   const canManagePromotions = hasPermission('canManageProducts') // You may want a separate permission
 
@@ -50,8 +57,13 @@ const Promotions: React.FC = () => {
       branch_id: selectedBranchId || undefined,
       name: '',
       description: '',
+      promotion_type: 'standard',
       discount_type: 'percentage',
       discount_value: 0,
+      quantity_required: undefined,
+      quantity_reward: undefined,
+      applies_to_categories: false,
+      category_ids: [],
       start_date: '',
       end_date: '',
       active: true,
@@ -62,6 +74,7 @@ const Promotions: React.FC = () => {
       product_ids: []
     })
     setSelectedProducts([])
+    setSelectedCategories([])
     setEditingPromotion(null)
   }
 
@@ -72,19 +85,65 @@ const Promotions: React.FC = () => {
       return
     }
 
-    if (formData.discount_value <= 0) {
-      alert('Discount value must be greater than 0')
-      return
+    // Validate based on promotion type
+    if (formData.promotion_type === 'standard') {
+      if (!formData.discount_value || formData.discount_value <= 0) {
+        alert('Discount value must be greater than 0')
+        return
+      }
+
+      if (formData.discount_type === 'percentage' && formData.discount_value > 100) {
+        alert('Percentage discount cannot exceed 100%')
+        return
+      }
+    } else if (formData.promotion_type === 'buy_x_discount') {
+      if (!formData.quantity_required || formData.quantity_required <= 0) {
+        alert('Buy quantity must be greater than 0')
+        return
+      }
+      if (!formData.discount_value || formData.discount_value <= 0) {
+        alert('Discount percentage must be greater than 0')
+        return
+      }
+      if (formData.discount_value > 100) {
+        alert('Discount percentage cannot exceed 100%')
+        return
+      }
+    } else if (formData.promotion_type === 'buy_x_get_y_free') {
+      if (!formData.quantity_required || formData.quantity_required <= 0) {
+        alert('Buy quantity must be greater than 0')
+        return
+      }
+      if (!formData.quantity_reward || formData.quantity_reward <= 0) {
+        alert('Free quantity must be greater than 0')
+        return
+      }
     }
 
-    if (formData.discount_type === 'percentage' && formData.discount_value > 100) {
-      alert('Percentage discount cannot exceed 100%')
-      return
+    // Validate applies to selection
+    if (formData.applies_to === 'specific') {
+      if (formData.applies_to_categories) {
+        if (!selectedCategories.length) {
+          alert('Please select at least one category')
+          return
+        }
+      } else {
+        if (!selectedProducts.length) {
+          alert('Please select at least one product')
+          return
+        }
+      }
     }
 
     const promotionData: PromotionRequest = {
       ...formData,
-      product_ids: formData.applies_to === 'specific' ? selectedProducts : []
+      product_ids: formData.applies_to === 'specific' ? selectedProducts : [],
+      category_ids: formData.applies_to_categories ? selectedCategories : [],
+      // For BOGO promotions, don't include discount_type and discount_value
+      ...(formData.promotion_type === 'buy_x_get_y_free' && {
+        discount_type: undefined,
+        discount_value: undefined
+      })
     }
 
     const success = editingPromotion
@@ -105,8 +164,13 @@ const Promotions: React.FC = () => {
       branch_id: promotion.branch_id,
       name: promotion.name,
       description: promotion.description || '',
+      promotion_type: promotion.promotion_type || 'standard',
       discount_type: promotion.discount_type,
       discount_value: promotion.discount_value,
+      quantity_required: promotion.quantity_required,
+      quantity_reward: promotion.quantity_reward,
+      applies_to_categories: promotion.applies_to_categories || false,
+      category_ids: promotion.category_ids || [],
       start_date: promotion.start_date.split('T')[0],
       end_date: promotion.end_date.split('T')[0],
       active: promotion.active,
@@ -117,6 +181,7 @@ const Promotions: React.FC = () => {
       product_ids: promotion.products?.map(p => p.product_id) || []
     })
     setSelectedProducts(promotion.products?.map(p => p.product_id) || [])
+    setSelectedCategories(promotion.category_ids || [])
     setShowModal(true)
   }
 
@@ -136,6 +201,31 @@ const Promotions: React.FC = () => {
     const stats = await getPromotionStats(promotion.promotion_id)
     setStatsPromotion({ ...promotion, stats })
   }
+
+  // Toggle menu
+  const toggleMenu = (promotionId: number) => {
+    setActiveMenuId(activeMenuId === promotionId ? null : promotionId)
+  }
+
+
+  // Add click outside listener
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      // Check if click is outside any hamburger menu
+      if (!target.closest('.hamburgerMenu')) {
+        setActiveMenuId(null)
+      }
+    }
+
+    if (activeMenuId !== null) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [activeMenuId])
 
   // Filter promotions
   const filteredPromotions = promotions.filter(promo => {
@@ -165,6 +255,26 @@ const Promotions: React.FC = () => {
     )
   }
 
+  // Toggle category selection
+  const toggleCategory = (category: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(category)
+        ? prev.filter(cat => cat !== category)
+        : [...prev, category]
+    )
+  }
+
+  // Get unique categories from products
+  const getUniqueCategories = () => {
+    const categories = new Set<string>()
+    products.forEach(product => {
+      if (product.category) {
+        categories.add(product.category)
+      }
+    })
+    return Array.from(categories).sort()
+  }
+
   if (!canManagePromotions) {
     return (
       <div className={styles.accessDenied}>
@@ -190,66 +300,66 @@ const Promotions: React.FC = () => {
         </button>
       </PageHeader>
 
-      {/* Stats Summary */}
-      <div className={styles.statsContainer}>
-        <div className={styles.statItem}>
-          <div className={`${styles.statIcon} ${styles.statIconActive}`}>
+      {/* Stats Summary Cards */}
+      <div className={styles.statsCardsContainer}>
+        <div className={styles.statCard}>
+          <div className={styles.statCardIcon}>
             <i className="fas fa-play"></i>
           </div>
-          <div>
-            <p className={styles.statLabel}>Active</p>
-            <p className={styles.statValue}>
+          <div className={styles.statCardContent}>
+            <div className={styles.statCardValue}>
               {filteredPromotions.filter(p => {
                 const now = new Date()
                 const startDate = new Date(p.start_date)
                 const endDate = new Date(p.end_date)
                 return p.active && startDate <= now && endDate >= now
               }).length}
-            </p>
+            </div>
+            <div className={styles.statCardLabel}>Active</div>
           </div>
         </div>
         
-        <div className={styles.statItem}>
-          <div className={`${styles.statIcon} ${styles.statIconInactive}`}>
+        <div className={styles.statCard}>
+          <div className={styles.statCardIcon}>
             <i className="fas fa-pause"></i>
           </div>
-          <div>
-            <p className={styles.statLabel}>Inactive</p>
-            <p className={styles.statValue}>
+          <div className={styles.statCardContent}>
+            <div className={styles.statCardValue}>
               {filteredPromotions.filter(p => !p.active).length}
-            </p>
+            </div>
+            <div className={styles.statCardLabel}>Inactive</div>
           </div>
         </div>
         
-        <div className={styles.statItem}>
-          <div className={`${styles.statIcon} ${styles.statIconExpired}`}>
+        <div className={styles.statCard}>
+          <div className={styles.statCardIcon}>
             <i className="fas fa-clock"></i>
           </div>
-          <div>
-            <p className={styles.statLabel}>Expired</p>
-            <p className={styles.statValue}>
+          <div className={styles.statCardContent}>
+            <div className={styles.statCardValue}>
               {filteredPromotions.filter(p => {
                 const now = new Date()
                 const endDate = new Date(p.end_date)
                 return endDate < now
               }).length}
-            </p>
+            </div>
+            <div className={styles.statCardLabel}>Expired</div>
           </div>
         </div>
         
-        <div className={styles.statItem}>
-          <div className={`${styles.statIcon} ${styles.statIconUpcoming}`}>
+        <div className={styles.statCard}>
+          <div className={styles.statCardIcon}>
             <i className="fas fa-calendar"></i>
           </div>
-          <div>
-            <p className={styles.statLabel}>Upcoming</p>
-            <p className={styles.statValue}>
+          <div className={styles.statCardContent}>
+            <div className={styles.statCardValue}>
               {filteredPromotions.filter(p => {
                 const now = new Date()
                 const startDate = new Date(p.start_date)
                 return startDate > now
               }).length}
-            </p>
+            </div>
+            <div className={styles.statCardLabel}>Upcoming</div>
           </div>
         </div>
       </div>
@@ -366,41 +476,116 @@ const Promotions: React.FC = () => {
             const endDate = new Date(promo.end_date)
             const isActive = promo.active && startDate <= now && endDate >= now
             const isExpired = endDate < now
-            const isUpcoming = startDate > now
 
             return (
               <div
                 key={promo.promotion_id}
                 className={`${styles.promotionCard} ${isActive ? styles.promotionCardActive : isExpired ? styles.promotionCardExpired : ''}`}
               >
-                {/* Status Badge */}
-                <div className={styles.statusBadge}>
-                  <span className={`${isActive ? styles.statusActive : isExpired ? styles.statusExpired : isUpcoming ? styles.statusUpcoming : styles.statusInactive}`}>
-                    {isActive ? '🟢 Active' : isExpired ? '⚫ Expired' : isUpcoming ? '🔵 Upcoming' : '⚪ Inactive'}
-                  </span>
+                {/* Hamburger Menu - Top Right */}
+                <div className={styles.cardHeader}>
+                  <div className={`${styles.hamburgerMenu} hamburgerMenu`} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => toggleMenu(promo.promotion_id)}
+                      className={styles.hamburgerButton}
+                    >
+                      <i className="fas fa-ellipsis-v"></i>
+                    </button>
+                    {activeMenuId === promo.promotion_id && (
+                      <div className={styles.menuDropdown}>
+                        <button
+                          onClick={() => { handleEdit(promo); setActiveMenuId(null) }}
+                          className={styles.menuItem}
+                        >
+                          <i className="fas fa-edit"></i>
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => { handleToggle(promo.promotion_id, promo.active); setActiveMenuId(null) }}
+                          className={styles.menuItem}
+                        >
+                          <i className={`fas fa-${promo.active ? 'pause' : 'play'}`}></i>
+                          {promo.active ? 'Pause' : 'Activate'}
+                        </button>
+                        <button
+                          onClick={() => { viewStats(promo); setActiveMenuId(null) }}
+                          className={styles.menuItem}
+                        >
+                          <i className="fas fa-chart-line"></i>
+                          Stats
+                        </button>
+                        <button
+                          onClick={() => { handleDelete(promo.promotion_id); setActiveMenuId(null) }}
+                          className={`${styles.menuItem} ${styles.menuItemDelete}`}
+                        >
+                          <i className="fas fa-trash"></i>
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Promotion Name */}
+                {/* 1. Promotion Name */}
                 <h3 className={styles.promotionName}>
                   {promo.name}
                 </h3>
 
-                {/* Description */}
+                {/* 2. Product Display for Specific Products */}
+                {promo.applies_to === 'specific' && !promo.applies_to_categories && promo.products && promo.products.length > 0 && (
+                  <div className={styles.productsSection}>
+                    <div className={styles.productsGrid}>
+                      {promo.products.slice(0, 4).map(product => (
+                        <div key={product.product_id} className={styles.productCard}>
+                          <div className={styles.productImage}>
+                            {product.image_url ? (
+                              <img 
+                                src={product.image_url} 
+                                alt={product.name}
+                                className={styles.productImageImg}
+                              />
+                            ) : (
+                              <div className={styles.productImagePlaceholder}>
+                                <i className="fas fa-box"></i>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {promo.products.length > 4 && (
+                        <div className={styles.productCard}>
+                          <div className={styles.productMore}>
+                            <div className={styles.productMoreCount}>+{promo.products.length - 4}</div>
+                            <div className={styles.productMoreText}>More Products</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Description */}
                 {promo.description && (
                   <p className={styles.promotionDescription}>
                     {promo.description}
                   </p>
                 )}
 
-                {/* Discount Info */}
+                {/* 4. Discount Info */}
                 <div className={styles.discountInfo}>
                   <div className={styles.discountValue}>
-                    {promo.discount_type === 'percentage'
+                    {promo.promotion_type === 'buy_x_discount' && promo.quantity_required && promo.discount_value
+                      ? `Buy ${promo.quantity_required}, Get ${promo.discount_value}% Off`
+                      : promo.promotion_type === 'buy_x_get_y_free' && promo.quantity_required && promo.quantity_reward
+                      ? `Buy ${promo.quantity_required}, Get ${promo.quantity_reward} Free`
+                      : promo.discount_type === 'percentage'
                       ? `${promo.discount_value}% OFF`
-                      : `$${promo.discount_value.toFixed(2)} OFF`}
+                      : `$${promo.discount_value?.toFixed(2)} OFF`}
                   </div>
                   <div className={styles.discountScope}>
-                    {promo.applies_to === 'all'
+                    {promo.applies_to_categories && promo.category_ids
+                      ? `Categories: ${promo.category_ids.join(', ')}`
+                      : promo.applies_to === 'all'
                       ? 'All Products'
                       : `${promo.products?.length || 0} Specific Products`}
                   </div>
@@ -443,34 +628,7 @@ const Promotions: React.FC = () => {
                   </div>
                 )}
 
-                {/* Actions */}
-                <div className={styles.actionsContainer}>
-                  <button
-                    onClick={() => handleEdit(promo)}
-                    className={`${styles.actionButton} ${styles.actionButtonEdit}`}
-                  >
-                    <i className={`fas fa-edit ${styles.actionButtonIcon}`} /> Edit
-                  </button>
-                  <button
-                    onClick={() => handleToggle(promo.promotion_id, promo.active)}
-                    className={`${styles.actionButton} ${promo.active ? styles.actionButtonToggle : styles.actionButtonToggleActive}`}
-                  >
-                    <i className={`fas fa-${promo.active ? 'pause' : 'play'} ${styles.actionButtonIcon}`} />
-                    {promo.active ? ' Pause' : ' Activate'}
-                  </button>
-                  <button
-                    onClick={() => viewStats(promo)}
-                    className={`${styles.actionButton} ${styles.actionButtonStats}`}
-                  >
-                    <i className={`fas fa-chart-line ${styles.actionButtonIcon}`} /> Stats
-                  </button>
-                  <button
-                    onClick={() => handleDelete(promo.promotion_id)}
-                    className={styles.actionButtonDelete}
-                  >
-                    <i className={`fas fa-trash ${styles.actionButtonIcon}`} />
-                  </button>
-                </div>
+
               </div>
             )
           })}
@@ -524,36 +682,146 @@ const Promotions: React.FC = () => {
                 />
               </div>
 
-              {/* Discount Type & Value */}
-              <div className={styles.formGrid}>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>
-                    Discount Type *
+              {/* Promotion Type */}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  Promotion Type *
+                </label>
+                <div className={styles.promotionTypeSelector}>
+                  <label className={styles.promotionTypeOption}>
+                    <input
+                      type="radio"
+                      name="promotion_type"
+                      value="standard"
+                      checked={formData.promotion_type === 'standard'}
+                      onChange={(e) => setFormData(prev => ({ ...prev, promotion_type: e.target.value as any }))}
+                    />
+                    <span>Standard Discount</span>
                   </label>
-                  <select
-                    value={formData.discount_type}
-                    onChange={(e) => setFormData(prev => ({ ...prev, discount_type: e.target.value as 'percentage' | 'fixed_amount' }))}
-                    className={styles.formSelect}
-                  >
-                    <option value="percentage">Percentage (%)</option>
-                    <option value="fixed_amount">Fixed Amount ($)</option>
-                  </select>
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>
-                    Discount Value *
+                  <label className={styles.promotionTypeOption}>
+                    <input
+                      type="radio"
+                      name="promotion_type"
+                      value="buy_x_discount"
+                      checked={formData.promotion_type === 'buy_x_discount'}
+                      onChange={(e) => setFormData(prev => ({ ...prev, promotion_type: e.target.value as any }))}
+                    />
+                    <span>Buy X, Get Discount</span>
                   </label>
-                  <input
-                    type="number"
-                    value={formData.discount_value}
-                    onChange={(e) => setFormData(prev => ({ ...prev, discount_value: Number(e.target.value) }))}
-                    min="0"
-                    max={formData.discount_type === 'percentage' ? 100 : undefined}
-                    step="0.01"
-                    className={styles.formInput}
-                  />
+                  <label className={styles.promotionTypeOption}>
+                    <input
+                      type="radio"
+                      name="promotion_type"
+                      value="buy_x_get_y_free"
+                      checked={formData.promotion_type === 'buy_x_get_y_free'}
+                      onChange={(e) => setFormData(prev => ({ ...prev, promotion_type: e.target.value as any }))}
+                    />
+                    <span>Buy X, Get Y Free</span>
+                  </label>
                 </div>
               </div>
+
+              {/* Standard Discount Fields */}
+              {formData.promotion_type === 'standard' && (
+                <div className={styles.formGrid}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>
+                      Discount Type *
+                    </label>
+                    <select
+                      value={formData.discount_type}
+                      onChange={(e) => setFormData(prev => ({ ...prev, discount_type: e.target.value as 'percentage' | 'fixed_amount' }))}
+                      className={styles.formSelect}
+                    >
+                      <option value="percentage">Percentage (%)</option>
+                      <option value="fixed_amount">Fixed Amount ($)</option>
+                    </select>
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>
+                      Discount Value *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.discount_value || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, discount_value: Number(e.target.value) }))}
+                      min="0"
+                      max={formData.discount_type === 'percentage' ? 100 : undefined}
+                      step="0.01"
+                      className={styles.formInput}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Buy X, Get Discount Fields */}
+              {formData.promotion_type === 'buy_x_discount' && (
+                <div className={styles.formGrid}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>
+                      Buy Quantity *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.quantity_required || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, quantity_required: Number(e.target.value) }))}
+                      min="1"
+                      step="1"
+                      placeholder="e.g., 3"
+                      className={styles.formInput}
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>
+                      Discount Percentage *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.discount_value || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, discount_value: Number(e.target.value) }))}
+                      min="0"
+                      max="100"
+                      step="1"
+                      placeholder="e.g., 20"
+                      className={styles.formInput}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Buy X, Get Y Free Fields */}
+              {formData.promotion_type === 'buy_x_get_y_free' && (
+                <div className={styles.formGrid}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>
+                      Buy Quantity *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.quantity_required || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, quantity_required: Number(e.target.value) }))}
+                      min="1"
+                      step="1"
+                      placeholder="e.g., 2"
+                      className={styles.formInput}
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>
+                      Get Free Quantity *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.quantity_reward || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, quantity_reward: Number(e.target.value) }))}
+                      min="1"
+                      step="1"
+                      placeholder="e.g., 1"
+                      className={styles.formInput}
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Dates */}
               <div className={styles.formGrid}>
@@ -596,8 +864,22 @@ const Promotions: React.FC = () => {
                 </select>
               </div>
 
-              {/* Product Selection (if specific) */}
+              {/* Category Toggle */}
               {formData.applies_to === 'specific' && (
+                <div className={styles.formGroup}>
+                  <label className={styles.formCheckbox}>
+                    <input
+                      type="checkbox"
+                      checked={formData.applies_to_categories}
+                      onChange={(e) => setFormData(prev => ({ ...prev, applies_to_categories: e.target.checked }))}
+                    />
+                    <span>Apply to Product Categories</span>
+                  </label>
+                </div>
+              )}
+
+              {/* Product Selection (if specific) */}
+              {formData.applies_to === 'specific' && !formData.applies_to_categories && (
                 <div className={styles.productSelection}>
                   <label className={styles.productSelectionLabel}>
                     Select Products ({selectedProducts.length} selected)
@@ -613,6 +895,28 @@ const Promotions: React.FC = () => {
                         onChange={() => toggleProduct(product.product_id)}
                       />
                       <span>{product.name} - ${product.price.toFixed(2)}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {/* Category Selection (if specific and categories) */}
+              {formData.applies_to === 'specific' && formData.applies_to_categories && (
+                <div className={styles.productSelection}>
+                  <label className={styles.productSelectionLabel}>
+                    Select Categories ({selectedCategories.length} selected)
+                  </label>
+                  {getUniqueCategories().map(category => (
+                    <label
+                      key={category}
+                      className={`${styles.productItem} ${selectedCategories.includes(category) ? styles.productItemSelected : ''}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedCategories.includes(category)}
+                        onChange={() => toggleCategory(category)}
+                      />
+                      <span>{category}</span>
                     </label>
                   ))}
                 </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Search, Filter, Grid, List, Table as TableIcon, X, Loader2, Box, Image as ImageIcon, Barcode, Plus, Edit3 } from "lucide-react";
+import { Search, Filter, Grid, List, Table as TableIcon, X, Loader2, Box, Image as ImageIcon, Barcode, Plus, Edit3, ChevronLeft, ChevronRight } from "lucide-react";
 import { loadMasterProducts } from '../utils/productDatabase';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
@@ -25,6 +25,7 @@ interface UIState {
   selectedIds: Set<string>;
   filters: { category: string[]; brand: string[]; hasBarcode?: boolean; hasImage?: boolean };
   sort: { key: "name" | "brand" | "category" | "hasImage" | "hasBarcode"; dir: "asc" | "desc" };
+  pagination: { currentPage: number; itemsPerPage: number };
 }
 
 // ---- Utils ----
@@ -71,6 +72,7 @@ export default function ProductDatabase() {
     selectedIds: new Set<string>(),
     filters: { category: [], brand: [], hasBarcode: undefined, hasImage: undefined },
     sort: { key: "name", dir: "asc" },
+    pagination: { currentPage: 1, itemsPerPage: 24 },
   });
   const [inspecting, setInspecting] = useState<ProductRow | null>(null);
 
@@ -155,6 +157,26 @@ export default function ProductDatabase() {
 
     return list;
   }, [rows, state]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filtered.length / state.pagination.itemsPerPage);
+  const startIndex = (state.pagination.currentPage - 1) * state.pagination.itemsPerPage;
+  const endIndex = startIndex + state.pagination.itemsPerPage;
+  const paginatedResults = filtered.slice(startIndex, endIndex);
+
+  const goToPage = (page: number) => {
+    setState(s => ({
+      ...s,
+      pagination: { ...s.pagination, currentPage: Math.max(1, Math.min(page, totalPages)) }
+    }));
+  };
+
+  const changeItemsPerPage = (itemsPerPage: number) => {
+    setState(s => ({
+      ...s,
+      pagination: { currentPage: 1, itemsPerPage }
+    }));
+  };
 
   const toggleSelect = (id: string) => {
     setState(s => {
@@ -250,8 +272,6 @@ export default function ProductDatabase() {
     // Get business_id from user object (already available from AuthContext)
     const business_id = (user as any).business_id;
     
-    console.log('User object:', user);
-    console.log('Business ID:', business_id);
     
     if (!business_id) {
       alert('Business ID not found. Please contact support.');
@@ -278,7 +298,7 @@ export default function ProductDatabase() {
       }
 
       // Add product to store as pending confirmation (don't set branch_id to allow it to show in all branches)
-      const { data: insertedProduct, error: insertError } = await supabase.from('products').insert({
+      const { error: insertError } = await supabase.from('products').insert({
         product_id: productId,
         name: product.name,
         category: product.category || 'Uncategorized',
@@ -300,26 +320,21 @@ export default function ProductDatabase() {
         return;
       }
 
-      console.log('Product added successfully:', insertedProduct);
       
       // Verify the product was added by querying the database
-      const { data: verifyProduct, error: verifyError } = await supabase
+      await supabase
         .from('products')
         .select('*')
         .eq('product_id', productId)
         .single();
       
-      console.log('Verification query result:', verifyProduct);
-      console.log('Verification error:', verifyError);
       
       // Also check how many products exist for this business
-      const { data: allProducts } = await supabase
+      await supabase
         .from('products')
         .select('product_id, name, business_id, branch_id')
         .eq('business_id', business_id);
       
-      console.log(`Total products for business ${business_id}:`, allProducts?.length);
-      console.log('All products:', allProducts);
       
       alert(`Product "${product.name}" added as pending! Go to Products page to confirm and set price & stock.`);
     } catch (error) {
@@ -462,25 +477,39 @@ export default function ProductDatabase() {
           ) : filtered.length === 0 ? (
             <EmptyState />
           ) : (
-            <div className={styles.productViews}>
-              {state.view === "cards" && (
-                <div className={styles.cardsGrid}>
-                  {filtered.map(r => (
-                    <Card key={r.id} r={r} selected={state.selectedIds.has(r.id)} onSelect={() => toggleSelect(r.id)} onInspect={() => setInspecting(r)} onAdd={() => addSingleProduct(r)} />
-                  ))}
-                </div>
+            <>
+              <div className={styles.productViews}>
+                {state.view === "cards" && (
+                  <div className={styles.cardsGrid}>
+                    {paginatedResults.map(r => (
+                      <Card key={r.id} r={r} selected={state.selectedIds.has(r.id)} onSelect={() => toggleSelect(r.id)} onInspect={() => setInspecting(r)} onAdd={() => addSingleProduct(r)} />
+                    ))}
+                  </div>
+                )}
+                {state.view === "list" && (
+                  <div className={styles.listContainer}>
+                    {paginatedResults.map(r => (
+                      <Row key={r.id} r={r} selected={state.selectedIds.has(r.id)} onSelect={() => toggleSelect(r.id)} onInspect={() => setInspecting(r)} onAdd={() => addSingleProduct(r)} />
+                    ))}
+                  </div>
+                )}
+                {state.view === "table" && (
+                  <TableView rows={paginatedResults} selectedIds={state.selectedIds} toggleSelect={toggleSelect} onInspect={setInspecting} onAdd={addSingleProduct}/>
+                )}
+              </div>
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <Pagination
+                  currentPage={state.pagination.currentPage}
+                  totalPages={totalPages}
+                  itemsPerPage={state.pagination.itemsPerPage}
+                  totalItems={filtered.length}
+                  onPageChange={goToPage}
+                  onItemsPerPageChange={changeItemsPerPage}
+                />
               )}
-              {state.view === "list" && (
-                <div className={styles.listContainer}>
-                  {filtered.map(r => (
-                    <Row key={r.id} r={r} selected={state.selectedIds.has(r.id)} onSelect={() => toggleSelect(r.id)} onInspect={() => setInspecting(r)} onAdd={() => addSingleProduct(r)} />
-                  ))}
-                </div>
-              )}
-              {state.view === "table" && (
-                <TableView rows={filtered} selectedIds={state.selectedIds} toggleSelect={toggleSelect} onInspect={setInspecting} onAdd={addSingleProduct}/>
-              )}
-            </div>
+            </>
           )}
         </main>
       </div>
@@ -529,8 +558,6 @@ function badge(text: string, tone: "neutral" | "ok" | "warn" | "danger" = "neutr
 }
 
 function Card({ r, selected, onSelect, onInspect, onAdd }: { r: ProductRow; selected: boolean; onSelect: () => void; onInspect: () => void; onAdd: () => void }) {
-  const hasBarcode = Boolean(r.barcode);
-  const validBarcode = isValidEAN13(r.barcode) || isValidUPCA(r.barcode);
   const hasImage = Boolean(r.imageUrl);
   return (
     <div className={`${styles.productCard} ${selected ? styles.selected : ''}`}> 
@@ -548,8 +575,7 @@ function Card({ r, selected, onSelect, onInspect, onAdd }: { r: ProductRow; sele
           <div className={styles.productBrand}>{r.brand || "—"}</div>
           <div className={styles.productName}>{r.name}</div>
           <div className={styles.productBadges}>
-            {badge(r.category || "Uncategorized")}
-            {hasBarcode ? badge(validBarcode ? "Barcode" : "Invalid barcode", validBarcode ? "ok" : "danger") : badge("No barcode", "warn")}
+            {/* No badges displayed */}
           </div>
         </div>
         <input type="checkbox" checked={selected} onChange={onSelect} className={styles.productCheckbox}/>
@@ -725,6 +751,100 @@ function Inspector({ r, onClose, onRename, onSetImage, onAdd }: { r: ProductRow;
             <button onClick={onClose} className={styles.inspectorButton}>Close</button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Pagination Component
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  itemsPerPage: number;
+  totalItems: number;
+  onPageChange: (page: number) => void;
+  onItemsPerPageChange: (itemsPerPage: number) => void;
+}
+
+function Pagination({ currentPage, totalPages, itemsPerPage, totalItems, onPageChange, onItemsPerPageChange }: PaginationProps) {
+  const getVisiblePages = () => {
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
+
+    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+      range.push(i);
+    }
+
+    if (currentPage - delta > 2) {
+      rangeWithDots.push(1, '...');
+    } else {
+      rangeWithDots.push(1);
+    }
+
+    rangeWithDots.push(...range);
+
+    if (currentPage + delta < totalPages - 1) {
+      rangeWithDots.push('...', totalPages);
+    } else if (totalPages > 1) {
+      rangeWithDots.push(totalPages);
+    }
+
+    return rangeWithDots;
+  };
+
+  return (
+    <div className={styles.pagination}>
+      <div className={styles.paginationInfo}>
+        <span className={styles.paginationText}>
+          Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} products
+        </span>
+        <select 
+          value={itemsPerPage} 
+          onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
+          className={styles.paginationSelect}
+        >
+          <option value={12}>12 per page</option>
+          <option value={24}>24 per page</option>
+          <option value={48}>48 per page</option>
+          <option value={96}>96 per page</option>
+        </select>
+      </div>
+      
+      <div className={styles.paginationControls}>
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className={`${styles.paginationButton} ${currentPage === 1 ? styles.paginationButtonDisabled : ''}`}
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Previous
+        </button>
+        
+        <div className={styles.paginationNumbers}>
+          {getVisiblePages().map((page, index) => (
+            page === '...' ? (
+              <span key={`dots-${index}`} className={styles.paginationDots}>...</span>
+            ) : (
+              <button
+                key={page}
+                onClick={() => onPageChange(page as number)}
+                className={`${styles.paginationNumber} ${currentPage === page ? styles.paginationNumberActive : ''}`}
+              >
+                {page}
+              </button>
+            )
+          ))}
+        </div>
+        
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className={`${styles.paginationButton} ${currentPage === totalPages ? styles.paginationButtonDisabled : ''}`}
+        >
+          Next
+          <ChevronRight className="h-4 w-4" />
+        </button>
       </div>
     </div>
   );

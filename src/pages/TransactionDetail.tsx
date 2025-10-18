@@ -58,7 +58,7 @@ const TransactionDetail = () => {
     customer_id: null as number | null,
     notes: ''
   })
-  const [customers, setCustomers] = useState<Array<{id: number, name: string}>>([])
+  const [customers, setCustomers] = useState<Array<{customer_id: number, name: string}>>([])
   const [editingItems, setEditingItems] = useState<{[key: number]: number}>({})
   const [lastRefreshTime, setLastRefreshTime] = useState<number>(Date.now())
 
@@ -294,7 +294,7 @@ const TransactionDetail = () => {
     try {
       let query = supabase
         .from('customers')
-        .select('id, name')
+        .select('customer_id, name')
 
       if (selectedBranchId) {
         query = query.eq('branch_id', selectedBranchId)
@@ -1086,7 +1086,7 @@ const TransactionDetail = () => {
               >
                 <option value="">Walk-in Customer</option>
                 {customers.map(customer => (
-                  <option key={customer.id} value={customer.id}>
+                  <option key={customer.customer_id} value={customer.customer_id}>
                     {customer.name}
                   </option>
                 ))}
@@ -1571,7 +1571,7 @@ const TransactionDetail = () => {
                   <div style={{
                     fontSize: '18px',
                     fontWeight: '600',
-                    color: isEditingQuantity ? '#f59e0b' : '#3e3f29'
+                    color: isEditingQuantity ? '#f59e0b' : 'var(--text-primary)'
                   }}>
                     €{currentTotal.toFixed(2)}
                   </div>
