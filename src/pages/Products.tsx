@@ -1969,7 +1969,7 @@ const Products = () => {
                             height: '60px',
                             objectFit: 'cover',
                             borderRadius: '6px',
-                            border: '1px solid #e5e7eb'
+                            border: 'var(--border-subtle)'
                           }}
                         />
                       ) : (
@@ -2676,7 +2676,7 @@ const Products = () => {
         textAlign: 'center',
         padding: '12px',
         borderRadius: '8px',
-        border: '1px solid #e5e7eb',
+        border: 'var(--border-subtle)',
         marginBottom: '16px',
         backgroundColor: 'var(--bg-card)'
       }}>
@@ -2703,7 +2703,7 @@ const Products = () => {
           padding: '16px',
           borderRadius: '12px',
           boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
-          border: '1px solid #e5e7eb',
+          border: 'var(--border-subtle)',
           marginBottom: '24px'
         }}>
           {/* Items per page selector */}
@@ -3030,7 +3030,7 @@ const Products = () => {
               </div>
 
               {/* Weight Configuration Section */}
-              <div style={{ marginBottom: '16px', padding: '16px', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+              <div style={{ marginBottom: '16px', padding: '16px', background: '#f9fafb', borderRadius: '8px', border: 'var(--border-subtle)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                   <input
                     type="checkbox"
@@ -3673,7 +3673,7 @@ const Products = () => {
               </div>
 
               {/* Weight Configuration Section */}
-              <div style={{ marginBottom: '16px', padding: '16px', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+              <div style={{ marginBottom: '16px', padding: '16px', background: '#f9fafb', borderRadius: '8px', border: 'var(--border-subtle)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                   <input
                     type="checkbox"
@@ -4739,35 +4739,35 @@ const Products = () => {
                     </h3>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--input-bg)', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--input-bg)', borderRadius: '8px', border: 'var(--border-subtle)' }}>
                       <i className="fas fa-barcode" style={{ color: '#6b7280', fontSize: '16px' }}></i>
                       <div>
                         <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Product ID</div>
                         <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>{selectedProductForInsights.product_id}</div>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--input-bg)', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--input-bg)', borderRadius: '8px', border: 'var(--border-subtle)' }}>
                       <i className="fas fa-tags" style={{ color: '#6b7280', fontSize: '16px' }}></i>
                       <div>
                         <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Category</div>
                         <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>{selectedProductForInsights.category}</div>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--input-bg)', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--input-bg)', borderRadius: '8px', border: 'var(--border-subtle)' }}>
                       <i className="fas fa-boxes" style={{ color: '#6b7280', fontSize: '16px' }}></i>
                       <div>
                         <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Current Stock</div>
                         <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>{selectedProductForInsights.stock_quantity}</div>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--input-bg)', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--input-bg)', borderRadius: '8px', border: 'var(--border-subtle)' }}>
                       <i className="fas fa-exclamation-triangle" style={{ color: '#6b7280', fontSize: '16px' }}></i>
                       <div>
                         <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Reorder Level</div>
                         <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>{selectedProductForInsights.reorder_level}</div>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--input-bg)', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--input-bg)', borderRadius: '8px', border: 'var(--border-subtle)' }}>
                       <i className="fas fa-euro-sign" style={{ color: '#6b7280', fontSize: '16px' }}></i>
                       <div>
                         <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Price</div>
@@ -4779,7 +4779,7 @@ const Products = () => {
                         </div>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--input-bg)', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--input-bg)', borderRadius: '8px', border: 'var(--border-subtle)' }}>
                       <i className="fas fa-weight" style={{ color: '#6b7280', fontSize: '16px' }}></i>
                       <div>
                         <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Type</div>

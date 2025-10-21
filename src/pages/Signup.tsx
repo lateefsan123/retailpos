@@ -1,11 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import SidebarStepper from "./Sidebarstepper";
 import { useAuth } from "../contexts/AuthContext";
 import { ALL_USER_ICONS, DEFAULT_ICON_NAME } from "../constants/userIcons";
 import IconDropdown from "../components/IconDropdown";
-import { testSupabaseConnection } from "../utils/testSupabase";
-import { simpleSupabaseTest } from "../utils/simpleSupabaseTest";
 
 const steps = [
   {
@@ -54,10 +52,30 @@ const Signup: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string>('');
-  const [testingConnection, setTestingConnection] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  // Fix scrolling for signup page
+  useEffect(() => {
+    // Enable scrolling for signup page
+    document.body.style.overflow = 'auto';
+    document.documentElement.style.overflow = 'auto';
+    const rootElement = document.getElementById('root');
+    if (rootElement) {
+      rootElement.style.overflow = 'auto';
+      rootElement.style.height = 'auto';
+    }
+
+    // Cleanup function to restore original styles when component unmounts
+    return () => {
+      document.body.style.overflow = 'auto';
+      document.documentElement.style.overflow = 'auto';
+      if (rootElement) {
+        rootElement.style.overflow = 'auto';
+        rootElement.style.height = 'auto';
+      }
+    };
+  }, []);
   
   const [formData, setFormData] = useState({
     // Step 1: Account Setup
@@ -100,32 +118,6 @@ const Signup: React.FC = () => {
     }));
   };
 
-  const handleTestConnection = async () => {
-    setTestingConnection(true);
-    setError(null);
-    
-    try {
-      // Try simple test first
-      const simpleResult = await simpleSupabaseTest();
-      if (simpleResult.success) {
-        setError("✅ Basic Supabase connection works! Trying full test...");
-        
-        // If simple test passes, try full test
-        const fullResult = await testSupabaseConnection();
-        if (fullResult.success) {
-          setError("✅ All Supabase tests passed! You can now try registering.");
-        } else {
-          setError("❌ Full test failed: " + fullResult.error);
-        }
-      } else {
-        setError("❌ Basic connection failed: " + simpleResult.error);
-      }
-    } catch (err) {
-      setError("❌ Test failed: " + (err instanceof Error ? err.message : 'Unknown error'));
-    } finally {
-      setTestingConnection(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -197,9 +189,9 @@ const Signup: React.FC = () => {
   const buttonStyle = {
     padding: "0.65rem 1.5rem",
     borderRadius: "9999px",
-    backgroundColor: "#7d8d86",
+    backgroundColor: "#fb923c",
     border: "none",
-    color: "#f1f0e4",
+    color: "white",
     fontWeight: "600",
     cursor: "pointer",
     transition: "background-color 0.2s ease",
@@ -213,7 +205,8 @@ const Signup: React.FC = () => {
       backgroundPosition: "center",
       backgroundRepeat: "no-repeat",
       backgroundAttachment: "fixed",
-      position: "relative"
+      position: "relative",
+      overflow: "auto"
     }}>
       {/* Background Overlay */}
       <div style={{
@@ -222,8 +215,8 @@ const Signup: React.FC = () => {
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.4)",
-        backdropFilter: "blur(4px)",
+        backgroundColor: "rgba(0, 0, 0, 0.3)",
+        backdropFilter: "blur(1px)",
         zIndex: 1
       }}></div>
       {/* Header */}
@@ -240,24 +233,17 @@ const Signup: React.FC = () => {
           style={{
           maxWidth: "80rem",
           margin: "0 auto",
-          padding: "0 2rem",
+          padding: "0 1.5rem",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-            height: "4rem",
+            height: "3.5rem",
           }}
         >
           <div style={{ display: "flex", alignItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <svg 
-                style={{ height: "60px", width: "200px" }}
-                viewBox="0 0 200 60" 
-                fill="none" 
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle cx="25" cy="30" r="14" fill="#7d8d86"/>
-                <text x="45" y="38" fontFamily="Inter, sans-serif" fontSize="22" fontWeight="600" fill="#3e3f29">TillPoint</text>
-              </svg>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <i className="fa-kit fa-test" style={{ fontSize: "2.5rem", color: "#fb923c" }}></i>
+              <span style={{ fontSize: "1.5rem", fontWeight: "600", color: "#111827" }}>TillPoint</span>
             </div>
           </div>
           <div>
@@ -266,7 +252,7 @@ const Signup: React.FC = () => {
               style={{
                 color: "#374151",
               fontWeight: "600",
-              fontSize: "1.125rem",
+              fontSize: "1rem",
               textDecoration: "none",
               transition: "color 0.2s"
               }}
@@ -280,7 +266,7 @@ const Signup: React.FC = () => {
       {/* Welcome Section */}
       <div
         style={{
-          padding: "3rem 2rem",
+          padding: "2rem 1.5rem",
           textAlign: "center",
         position: "relative",
           zIndex: 10,
@@ -294,21 +280,21 @@ const Signup: React.FC = () => {
         >
           <h1
             style={{
-              fontSize: "3.5rem",
+              fontSize: "2.5rem",
               fontWeight: "700",
-              marginBottom: "1rem",
+              marginBottom: "0.75rem",
               color: "white",
               textShadow: "0 2px 4px rgba(0, 0, 0, 0.5)",
             }}
           >
-            Welcome to <span style={{ color: "#7d8d86" }}>TillPoint</span>
+            Welcome to <span style={{ color: "white" }}>TillPoint</span>
           </h1>
           <p
             style={{
-              fontSize: "1.75rem",
+              fontSize: "1.25rem",
               color: "white",
               opacity: "0.9",
-              maxWidth: "600px",
+              maxWidth: "500px",
               margin: "0 auto",
               textShadow: "0 2px 4px rgba(0, 0, 0, 0.5)",
             }}
@@ -318,20 +304,19 @@ const Signup: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "center", padding: "2rem", minHeight: "calc(100vh - 12rem)", position: "relative", zIndex: 10 }}>
-        <div style={{ display: "flex", gap: "1.5rem", maxWidth: "1200px", width: "100%" }}>
-          {/* Sidebar */}
+      <div style={{ display: "flex", justifyContent: "center", padding: "1.5rem 1.5rem 5rem 1.5rem", position: "relative", zIndex: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: "800px", width: "100%" }}>
+          {/* Horizontal Sidebar */}
           <aside
             style={{
-              width: "280px",
+              width: "100%",
               background: "#fff",
               border: "1px solid #e5e7eb",
               borderRadius: "12px",
               boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-              padding: "2rem 1.5rem",
-              height: "600px",
+              padding: "1rem",
               display: "flex",
-              flexDirection: "column",
+              justifyContent: "center",
             }}
           >
             <SidebarStepper
@@ -341,38 +326,39 @@ const Signup: React.FC = () => {
             />
           </aside>
 
-          {/* Main */}
+          {/* Main Form */}
           <main
             style={{
-              flex: 1,
+              width: "100%",
               display: "flex",
               flexDirection: "column",
-              alignItems: "flex-start",
+              alignItems: "center",
             }}
           >
             <div
               style={{
                 width: "100%",
-                maxWidth: "800px",
                 background: "#fff",
                 borderRadius: "12px",
                 boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
                 padding: "2rem",
                 display: "flex",
                 flexDirection: "column",
-                boxSizing: "border-box"
+                boxSizing: "border-box",
+                minHeight: "500px",
+                overflow: "visible"
               }}
             >
-          <h1 style={{ textAlign: "center", fontSize: "1.5rem", fontWeight: "700", marginBottom: "0.5rem" }}>
+          <h1 style={{ textAlign: "center", fontSize: "1.25rem", fontWeight: "700", marginBottom: "0.5rem" }}>
             {steps[currentStep - 1].label}
           </h1>
-          <p style={{ textAlign: "center", color: "#374151", marginBottom: "1.5rem" }}>
+          <p style={{ textAlign: "center", color: "#374151", marginBottom: "1rem" }}>
             Step {currentStep} of {steps.length}
           </p>
 
           {/* Progress Bar */}
-          <div style={{ height: "6px", background: "#e5e7eb", borderRadius: "9999px", marginBottom: "2rem", overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${progress}%`, backgroundColor: "#7d8d86" }} />
+          <div style={{ height: "4px", background: "#e5e7eb", borderRadius: "9999px", marginBottom: "1.5rem", overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${progress}%`, backgroundColor: "#fb923c" }} />
           </div>
 
           {/* Error/Success Display */}
@@ -392,99 +378,92 @@ const Signup: React.FC = () => {
             </div>
           )}
 
-          {/* Test Connection Button */}
-          {currentStep === 1 && (
-            <div style={{ marginBottom: "1.5rem", textAlign: "center" }}>
-              <button
-                type="button"
-                onClick={handleTestConnection}
-                disabled={testingConnection}
-                style={{
-                  padding: "0.5rem 1rem",
-                  borderRadius: "8px",
-                  backgroundColor: "#f3f4f6",
-                  border: "1px solid #d1d5db",
-                  color: "#374151",
-                  fontSize: "0.875rem",
-                  cursor: testingConnection ? "not-allowed" : "pointer",
-                  opacity: testingConnection ? 0.7 : 1
-                }}
-              >
-                {testingConnection ? "Testing..." : "🔍 Test Supabase Connection"}
-              </button>
-              <p style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.5rem" }}>
-                Click this if registration is failing
-              </p>
-            </div>
-          )}
 
           {/* Form Content */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-            <form onSubmit={handleSubmit} style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-              <div style={{ display: "grid", gap: "1.5rem", flex: 1 }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ display: "grid", gap: "1rem" }}>
           {currentStep === 1 && (
             <>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                      <div>
+                        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", color: "#374151", fontWeight: "600" }}>
+                          First Name <span style={{ color: "#ef4444" }}>*</span>
+                        </label>
+                        <input 
+                          name="firstName"
+                          placeholder="Enter your first name" 
+                          value={formData.firstName}
+                          onChange={handleInputChange}
+                          required
+                          autoComplete="off"
+                          style={{ 
+                            width: "100%",
+                            padding: "0.75rem", 
+                            borderRadius: "8px", 
+                            border: "1px solid #9ca3af",
+                            fontSize: "0.9rem",
+                            outline: "none",
+                            transition: "border-color 0.2s",
+                            boxSizing: "border-box"
+                          }} 
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", color: "#374151", fontWeight: "600" }}>
+                          Last Name <span style={{ color: "#ef4444" }}>*</span>
+                        </label>
+                        <input 
+                          name="lastName"
+                          placeholder="Enter your last name" 
+                          value={formData.lastName}
+                          onChange={handleInputChange}
+                          required
+                          autoComplete="off"
+                          style={{ 
+                            width: "100%",
+                            padding: "0.75rem", 
+                            borderRadius: "8px", 
+                            border: "1px solid #9ca3af",
+                            fontSize: "0.9rem",
+                            outline: "none",
+                            transition: "border-color 0.2s",
+                            boxSizing: "border-box"
+                          }} 
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", color: "#374151", fontWeight: "600" }}>
+                        Email Address <span style={{ color: "#ef4444" }}>*</span>
+                      </label>
                       <input 
-                        name="firstName"
-                        placeholder="First Name *" 
-                        value={formData.firstName}
+                        name="email"
+                        type="email"
+                        placeholder="Enter your email address" 
+                        value={formData.email}
                         onChange={handleInputChange}
                         required
                         autoComplete="off"
                         style={{ 
                           width: "100%",
-                          padding: "1rem", 
-                          borderRadius: "12px", 
-                          border: "2px solid #9ca3af",
-                          fontSize: "1rem",
-                          outline: "none",
-                          transition: "border-color 0.2s",
-                          boxSizing: "border-box"
-                        }} 
-                      />
-                      <input 
-                        name="lastName"
-                        placeholder="Last Name *" 
-                        value={formData.lastName}
-                        onChange={handleInputChange}
-                        required
-                        autoComplete="off"
-                        style={{ 
-                          width: "100%",
-                          padding: "1rem", 
-                          borderRadius: "12px", 
-                          border: "2px solid #9ca3af",
-                          fontSize: "1rem",
+                          padding: "0.75rem", 
+                          borderRadius: "8px", 
+                          border: "1px solid #9ca3af",
+                          fontSize: "0.9rem",
                           outline: "none",
                           transition: "border-color 0.2s",
                           boxSizing: "border-box"
                         }} 
                       />
                     </div>
-                    <input 
-                      name="email"
-                      type="email"
-                      placeholder="Email *" 
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                      autoComplete="off"
-                      style={{ 
-                        width: "100%",
-                        padding: "1rem", 
-                        borderRadius: "12px", 
-                        border: "2px solid #9ca3af",
-                        fontSize: "1rem",
-                        outline: "none",
-                        transition: "border-color 0.2s",
-                        boxSizing: "border-box"
-                      }} 
-                    />
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                    <div>
+                      <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", color: "#374151", fontWeight: "600" }}>
+                        Owner Username <span style={{ color: "#ef4444" }}>*</span>
+                      </label>
                       <input 
                         name="ownerUsername"
-                        placeholder="Owner Username *"
+                        placeholder="Enter owner username"
                         value={formData.ownerUsername}
                         onChange={(event) => {
                           const value = event.target.value.toLowerCase();
@@ -497,79 +476,96 @@ const Signup: React.FC = () => {
                         autoComplete="off"
                         style={{ 
                           width: "100%",
-                          padding: "1rem", 
-                          borderRadius: "12px", 
-                          border: "2px solid #9ca3af",
-                          fontSize: "1rem",
+                          padding: "0.75rem", 
+                          borderRadius: "8px", 
+                          border: "1px solid #9ca3af",
+                          fontSize: "0.9rem",
                           outline: "none",
                           transition: "border-color 0.2s",
                           boxSizing: "border-box"
                         }} 
                       />
-                      <span style={{ fontSize: "0.85rem", color: "#6b7280" }}>
+                      <span style={{ fontSize: "0.85rem", color: "#6b7280", marginTop: "0.25rem", display: "block" }}>
                         This username is used for the owner's login.
                       </span>
                     </div>
-                    <input 
-                      name="phone"
-                      type="tel"
-                      placeholder="Phone (optional)" 
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      autoComplete="off"
-                      style={{ 
-                        width: "100%",
-                        padding: "1rem", 
-                        borderRadius: "12px", 
-                        border: "2px solid #9ca3af",
-                        fontSize: "1rem",
-                        outline: "none",
-                        transition: "border-color 0.2s",
-                        boxSizing: "border-box"
-                      }} 
-                    />
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+                    <div>
+                      <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", color: "#374151", fontWeight: "600" }}>
+                        Phone Number
+                      </label>
                       <input 
-                        name="password"
-                        type="password"
-                        placeholder="Password *" 
-                        value={formData.password}
+                        name="phone"
+                        type="tel"
+                        placeholder="Enter your phone number" 
+                        value={formData.phone}
                         onChange={handleInputChange}
-                        required
-                        autoComplete="new-password"
+                        autoComplete="off"
                         style={{ 
                           width: "100%",
-                          padding: "1rem", 
-                          borderRadius: "12px", 
-                          border: "2px solid #9ca3af",
-                          fontSize: "1rem",
-                          outline: "none",
-                          transition: "border-color 0.2s",
-                          boxSizing: "border-box"
-                        }} 
-                      />
-                      <input 
-                        name="confirmPassword"
-                        type="password"
-                        placeholder="Confirm Password *" 
-                        value={formData.confirmPassword}
-                        onChange={handleInputChange}
-                        required
-                        autoComplete="new-password"
-                        style={{ 
-                          width: "100%",
-                          padding: "1rem", 
-                          borderRadius: "12px", 
-                          border: "2px solid #9ca3af",
-                          fontSize: "1rem",
+                          padding: "0.75rem", 
+                          borderRadius: "8px", 
+                          border: "1px solid #9ca3af",
+                          fontSize: "0.9rem",
                           outline: "none",
                           transition: "border-color 0.2s",
                           boxSizing: "border-box"
                         }} 
                       />
                     </div>
-                    <div style={{ marginTop: "0.5rem" }}>
-                      <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, color: "#1f2937" }}>Owner Icon</label>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                      <div>
+                        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", color: "#374151", fontWeight: "600" }}>
+                          Password <span style={{ color: "#ef4444" }}>*</span>
+                        </label>
+                        <input 
+                          name="password"
+                          type="password"
+                          placeholder="Enter your password" 
+                          value={formData.password}
+                          onChange={handleInputChange}
+                          required
+                          autoComplete="new-password"
+                          style={{ 
+                            width: "100%",
+                            padding: "0.75rem", 
+                            borderRadius: "8px", 
+                            border: "1px solid #9ca3af",
+                            fontSize: "0.9rem",
+                            outline: "none",
+                            transition: "border-color 0.2s",
+                            boxSizing: "border-box"
+                          }} 
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", color: "#374151", fontWeight: "600" }}>
+                          Confirm Password <span style={{ color: "#ef4444" }}>*</span>
+                        </label>
+                        <input 
+                          name="confirmPassword"
+                          type="password"
+                          placeholder="Confirm your password" 
+                          value={formData.confirmPassword}
+                          onChange={handleInputChange}
+                          required
+                          autoComplete="new-password"
+                          style={{ 
+                            width: "100%",
+                            padding: "0.75rem", 
+                            borderRadius: "8px", 
+                            border: "1px solid #9ca3af",
+                            fontSize: "0.9rem",
+                            outline: "none",
+                            transition: "border-color 0.2s",
+                            boxSizing: "border-box"
+                          }} 
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", color: "#374151", fontWeight: "600" }}>
+                        Owner Icon <span style={{ color: "#ef4444" }}>*</span>
+                      </label>
                       <IconDropdown
                         options={ALL_USER_ICONS}
                         value={formData.ownerIcon}
@@ -664,7 +660,7 @@ const Signup: React.FC = () => {
                         boxSizing: "border-box"
                       }} 
                     />
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                       <input 
                         name="businessPhone"
                         type="tel"
@@ -675,10 +671,10 @@ const Signup: React.FC = () => {
                         autoComplete="off"
                         style={{ 
                           width: "100%",
-                          padding: "1rem", 
-                          borderRadius: "12px", 
-                          border: "2px solid #9ca3af",
-                          fontSize: "1rem",
+                          padding: "0.75rem", 
+                          borderRadius: "8px", 
+                          border: "1px solid #9ca3af",
+                          fontSize: "0.9rem",
                           outline: "none",
                           transition: "border-color 0.2s",
                           boxSizing: "border-box"
@@ -750,9 +746,9 @@ const Signup: React.FC = () => {
                         boxSizing: "border-box"
                       }} 
                     />
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                       <div>
-                        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "1rem", color: "#1f2937", fontWeight: "600" }}>
+                        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", color: "#1f2937", fontWeight: "600" }}>
                           Opening Time
                         </label>
                         <input 
@@ -776,7 +772,7 @@ const Signup: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "1rem", color: "#1f2937", fontWeight: "600" }}>
+                        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", color: "#1f2937", fontWeight: "600" }}>
                           Closing Time
                         </label>
                         <input 
@@ -826,7 +822,7 @@ const Signup: React.FC = () => {
               </h3>
               
               <p style={{ marginBottom: "1.5rem", color: "#6b7280", fontSize: "1rem", lineHeight: "1.6" }}>
-                We've sent a verification email to <strong style={{ color: "#374151" }}>{userEmail}</strong>
+                We've sent a verification email to <strong style={{ color: "#374151" }}>{formData.email}</strong>
               </p>
               
               <div style={{ 
@@ -853,15 +849,15 @@ const Signup: React.FC = () => {
                   onClick={() => navigate('/login', { 
                     state: { 
                       message: 'Please check your email and verify your account before signing in.',
-                      email: userEmail 
+                      email: formData.email 
                     } 
                   })}
                   style={{
                     padding: "0.75rem 1.5rem",
                     borderRadius: "8px",
-                    backgroundColor: "#7d8d86",
+                    backgroundColor: "#fb923c",
                     border: "none",
-                    color: "#f1f0e4",
+                    color: "white",
                     fontWeight: "600",
                     cursor: "pointer",
                     transition: "background-color 0.2s ease",
@@ -881,8 +877,8 @@ const Signup: React.FC = () => {
                     padding: "0.75rem 1.5rem",
                     borderRadius: "8px",
                     backgroundColor: "transparent",
-                    border: "2px solid #7d8d86",
-                    color: "#7d8d86",
+                    border: "2px solid #fb923c",
+                    color: "#fb923c",
                     fontWeight: "600",
                     cursor: "pointer",
                     transition: "all 0.2s ease",
@@ -938,11 +934,11 @@ const Signup: React.FC = () => {
 
           {/* Navigation Buttons */}
               <div style={{ 
-                marginTop: "2rem", 
+                marginTop: "1.5rem", 
                 display: "flex", 
                 justifyContent: "space-between",
                 alignItems: "center",
-                paddingTop: "2rem",
+                paddingTop: "1.5rem",
                 borderTop: "1px solid #e5e7eb"
               }}>
             {currentStep > 1 ? (
@@ -950,8 +946,8 @@ const Signup: React.FC = () => {
                     type="button" 
                     onClick={() => setCurrentStep(currentStep - 1)} 
                     style={{
-                      width: "48px",
-                      height: "48px",
+                      width: "40px",
+                      height: "40px",
                       borderRadius: "50%",
                       backgroundColor: "#e5e7eb",
                       border: "none",
@@ -959,7 +955,7 @@ const Signup: React.FC = () => {
                       alignItems: "center",
                       justifyContent: "center",
                       cursor: "pointer",
-                      fontSize: "1.5rem",
+                      fontSize: "1.25rem",
                       color: "#374151"
                     }}
                   >
@@ -975,8 +971,8 @@ const Signup: React.FC = () => {
                     disabled={isSubmitting}
                     style={{
                       ...buttonStyle,
-                      padding: "0.875rem 2rem",
-                      fontSize: "1rem",
+                      padding: "0.75rem 1.5rem",
+                      fontSize: "0.9rem",
                       fontWeight: "600",
                       opacity: isSubmitting ? 0.7 : 1,
                       cursor: isSubmitting ? "not-allowed" : "pointer"
@@ -997,17 +993,17 @@ const Signup: React.FC = () => {
                     type="button" 
                     onClick={() => setCurrentStep(currentStep + 1)} 
                     style={{
-                      width: "48px",
-                      height: "48px",
+                      width: "40px",
+                      height: "40px",
                       borderRadius: "50%",
-                      backgroundColor: "#7d8d86",
+                      backgroundColor: "#fb923c",
                       border: "none",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       cursor: "pointer",
-                      fontSize: "1.5rem",
-                      color: "#f1f0e4",
+                      fontSize: "1.25rem",
+                      color: "white",
                       transition: "background-color 0.2s ease"
                     }}
                   >
@@ -1024,21 +1020,20 @@ const Signup: React.FC = () => {
         {/* Login link */}
         <div style={{ 
           width: "100%",
-          maxWidth: "800px",
           display: "flex",
           justifyContent: "center",
-          marginTop: "1.5rem"
+          marginTop: "1rem"
         }}>
           <p style={{ 
             textAlign: "center", 
             color: "white",
-            fontSize: "1.25rem",
+            fontSize: "1rem",
             textShadow: "0 1px 2px rgba(0, 0, 0, 0.5)",
             margin: 0
           }}>
             Already have an account?{" "}
             <Link to="/login" style={{ 
-              color: "#f1f0e4", 
+              color: "white", 
               fontWeight: "600",
               textDecoration: "underline",
               transition: "color 0.2s ease"

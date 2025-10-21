@@ -117,22 +117,16 @@ const Login: React.FC = () => {
       
       try {
         // Use full login functionality
-        const success = await login(formData.email, formData.password);
-        if (success) {
-          // Check if this is the verification admin
-          if (formData.email === 'lateefsanusi67@gmail.com') {
-            // Redirect verification admin directly to their page
-            navigate('/verification-admin');
+        const result = await login(formData.email, formData.password);
+        if (result.success) {
+          // Redirect to appropriate select user page based on device
+          if (isMobile || isTablet) {
+            navigate('/select-user-mobile');
           } else {
-            // Redirect to appropriate select user page based on device
-            if (isMobile || isTablet) {
-              navigate('/select-user-mobile');
-            } else {
-              navigate('/select-user');
-            }
+            navigate('/select-user');
           }
         } else {
-          setErrors({ general: 'Invalid email or password' });
+          setErrors({ general: result.error || 'Invalid email or password' });
         }
       } catch (error) {
         console.error('Login error:', error);
@@ -292,26 +286,6 @@ const Login: React.FC = () => {
 
                 </form>
 
-                {/* Social Login Options */}
-                <div className={styles.socialLogin}>
-                  <div className={styles.divider}>
-                    <div className={styles.dividerLine}></div>
-                    <div className={styles.dividerText}>
-                      <span>Or continue with</span>
-                    </div>
-                  </div>
-
-                  <div className={styles.socialButtons}>
-                    <button type="button" className={styles.socialButton}>
-                      <i className="fab fa-google"></i>
-                      Google
-                    </button>
-                    <button type="button" className={styles.socialButton}>
-                      <i className="fab fa-microsoft"></i>
-                      Microsoft
-                    </button>
-                  </div>
-                </div>
 
                 {/* Sign Up Link */}
                 <div className={styles.signUpLink}>

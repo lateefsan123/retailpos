@@ -88,30 +88,13 @@ const LoginMobile: React.FC = () => {
       
       const result = await login(formData.email, formData.password);
       if (result.success) {
-        if (formData.email === 'lateefsanusi67@gmail.com') {
-          navigate('/verification-admin');
+        if (isMobile || isTablet) {
+          navigate('/select-user-mobile');
         } else {
-          if (isMobile || isTablet) {
-            navigate('/select-user-mobile');
-          } else {
-            navigate('/select-user');
-          }
+          navigate('/select-user');
         }
       } else {
-        let message = result.message;
-
-        if (!message) {
-          if (result.needsEmailVerification) {
-            const friendlyEmail = formData.email.trim();
-            message = result.verificationEmailSent
-              ? `Please verify your email before signing in. We just sent a new confirmation link to ${friendlyEmail}.`
-              : 'Please verify your email before signing in. Check your inbox (and spam folder) for the confirmation email.';
-          } else {
-            message = 'Invalid email or password';
-          }
-        }
-
-        setErrors({ general: message });
+        setErrors({ general: result.error || 'Invalid email or password' });
       }
       setIsSubmitting(false);
     }

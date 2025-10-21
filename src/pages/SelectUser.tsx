@@ -370,11 +370,6 @@ const SelectUser: React.FC = () => {
                 position: 'relative',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#ef4444' }} />
-                <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#eab308' }} />
-                <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#7d8d86' }} />
-              </div>
               <h2
                 style={{
                   fontSize: '32px',

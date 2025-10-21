@@ -245,7 +245,7 @@
 
 .tableHeader {
   background: var(--bg-card);
-  border-bottom: 4px solid #d1d5db;
+  border-bottom: var(--border-primary);
 }
 
 .tableHeaderCell {
@@ -255,8 +255,8 @@
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  border-bottom: 4px solid #d1d5db;
-  border-right: 2px solid #d1d5db;
+  border-bottom: var(--border-primary);
+  border-right: var(--border-primary);
 }
 
 .tableHeaderCell:last-child {
@@ -278,9 +278,9 @@
 }
 
 .tableRow {
-  border-bottom: 2px solid #d1d5db;
-  border-left: 1px solid #e5e7eb;
-  border-right: 1px solid #e5e7eb;
+  border-bottom: var(--border-primary);
+  border-left: var(--border-subtle);
+  border-right: var(--border-subtle);
   transition: background 0.2s ease;
   cursor: pointer;
 }
@@ -295,7 +295,7 @@
 
 .tableCell {
   padding: 16px;
-  border-right: 2px solid #e5e7eb;
+  border-right: var(--border-primary);
 }
 
 .tableCell:last-child {

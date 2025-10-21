@@ -1198,7 +1198,7 @@ const Dashboard = () => {
                 style={{
                   padding: '8px 14px',
                   borderRadius: '999px',
-                  border: isActive ? '2px solid #1a1a1a' : '2px solid #d1d5db',
+                  border: isActive ? '2px solid #1a1a1a' : 'var(--border-primary)',
                   background: isActive ? '#1a1a1a' : 'var(--bg-card)',
                   color: isActive ? '#f1f0e4' : 'var(--text-primary)',
                   fontSize: '12px',
@@ -1264,37 +1264,38 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Supporting Insights */}
+      {/* Main Content Layout - Sidebar Design */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: '20px',
-        marginBottom: '32px'
-      }}>
-        <div style={{
-          background: 'var(--bg-card)',
-          borderRadius: '8px',
-          padding: '24px',
-           border: 'var(--border-primary)',
-          boxShadow: 'var(--shadow-card)'
-        }}>
-          <LowStockSection />
-        </div>
-        <div>
-          <ProductAnalyticsSection activePeriod={normalizePeriod(activePeriod)} selectedDate={selectedDate} />
-        </div>
-      </div>
-
-      {/* Main Content Layout */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1.5fr',
+        gridTemplateColumns: '70% 30%',
         gap: '24px',
-        marginBottom: '32px'
+        marginBottom: '32px',
+        alignItems: 'start'
       }}>
-        {/* Left Column - Recent Transactions and Top Products */}
+        {/* Left Column - Sales Chart (Primary Focus) */}
+        <div>
+          <SalesChart selectedDate={selectedDate} activePeriod={normalizePeriod(activePeriod)} />
+        </div>
+
+        {/* Right Sidebar - Stacked Secondary Cards */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {/* Recent Transactions */}
+          {/* Low Stock Section */}
+          <div style={{
+            background: 'var(--bg-card)',
+            borderRadius: '8px',
+            padding: '24px',
+            border: 'var(--border-primary)',
+            boxShadow: 'var(--shadow-card)'
+          }}>
+            <LowStockSection />
+          </div>
+
+          {/* Top Products Section */}
+          <div>
+            <ProductAnalyticsSection activePeriod={normalizePeriod(activePeriod)} selectedDate={selectedDate} />
+          </div>
+
+          {/* Recent Transactions Section */}
           <div 
             className="dashboardCard"
             style={{
@@ -1302,8 +1303,9 @@ const Dashboard = () => {
               borderRadius: '8px',
               padding: '24px',
               boxShadow: 'var(--shadow-card)',
-               border: 'var(--border-primary)'
+              border: 'var(--border-primary)'
             }}>
+            {/* Header with icon and title */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{
@@ -1317,34 +1319,34 @@ const Dashboard = () => {
                 }}>
                   <i className="fa-solid fa-clock" style={{ fontSize: '18px', color: 'var(--bg-primary)' }}></i>
                 </div>
-              <h3 style={{ 
-                fontSize: '20px', 
-                fontWeight: '600', 
-                color: 'var(--text-primary)', 
-                margin: 0 
-              }}>
-                {(() => {
-                  switch (activePeriod) {
-                    case 'today': {
-                      const today = new Date()
-                      const isToday = selectedDate.toDateString() === today.toDateString()
-                      return isToday ? 'Recent Transactions' : `${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} Transactions`
+                <h3 style={{ 
+                  fontSize: '20px', 
+                  fontWeight: '600', 
+                  color: 'var(--text-primary)', 
+                  margin: 0 
+                }}>
+                  {(() => {
+                    switch (activePeriod) {
+                      case 'today': {
+                        const today = new Date()
+                        const isToday = selectedDate.toDateString() === today.toDateString()
+                        return isToday ? 'Recent Transactions' : `${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} Transactions`
+                      }
+                      case 'yesterday':
+                        return "Yesterday's Transactions"
+                      case 'week':
+                        return 'This Week Transactions'
+                      case 'last7':
+                        return 'Last 7 Days Transactions'
+                      case 'month':
+                        return 'This Month Transactions'
+                      case 'last30':
+                        return 'Last 30 Days Transactions'
+                      default:
+                        return 'Recent Transactions'
                     }
-                    case 'yesterday':
-                      return "Yesterday's Transactions"
-                    case 'week':
-                      return 'This Week Transactions'
-                    case 'last7':
-                      return 'Last 7 Days Transactions'
-                    case 'month':
-                      return 'This Month Transactions'
-                    case 'last30':
-                      return 'Last 30 Days Transactions'
-                    default:
-                      return 'Recent Transactions'
-                  }
-                })()}
-              </h3>
+                  })()}
+                </h3>
               </div>
               <button
                 onClick={() => openTransactionsModalForDate(selectedDate)}
@@ -1364,6 +1366,7 @@ const Dashboard = () => {
               </button>
             </div>
             
+            {/* Transactions list */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {recentTransactions.length > 0 ? (
                 recentTransactions.map((transaction) => (
@@ -1494,12 +1497,6 @@ const Dashboard = () => {
               )}
             </div>
           </div>
-
-        </div>
-
-        {/* Right Column - Sales Chart */}
-        <div>
-          <SalesChart selectedDate={selectedDate} activePeriod={normalizePeriod(activePeriod)} />
         </div>
       </div>
 
@@ -1527,7 +1524,7 @@ const Dashboard = () => {
             maxHeight: '80vh',
             overflow: 'auto',
             boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
-            border: '2px solid #d1d5db'
+            border: 'var(--border-primary)'
           }}>
             {/* Modal Header */}
             <div style={{
@@ -1536,7 +1533,7 @@ const Dashboard = () => {
               alignItems: 'center',
               marginBottom: '24px',
               paddingBottom: '16px',
-              borderBottom: '2px solid #d1d5db'
+              borderBottom: 'var(--border-primary)'
             }}>
               <h2 style={{
                 fontSize: '24px',
@@ -1684,7 +1681,7 @@ const Dashboard = () => {
             maxWidth: '400px',
             width: '100%',
             boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
-            border: '2px solid #d1d5db'
+            border: 'var(--border-primary)'
           }}>
             {/* Calendar Header */}
             <div style={{

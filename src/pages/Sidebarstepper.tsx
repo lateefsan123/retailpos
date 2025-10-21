@@ -10,11 +10,13 @@ const SidebarStepper: React.FC<SidebarStepperProps> = ({ steps, currentStep, onS
   return (
     <div style={{ 
       display: "flex", 
-      flexDirection: "column", 
-      justifyContent: "space-evenly",
-      height: "100%",
-      gap: "2rem",
-      position: "relative"
+      flexDirection: "row", 
+      justifyContent: "space-between",
+      alignItems: "center",
+      width: "100%",
+      gap: "1rem",
+      position: "relative",
+      padding: "0.5rem 0"
     }}>
       {steps.map((step, index) => {
         const stepNum = index + 1;
@@ -27,34 +29,38 @@ const SidebarStepper: React.FC<SidebarStepperProps> = ({ steps, currentStep, onS
             onClick={() => onStepClick(stepNum)}
             style={{
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
-              gap: "1rem",
+              gap: "0.5rem",
               cursor: "pointer",
               fontWeight: isActive ? "600" : "400",
-              color: isActive ? "#7d8d86" : isCompleted ? "#16a34a" : "#6b7280",
+              color: isActive ? "#fb923c" : isCompleted ? "#fb923c" : "#6b7280",
               position: "relative",
+              flex: 1,
+              minWidth: "0",
             }}
           >
             {/* Icon wrapper */}
             <div
               style={{
-                width: "56px",
-                height: "56px",
+                width: "48px",
+                height: "48px",
                 borderRadius: "50%",
                 backgroundColor: isActive
-                  ? "#f1f0e4"
+                  ? "#fed7aa"
                   : isCompleted
-                  ? "#dcfce7"
+                  ? "#fed7aa"
                   : "#f3f4f6",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                border: isActive ? "2px solid #7d8d86" : "1px solid #d1d5db",
+                border: isActive ? "2px solid #fb923c" : "1px solid #d1d5db",
                 position: "relative",
                 zIndex: 2,
+                flexShrink: 0,
               }}
             >
-              <div style={{ transform: "scale(1.3)" }}>
+              <div style={{ transform: "scale(1.1)" }}>
                 {step.icon}
               </div>
             </div>
@@ -64,17 +70,17 @@ const SidebarStepper: React.FC<SidebarStepperProps> = ({ steps, currentStep, onS
               <div
                 style={{
                   position: "absolute",
-                  left: "28px",
-                  top: "56px",
-                  width: "2px",
-                  height: "calc(100% + 2rem)",
-                  backgroundColor: isCompleted ? "#16a34a" : "#d1d5db",
+                  left: "48px",
+                  top: "24px",
+                  width: "calc(100% + 1rem)",
+                  height: "2px",
+                  backgroundColor: isCompleted ? "#fb923c" : "#d1d5db",
                   zIndex: 1,
                 }}
               />
             )}
             
-            <span style={{ fontSize: "1.2rem" }}>{step.label}</span>
+            <span style={{ fontSize: "0.9rem", textAlign: "center", lineHeight: "1.2" }}>{step.label}</span>
           </div>
         );
       })}

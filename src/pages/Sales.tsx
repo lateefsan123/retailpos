@@ -2491,28 +2491,28 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   overflow: 'hidden',
                   minWidth: '120px',
                   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                  background: '#dc2626',
+                  background: '#000000',
                   color: 'white'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#b91c1c';
+                  e.currentTarget.style.background = '#333333';
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.3)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.3)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#dc2626';
+                  e.currentTarget.style.background = '#000000';
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
                 }}
                 onMouseDown={(e) => {
-                  e.currentTarget.style.background = '#991b1b';
+                  e.currentTarget.style.background = '#1a1a1a';
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.2)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
                 }}
                 onMouseUp={(e) => {
-                  e.currentTarget.style.background = '#b91c1c';
+                  e.currentTarget.style.background = '#333333';
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.3)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.3)';
                 }}
               >
                 <i className="fa-solid fa-plus" style={{ marginRight: '8px' }}></i>
@@ -2575,7 +2575,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   style={{
                     flex: 1,
                     padding: '12px 16px',
-                    border: `2px solid ${barcodeScannerActive ? '#3b82f6' : '#d1d5db'}`,
+                    border: `2px solid ${barcodeScannerActive ? '#3b82f6' : 'var(--border-color)'}`,
                     borderRadius: '8px',
                     fontSize: '16px',
                     outline: 'none',
@@ -3274,7 +3274,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                             width: '24px',
                             height: '24px',
                             borderRadius: '4px',
-                            border: '1px solid #d1d5db',
+                            border: 'var(--border-subtle)',
                             background: '#ffffff',
                             color: '#374151',
                             cursor: 'pointer',
@@ -3301,7 +3301,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                             width: '24px',
                             height: '24px',
                             borderRadius: '4px',
-                            border: '1px solid #d1d5db',
+                            border: 'var(--border-subtle)',
                             background: '#ffffff',
                             color: '#374151',
                             cursor: 'pointer',
@@ -3325,7 +3325,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                             width: '24px',
                             height: '24px',
                             borderRadius: '4px',
-                            border: '1px solid #d1d5db',
+                            border: 'var(--border-subtle)',
                             background: '#ffffff',
                             color: '#374151',
                             cursor: 'pointer',
@@ -3364,7 +3364,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                             width: '24px',
                             height: '24px',
                             borderRadius: '4px',
-                            border: '1px solid #d1d5db',
+                            border: 'var(--border-subtle)',
                             background: '#ffffff',
                             color: '#374151',
                             cursor: 'pointer',
@@ -3410,7 +3410,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
         {order.items.length > 0 && (
           <div style={{
             background: '#ffffff',
-            border: '1px solid #d1d5db',
+            border: 'var(--border-subtle)',
             borderRadius: '8px',
             padding: '12px 16px',
             marginBottom: '8px',
@@ -3463,7 +3463,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   value={selectedPromotionId ?? ''}
                   onChange={(e) => setSelectedPromotionId(e.target.value ? Number(e.target.value) : null)}
                   style={{
-                    border: '1px solid #d1d5db',
+                    border: 'var(--border-subtle)',
                     borderRadius: '6px',
                     padding: '6px 8px',
                     background: '#ffffff',
@@ -3487,7 +3487,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
         {order.items.length > 0 && (
           <div style={{
             background: '#f1f3f4',
-            border: '1px solid #d1d5db',
+            border: 'var(--border-subtle)',
             borderRadius: '8px',
             padding: '16px',
             marginBottom: '12px',
@@ -4027,7 +4027,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                     style={{
                       width: '100%',
                       padding: '12px 16px',
-                      border: '1px solid #d1d5db',
+                      border: 'var(--border-subtle)',
                       borderRadius: '8px',
                       background: '#ffffff',
                       color: '#374151',
@@ -4457,7 +4457,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 onClick={() => setShowReceiptPreview(false)}
                 style={{
                   padding: '12px 24px',
-                  border: '1px solid #d1d5db',
+                  border: 'var(--border-subtle)',
                   borderRadius: '8px',
                   background: '#ffffff',
                   color: '#374151',
@@ -4583,7 +4583,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 }}
                 style={{
                   padding: '12px 24px',
-                  border: '1px solid #d1d5db',
+                  border: 'var(--border-subtle)',
                   borderRadius: '8px',
                   background: '#ffffff',
                   color: '#374151',
@@ -4737,7 +4737,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 }}
                 style={{
                   padding: '12px 24px',
-                  border: '1px solid #d1d5db',
+                  border: 'var(--border-subtle)',
                   borderRadius: '8px',
                   background: '#ffffff',
                   color: '#374151',
@@ -4930,7 +4930,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 }}
                 style={{
                   padding: '12px 24px',
-                  border: '1px solid #d1d5db',
+                  border: 'var(--border-subtle)',
                   borderRadius: '8px',
                   background: '#ffffff',
                   color: '#374151',

@@ -31,12 +31,12 @@
 }
 
 .navWrapper {
-  max-width: 1600px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
 .navContent {
-  max-width: 1600px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -45,9 +45,9 @@
   justify-content: space-between;
   align-items: center;
   height: auto;
-  max-width: 1600px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 4rem;
+  padding: 0 2rem;
 }
 
 .logoContainer {
@@ -180,17 +180,17 @@
 
 /* Hero Section */
 .heroSection {
-  background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('/images/backgrounds/landingpagebg.png');
+  background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/images/backgrounds/landingpagebg.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  padding: 8rem 0 5rem 0;
+  padding: 6rem 0 4rem 0;
   margin-top: 2rem;
   position: relative;
 }
 
 .heroContent {
-  max-width: 1280px;
+  max-width: 1000px;
   margin: 0 auto;
   padding: 0 1rem;
   text-align: center;
@@ -199,33 +199,36 @@
 }
 
 .heroTitle {
-  font-size: 2.25rem;
+  font-size: 2.5rem;
   font-weight: bold;
   color: #f1f0e4;
   margin-bottom: 1.5rem;
-  line-height: 1.1;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  line-height: 1.2;
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.8);
 }
 
 .heroTitleHighlight {
-  color: #7d8d86;
+  color: #f9fafb;
   display: block;
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.8);
 }
 
 .heroTitleBlack {
-  color: #111827;
+  color: #f9fafb;
   display: block;
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.8);
 }
 
 .heroSubtitle {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   color: #ffffff;
   margin-bottom: 2rem;
-  max-width: 48rem;
+  max-width: 36rem;
   margin-left: auto;
   margin-right: auto;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.9);
   font-weight: 500;
+  line-height: 1.4;
 }
 
 .heroButtons {
@@ -237,7 +240,7 @@
 }
 
 .primaryButton {
-  background-color: #111827;
+  background-color: #1f2937;
   color: #ffffff;
   padding: 0.75rem 2rem;
   border-radius: 0.5rem;
@@ -246,13 +249,13 @@
   border: none;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   text-decoration: none;
   display: inline-block;
 }
 
 .primaryButton:hover {
-  background-color: #374151;
+  background-color: #4b5563;
 }
 
 .secondaryButton {
@@ -293,6 +296,7 @@
   font-weight: bold;
   color: white;
   margin-bottom: 0.25rem;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
 }
 
 .statLabel {
@@ -300,11 +304,12 @@
   color: white;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
 }
 
 /* Features Cards Section */
 .featuresCardsSection {
-  padding: 3rem 0;
+  padding: 2rem 0;
   background-color: white;
 }
 
@@ -355,14 +360,15 @@
 
 /* Product Showcase Section */
 .productShowcaseSection {
-  padding: 0;
+  padding: 0 0 1rem 0;
   background-color: white;
   position: relative;
-  min-height: 1100px;
+  min-height: 600px !important;
+  height: auto !important;
 }
 
 .productShowcaseContent {
-  max-width: 2000px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0;
 }
@@ -391,25 +397,31 @@
 .productShowcaseImage {
   width: 100%;
   height: 100%;
+  max-height: 550px !important;
   position: relative;
 }
 
 .showcaseImage {
   width: 100%;
   height: 100%;
+  max-height: 550px !important;
   object-fit: cover;
   border-radius: 1rem;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
 }
 
+.showcaseImageRight {
+  max-height: 400px !important;
+}
+
 /* Features Section */
 .featuresSection {
-  padding: 6rem 0;
+  padding: 4rem 0;
   background-color: white;
 }
 
 .featuresContent {
-  max-width: 1600px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 2rem;
 }
@@ -420,7 +432,7 @@
 }
 
 .featuresTitle {
-  font-size: 4.5rem;
+  font-size: 2.5rem;
   font-weight: 700;
   color: #111827;
   margin-bottom: 0;
@@ -481,12 +493,12 @@
 
 /* Feature Showcase Section */
 .featureShowcaseSection {
-  padding: 6rem 0;
+  padding: 4rem 0;
   background-color: white;
 }
 
 .featureShowcaseContent {
-  max-width: 1600px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 2rem;
 }
@@ -497,7 +509,7 @@
 }
 
 .featureShowcaseTitle {
-  font-size: 4.5rem;
+  font-size: 2.5rem;
   font-weight: 700;
   color: #111827;
   margin-bottom: 1rem;
@@ -844,7 +856,7 @@
 
 .ctaIcon {
   color: #7d8d86;
-  font-size: 4rem;
+  font-size: 2.25rem;
   margin-bottom: 1rem;
 }
 
@@ -967,7 +979,7 @@
 }
 
 .pricingTitle {
-  font-size: 4rem;
+  font-size: 2.25rem;
   font-weight: bold;
   color: #111827;
   margin-bottom: 1.5rem;
@@ -1066,7 +1078,7 @@
 }
 
 .priceAmount {
-  font-size: 3.5rem;
+  font-size: 2rem;
   font-weight: bold;
   color: #111827;
 }
@@ -1377,7 +1389,7 @@
 /* Responsive Design */
 @media (min-width: 640px) {
   .heroTitle {
-    font-size: 3.75rem;
+    font-size: 3rem;
   }
   
   .heroButtons {
@@ -1394,11 +1406,11 @@
   }
   
   .featuresTitle {
-    font-size: 2.5rem;
+    font-size: 2rem;
   }
   
   .featureShowcaseTitle {
-    font-size: 2.5rem;
+    font-size: 2rem;
   }
   
   .featureShowcaseGrid {
@@ -1415,7 +1427,7 @@
   }
   
   .carouselContainer {
-    height: 350px;
+    height: 250px;
   }
   
   .featureShowcaseNavigation {
@@ -1429,7 +1441,7 @@
   }
   
   .carouselContainer {
-    height: 25rem;
+    height: 18rem;
   }
   
   .carouselNavButton {
@@ -1490,7 +1502,7 @@
   }
   
   .heroTitle {
-    font-size: 4.5rem;
+    font-size: 3.5rem;
   }
   
   .heroStats {
@@ -1503,11 +1515,11 @@
   }
   
   .featuresTitle {
-    font-size: 4.5rem;
+    font-size: 2.5rem;
   }
   
   .featureShowcaseTitle {
-    font-size: 3.5rem;
+    font-size: 2.5rem;
   }
   
   .featureShowcaseCard {
@@ -1520,7 +1532,7 @@
   }
   
   .carouselContainer {
-    height: 400px;
+    height: 300px;
   }
   
   .carouselWrapper {
@@ -1529,7 +1541,7 @@
   }
   
   .carouselContainer {
-    height: 35rem;
+    height: 25rem;
   }
   
   .carouselNavButton {
@@ -1577,7 +1589,7 @@
   }
   
   .pricingTitle {
-    font-size: 4.5rem;
+    font-size: 2.5rem;
   }
   
   .footerGrid {
@@ -1592,7 +1604,7 @@
 
 @media (min-width: 1024px) {
   .heroTitle {
-    font-size: 5rem;
+    font-size: 4rem;
   }
 }
 
@@ -1645,7 +1657,7 @@
   }
   
   .carouselContainer {
-    height: 450px;
+    height: 350px;
   }
   
   .contactGrid {

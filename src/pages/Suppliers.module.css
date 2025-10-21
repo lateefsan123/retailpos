@@ -28,7 +28,7 @@
 .loadingSpinner {
   width: 40px;
   height: 40px;
-  border: 4px solid #e5e7eb;
+  border: var(--border-accent);
   border-top: 4px solid #1a1a1a;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -320,7 +320,7 @@
 .listSpinner {
   width: 40px;
   height: 40px;
-  border: 4px solid #e5e7eb;
+  border: var(--border-accent);
   border-top: 4px solid #1a1a1a;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -358,7 +358,7 @@
 
 .tableHeader {
   background: var(--bg-nested);
-  border-bottom: 2px solid #d1d5db;
+  border-bottom: var(--border-primary);
 }
 
 .tableHeaderCell {

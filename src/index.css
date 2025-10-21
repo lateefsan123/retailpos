@@ -71,24 +71,24 @@ h1, h2, h3, h4, h5, h6 {
   --modal-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   --modal-footer-shadow: rgba(0, 0, 0, 0.1);
   --text-primary: #000000;
-  --text-secondary: #6b7280;
+  --text-secondary: #4b5563;
   --text-disabled: #9ca3af;
-  --text-placeholder: #9ca3af;
+  --text-placeholder: #6b7280;
   --text-header: #000000;
-  --text-muted: #9ca3af;
-  --border-color: #d1d5db;
+  --text-muted: #6b7280;
+  --border-color: #9ca3af;
   --hover-bg: rgba(0, 0, 0, 0.05);
   --input-bg: #ffffff;
   --input-bg-focus: #ffffff;
   --input-bg-disabled: #f9fafb;
-  --input-border: #d1d5db;
+  --input-border: #9ca3af;
   --primary-color: #4f46e5;
   --primary-bg: #4f46e5;
   --primary-text: #ffffff;
   --primary-bg-hover: #4338ca;
   --secondary-bg: #f9fafb;
   --secondary-text: #374151;
-  --secondary-border: #d1d5db;
+  --secondary-border: #9ca3af;
   --secondary-bg-hover: #f3f4f6;
   --secondary-border-hover: #9ca3af;
   --danger-bg: #ef4444;
@@ -110,8 +110,8 @@ h1, h2, h3, h4, h5, h6 {
   --bg-card: #ffffff;
   --bg-table: #ffffff;
   --bg-nested: #f9fafb;
-  --border-primary: 2px solid #d1d5db;
-  --border-subtle: 1px solid #e5e7eb;
+  --border-primary: 2px solid #9ca3af;
+  --border-subtle: 1px solid #d1d5db;
   --border-accent: 3px solid #bca88d;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.1);
   --shadow-elevated: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -431,8 +431,8 @@ nav a span {
 
 /* Colors */
 .text-slate-900 { color: #0f172a; }
-.text-slate-600 { color: #475569; }
-.text-slate-500 { color: #64748b; }
+.text-slate-600 { color: #334155; }
+.text-slate-500 { color: #475569; }
 .text-white { color: #ffffff; }
 .text-red-800 { color: #991b1b; }
 .text-green-800 { color: #166534; }
@@ -469,7 +469,7 @@ nav a span {
 .border-transparent { border-color: transparent; }
 .border-red-200 { border-color: #fecaca; }
 .border-green-200 { border-color: #bbf7d0; }
-.border-slate-200 { border-color: #e2e8f0; }
+.border-slate-200 { border-color: #cbd5e1; }
 .border-amber-200 { border-color: #fde68a; }
 .border-blue-200 { border-color: #bfdbfe; }
 .rounded-lg { border-radius: 0.5rem; }

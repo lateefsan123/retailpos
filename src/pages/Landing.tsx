@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import styles from './Landing.module.css'
 
@@ -197,60 +196,6 @@ const Landing: React.FC = () => {
 
 
 
-  const pricingPlans = [
-    {
-      name: "Starter",
-      price: "€9",
-      period: "/month",
-      description: "Perfect for small businesses starting out",
-      features: [
-        "Single location",
-        "2 users",
-        "Basic POS functionality",
-        "Email support",
-        "Basic reporting"
-      ],
-      popular: false,
-      iconColor: "#374151",
-      icon: "fas fa-seedling"
-    },
-    {
-      name: "Professional",
-      price: "€19",
-      period: "/month",
-      description: "Most popular choice for growing businesses",
-      features: [
-        "Up to 3 locations",
-        "5 users",
-        "Advanced analytics",
-        "Side businesses support",
-        "Weighted products",
-        "AI voice announcements",
-        "Priority support"
-      ],
-      popular: true,
-      iconColor: "#3e3f29",
-      icon: "fas fa-tree"
-    },
-    {
-      name: "Enterprise",
-      price: "€49",
-      period: "/month",
-      description: "Complete solution for large operations",
-      features: [
-        "Unlimited locations",
-        "Unlimited users",
-        "API access",
-        "Custom branding",
-        "Dedicated support",
-        "Advanced integrations",
-        "Custom training"
-      ],
-      popular: false,
-      iconColor: "#111827",
-      icon: "fas fa-building"
-    }
-  ]
 
   return (
     <div className={styles.container}>
@@ -323,13 +268,7 @@ const Landing: React.FC = () => {
       <section className={styles.featuresCardsSection}>
         <div className={styles.featuresCardsContent}>
           <div className={styles.featuresCardsGrid}>
-            <motion.div 
-              className={styles.featureCard}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              viewport={{ once: true }}
-            >
+            <div className={styles.featureCard}>
               <div className={styles.featureCardIcon}>
                 <i className="fas fa-store"></i>
               </div>
@@ -337,15 +276,9 @@ const Landing: React.FC = () => {
               <p className={styles.featureCardDescription}>
                 Consolidate your entire business with one system for managing multiple stores, locations, and side businesses.
               </p>
-            </motion.div>
+            </div>
             
-            <motion.div 
-              className={styles.featureCard}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              viewport={{ once: true }}
-            >
+            <div className={styles.featureCard}>
               <div className={styles.featureCardIcon}>
                 <i className="fas fa-microphone-alt"></i>
               </div>
@@ -353,15 +286,9 @@ const Landing: React.FC = () => {
               <p className={styles.featureCardDescription}>
                 Build seamless experiences with AI voice announcements, smart inventory tracking, and automated workflows.
               </p>
-            </motion.div>
+            </div>
             
-            <motion.div 
-              className={styles.featureCard}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              viewport={{ once: true }}
-            >
+            <div className={styles.featureCard}>
               <div className={styles.featureCardIcon}>
                 <i className="fas fa-chart-line"></i>
               </div>
@@ -369,7 +296,7 @@ const Landing: React.FC = () => {
               <p className={styles.featureCardDescription}>
                 Built by retailers, for retailers. Weighted products, partial payments, and features that actually work for your business.
               </p>
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>
@@ -395,7 +322,7 @@ const Landing: React.FC = () => {
                 <img 
                   src="/images/backgrounds/landingpagerightimage.png" 
                   alt="TillPoint Payment Methods and Terminal" 
-                  className={styles.showcaseImage}
+                  className={`${styles.showcaseImage} ${styles.showcaseImageRight}`}
                 />
               </div>
             </div>
@@ -437,221 +364,22 @@ const Landing: React.FC = () => {
       {/* Feature Showcase Section */}
       <section className={styles.featureShowcaseSection}>
         <div className={styles.featureShowcaseContent}>
-          <motion.div 
-            className={styles.featureShowcaseHeader}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-          >
+          <div className={styles.featureShowcaseHeader}>
             <h2 className={styles.featureShowcaseTitle}>
               See TillPoint in Action
             </h2>
-          </motion.div>
+          </div>
           
           <div className={styles.featureShowcaseGrid}>
             {carouselFeatures.map((feature, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: idx * 0.3 }}
-                viewport={{ once: true }}
-              >
+              <div key={idx}>
                 <FeatureBlock 
                   feature={feature} 
                   delay={idx * 1500}
                   isReversed={idx % 2 === 1} // Alternate layout: odd index = reversed (text left, image right)
                 />
-              </motion.div>
+              </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className={styles.pricingSection}>
-        <div className={styles.pricingContent}>
-          <motion.div 
-            className={styles.pricingHeader}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-          >
-            <h2 className={styles.pricingTitle}>
-              Simple, Transparent
-              <span className={styles.pricingTitleHighlight}> Pricing</span>
-            </h2>
-            <p className={styles.pricingSubtitle}>
-              Choose the plan that fits your business size. All plans include our core POS features 
-              with no hidden fees or setup costs.
-            </p>
-          </motion.div>
-          
-          <div className={styles.pricingGrid}>
-            {pricingPlans.map((plan, index) => (
-              <motion.div 
-                key={index} 
-                className={`${styles.pricingCard} ${plan.popular ? styles.popularCard : ''}`}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.2 }}
-                viewport={{ once: true }}
-              >
-                {plan.popular && (
-                  <div className={styles.popularBadge}>
-                    <i className="fas fa-star"></i>
-                    Most Popular
-                  </div>
-                )}
-                
-                <div className={styles.pricingIcon} style={{ color: plan.iconColor }}>
-                  <i className={plan.icon}></i>
-                </div>
-                
-                <div className={styles.pricingCardHeader}>
-                  <h3 className={styles.pricingPlanName}>{plan.name}</h3>
-                  <div className={styles.pricingPrice}>
-                    <span className={styles.priceAmount}>{plan.price}</span>
-                    <span className={styles.pricePeriod}>{plan.period}</span>
-                  </div>
-                  <p className={styles.planDescription}>{plan.description}</p>
-                </div>
-                
-                <div className={styles.pricingFeatures}>
-                  <ul className={styles.featuresList}>
-                    {plan.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className={styles.featureItem}>
-                        <i className="fas fa-check-circle"></i>
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                
-                <div className={styles.pricingAction}>
-                  <Link to="/signup" className={styles.pricingButton} style={{ backgroundColor: plan.iconColor }}>
-                    Start Free Trial
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-          
-          <div className={styles.pricingFooter}>
-            <p className={styles.pricingFooterText}>
-              All plans include 3-day free trial • No setup fees • Cancel anytime
-            </p>
-          </div>
-        </div>
-      </section>
-
-
-      {/* CTA Section */}
-      <section className={styles.ctaSection}>
-        <div className={styles.ctaContent}>
-          <h2 className={styles.ctaSectionTitle}>
-            Stop Fighting Your POS System
-          </h2>
-          <p className={styles.ctaSectionDescription}>
-            Life's too short for bad software. Try TillPoint risk-free and see why retailers are finally happy with their POS.
-          </p>
-          <div className={styles.ctaSectionButtons}>
-            <Link to="/login" className={styles.ctaSectionPrimaryButton}>
-              Sign In
-            </Link>
-            <Link to="/signup" className={styles.ctaSectionSecondaryButton}>
-              Sign Up
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Section */}
-      <section id="contact" className={styles.contactSection}>
-        <div className={styles.contactContent}>
-          <div className={styles.contactHeader}>
-            <h2 className={styles.contactTitle}>Questions? We've Got Answers</h2>
-            <p className={styles.contactSubtitle}>
-              Not sure if TillPoint is right for you? Drop us a line. We're real people who actually care about your business.
-            </p>
-          </div>
-          
-          <div className={styles.contactGrid}>
-            <div className={styles.contactInfo}>
-              <div className={styles.contactItem}>
-                <div className={styles.contactIcon}>
-                  <i className="fas fa-envelope"></i>
-                </div>
-                <div className={styles.contactDetails}>
-                  <h3>Email Us</h3>
-                  <p>support@tillpoint.com</p>
-                  <p>sales@tillpoint.com</p>
-                </div>
-              </div>
-              
-              <div className={styles.contactItem}>
-                <div className={styles.contactIcon}>
-                  <i className="fas fa-phone"></i>
-                </div>
-                <div className={styles.contactDetails}>
-                  <h3>Call Us</h3>
-                  <p>+353 852287083</p>
-                  <p>Mon-Fri 9AM-6PM GMT</p>
-                </div>
-              </div>
-              
-              <div className={styles.contactItem}>
-                <div className={styles.contactIcon}>
-                  <i className="fas fa-map-marker-alt"></i>
-                </div>
-                <div className={styles.contactDetails}>
-                  <h3>Visit Us</h3>
-                  <p>123 Business Street</p>
-                  <p>Suite 100, City, State 12345</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className={styles.contactForm}>
-              <form className={styles.form}>
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="firstName">First Name</label>
-                    <input type="text" id="firstName" name="firstName" required />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="lastName">Last Name</label>
-                    <input type="text" id="lastName" name="lastName" required />
-                  </div>
-                </div>
-                
-                <div className={styles.formGroup}>
-                  <label htmlFor="email">Email Address</label>
-                  <input type="email" id="email" name="email" required />
-                </div>
-                
-                <div className={styles.formGroup}>
-                  <label htmlFor="phone">Phone Number</label>
-                  <input type="tel" id="phone" name="phone" />
-                </div>
-                
-                <div className={styles.formGroup}>
-                  <label htmlFor="company">Company Name</label>
-                  <input type="text" id="company" name="company" />
-                </div>
-                
-                <div className={styles.formGroup}>
-                  <label htmlFor="message">Message</label>
-                  <textarea id="message" name="message" rows={5} required></textarea>
-                </div>
-                
-                <button type="submit" className={styles.submitButton}>
-                  Send Message
-                </button>
-              </form>
-            </div>
           </div>
         </div>
       </section>
@@ -667,13 +395,11 @@ const Landing: React.FC = () => {
               <h4>Product</h4>
               <ul className={styles.footerLinks}>
                 <li><a href="#features" className={styles.footerLink}>Features</a></li>
-                <li><a href="#pricing" className={styles.footerLink}>Pricing</a></li>
               </ul>
             </div>
             <div className={styles.footerSection}>
               <h4>Support</h4>
               <ul className={styles.footerLinks}>
-                <li><a href="#contact" className={styles.footerLink}>Contact Us</a></li>
                 <li><a href="/documentation/TillPoint POS – Onboarding Guide (Workflows Addendum).pdf" target="_blank" rel="noopener noreferrer" className={styles.footerLink}>Documentation</a></li>
               </ul>
             </div>

@@ -16,11 +16,12 @@ interface User {
   pin_hash?: string
   email?: string
   full_name?: string
+  private_preview?: boolean
 }
 
 interface AuthContextType {
   user: User | null
-  login: (email: string, password: string) => Promise<boolean>
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
   register: (username: string, password: string, businessName: string, firstName?: string, lastName?: string, email?: string, businessType?: string, businessDescription?: string, businessAddress?: string, businessPhone?: string, currency?: string, website?: string, vatNumber?: string, openTime?: string, closeTime?: string, iconName?: string) => Promise<{ success: boolean; error?: string }>
   switchUser: (targetUserId: number, password: string, usePin?: boolean) => Promise<boolean>
   refreshUser: () => Promise<void>
@@ -108,7 +109,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         pin: userData.pin,
         pin_hash: userData.pin_hash,
         email: userData.email,
-        full_name: userData.full_name
+        full_name: userData.full_name,
+        private_preview: userData.private_preview
       }
 
       setUser(userProfile)
@@ -246,6 +248,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           business_id: businessData.business_id,
           icon: iconToSave,
           email_verified: true, // Skip email verification for now
+          private_preview: false, // New signups need manual approval
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -265,7 +268,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       setLoading(true)
 
@@ -275,7 +278,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const recentAttempts = loginAttempts.filter((attempt: number) => now - attempt < 5 * 60 * 1000) // 5 minutes
       
       if (recentAttempts.length >= 5) {
-        return false
+        return { success: false, error: 'Too many login attempts. Please try again later.' }
       }
 
       // 2. Find user by email or username
@@ -290,7 +293,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         // Record failed attempt
         recentAttempts.push(now)
         localStorage.setItem('login_attempts', JSON.stringify(recentAttempts))
-        return false
+        return { success: false, error: 'Invalid email or password' }
       }
 
       // 3. Verify password (try bcrypt first, then legacy)
@@ -322,7 +325,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         // Record failed attempt
         recentAttempts.push(now)
         localStorage.setItem('login_attempts', JSON.stringify(recentAttempts))
-        return false
+        return { success: false, error: 'Invalid email or password' }
       }
 
       // 4. Clear failed attempts on successful login
@@ -342,7 +345,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .update({ last_used: new Date().toISOString() })
         .eq('user_id', userData.user_id)
 
-      // 7. Set user session
+      // 7. Check private preview access for owner/admin roles
+      if ((userData.role === 'owner' || userData.role === 'admin') && userData.private_preview === false) {
+        // Record failed attempt for rate limiting
+        recentAttempts.push(now)
+        localStorage.setItem('login_attempts', JSON.stringify(recentAttempts))
+        return { success: false, error: 'Your account is pending approval. Please wait for access to be granted.' }
+      }
+
+      // 8. Set user session
       const userProfile: User = {
         user_id: userData.user_id,
         username: userData.username,
@@ -351,7 +362,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         icon: userData.icon,
         business_id: userData.business_id ?? null,
         email: userData.email,
-        full_name: userData.full_name
+        full_name: userData.full_name,
+        private_preview: userData.private_preview
       }
 
       setUser(userProfile)
@@ -359,9 +371,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       localStorage.setItem('auth_token', token)
       localStorage.setItem('lastLogin', new Date().toLocaleString())
 
-      return true
+      return { success: true }
     } catch (error) {
-      return false
+      return { success: false, error: 'Login failed. Please try again.' }
     } finally {
       setLoading(false)
     }
@@ -482,7 +494,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         last_used: new Date().toISOString(),
         pin: data.pin,
         email: data.email,
-        full_name: data.full_name
+        full_name: data.full_name,
+        private_preview: data.private_preview
       }
 
       // Generate new JWT token

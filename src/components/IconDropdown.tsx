@@ -35,7 +35,7 @@ const IconDropdown: React.FC<IconDropdownProps> = ({ options, value, onChange, p
   };
 
   return (
-    <div ref={dropdownRef} style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
+    <div ref={dropdownRef} style={{ position: 'relative', width: '100%', maxWidth: '400px', overflow: 'visible' }}>
       {/* Selected Display */}
       <button
         type="button"
@@ -107,17 +107,18 @@ const IconDropdown: React.FC<IconDropdownProps> = ({ options, value, onChange, p
       {isOpen && (
         <div style={{
           position: 'absolute',
-          top: 'calc(100% + 0.5rem)',
+          top: 'calc(100% + 0.25rem)',
           left: 0,
           right: 0,
           background: '#ffffff',
           border: '2px solid #e5e7eb',
           borderRadius: '8px',
           boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
-          zIndex: 1000,
-          maxHeight: '240px',
+          zIndex: 50,
+          maxHeight: '200px',
           overflowY: 'auto',
-          padding: '0.5rem'
+          padding: '0.5rem',
+          contain: 'layout style'
         }}>
           {/* Options */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>

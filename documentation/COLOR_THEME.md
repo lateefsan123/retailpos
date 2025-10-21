@@ -9,7 +9,7 @@ The TillPoint POS system uses a modern, clean, and professional color palette wi
 - **Main Background**: `#f8f9fa` (Light gray with African-themed background image)
 - **Card Backgrounds**: `#ffffff` (Pure white)
 - **Primary Text**: `#1a1a1a` (Dark charcoal)
-- **Secondary Text**: `#6b7280` (Medium gray)
+- **Secondary Text**: `#4b5563` (Improved contrast gray)
 - **Light Text**: `#f1f0e4` (Cream/beige)
 
 ### Interactive Elements
@@ -32,7 +32,7 @@ The TillPoint POS system uses a modern, clean, and professional color palette wi
 ## Dashboard-Specific Colors
 
 ### Card Styling
-- **Card Borders**: `#d1d5db` (Light gray, 2px solid)
+- **Card Borders**: `#9ca3af` (Improved contrast gray, 2px solid)
 - **Card Shadows**: `rgba(62, 63, 41, 0.1)` (Warm, earthy shadow)
 - **Card Backgrounds**: `#ffffff` (White)
 
@@ -111,12 +111,14 @@ The TillPoint POS system uses a modern, clean, and professional color palette wi
 - **Playful Font Classes**: `.font-playful`, `.font-playful-bold`, `.font-playful-light`
 
 ## Border & Shadow System
-- **Standard Borders**: `#d1d5db`, `#e5e7eb` (Light grays)
+- **Standard Borders**: `#9ca3af`, `#d1d5db` (Improved contrast grays)
 - **Card Shadows**: `0 4px 12px rgba(62, 63, 41, 0.1)` (Warm, earthy)
 - **Modal Shadows**: `0 20px 40px rgba(0, 0, 0, 0.3)` (Strong shadow)
 
 ## Accessibility Considerations
-- High contrast ratios between text and backgrounds
+- High contrast ratios between text and backgrounds (WCAG AA compliant)
+- Secondary text meets 4.5:1 contrast ratio minimum
+- Border visibility improved for better UI element distinction
 - Color-blind friendly palette with multiple indicators (not just color)
 - Clear visual hierarchy with consistent spacing and typography
 - Hover states and focus indicators for all interactive elements
@@ -126,7 +128,7 @@ The TillPoint POS system uses a modern, clean, and professional color palette wi
 2. **Secondary Actions**: Use sage green (`#7d8d86`) or beige (`#bca88d`) buttons
 3. **Status Indicators**: Use semantic colors (green for success, red for danger, etc.)
 4. **Cards**: Always use white backgrounds with light gray borders and warm shadows
-5. **Text Hierarchy**: Use dark charcoal for primary text, medium gray for secondary
+5. **Text Hierarchy**: Use dark charcoal for primary text, improved contrast gray for secondary
 6. **Interactive Elements**: Provide clear hover and focus states
 
 ## Color Variables (CSS Custom Properties)
@@ -135,7 +137,7 @@ The TillPoint POS system uses a modern, clean, and professional color palette wi
   --primary-bg: #f8f9fa;
   --card-bg: #ffffff;
   --primary-text: #1a1a1a;
-  --secondary-text: #6b7280;
+  --secondary-text: #4b5563;
   --light-text: #f1f0e4;
   --primary-button: #1a1a1a;
   --secondary-button: #7d8d86;
@@ -144,7 +146,7 @@ The TillPoint POS system uses a modern, clean, and professional color palette wi
   --warning: #fbbf24;
   --danger: #dc2626;
   --info: #3b82f6;
-  --border-light: #d1d5db;
+  --border-light: #9ca3af;
   --shadow-warm: rgba(62, 63, 41, 0.1);
 }
 ```

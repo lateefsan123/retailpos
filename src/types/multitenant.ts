@@ -32,6 +32,7 @@ export interface User {
   auth_user_id?: string // UUID from Supabase auth
   pin?: string // User PIN for quick authentication
   pin_hash?: string // Hashed PIN for secure authentication
+  private_preview?: boolean // Private preview access gate
 }
 
 // =====================================================

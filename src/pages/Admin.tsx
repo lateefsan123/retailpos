@@ -1025,11 +1025,12 @@ const Admin = () => {
         background: 'var(--bg-container)',
         borderRadius: '12px',
         boxShadow: 'var(--shadow-card)',
+        border: 'var(--border-primary)',
         overflow: 'hidden'
       }}>
         <div style={{
           padding: '20px 24px',
-          borderBottom: '2px solid #d1d5db',
+          borderBottom: 'var(--border-primary)',
           background: 'var(--bg-nested)'
         }}>
           <h3 style={{ 
@@ -1069,7 +1070,7 @@ const Admin = () => {
                     textAlign: 'left', 
                     fontWeight: '600',
                     color: 'var(--text-primary)',
-                    borderBottom: '2px solid #d1d5db',
+                    borderBottom: 'var(--border-primary)',
                     fontSize: '16px',
                     width: '25%'
                   }}>
@@ -1080,7 +1081,7 @@ const Admin = () => {
                     textAlign: 'center', 
                     fontWeight: '600',
                     color: 'var(--text-primary)',
-                    borderBottom: '2px solid #d1d5db',
+                    borderBottom: 'var(--border-primary)',
                     fontSize: '16px',
                     width: '15%'
                   }}>
@@ -1091,7 +1092,7 @@ const Admin = () => {
                     textAlign: 'left', 
                     fontWeight: '600',
                     color: 'var(--text-primary)',
-                    borderBottom: '2px solid #d1d5db',
+                    borderBottom: 'var(--border-primary)',
                     fontSize: '16px',
                     width: '20%'
                   }}>
@@ -1102,7 +1103,7 @@ const Admin = () => {
                     textAlign: 'left', 
                     fontWeight: '600',
                     color: 'var(--text-primary)',
-                    borderBottom: '2px solid #d1d5db',
+                    borderBottom: 'var(--border-primary)',
                     fontSize: '16px',
                     width: '20%'
                   }}>
@@ -1113,7 +1114,7 @@ const Admin = () => {
                      textAlign: 'left', 
                      fontWeight: '600',
                     color: 'var(--text-primary)',
-                     borderBottom: '2px solid #d1d5db',
+                     borderBottom: 'var(--border-primary)',
                     fontSize: '16px',
                     width: '20%'
                    }}>
@@ -1172,7 +1173,7 @@ const Admin = () => {
                          justifyContent: 'center',
                          margin: '0 auto',
                          overflow: 'hidden',
-                         border: '2px solid #e5e7eb'
+                         border: 'var(--border-subtle)'
                        }}>
                          {user.icon ? (
                            <img 
@@ -1258,12 +1259,13 @@ const Admin = () => {
         background: 'var(--bg-container)',
         borderRadius: '12px',
         boxShadow: 'var(--shadow-card)',
+        border: 'var(--border-primary)',
         overflow: 'hidden',
         marginTop: '32px'
       }}>
         <div style={{
           padding: '20px 24px',
-          borderBottom: '2px solid #d1d5db',
+          borderBottom: 'var(--border-primary)',
           background: 'var(--bg-nested)'
         }}>
           <h3 style={{ 
@@ -1297,7 +1299,7 @@ const Admin = () => {
                     textAlign: 'left', 
                     fontWeight: '600',
                     color: 'var(--text-primary)',
-                    borderBottom: '2px solid #d1d5db',
+                    borderBottom: 'var(--border-primary)',
                     fontSize: '16px',
                     width: '25%'
                   }}>
@@ -1308,7 +1310,7 @@ const Admin = () => {
                     textAlign: 'center', 
                     fontWeight: '600',
                     color: 'var(--text-primary)',
-                    borderBottom: '2px solid #d1d5db',
+                    borderBottom: 'var(--border-primary)',
                     fontSize: '16px',
                     width: '15%'
                   }}>
@@ -1319,7 +1321,7 @@ const Admin = () => {
                     textAlign: 'left', 
                     fontWeight: '600',
                     color: 'var(--text-primary)',
-                    borderBottom: '2px solid #d1d5db',
+                    borderBottom: 'var(--border-primary)',
                     fontSize: '16px',
                     width: '25%'
                   }}>
@@ -1330,7 +1332,7 @@ const Admin = () => {
                     textAlign: 'left', 
                     fontWeight: '600',
                     color: 'var(--text-primary)',
-                    borderBottom: '2px solid #d1d5db',
+                    borderBottom: 'var(--border-primary)',
                     fontSize: '16px',
                     width: '15%'
                   }}>
@@ -1341,7 +1343,7 @@ const Admin = () => {
                     textAlign: 'left', 
                     fontWeight: '600',
                     color: 'var(--text-primary)',
-                    borderBottom: '2px solid #d1d5db',
+                    borderBottom: 'var(--border-primary)',
                     fontSize: '16px',
                     width: '20%'
                   }}>
@@ -1399,7 +1401,7 @@ const Admin = () => {
                         justifyContent: 'center',
                         margin: '0 auto',
                         overflow: 'hidden',
-                        border: '2px solid #e5e7eb'
+                        border: 'var(--border-subtle)'
                       }}>
                         {branch.shop_image ? (
                           <div 
@@ -1530,7 +1532,7 @@ const Admin = () => {
                    style={{
                      width: '100%',
                      padding: '12px 16px',
-                     border: '2px solid #d1d5db',
+                     border: 'var(--border-primary)',
                      borderRadius: '8px',
                      fontSize: '16px',
                      boxSizing: 'border-box'
@@ -1556,7 +1558,7 @@ const Admin = () => {
                   style={{
                     width: '100%',
                     padding: '12px 16px',
-                    border: '1px solid #d1d5db',
+                    border: 'var(--border-subtle)',
                     borderRadius: '8px',
                     fontSize: '16px',
                     boxSizing: 'border-box'
@@ -1587,7 +1589,7 @@ const Admin = () => {
                   style={{
                     width: '100%',
                     padding: '12px 16px',
-                    border: '1px solid #d1d5db',
+                    border: 'var(--border-subtle)',
                     borderRadius: '8px',
                     fontSize: '16px',
                     boxSizing: 'border-box'
@@ -1622,7 +1624,7 @@ const Admin = () => {
                   style={{
                     width: '100%',
                     padding: '12px 16px',
-                    border: '1px solid #d1d5db',
+                    border: 'var(--border-subtle)',
                     borderRadius: '8px',
                     fontSize: '16px',
                     boxSizing: 'border-box',
@@ -1651,7 +1653,7 @@ const Admin = () => {
                   style={{
                     width: '100%',
                     padding: '12px 16px',
-                    border: '1px solid #d1d5db',
+                    border: 'var(--border-subtle)',
                     borderRadius: '8px',
                     fontSize: '16px',
                     boxSizing: 'border-box',
@@ -1695,7 +1697,7 @@ const Admin = () => {
                     style={{
                       width: '100%',
                       padding: '12px 16px',
-                      border: '2px solid #e5e7eb',
+                      border: 'var(--border-subtle)',
                       borderRadius: '8px',
                       backgroundColor: '#ffffff',
                       fontSize: '14px',
@@ -1708,7 +1710,7 @@ const Admin = () => {
                       e.target.style.borderColor = '#7d8d86'
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = '#e5e7eb'
+                      e.target.style.borderColor = 'var(--border-color)'
                     }}
                   >
                     {Object.entries(ICON_PACKS).map(([key, pack]) => (
@@ -1724,7 +1726,7 @@ const Admin = () => {
                   gridTemplateColumns: 'repeat(3, 1fr)',
                   gap: '16px',
                   padding: '20px',
-                  border: '2px solid #e5e7eb',
+                  border: 'var(--border-subtle)',
                   borderRadius: '16px',
                   background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
                   boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.06)'
@@ -1932,7 +1934,7 @@ const Admin = () => {
                    style={{
                      width: '100%',
                      padding: '12px 16px',
-                     border: '2px solid #d1d5db',
+                     border: 'var(--border-primary)',
                      borderRadius: '8px',
                      fontSize: '16px',
                      boxSizing: 'border-box'
@@ -1957,7 +1959,7 @@ const Admin = () => {
                    style={{
                      width: '100%',
                      padding: '12px 16px',
-                     border: '2px solid #d1d5db',
+                     border: 'var(--border-primary)',
                      borderRadius: '8px',
                      fontSize: '16px',
                      boxSizing: 'border-box'
@@ -1988,7 +1990,7 @@ const Admin = () => {
                    style={{
                      width: '100%',
                      padding: '12px 16px',
-                     border: '2px solid #d1d5db',
+                     border: 'var(--border-primary)',
                      borderRadius: '8px',
                      fontSize: '16px',
                      boxSizing: 'border-box'
@@ -2023,7 +2025,7 @@ const Admin = () => {
                    style={{
                      width: '100%',
                      padding: '12px 16px',
-                     border: '2px solid #d1d5db',
+                     border: 'var(--border-primary)',
                      borderRadius: '8px',
                      fontSize: '16px',
                      boxSizing: 'border-box',
@@ -2052,7 +2054,7 @@ const Admin = () => {
                    style={{
                      width: '100%',
                      padding: '12px 16px',
-                     border: '2px solid #d1d5db',
+                     border: 'var(--border-primary)',
                      borderRadius: '8px',
                      fontSize: '16px',
                      boxSizing: 'border-box',
@@ -2096,7 +2098,7 @@ const Admin = () => {
                      style={{
                        width: '100%',
                        padding: '12px 16px',
-                       border: '2px solid #e5e7eb',
+                       border: 'var(--border-subtle)',
                        borderRadius: '8px',
                        backgroundColor: '#ffffff',
                        fontSize: '14px',
@@ -2109,7 +2111,7 @@ const Admin = () => {
                        e.target.style.borderColor = '#7d8d86'
                      }}
                      onBlur={(e) => {
-                       e.target.style.borderColor = '#e5e7eb'
+                       e.target.style.borderColor = 'var(--border-color)'
                      }}
                    >
                    {Object.entries(ICON_PACKS).map(([key, pack]) => (
@@ -2125,7 +2127,7 @@ const Admin = () => {
                    gridTemplateColumns: 'repeat(3, 1fr)',
                    gap: '16px',
                    padding: '20px',
-                   border: '2px solid #e5e7eb',
+                   border: 'var(--border-subtle)',
                    borderRadius: '16px',
                    background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
                    boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.06)'
@@ -2333,7 +2335,7 @@ const Admin = () => {
                    style={{
                      width: '100%',
                      padding: '12px 16px',
-                     border: '2px solid #d1d5db',
+                     border: 'var(--border-primary)',
                      borderRadius: '8px',
                      fontSize: '16px',
                      boxSizing: 'border-box'
@@ -2359,7 +2361,7 @@ const Admin = () => {
                    style={{
                      width: '100%',
                      padding: '12px 16px',
-                     border: '2px solid #d1d5db',
+                     border: 'var(--border-primary)',
                      borderRadius: '8px',
                      fontSize: '16px',
                      boxSizing: 'border-box',
@@ -2385,7 +2387,7 @@ const Admin = () => {
                    style={{
                      width: '100%',
                      padding: '12px 16px',
-                     border: '2px solid #d1d5db',
+                     border: 'var(--border-primary)',
                      borderRadius: '8px',
                      fontSize: '16px',
                      boxSizing: 'border-box'
@@ -2409,7 +2411,7 @@ const Admin = () => {
                    style={{
                      width: '100%',
                      padding: '12px 16px',
-                     border: '2px solid #d1d5db',
+                     border: 'var(--border-primary)',
                      borderRadius: '8px',
                      fontSize: '16px',
                      boxSizing: 'border-box',
@@ -2446,7 +2448,7 @@ const Admin = () => {
                    gridTemplateColumns: 'repeat(2, 1fr)',
                    gap: '16px',
                    padding: '20px',
-                   border: '2px solid #e5e7eb',
+                   border: 'var(--border-subtle)',
                    borderRadius: '16px',
                    background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
                    boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.06)'
@@ -2665,7 +2667,7 @@ const Admin = () => {
                    style={{
                      width: '100%',
                      padding: '12px 16px',
-                     border: '2px solid #d1d5db',
+                     border: 'var(--border-primary)',
                      borderRadius: '8px',
                      fontSize: '16px',
                      boxSizing: 'border-box'
@@ -2691,7 +2693,7 @@ const Admin = () => {
                    style={{
                      width: '100%',
                      padding: '12px 16px',
-                     border: '2px solid #d1d5db',
+                     border: 'var(--border-primary)',
                      borderRadius: '8px',
                      fontSize: '16px',
                      boxSizing: 'border-box',
@@ -2717,7 +2719,7 @@ const Admin = () => {
                    style={{
                      width: '100%',
                      padding: '12px 16px',
-                     border: '2px solid #d1d5db',
+                     border: 'var(--border-primary)',
                      borderRadius: '8px',
                      fontSize: '16px',
                      boxSizing: 'border-box'
@@ -2741,7 +2743,7 @@ const Admin = () => {
                    style={{
                      width: '100%',
                      padding: '12px 16px',
-                     border: '2px solid #d1d5db',
+                     border: 'var(--border-primary)',
                      borderRadius: '8px',
                      fontSize: '16px',
                      boxSizing: 'border-box',
@@ -2778,7 +2780,7 @@ const Admin = () => {
                    gridTemplateColumns: 'repeat(2, 1fr)',
                    gap: '16px',
                    padding: '20px',
-                   border: '2px solid #e5e7eb',
+                   border: 'var(--border-subtle)',
                    borderRadius: '16px',
                    background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
                    boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.06)'
@@ -2968,13 +2970,13 @@ const Admin = () => {
           <div style={{
             background: 'var(--bg-container)',
             borderRadius: '12px',
+            border: 'var(--border-primary)',
             padding: '32px',
             width: '90%',
             maxWidth: '500px',
             maxHeight: '90vh',
             overflowY: 'auto',
-            boxShadow: 'var(--shadow-elevated)',
-            border: 'var(--border-primary)'
+            boxShadow: 'var(--shadow-elevated)'
           }}>
             <div style={{
               display: 'flex',
@@ -3017,7 +3019,7 @@ const Admin = () => {
             {/* Tab Navigation */}
             <div style={{
               display: 'flex',
-              borderBottom: '2px solid #e5e7eb',
+              borderBottom: 'var(--border-subtle)',
               marginBottom: '24px'
             }}>
               <button
@@ -3069,7 +3071,7 @@ const Admin = () => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     overflow: 'hidden',
-                    border: '3px solid #e5e7eb'
+                    border: 'var(--border-accent)'
                   }}>
                     {selectedUser.icon ? (
                       <img 
@@ -3420,13 +3422,13 @@ const Admin = () => {
           <div style={{
             background: 'var(--bg-container)',
             borderRadius: '12px',
+            border: 'var(--border-primary)',
             padding: '32px',
             width: '90%',
             maxWidth: '600px',
             maxHeight: '90vh',
             overflowY: 'auto',
-            boxShadow: 'var(--shadow-elevated)',
-            border: 'var(--border-primary)'
+            boxShadow: 'var(--shadow-elevated)'
           }}>
             <div style={{
               display: 'flex',
@@ -3701,7 +3703,7 @@ const Admin = () => {
                   transition: 'all 0.2s ease'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#e5e7eb'
+                  e.currentTarget.style.background = 'var(--border-color)'
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = '#f3f4f6'
@@ -3731,13 +3733,13 @@ const Admin = () => {
           <div style={{
             background: 'var(--bg-container)',
             borderRadius: '12px',
+            border: 'var(--border-primary)',
             padding: '32px',
             width: '90%',
             maxWidth: '800px',
             maxHeight: '90vh',
             overflowY: 'auto',
-            boxShadow: 'var(--shadow-elevated)',
-            border: 'var(--border-primary)'
+            boxShadow: 'var(--shadow-elevated)'
           }}>
             {/* Modal Header */}
             <div style={{
@@ -3792,7 +3794,7 @@ const Admin = () => {
             {/* Tab Navigation */}
             <div style={{
               display: 'flex',
-              borderBottom: '2px solid #e5e7eb',
+              borderBottom: 'var(--border-subtle)',
               marginBottom: '24px',
               overflowX: 'auto'
             }}>
@@ -3846,7 +3848,7 @@ const Admin = () => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   overflow: 'hidden',
-                  border: '3px solid #e5e7eb'
+                  border: 'var(--border-accent)'
                 }}>
                   {selectedBranch.shop_image ? (
                     <div 
@@ -4088,7 +4090,7 @@ const Admin = () => {
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 overflow: 'hidden',
-                                border: '2px solid #e5e7eb',
+                                border: 'var(--border-subtle)',
                                 flexShrink: 0
                               }}>
                                 {product.image_url ? (
@@ -4239,7 +4241,7 @@ const Admin = () => {
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 overflow: 'hidden',
-                                border: '2px solid #e5e7eb'
+                                border: 'var(--border-subtle)'
                               }}>
                                 {product.image_url ? (
                                   <img 
