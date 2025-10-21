@@ -99,12 +99,12 @@ const UserMenu: React.FC<UserMenuProps> = ({ variant = 'floating' }) => {
         gap: '12px',
         padding: '12px 16px',
         borderRadius: '14px',
-        background: 'rgba(255, 255, 255, 0.06)',
-        border: '1px solid rgba(255, 255, 255, 0.12)',
-        color: '#f8fafc',
+        background: theme === 'light' ? 'var(--secondary-bg)' : 'rgba(255, 255, 255, 0.06)',
+        border: theme === 'light' ? 'var(--border-subtle)' : '1px solid rgba(255, 255, 255, 0.12)',
+        color: theme === 'light' ? 'var(--text-primary)' : '#f8fafc',
         cursor: 'pointer',
         transition: 'all 0.2s ease',
-        backdropFilter: 'blur(6px)'
+        backdropFilter: theme === 'light' ? 'none' : 'blur(6px)'
       }
     : {
         display: 'flex',
@@ -193,8 +193,8 @@ const UserMenu: React.FC<UserMenuProps> = ({ variant = 'floating' }) => {
   const handleButtonEnter = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (isSidebar) {
       Object.assign(event.currentTarget.style, {
-        borderColor: 'rgba(255, 255, 255, 0.22)',
-        background: 'rgba(255, 255, 255, 0.12)'
+        borderColor: theme === 'light' ? 'var(--border-color)' : 'rgba(255, 255, 255, 0.22)',
+        background: theme === 'light' ? 'var(--hover-bg)' : 'rgba(255, 255, 255, 0.12)'
       })
     } else {
       Object.assign(event.currentTarget.style, {
@@ -208,8 +208,8 @@ const UserMenu: React.FC<UserMenuProps> = ({ variant = 'floating' }) => {
   const handleButtonLeave = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (isSidebar) {
       Object.assign(event.currentTarget.style, {
-        borderColor: 'rgba(255, 255, 255, 0.12)',
-        background: 'rgba(255, 255, 255, 0.06)'
+        borderColor: theme === 'light' ? 'var(--border-subtle)' : 'rgba(255, 255, 255, 0.12)',
+        background: theme === 'light' ? 'var(--secondary-bg)' : 'rgba(255, 255, 255, 0.06)'
       })
     } else {
       Object.assign(event.currentTarget.style, {
@@ -234,7 +234,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ variant = 'floating' }) => {
             height: isSidebar ? 36 : 32,
             borderRadius: isSidebar ? '12px' : '50%',
             background: isSidebar
-              ? 'linear-gradient(135deg, rgba(255,255,255,0.18), rgba(148,163,184,0.28))'
+              ? (theme === 'light' ? 'var(--secondary-bg)' : 'linear-gradient(135deg, rgba(255,255,255,0.18), rgba(148,163,184,0.28))')
               : 'linear-gradient(135deg, #1a1a1a, #374151)',
             display: 'flex',
             alignItems: 'center',
@@ -257,13 +257,13 @@ const UserMenu: React.FC<UserMenuProps> = ({ variant = 'floating' }) => {
               }}
             />
           ) : (
-            <span style={{ fontSize: '14px', color: '#f8fafc', fontWeight: 600 }}>
+            <span style={{ fontSize: '14px', color: theme === 'light' ? 'var(--text-primary)' : '#f8fafc', fontWeight: 600 }}>
               {(user?.username || '?').charAt(0).toUpperCase()}
             </span>
           )}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', color: isSidebar ? '#f8fafc' : '#111827' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', color: isSidebar ? (theme === 'light' ? 'var(--text-primary)' : '#f8fafc') : '#111827' }}>
           <span style={{ fontSize: '14px', fontWeight: 500, margin: 0, textTransform: 'capitalize' }}>
             {user?.username || 'loading...'}
           </span>
@@ -272,7 +272,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ variant = 'floating' }) => {
               style={{
                 fontSize: '12px',
                 fontWeight: 600,
-                color: isSidebar ? 'rgba(226, 232, 240, 0.7)' : getRoleColor(user?.role || userRole),
+                color: isSidebar ? (theme === 'light' ? 'var(--text-secondary)' : 'rgba(226, 232, 240, 0.7)') : getRoleColor(user?.role || userRole),
                 textTransform: 'capitalize',
                 letterSpacing: '0.01em'
               }}
@@ -284,7 +284,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ variant = 'floating' }) => {
 
         <i
           className={`fa-solid fa-chevron-${isOpen ? 'up' : 'down'}`}
-          style={{ fontSize: '12px', color: isSidebar ? '#d1d5db' : '#6b7280', marginLeft: 'auto' }}
+          style={{ fontSize: '12px', color: isSidebar ? (theme === 'light' ? '#374151' : '#d1d5db') : '#6b7280', marginLeft: 'auto' }}
         ></i>
       </button>
 

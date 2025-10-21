@@ -730,7 +730,7 @@ const Dashboard = () => {
 
   const handleTransactionClick = (transactionId: string) => {
     closeModal()
-    navigate(`/transaction/${transactionId}`)
+    navigate(`/transaction/${transactionId}`, { state: { from: location.pathname } })
   }
 
   const handleDateSelect = (date: Date) => {
@@ -1372,7 +1372,7 @@ const Dashboard = () => {
                 recentTransactions.map((transaction) => (
                   <div 
                     key={transaction.sale_id}
-                    onClick={() => navigate(`/transaction/TXN-${transaction.sale_id.toString().padStart(6, '0')}`)}
+                    onClick={() => navigate(`/transaction/TXN-${transaction.sale_id.toString().padStart(6, '0')}`, { state: { from: location.pathname } })}
                     style={{
                       display: 'flex',
                       alignItems: 'center',

@@ -66,3 +66,4 @@ DROP COLUMN private_preview;
 2. Try to log in - should see pending approval message
 3. Set `private_preview = true` in Supabase
 4. Try to log in again - should work successfully
+

@@ -2,6 +2,8 @@ import { type CSSProperties, type MouseEvent as ReactMouseEvent, useEffect, useS
 import { Link, useLocation } from 'react-router-dom'
 import { useNav } from '../contexts/NavContext'
 import { useRole } from '../contexts/RoleContext'
+import { useTheme } from '../contexts/ThemeContext'
+import styles from './Navigation.module.css'
 import UserMenu from './UserMenu'
 import {
   Home,
@@ -59,6 +61,7 @@ const Navigation = ({ allowedPaths }: NavigationProps) => {
   const location = useLocation()
   const { isCollapsed, setIsCollapsed } = useNav()
   const { canAccessRoute } = useRole()
+  const { theme } = useTheme()
   const [openSections, setOpenSections] = useState<Record<NavSectionKey, boolean>>({
     core: true,
     management: true
@@ -103,10 +106,18 @@ const Navigation = ({ allowedPaths }: NavigationProps) => {
       padding: '12px 16px',
       borderRadius: '14px',
       textDecoration: 'none',
-      color: isActive ? '#f8fafc' : '#d1d5db',
-      background: isActive ? 'rgba(0, 0, 0, 0.85)' : 'transparent',
-      border: `1px solid ${isActive ? 'rgba(255, 255, 255, 0.1)' : 'transparent'}`,
-      boxShadow: isActive ? '0 12px 30px rgba(0, 0, 0, 0.35)' : 'none',
+      color: theme === 'light' 
+        ? (isActive ? '#1a1a1a' : '#374151')
+        : (isActive ? '#f8fafc' : '#d1d5db'),
+      background: theme === 'light'
+        ? (isActive ? '#f3f4f6' : 'transparent')
+        : (isActive ? 'rgba(0, 0, 0, 0.85)' : 'transparent'),
+      border: `1px solid ${theme === 'light'
+        ? (isActive ? '#d1d5db' : 'transparent')
+        : (isActive ? 'rgba(255, 255, 255, 0.1)' : 'transparent')}`,
+      boxShadow: theme === 'light'
+        ? (isActive ? '0 2px 8px rgba(0, 0, 0, 0.1)' : 'none')
+        : (isActive ? '0 12px 30px rgba(0, 0, 0, 0.35)' : 'none'),
       transition: 'all 0.25s ease',
       width: '100%',
       maxWidth: '100%',
@@ -156,17 +167,22 @@ const Navigation = ({ allowedPaths }: NavigationProps) => {
             key={item.path}
             to={item.path}
         style={baseStyle}
+        className={`${theme === 'light' ? (isActive ? styles.lightModeNavItemActive : styles.lightModeNavItem) : ''}`}
         aria-current={isActive ? 'page' : undefined}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
         <span data-role="nav-icon" style={iconWrapperStyle}>
-          <Icon size={20} color={isActive ? '#ffffff' : '#d1d5db'} aria-hidden="true" />
+          <Icon 
+            size={theme === 'light' ? 22 : 20} 
+            color={theme === 'light' ? '#000000' : (isActive ? '#ffffff' : '#d1d5db')} 
+            aria-hidden="true" 
+          />
         </span>
         <span
             style={{
-            fontSize: '13px',
-            fontWeight: 500,
+            fontSize: theme === 'light' ? '15px' : '13px',
+            fontWeight: theme === 'light' ? 600 : 500,
             letterSpacing: '0.02em'
           }}
         >
@@ -191,22 +207,22 @@ const Navigation = ({ allowedPaths }: NavigationProps) => {
       border: 'none',
       padding: '0 0 6px',
       margin: 0,
-      color: 'rgba(255, 255, 255, 0.45)',
-      fontSize: '11px',
-      fontWeight: 600,
+      color: theme === 'light' ? '#6b7280' : 'rgba(255, 255, 255, 0.45)',
+      fontSize: theme === 'light' ? '12px' : '11px',
+      fontWeight: theme === 'light' ? 700 : 600,
       letterSpacing: '0.28em',
       textTransform: 'uppercase',
-      borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+      borderBottom: theme === 'light' ? '1px solid #d1d5db' : '1px solid rgba(255, 255, 255, 0.08)',
       cursor: 'pointer',
       transition: 'color 0.25s ease'
     }
 
     const handleMouseEnter = (event: ReactMouseEvent<HTMLButtonElement>) => {
-      event.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)'
+      event.currentTarget.style.color = theme === 'light' ? '#374151' : 'rgba(255, 255, 255, 0.7)'
     }
 
     const handleMouseLeave = (event: ReactMouseEvent<HTMLButtonElement>) => {
-      event.currentTarget.style.color = 'rgba(255, 255, 255, 0.45)'
+      event.currentTarget.style.color = theme === 'light' ? '#6b7280' : 'rgba(255, 255, 255, 0.45)'
     }
 
     return (
@@ -214,6 +230,7 @@ const Navigation = ({ allowedPaths }: NavigationProps) => {
         <button
           type="button"
           style={sectionButtonStyle}
+          className={`${theme === 'light' ? styles.lightModeSectionHeader : ''}`}
           onClick={() => handleToggleSection(sectionKey)}
           aria-expanded={isOpen}
           aria-controls={`nav-section-${sectionKey}`}
@@ -224,10 +241,11 @@ const Navigation = ({ allowedPaths }: NavigationProps) => {
           <ChevronDown
             size={16}
             aria-hidden="true"
+            className={`${theme === 'light' ? styles.lightModeChevron : ''}`}
             style={{
               transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
               transition: 'transform 0.25s ease',
-              color: 'rgba(255, 255, 255, 0.55)'
+              color: theme === 'light' ? '#000000' : 'rgba(255, 255, 255, 0.55)'
             }}
           />
         </button>
@@ -321,11 +339,11 @@ const Navigation = ({ allowedPaths }: NavigationProps) => {
   }
 
   const brandSecondaryTextStyle: CSSProperties = {
-    fontSize: '23px',
-    fontWeight: 300,
+    fontSize: theme === 'light' ? '26px' : '23px',
+    fontWeight: theme === 'light' ? 400 : 300,
     letterSpacing: '0.06em',
     margin: 0,
-    color: '#ffffff',
+    color: theme === 'light' ? '#1a1a1a' : '#ffffff',
     whiteSpace: 'nowrap',
     textAlign: 'center'
   }
@@ -370,12 +388,12 @@ const Navigation = ({ allowedPaths }: NavigationProps) => {
   }
 
   return (
-    <aside style={asideStyle}>
+    <aside style={asideStyle} className={`${theme === 'light' ? styles.lightModeAside : ''}`}>
       <div style={brandContainerStyle}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
           <i className="fa-kit fa-test fa-4x" style={{ color: '#fca5a5' }}></i>
         </div>
-        <h1 style={brandSecondaryTextStyle}>
+        <h1 style={brandSecondaryTextStyle} className={`${theme === 'light' ? styles.lightModeBrandSecondary : ''}`}>
           Tillpoint POS
         </h1>
       </div>
@@ -399,35 +417,41 @@ const Navigation = ({ allowedPaths }: NavigationProps) => {
             border: '1px solid rgba(255, 255, 255, 0.05)'
           }}
         />
-        <div
-          style={{
-            position: 'absolute',
-            width: '220px',
-            height: '220px',
-            top: '-120px',
-            left: '-120px',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle at center, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 70%)'
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            width: '260px',
-            height: '260px',
-            bottom: '-80px',
-            right: '-140px',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle at center, rgba(255, 150, 0, 0.12) 0%, rgba(255, 150, 0, 0) 70%)'
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.25) 45%, rgba(0, 0, 0, 0.6) 100%)'
-          }}
-        />
+        {theme !== 'light' && (
+          <div
+            style={{
+              position: 'absolute',
+              width: '220px',
+              height: '220px',
+              top: '-120px',
+              left: '-120px',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle at center, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 70%)'
+            }}
+          />
+        )}
+        {theme !== 'light' && (
+          <div
+            style={{
+              position: 'absolute',
+              width: '260px',
+              height: '260px',
+              bottom: '-80px',
+              right: '-140px',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle at center, rgba(255, 150, 0, 0.12) 0%, rgba(255, 150, 0, 0) 70%)'
+            }}
+          />
+        )}
+        {theme !== 'light' && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.25) 45%, rgba(0, 0, 0, 0.6) 100%)'
+            }}
+          />
+        )}
       </div>
     </aside>
   )

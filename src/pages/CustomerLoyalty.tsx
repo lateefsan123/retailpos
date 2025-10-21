@@ -393,7 +393,7 @@ const CustomerLoyalty = () => {
   }
 
   const handleTransactionClick = (saleId: number) => {
-    navigate(`/transaction/${saleId}`)
+    navigate(`/transaction/${saleId}`, { state: { from: location.pathname } })
   }
 
   const fetchCustomerTransactions = async (customerId: number) => {

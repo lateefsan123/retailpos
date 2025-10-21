@@ -789,7 +789,7 @@ const DashboardMobile = () => {
                     className={styles.detailActionButton}
                     onClick={() => {
                       setShowTransactionModal(false)
-                      navigate(`/transaction/${selectedTransaction.sale_id}`)
+                      navigate(`/transaction/${selectedTransaction.sale_id}`, { state: { from: location.pathname } })
                     }}
                   >
                     Process Refund

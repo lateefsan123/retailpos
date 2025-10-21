@@ -2001,7 +2001,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
       // Navigate back to transaction detail if adding to existing transaction
       if (isAddingToTransaction && existingTransactionId) {
         setTimeout(() => {
-          navigate(`/transaction/${existingTransactionId}`)
+          navigate(`/transaction/${existingTransactionId}`, { state: { from: location.pathname } })
         }, 2000)
       }
     } catch (error) {

@@ -868,7 +868,7 @@ const TransactionsMobile = () => {
                     className={styles.detailActionButton}
                     onClick={() => {
                       closeTransactionDetail()
-                      navigate(`/transaction/${selectedTransaction.sale_id}`)
+                      navigate(`/transaction/${selectedTransaction.sale_id}`, { state: { from: location.pathname } })
                     }}
                   >
                     Process Refund

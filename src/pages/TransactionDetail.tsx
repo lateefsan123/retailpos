@@ -313,7 +313,14 @@ const TransactionDetail = () => {
   }
 
   const handleBack = () => {
-    navigate('/dashboard')
+    // Check if we have a referrer page in location state
+    const fromPage = location.state?.from
+    if (fromPage) {
+      navigate(fromPage)
+    } else {
+      // Default to dashboard if no referrer is provided
+      navigate('/dashboard')
+    }
   }
 
   const handleEdit = () => {

@@ -197,7 +197,7 @@ const Transactions: React.FC = () => {
 
   // Event handlers
   const handleTransactionClick = (saleId: number) => {
-    navigate(`/transaction/${saleId}`)
+    navigate(`/transaction/${saleId}`, { state: { from: location.pathname } })
   }
 
   const handleDeleteTransaction = async (saleId: number) => {

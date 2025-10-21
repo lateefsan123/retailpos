@@ -2378,7 +2378,6 @@ const Products = () => {
                      fontSize: '12px', 
                      fontWeight: '600', 
                      textTransform: 'uppercase',
-                     borderBottom: '4px solid #6b7280',
                      borderRight: '2px solid #6b7280',
                      width: '50px'
                    }}>
@@ -2400,7 +2399,6 @@ const Products = () => {
                    fontSize: '12px', 
                    fontWeight: '600', 
                    textTransform: 'uppercase',
-                   borderBottom: '4px solid #6b7280',
                    borderRight: '2px solid #6b7280'
                  }}>
                    Product
@@ -2412,7 +2410,6 @@ const Products = () => {
                    fontSize: '12px', 
                    fontWeight: '600', 
                    textTransform: 'uppercase',
-                   borderBottom: '4px solid #6b7280',
                    borderRight: '2px solid #6b7280'
                  }}>
                    Category
@@ -2424,7 +2421,6 @@ const Products = () => {
                    fontSize: '12px', 
                    fontWeight: '600', 
                    textTransform: 'uppercase',
-                   borderBottom: '4px solid #6b7280',
                    borderRight: '2px solid #6b7280'
                  }}>
                    Price
@@ -2436,7 +2432,6 @@ const Products = () => {
                    fontSize: '12px', 
                    fontWeight: '600', 
                    textTransform: 'uppercase',
-                   borderBottom: '4px solid #6b7280',
                    borderRight: '2px solid #6b7280'
                  }}>
                    Stock
@@ -2448,7 +2443,6 @@ const Products = () => {
                    fontSize: '12px', 
                    fontWeight: '600', 
                    textTransform: 'uppercase',
-                   borderBottom: '4px solid #6b7280',
                    borderRight: '2px solid #6b7280'
                  }}>
                    Status
@@ -2459,8 +2453,7 @@ const Products = () => {
                    color: 'var(--text-primary) !important', 
                    fontSize: '12px', 
                    fontWeight: '600', 
-                   textTransform: 'uppercase',
-                   borderBottom: '4px solid #6b7280'
+                   textTransform: 'uppercase'
                  }}>
                    Actions
                  </th>

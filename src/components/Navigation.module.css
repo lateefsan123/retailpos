@@ -1,0 +1,72 @@
+/* Light mode navigation overrides */
+.lightModeAside {
+  background: var(--bg-container) !important;
+  color: var(--text-primary) !important;
+  border-right: var(--border-subtle) !important;
+}
+
+/* Remove gradient background in light mode */
+.lightModeAside > div[style*="radial-gradient"],
+.lightModeAside div[style*="radial-gradient"],
+.lightModeAside *[style*="radial-gradient"] {
+  display: none !important;
+}
+
+.lightModeNavItem {
+  color: var(--text-secondary) !important;
+}
+
+.lightModeNavItem svg {
+  color: #000000 !important;
+}
+
+.lightModeNavItemActive {
+  color: var(--text-primary) !important;
+  background: var(--secondary-bg) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: var(--shadow-elevated) !important;
+}
+
+.lightModeNavItemActive svg {
+  color: #000000 !important;
+}
+
+.lightModeNavItem:hover:not(.lightModeNavItemActive) {
+  background: var(--hover-bg) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.lightModeNavItem:hover:not(.lightModeNavItemActive) svg {
+  color: #000000 !important;
+}
+
+.lightModeSectionHeader {
+  color: var(--text-muted) !important;
+  border-bottom-color: var(--border-subtle) !important;
+}
+
+.lightModeSectionHeader:hover {
+  color: var(--text-secondary) !important;
+}
+
+.lightModeChevron {
+  color: #000000 !important;
+}
+
+.lightModeBrandPrimary {
+  color: var(--text-muted) !important;
+}
+
+.lightModeBrandSecondary {
+  color: var(--text-primary) !important;
+}
+
+.lightModeBottomFiller {
+  border-color: var(--border-color) !important;
+}
+
+.lightModeBottomFiller:hover {
+  border-color: var(--border-color) !important;
+  background: var(--hover-bg) !important;
+}

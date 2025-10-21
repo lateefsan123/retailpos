@@ -111,14 +111,25 @@ The TillPoint POS system uses a modern, clean, and professional color palette wi
 - **Playful Font Classes**: `.font-playful`, `.font-playful-bold`, `.font-playful-light`
 
 ## Border & Shadow System
+
+### Light Mode
 - **Standard Borders**: `#9ca3af`, `#d1d5db` (Improved contrast grays)
 - **Card Shadows**: `0 4px 12px rgba(62, 63, 41, 0.1)` (Warm, earthy)
 - **Modal Shadows**: `0 20px 40px rgba(0, 0, 0, 0.3)` (Strong shadow)
 
+### Dark Mode
+- **Standard Borders**: `#525252`, `#5a5a5a` (Brighter for visibility)
+- **Secondary Text**: `#d1d5db` (Light gray)
+- **Muted Text**: `#b0b7be` (Improved brightness)
+- **Disabled Text**: `#8a9199` (Enhanced visibility)
+- **Card Shadows**: `0 1px 3px rgba(0, 0, 0, 0.3)` (Subtle depth)
+
 ## Accessibility Considerations
 - High contrast ratios between text and backgrounds (WCAG AA compliant)
-- Secondary text meets 4.5:1 contrast ratio minimum
-- Border visibility improved for better UI element distinction
+- **Light Mode**: Secondary text meets 4.5:1 contrast ratio minimum
+- **Dark Mode**: Improved border visibility with brighter borders (#525252, #5a5a5a)
+- **Dark Mode**: Enhanced text contrast for muted and disabled text
+- Border visibility improved for better UI element distinction in both themes
 - Color-blind friendly palette with multiple indicators (not just color)
 - Clear visual hierarchy with consistent spacing and typography
 - Hover states and focus indicators for all interactive elements
