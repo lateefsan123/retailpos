@@ -29,7 +29,7 @@ interface Branch {
 }
 
 
-const SelectUser: React.FC = () => {
+const SwitchUser: React.FC = () => {
   const navigate = useNavigate();
   const { user, switchUser } = useAuth();
 
@@ -169,7 +169,7 @@ const SelectUser: React.FC = () => {
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedUser || !password || !selectedBranch) return;
+    if (!selectedUser || !password) return;
 
     setIsAuthenticating(true);
     setPasswordError('');
@@ -178,9 +178,7 @@ const SelectUser: React.FC = () => {
       const success = await switchUser(selectedUser.user_id, password, usePinAuth);
 
       if (success) {
-        // Store selected branch in localStorage
-        localStorage.setItem('selected_branch_id', selectedBranch.branch_id.toString());
-        localStorage.setItem('selected_branch_name', selectedBranch.branch_name);
+        // Navigate back to dashboard instead of storing branch info
         navigate('/dashboard');
       } else {
         // Authentication failed - show error without throwing
@@ -407,18 +405,10 @@ const SelectUser: React.FC = () => {
                   margin: 0,
                 }}
               >
-                {showBranchSelection ? 'Select Branch' : 'Select User'}
+                {showBranchSelection ? 'Select Branch' : 'Switch User'}
               </h2>
               <button
-                onClick={() => {
-                  if (showPasswordView) {
-                    handleBackToUsers();
-                  } else if (showBranchSelection) {
-                    navigate('/login');
-                  } else {
-                    navigate('/login');
-                  }
-                }}
+                onClick={() => navigate('/dashboard')}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -1259,7 +1249,7 @@ const SelectUser: React.FC = () => {
                       </svg>
                     </button>
                       <button
-                        onClick={() => navigate('/login')}
+                        onClick={() => navigate('/dashboard')}
                         style={{
                           width: '40px',
                           height: '40px',
@@ -1611,4 +1601,4 @@ const SelectUser: React.FC = () => {
   );
 };
 
-export default SelectUser;
+export default SwitchUser;

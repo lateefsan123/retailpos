@@ -5,12 +5,14 @@ interface OrderSidebarProps {
   order: Order
   orderDetailNumber?: number
   customerName: string
+  customerGender?: 'male' | 'female' | null
   user: any
   onUpdateQuantity: (itemId: string, newQuantity: number) => void
   onUpdateWeight: (itemId: string, newWeight: number) => void
   onRemoveFromOrder: (itemId: string) => void
   onShowWeightEditModal: (item: OrderItem) => void
   onSetCustomerName: (name: string) => void
+  onSetCustomerGender?: (gender: 'male' | 'female' | null) => void
   onShowSalesSummary: () => void
   onResetTransaction: () => void
   getCurrentDateTime: () => string
@@ -20,12 +22,14 @@ const OrderSidebar: React.FC<OrderSidebarProps> = ({
   order,
   orderDetailNumber,
   customerName,
+  customerGender,
   user,
   onUpdateQuantity,
   onUpdateWeight,
   onRemoveFromOrder,
   onShowWeightEditModal,
   onSetCustomerName,
+  onSetCustomerGender,
   onShowSalesSummary,
   onResetTransaction,
   getCurrentDateTime
@@ -178,6 +182,66 @@ const OrderSidebar: React.FC<OrderSidebarProps> = ({
             }}
           />
         </div>
+
+        {onSetCustomerGender && (
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ 
+              display: 'block', 
+              fontSize: '14px', 
+              fontWeight: '500', 
+              color: '#374151',
+              marginBottom: '8px'
+            }}>
+              Gender (Optional)
+            </label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => onSetCustomerGender('male')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 12px',
+                  border: customerGender === 'male' ? '2px solid #7d8d86' : '2px solid #e5e7eb',
+                  borderRadius: '8px',
+                  background: customerGender === 'male' ? '#f0f9ff' : '#ffffff',
+                  color: customerGender === 'male' ? '#7d8d86' : '#6b7280',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  transition: 'all 0.2s ease',
+                  flex: 1
+                }}
+              >
+                <i className="fa-solid fa-mars" style={{ fontSize: '14px' }}></i>
+                Male
+              </button>
+              <button
+                type="button"
+                onClick={() => onSetCustomerGender('female')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 12px',
+                  border: customerGender === 'female' ? '2px solid #7d8d86' : '2px solid #e5e7eb',
+                  borderRadius: '8px',
+                  background: customerGender === 'female' ? '#fdf2f8' : '#ffffff',
+                  color: customerGender === 'female' ? '#7d8d86' : '#6b7280',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  transition: 'all 0.2s ease',
+                  flex: 1
+                }}
+              >
+                <i className="fa-solid fa-venus" style={{ fontSize: '14px' }}></i>
+                Female
+              </button>
+            </div>
+          </div>
+        )}
 
         <div style={{ marginBottom: '16px' }}>
           <div style={{ 

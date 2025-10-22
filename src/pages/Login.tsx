@@ -20,6 +20,7 @@ const Login: React.FC = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showResetSuccess, setShowResetSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [capsLockOn, setCapsLockOn] = useState(false);
 
   useEffect(() => {
     if (location.state && typeof location.state === 'object') {
@@ -110,6 +111,24 @@ const Login: React.FC = () => {
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Check for Caps Lock
+    if (e.getModifierState && e.getModifierState('CapsLock')) {
+      setCapsLockOn(true);
+    } else {
+      setCapsLockOn(false);
+    }
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Check for Caps Lock on key up as well
+    if (e.getModifierState && e.getModifierState('CapsLock')) {
+      setCapsLockOn(true);
+    } else {
+      setCapsLockOn(false);
+    }
+  };
+
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateLoginForm()) {
@@ -126,7 +145,14 @@ const Login: React.FC = () => {
             navigate('/select-user');
           }
         } else {
-          setErrors({ general: result.error || 'Invalid email or password' });
+          // Provide more specific error messages
+          if (result.error && result.error.includes('Invalid email or password')) {
+            setErrors({ password: 'Incorrect password. Please check your password and try again.' });
+          } else if (result.error && result.error.includes('pending approval')) {
+            setErrors({ general: result.error });
+          } else {
+            setErrors({ general: result.error || 'Invalid email or password' });
+          }
         }
       } catch (error) {
         console.error('Login error:', error);
@@ -232,6 +258,8 @@ const Login: React.FC = () => {
                         name="password"
                         value={formData.password}
                         onChange={handleInputChange}
+                        onKeyPress={handleKeyPress}
+                        onKeyUp={handleKeyUp}
                         required
                         className={`${styles.input} ${errors.password ? styles.inputError : ''}`}
                         placeholder="Enter your password"
@@ -245,6 +273,23 @@ const Login: React.FC = () => {
                       </button>
                     </div>
                     {errors.password && <span className={styles.error}>{errors.password}</span>}
+                    {capsLockOn && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginTop: '8px',
+                        padding: '8px 12px',
+                        backgroundColor: '#fef3c7',
+                        border: '1px solid #f59e0b',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        color: '#92400e'
+                      }}>
+                        <i className="fas fa-exclamation-triangle" style={{ color: '#f59e0b' }}></i>
+                        Caps Lock is ON
+                      </div>
+                    )}
                   </div>
 
                   <div className={styles.formOptions}>

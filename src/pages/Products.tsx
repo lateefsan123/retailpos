@@ -1737,7 +1737,7 @@ const Products = () => {
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <i className="fa-solid fa-boxes-stacked" style={{ fontSize: '18px', color: '#f1f0e4' }}></i>
+              <i className="fa-solid fa-boxes-stacked" style={{ fontSize: '18px', color: 'var(--text-primary)' }}></i>
             </div>
             <div>
               <p style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-primary) !important', margin: '0 0 4px 0' }}>
@@ -1881,12 +1881,12 @@ const Products = () => {
       {/* Pending Products Section */}
       {pendingProducts.length > 0 && (
         <div style={{
-          background: 'rgba(255, 251, 235, 0.9)',
+          background: 'var(--bg-card)',
           borderRadius: '12px',
-          padding: '20px',
+          padding: pendingProducts.length === 1 ? '16px' : '20px',
           marginBottom: '24px',
-          boxShadow: '0 2px 8px rgba(245, 158, 11, 0.2)',
-          border: '2px solid #f59e0b',
+          boxShadow: 'var(--shadow-card)',
+          border: 'var(--border-subtle)',
           backdropFilter: 'blur(10px)'
         }}>
           <div style={{
@@ -1928,16 +1928,18 @@ const Products = () => {
             <>
               <p style={{
                 fontSize: '14px',
-                color: 'var(--text-secondary)',
-                marginBottom: '16px'
+                color: 'var(--text-primary)',
+                marginBottom: '16px',
+                opacity: 0.8
               }}>
                 These products were added from the Product Database and need confirmation. Set the price and stock levels to add them to your inventory.
               </p>
 
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                gap: '16px'
+                gridTemplateColumns: pendingProducts.length === 1 ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))',
+                gap: '16px',
+                maxWidth: pendingProducts.length === 1 ? '400px' : 'none'
               }}>
                 {pendingProducts.map((product) => (
                   <div
@@ -1947,16 +1949,14 @@ const Products = () => {
                       borderRadius: '8px',
                       padding: '16px',
                       boxShadow: 'var(--shadow-card)',
-                      border: '1px solid #fbbf24',
-                      transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                      border: 'var(--border-subtle)',
+                      transition: 'box-shadow 0.2s ease'
                     }}
                     onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'
-                      ;(e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-elevated)'
+                      (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-elevated)'
                     }}
                     onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'
-                      ;(e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-card)'
+                      (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-card)'
                     }}
                   >
                     <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
@@ -2027,9 +2027,9 @@ const Products = () => {
                         onClick={() => setConfirmingProduct(product)}
                         style={{
                           flex: 1,
-                          background: '#10b981',
-                          color: 'white',
-                          border: 'none',
+                          background: 'var(--bg-card)',
+                          color: 'var(--text-primary)',
+                          border: 'var(--border-primary)',
                           padding: '10px',
                           borderRadius: '6px',
                           cursor: 'pointer',
@@ -2039,10 +2039,16 @@ const Products = () => {
                           alignItems: 'center',
                           justifyContent: 'center',
                           gap: '6px',
-                          transition: 'background 0.2s ease'
+                          transition: 'all 0.2s ease'
                         }}
-                        onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = '#059669'}
-                        onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = '#10b981'}
+                        onMouseEnter={(e) => {
+                          (e.target as HTMLButtonElement).style.background = 'var(--bg-nested)'
+                          (e.target as HTMLButtonElement).style.borderColor = 'var(--border-color)'
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.target as HTMLButtonElement).style.background = 'var(--bg-card)'
+                          (e.target as HTMLButtonElement).style.borderColor = 'var(--border-primary)'
+                        }}
                       >
                         <i className="fa-solid fa-check"></i>
                         Confirm & Set Details
@@ -2088,7 +2094,9 @@ const Products = () => {
           marginBottom: '24px',
           boxShadow: 'var(--shadow-card)',
           border: 'var(--border-primary)',
-          backdropFilter: 'blur(10px)'
+          backdropFilter: 'blur(10px)',
+          position: 'relative',
+          zIndex: 10
         }}>
         <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ flex: '1', minWidth: '250px', maxWidth: '400px' }}>
@@ -2161,7 +2169,7 @@ const Products = () => {
                     left: 0,
                     right: 0,
                     backgroundColor: 'var(--bg-card)',
-                    border: '1px solid var(--border-subtle)',
+                    border: '1px solid var(--text-primary)',
                     borderTop: 'none',
                     borderRadius: '0 0 8px 8px',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
@@ -5030,18 +5038,19 @@ const Products = () => {
                 price: parseFloat(formData.get('price') as string) || 0,
                 stock_quantity: parseInt(formData.get('stock_quantity') as string) || 0,
                 reorder_level: parseInt(formData.get('reorder_level') as string) || 10,
-                tax_rate: parseFloat(formData.get('tax_rate') as string) || 20
+                tax_rate: 0
               }
               handleConfirmPendingProduct(confirmingProduct, updatedData)
             }}>
               {/* Product Info Summary */}
               <div style={{
-                background: '#f9fafb',
+                background: 'var(--bg-card)',
                 borderRadius: '8px',
                 padding: '16px',
                 marginBottom: '20px',
                 display: 'flex',
-                gap: '12px'
+                gap: '12px',
+                border: 'var(--border-subtle)'
               }}>
                 {confirmingProduct.image_url ? (
                   <img
@@ -5111,7 +5120,7 @@ const Products = () => {
                     display: 'block',
                     fontSize: '14px',
                     fontWeight: '500',
-                    color: '#374151',
+                    color: 'var(--text-primary)',
                     marginBottom: '6px'
                   }}>
                     <i className="fa-solid fa-euro-sign" style={{ marginRight: '6px', color: '#10b981' }}></i>
@@ -5127,9 +5136,11 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px',
-                      border: '2px solid #d1d5db',
+                      border: 'var(--border-primary)',
                       borderRadius: '6px',
                       fontSize: '14px',
+                      background: 'var(--input-bg)',
+                      color: 'var(--text-primary)',
                       boxSizing: 'border-box'
                     }}
                   />
@@ -5140,7 +5151,7 @@ const Products = () => {
                     display: 'block',
                     fontSize: '14px',
                     fontWeight: '500',
-                    color: '#374151',
+                    color: 'var(--text-primary)',
                     marginBottom: '6px'
                   }}>
                     <i className="fa-solid fa-boxes-stacked" style={{ marginRight: '6px', color: '#3b82f6' }}></i>
@@ -5155,9 +5166,11 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px',
-                      border: '2px solid #d1d5db',
+                      border: 'var(--border-primary)',
                       borderRadius: '6px',
                       fontSize: '14px',
+                      background: 'var(--input-bg)',
+                      color: 'var(--text-primary)',
                       boxSizing: 'border-box'
                     }}
                   />
@@ -5168,7 +5181,7 @@ const Products = () => {
                     display: 'block',
                     fontSize: '14px',
                     fontWeight: '500',
-                    color: '#374151',
+                    color: 'var(--text-primary)',
                     marginBottom: '6px'
                   }}>
                     <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: '6px', color: '#f59e0b' }}></i>
@@ -5182,42 +5195,16 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px',
-                      border: '2px solid #d1d5db',
+                      border: 'var(--border-primary)',
                       borderRadius: '6px',
                       fontSize: '14px',
+                      background: 'var(--input-bg)',
+                      color: 'var(--text-primary)',
                       boxSizing: 'border-box'
                     }}
                   />
                 </div>
 
-                <div>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#374151',
-                    marginBottom: '6px'
-                  }}>
-                    <i className="fa-solid fa-percent" style={{ marginRight: '6px', color: '#6b7280' }}></i>
-                    Tax Rate (%)
-                  </label>
-                  <input
-                    type="number"
-                    name="tax_rate"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    defaultValue="20"
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: '2px solid #d1d5db',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
               </div>
 
               {/* Action Buttons */}
@@ -5233,27 +5220,33 @@ const Products = () => {
                   type="button"
                   onClick={() => setConfirmingProduct(null)}
                   style={{
-                    background: '#f3f4f6',
-                    color: '#374151',
-                    border: 'none',
+                    background: 'var(--bg-card)',
+                    color: 'var(--text-primary)',
+                    border: 'var(--border-primary)',
                     padding: '10px 20px',
                     borderRadius: '6px',
                     cursor: 'pointer',
                     fontSize: '14px',
                     fontWeight: '500',
-                    transition: 'background 0.2s ease'
+                    transition: 'all 0.2s ease'
                   }}
-                  onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = '#e5e7eb'}
-                  onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = '#f3f4f6'}
+                  onMouseEnter={(e) => {
+                    (e.target as HTMLButtonElement).style.background = 'var(--bg-nested)'
+                    (e.target as HTMLButtonElement).style.borderColor = 'var(--border-color)'
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.target as HTMLButtonElement).style.background = 'var(--bg-card)'
+                    (e.target as HTMLButtonElement).style.borderColor = 'var(--border-primary)'
+                  }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   style={{
-                    background: '#10b981',
-                    color: 'white',
-                    border: 'none',
+                    background: 'var(--bg-card)',
+                    color: 'var(--text-primary)',
+                    border: 'var(--border-primary)',
                     padding: '10px 24px',
                     borderRadius: '6px',
                     cursor: 'pointer',
@@ -5262,10 +5255,16 @@ const Products = () => {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
-                    transition: 'background 0.2s ease'
+                    transition: 'all 0.2s ease'
                   }}
-                  onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = '#059669'}
-                  onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = '#10b981'}
+                  onMouseEnter={(e) => {
+                    (e.target as HTMLButtonElement).style.background = 'var(--bg-nested)'
+                    (e.target as HTMLButtonElement).style.borderColor = 'var(--border-color)'
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.target as HTMLButtonElement).style.background = 'var(--bg-card)'
+                    (e.target as HTMLButtonElement).style.borderColor = 'var(--border-primary)'
+                  }}
                 >
                   <i className="fa-solid fa-check"></i>
                   Confirm & Add to Inventory

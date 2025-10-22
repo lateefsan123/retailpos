@@ -48,6 +48,7 @@ import { supabase } from '../lib/supabaseClient'
 
 import { formatCurrency } from '../utils/currency'
 import { formatPhoneNumber } from '../utils/phone'
+import { getRandomCustomerIcon } from '../utils/customerIcons'
 import { generateReceiptHTML, printReceipt } from '../utils/receiptUtils'
 import type { OrderItem, Product as SalesProduct, SideBusinessItem as SalesSideBusinessItem } from '../types/sales'
 import type { Product as ProductsDataProduct, SideBusinessItem as ProductsDataSideBusinessItem } from '../hooks/data/useProductsData'
@@ -192,6 +193,7 @@ const SalesMobile = () => {
   const [customDescription, setCustomDescription] = useState('')
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
+  const [customerGender, setCustomerGender] = useState<'male' | 'female' | null>(null)
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'credit' | 'tap'>('cash')
   const [cashAmount, setCashAmount] = useState('')
@@ -906,6 +908,7 @@ const SalesMobile = () => {
             customerId = existingCustomer.customer_id
           } else {
             // Create new customer
+            const customerIcon = customerGender ? getRandomCustomerIcon(customerGender) : null
             const { data: newCustomer, error: customerError } = await supabase
               .from('customers')
               .insert([{
@@ -913,7 +916,9 @@ const SalesMobile = () => {
                 phone_number: customerPhone.trim() || '000-000-0000',
                 email: null,
                 business_id: businessId,
-                branch_id: selectedBranchId
+                branch_id: selectedBranchId,
+                gender: customerGender,
+                icon: customerIcon
               }])
               .select()
               .single()
@@ -1535,6 +1540,65 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 <p className={styles.customerPhone}>{formatPhoneNumber(selectedCustomer.phone_number)}</p>
               </div>
             )}
+            
+            {/* Gender Selection */}
+            <div style={{ marginTop: '16px' }}>
+              <label style={{ 
+                display: 'block', 
+                fontSize: '14px', 
+                fontWeight: '500', 
+                color: '#374151', 
+                marginBottom: '8px' 
+              }}>
+                Gender (Optional)
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setCustomerGender('male')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 12px',
+                    border: customerGender === 'male' ? '2px solid #7d8d86' : '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    background: customerGender === 'male' ? '#f0f9ff' : '#ffffff',
+                    color: customerGender === 'male' ? '#7d8d86' : '#6b7280',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    transition: 'all 0.2s ease',
+                    flex: 1
+                  }}
+                >
+                  <i className="fa-solid fa-mars" style={{ fontSize: '14px' }}></i>
+                  Male
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomerGender('female')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 12px',
+                    border: customerGender === 'female' ? '2px solid #7d8d86' : '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    background: customerGender === 'female' ? '#fdf2f8' : '#ffffff',
+                    color: customerGender === 'female' ? '#7d8d86' : '#6b7280',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    transition: 'all 0.2s ease',
+                    flex: 1
+                  }}
+                >
+                  <i className="fa-solid fa-venus" style={{ fontSize: '14px' }}></i>
+                  Female
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className={styles.panelBody}>
@@ -1851,6 +1915,56 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   onChange={e => setCustomerPhone(e.target.value)}
                   placeholder="Enter phone number..."
                 />
+              </div>
+              
+              <div className={styles.summaryInputGroup}>
+                <label className={styles.summaryInputLabel}>Gender (Optional)</label>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setCustomerGender('male')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 12px',
+                      border: customerGender === 'male' ? '2px solid #7d8d86' : '2px solid #e5e7eb',
+                      borderRadius: '8px',
+                      background: customerGender === 'male' ? '#f0f9ff' : '#ffffff',
+                      color: customerGender === 'male' ? '#7d8d86' : '#6b7280',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      transition: 'all 0.2s ease',
+                      flex: 1
+                    }}
+                  >
+                    <i className="fa-solid fa-mars" style={{ fontSize: '14px' }}></i>
+                    Male
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCustomerGender('female')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 12px',
+                      border: customerGender === 'female' ? '2px solid #7d8d86' : '2px solid #e5e7eb',
+                      borderRadius: '8px',
+                      background: customerGender === 'female' ? '#fdf2f8' : '#ffffff',
+                      color: customerGender === 'female' ? '#7d8d86' : '#6b7280',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      transition: 'all 0.2s ease',
+                      flex: 1
+                    }}
+                  >
+                    <i className="fa-solid fa-venus" style={{ fontSize: '14px' }}></i>
+                    Female
+                  </button>
+                </div>
               </div>
             </div>
 

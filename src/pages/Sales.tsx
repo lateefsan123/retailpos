@@ -11,6 +11,7 @@ import { useBarcodeScanner, setModalOpen } from '../hooks/useBarcodeScanner'
 import { generateReceiptHTML as generateReceiptHTMLUtil, printReceipt as printReceiptUtil, openCashDrawer } from '../utils/receiptUtils'
 import { ttsService, TTSSettings } from '../lib/ttsService'
 import { calculateChangeBreakdown } from '../utils/changeBreakdown'
+import { getRandomCustomerIcon } from '../utils/customerIcons'
 import { RetroButton } from '../components/ui/RetroButton'
 import BranchSelector from '../components/BranchSelector'
 import Calculator from '../components/Calculator'
@@ -244,6 +245,7 @@ const Sales = () => {
   const [selectedPromotionId, setSelectedPromotionId] = useState<number | null>(null)
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
+  const [customerGender, setCustomerGender] = useState<'male' | 'female' | null>(null)
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [showSalesSummary, setShowSalesSummary] = useState(false)
@@ -1558,6 +1560,7 @@ const Sales = () => {
               customerId = existingCustomer.customer_id
             } else {
             // Create new customer
+            const customerIcon = customerGender ? getRandomCustomerIcon(customerGender) : null
             const { data: newCustomer, error: customerError } = await supabase
               .from('customers')
               .insert([{
@@ -1565,7 +1568,9 @@ const Sales = () => {
                 phone_number: customerPhone.trim() || '000-000-0000', // Use provided phone or default
                 email: null,
                 business_id: businessId,
-                branch_id: selectedBranchId
+                branch_id: selectedBranchId,
+                gender: customerGender,
+                icon: customerIcon
               }])
               .select()
               .single()
@@ -2315,24 +2320,39 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                           (e.target as HTMLDivElement).style.transform = 'translateX(0)'
                         }}
                       >
-                        <div style={{
-                          width: '40px',
-                          height: '40px',
-                          background: isProduct && item.image_url 
-                            ? `url(${item.image_url})` 
-                            : 'linear-gradient(135deg, #667eea, #764ba2)',
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                          borderRadius: '12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '16px',
-                          color: '#ffffff',
-                          boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
-                        }}>
-                          {isSideBusinessItem && <i className="fa-solid fa-briefcase"></i>}
-                        </div>
+                        {isProduct && item.image_url && (
+                          <div style={{
+                            width: '40px',
+                            height: '40px',
+                            background: `url(${item.image_url})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            borderRadius: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '16px',
+                            color: '#ffffff',
+                            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+                          }}>
+                          </div>
+                        )}
+                        {isSideBusinessItem && (
+                          <div style={{
+                            width: '40px',
+                            height: '40px',
+                            background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
+                            borderRadius: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '16px',
+                            color: '#6b7280',
+                            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+                          }}>
+                            <i className="fa-solid fa-briefcase"></i>
+                          </div>
+                        )}
                         <div style={{ flex: 1 }}>
                           <p style={{ 
                             margin: '0 0 4px 0', 
@@ -2356,8 +2376,9 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                           </p>
                         </div>
                         <div style={{
-                          background: 'linear-gradient(135deg, #10b981, #059669)',
-                          color: '#ffffff',
+                          background: '#f8fafc',
+                          color: '#374151',
+                          border: '1px solid #e5e7eb',
                           borderRadius: '8px',
                           padding: '8px 12px',
                           fontSize: '12px',
@@ -2365,7 +2386,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                           display: 'flex',
                           alignItems: 'center',
                           gap: '4px',
-                          boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
                         }}>
                           <i className="fa-solid fa-plus"></i>
                           Add
@@ -3821,6 +3842,54 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                     className={styles.input}
                   />
                 </div>
+                
+                <div className={styles.inputGroup}>
+                  <label className={styles.inputLabel}>Gender (Optional)</label>
+                  <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setCustomerGender('male')}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 16px',
+                        border: customerGender === 'male' ? '2px solid #7d8d86' : '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        background: customerGender === 'male' ? '#f0f9ff' : '#ffffff',
+                        color: customerGender === 'male' ? '#7d8d86' : '#6b7280',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <i className="fa-solid fa-mars" style={{ fontSize: '16px' }}></i>
+                      Male
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCustomerGender('female')}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 16px',
+                        border: customerGender === 'female' ? '2px solid #7d8d86' : '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        background: customerGender === 'female' ? '#fdf2f8' : '#ffffff',
+                        color: customerGender === 'female' ? '#7d8d86' : '#6b7280',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <i className="fa-solid fa-venus" style={{ fontSize: '16px' }}></i>
+                      Female
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -4947,10 +5016,10 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 disabled={!quickServiceName.trim() || !quickServicePrice || !quickServiceBusiness}
                 style={{
                   padding: '12px 24px',
-                  border: 'none',
+                  border: (!quickServiceName.trim() || !quickServicePrice || !quickServiceBusiness) ? 'none' : '1px solid #e5e7eb',
                   borderRadius: '8px',
-                  background: (!quickServiceName.trim() || !quickServicePrice || !quickServiceBusiness) ? '#d1d5db' : 'linear-gradient(135deg, #10b981, #059669)',
-                  color: (!quickServiceName.trim() || !quickServicePrice || !quickServiceBusiness) ? '#9ca3af' : '#ffffff',
+                  background: (!quickServiceName.trim() || !quickServicePrice || !quickServiceBusiness) ? '#d1d5db' : '#f8fafc',
+                  color: (!quickServiceName.trim() || !quickServicePrice || !quickServiceBusiness) ? '#9ca3af' : '#374151',
                   fontSize: '14px',
                   fontWeight: '600',
                   cursor: (!quickServiceName.trim() || !quickServicePrice || !quickServiceBusiness) ? 'not-allowed' : 'pointer',

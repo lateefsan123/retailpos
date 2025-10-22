@@ -18,7 +18,7 @@ interface User {
 interface SelectUserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUserSwitch: (selectedUser: User, password: string, usePin?: boolean) => Promise<void>;
+  onUserSwitch: (selectedUser: User, password: string, usePin?: boolean) => Promise<{ success: boolean; error?: string } | void>;
 }
 
 const SelectUserModal: React.FC<SelectUserModalProps> = ({ isOpen, onClose, onUserSwitch }) => {
@@ -112,11 +112,15 @@ const SelectUserModal: React.FC<SelectUserModalProps> = ({ isOpen, onClose, onUs
     setPasswordError('');
 
     try {
-      await onUserSwitch(selectedUser, password, usePinAuth);
+      const result = await onUserSwitch(selectedUser, password, usePinAuth);
+      // Check if the result indicates failure
+      if (result && result.success === false) {
+        setPasswordError(result.error || (usePinAuth ? 'Incorrect PIN. Please check your PIN and try again.' : 'Incorrect password. Please check your password and try again.'));
+      }
       // If successful, the parent component will handle closing the modal
     } catch (error) {
       console.log('Password error:', error);
-      setPasswordError(usePinAuth ? 'Invalid PIN. Please try again.' : 'Invalid password. Please try again.');
+      setPasswordError(usePinAuth ? 'Incorrect PIN. Please check your PIN and try again.' : 'Incorrect password. Please check your password and try again.');
     } finally {
       setIsAuthenticating(false);
     }

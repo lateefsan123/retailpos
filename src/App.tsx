@@ -33,6 +33,7 @@ import Admin from './pages/Admin'
 import Reminders from './pages/Reminders'
 import SelectUser from './pages/SelectUser'
 import SelectUserMobile from './pages/SelectUserMobile'
+import SwitchUser from './pages/SwitchUser'
 import Suppliers from './pages/Suppliers'
 import Promotions from './pages/Promotions'
 import VerificationAdmin from './pages/VerificationAdmin'
@@ -226,6 +227,7 @@ function App() {
                           <Route path="/signup-mobile" element={<SignupMobile />} />
                           <Route path="/select-user" element={<SelectUser />} />
                           <Route path="/select-user-mobile" element={<SelectUserMobile />} />
+                          <Route path="/switch-user" element={<SwitchUser />} />
                           <Route path="/*" element={
                             <ProtectedRoute>
                               <AppContent />

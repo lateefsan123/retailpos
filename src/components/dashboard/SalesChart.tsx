@@ -20,6 +20,18 @@ const SalesChart = ({ selectedDate: externalSelectedDate, activePeriod }: SalesC
   const [monthOffset, setMonthOffset] = useState(0)
   const { weeklyData, hourlyData, monthlyData, loading, error, businessHours } = useSalesAnalytics(externalSelectedDate, weekOffset, monthOffset)
   const { currentBusiness } = useBusiness()
+
+  // Debug logging
+  console.log('SalesChart Debug:', {
+    loading,
+    error,
+    weeklyDataLength: weeklyData?.length,
+    hourlyDataLength: hourlyData?.length,
+    monthlyDataLength: monthlyData?.length,
+    businessHours,
+    currentBusiness: currentBusiness?.business_id,
+    view
+  })
   const [tooltip, setTooltip] = useState<{
     visible: boolean
     x: number

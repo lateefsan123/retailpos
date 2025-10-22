@@ -417,41 +417,6 @@ const Navigation = ({ allowedPaths }: NavigationProps) => {
             border: '1px solid rgba(255, 255, 255, 0.05)'
           }}
         />
-        {theme !== 'light' && (
-          <div
-            style={{
-              position: 'absolute',
-              width: '220px',
-              height: '220px',
-              top: '-120px',
-              left: '-120px',
-              borderRadius: '50%',
-              background: 'radial-gradient(circle at center, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 70%)'
-            }}
-          />
-        )}
-        {theme !== 'light' && (
-          <div
-            style={{
-              position: 'absolute',
-              width: '260px',
-              height: '260px',
-              bottom: '-80px',
-              right: '-140px',
-              borderRadius: '50%',
-              background: 'radial-gradient(circle at center, rgba(255, 150, 0, 0.12) 0%, rgba(255, 150, 0, 0) 70%)'
-            }}
-          />
-        )}
-        {theme !== 'light' && (
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.25) 45%, rgba(0, 0, 0, 0.6) 100%)'
-            }}
-          />
-        )}
       </div>
     </aside>
   )
