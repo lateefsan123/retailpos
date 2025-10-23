@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useBranch } from '../contexts/BranchContext'
 import SearchContainer from '../components/SearchContainer'
 import PageHeader from '../components/PageHeader'
+import { ensureStorageBucket } from '../utils/storageUtils'
 import styles from './SideBusinesses.module.css'
 
 async function uploadSideBusinessImage(file: File, businessId: string, userId: number) {
@@ -15,10 +16,11 @@ async function uploadSideBusinessImage(file: File, businessId: string, userId: n
       return null
     }
     
-    // Check available buckets
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets()
-    if (bucketsError) {
-      console.error("❌ Error listing buckets:", bucketsError)
+    // Ensure the products bucket exists
+    const bucketReady = await ensureStorageBucket('products')
+    if (!bucketReady) {
+      console.error('❌ Failed to ensure products bucket exists')
+      return null
     }
     
     // Upload original file directly to Supabase Storage

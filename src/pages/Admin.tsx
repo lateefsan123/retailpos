@@ -599,7 +599,7 @@ const Admin = () => {
       if (error) {
         console.error('Supabase error adding user:', error)
         
-        // Handle specific error cases
+        // Handle specific error cases with user-friendly messages
         if (error.code === '23505') {
           throw new Error('Username already exists. Please choose a different username.')
         } else if (error.code === '23503') {
@@ -613,7 +613,9 @@ const Admin = () => {
         } else if (error.message.includes("Could not find the 'icon' column")) {
           throw new Error('Database schema is outdated. Please run the database migration to add the icon column.')
         } else {
-          throw new Error(`Database error: ${error.message}`)
+          // Log technical error but show user-friendly message
+          console.error('Database error:', error);
+          throw new Error('Failed to add user. Please try again.')
         }
       }
 

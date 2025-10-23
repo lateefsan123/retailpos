@@ -164,16 +164,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
       }
       
-      // 4. Check for existing username
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('user_id')
-        .eq('username', username)
-        .maybeSingle()
-
-      if (existingUser) {
-        return { success: false, error: 'Username already exists' }
-      }
+      // 4. Username uniqueness check removed - usernames no longer need to be unique
       
       // 5. Check for existing email (if provided)
       if (email) {
@@ -213,7 +204,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .single()
 
       if (businessError || !businessData) {
-        return { success: false, error: 'Failed to create business: ' + businessError?.message }
+        console.error('Business creation error:', businessError)
+        return { success: false, error: 'Failed to create business. Please try again.' }
       }
 
       // 8. Create default branch
@@ -256,13 +248,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .single()
 
       if (userError || !userData) {
-        return { success: false, error: 'Failed to create user: ' + userError?.message }
+        console.error('User creation error:', userError)
+        return { success: false, error: 'Failed to create account. Please try again.' }
       }
 
       // 10. Registration successful - redirect to login
       return { success: true }
     } catch (error) {
-      return { success: false, error: 'Registration failed: ' + (error instanceof Error ? error.message : 'Unknown error') }
+      console.error('Registration error:', error)
+      return { success: false, error: 'Registration failed. Please try again.' }
     } finally {
       setLoading(false)
     }

@@ -4,6 +4,8 @@ import SidebarStepper from "./Sidebarstepper";
 import { useAuth } from "../contexts/AuthContext";
 import { ALL_USER_ICONS, DEFAULT_ICON_NAME } from "../constants/userIcons";
 import IconDropdown from "../components/IconDropdown";
+import PasswordStrengthIndicator from "../components/PasswordStrengthIndicator";
+import { validatePassword } from "../utils/auth";
 
 const steps = [
   {
@@ -118,6 +120,65 @@ const Signup: React.FC = () => {
     }));
   };
 
+  const validateCurrentStep = (): boolean => {
+    switch (currentStep) {
+      case 1:
+        // Validate required fields
+        if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+          setError("Please fill in all required fields");
+          return false;
+        }
+
+        // Validate password strength
+        const passwordValidation = validatePassword(formData.password);
+        if (!passwordValidation.isValid) {
+          setError("Password does not meet requirements: " + passwordValidation.errors.join(", "));
+          return false;
+        }
+
+        // Validate password confirmation
+        if (formData.password !== formData.confirmPassword) {
+          setError("Passwords do not match");
+          return false;
+        }
+
+        // Validate username
+        const trimmedUsername = formData.ownerUsername.trim();
+        if (!trimmedUsername) {
+          setError("Please choose an owner username");
+          return false;
+        }
+        if (trimmedUsername.includes(" ")) {
+          setError("Owner username cannot contain spaces");
+          return false;
+        }
+        if (!formData.ownerIcon) {
+          setError("Please select an owner icon");
+          return false;
+        }
+        break;
+
+      case 2:
+        if (!formData.businessName || !formData.businessType || !formData.businessAddress) {
+          setError("Please fill in all required business fields");
+          return false;
+        }
+        break;
+
+      case 3:
+        // Contact details are optional, so no validation needed
+        break;
+    }
+    return true;
+  };
+
+  const handleNext = () => {
+    if (validateCurrentStep()) {
+      setCurrentStep(prev => prev + 1);
+      setError(null);
+    }
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,31 +186,13 @@ const Signup: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // Validate required fields
-      if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
-        throw new Error("Please fill in all required account fields");
+      // Validate all steps before submitting
+      if (!validateCurrentStep()) {
+        setIsSubmitting(false);
+        return;
       }
 
-      if (!formData.businessName || !formData.businessType || !formData.businessAddress) {
-        throw new Error("Please fill in all required business fields");
-      }
-
-      if (formData.password !== formData.confirmPassword) {
-        throw new Error("Passwords do not match");
-      }
-
-      const trimmedUsername = formData.ownerUsername.trim();
-      if (!trimmedUsername) {
-        throw new Error("Please choose an owner username");
-      }
-      if (trimmedUsername.includes(" ")) {
-        throw new Error("Owner username cannot contain spaces");
-      }
-      if (!formData.ownerIcon) {
-        throw new Error("Please select an owner icon");
-      }
-
-      const normalizedUsername = trimmedUsername.toLowerCase();
+      const normalizedUsername = formData.ownerUsername.trim().toLowerCase();
 
       // Call the register function with all the form data
       const result = await register(
@@ -177,10 +220,13 @@ const Signup: React.FC = () => {
         // Navigate to login page
         navigate('/login');
       } else {
-        throw new Error(result.error || "Failed to create account. Please try again.");
+        // Show user-friendly error message
+        throw new Error("Failed to create account. Please check your information and try again.");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred during signup");
+      // Show user-friendly error message, log technical details to console
+      console.error('Signup error:', err);
+      setError("Failed to create account. Please check your information and try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -536,6 +582,7 @@ const Signup: React.FC = () => {
                             boxSizing: "border-box"
                           }} 
                         />
+                        <PasswordStrengthIndicator password={formData.password} />
                       </div>
                       <div>
                         <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", color: "#374151", fontWeight: "600" }}>

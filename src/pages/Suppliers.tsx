@@ -8,6 +8,7 @@ import BranchSelector from '../components/BranchSelector'
 import SupplierCalendar from '../components/SupplierCalendar'
 import { Supplier, SupplierRequest } from '../types/multitenant'
 import { formatCurrency } from '../utils/currency'
+import { ensureStorageBucket } from '../utils/storageUtils'
 import styles from './Suppliers.module.css'
 
 // Vehicle icon colors and types
@@ -43,6 +44,13 @@ async function uploadSupplierImage(file: File, supplierId: number, businessId: n
   }
 
   try {
+    // Ensure the products bucket exists
+    const bucketReady = await ensureStorageBucket('products')
+    if (!bucketReady) {
+      console.error('❌ Failed to ensure products bucket exists')
+      return null
+    }
+
     // Upload original file directly to Supabase Storage
     const fileName = `supplier-images/${supplierId}.${file.name.split('.').pop()}`
     console.log("📤 Uploading to Supabase Storage:", fileName)

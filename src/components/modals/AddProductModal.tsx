@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useBusinessId } from '../../hooks/useBusinessId'
 import { useBranch } from '../../contexts/BranchContext'
 import { useSuppliers } from '../../hooks/useSuppliers'
+import { ensureStorageBucket } from '../../utils/storageUtils'
 import styles from './AddProductModal.module.css'
 
 interface Product {
@@ -42,12 +43,18 @@ async function uploadProductImage(file: File, productId: string, businessId: num
   }
 
   try {
+    // Ensure the products bucket exists
+    const bucketReady = await ensureStorageBucket('products')
+    if (!bucketReady) {
+      throw new Error('Failed to ensure products bucket exists')
+    }
+
     const fileExt = file.name.split('.').pop()
     const fileName = `${productId}.${fileExt}`
     const filePath = `product-images/${businessId}/${fileName}`
 
     const { error: uploadError } = await supabase.storage
-      .from('product-images')
+      .from('products')
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: true
@@ -58,7 +65,7 @@ async function uploadProductImage(file: File, productId: string, businessId: num
     }
 
     const { data } = supabase.storage
-      .from('product-images')
+      .from('products')
       .getPublicUrl(filePath)
 
     return data.publicUrl

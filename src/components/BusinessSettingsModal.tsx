@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useBusiness } from '../contexts/BusinessContext';
 import { supabase } from '../lib/supabaseClient';
+import { ensureStorageBucket } from '../utils/storageUtils';
 import styles from './BusinessSettingsModal.module.css';
 
 interface BusinessSettingsModalProps {
@@ -230,12 +231,19 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
 
   const uploadLogo = async (file: File): Promise<string | null> => {
     try {
+      // Ensure the products bucket exists
+      const bucketReady = await ensureStorageBucket('products')
+      if (!bucketReady) {
+        console.error('❌ Failed to ensure products bucket exists')
+        return null
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${currentBusiness?.business_id}/business-logos/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('business-assets')
+        .from('products')
         .upload(filePath, file);
 
       if (uploadError) {
@@ -243,7 +251,7 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
       }
 
       const { data } = supabase.storage
-        .from('business-assets')
+        .from('products')
         .getPublicUrl(filePath);
 
       return data.publicUrl;

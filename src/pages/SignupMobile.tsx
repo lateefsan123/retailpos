@@ -5,6 +5,8 @@ import { ChevronLeft, User, Briefcase, Mail, Phone, Lock, Building, MapPin, Cloc
 import styles from './SignupMobile.module.css';
 import { ALL_USER_ICONS, DEFAULT_ICON_NAME } from '../constants/userIcons';
 import IconDropdown from '../components/IconDropdown';
+import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
+import { validatePassword } from '../utils/auth';
 
 const SignupMobile: React.FC = () => {
   const navigate = useNavigate();
@@ -59,18 +61,26 @@ const SignupMobile: React.FC = () => {
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1:
-      if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
-        setError('Please fill in all required fields');
-        return false;
-      }
-      if (formData.password !== formData.confirmPassword) {
+        // Validate required fields
+        if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+          setError('Please fill in all required fields');
+          return false;
+        }
+
+        // Validate password strength
+        const passwordValidation = validatePassword(formData.password);
+        if (!passwordValidation.isValid) {
+          setError('Password does not meet requirements: ' + passwordValidation.errors.join(', '));
+          return false;
+        }
+
+        // Validate password confirmation
+        if (formData.password !== formData.confirmPassword) {
           setError('Passwords do not match');
           return false;
         }
-        if (formData.password.length < 6) {
-          setError('Password must be at least 6 characters');
-          return false;
-        }
+
+        // Validate username
         if (!formData.ownerUsername.trim()) {
           setError('Please choose an owner username');
           return false;
@@ -145,10 +155,13 @@ const SignupMobile: React.FC = () => {
         // Navigate to login page
         navigate('/login-mobile');
       } else {
-        throw new Error(result.error || 'Failed to create account. Please try again.');
+        // Show user-friendly error message
+        throw new Error('Failed to create account. Please check your information and try again.');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred during signup');
+      // Show user-friendly error message, log technical details to console
+      console.error('Signup error:', err);
+      setError('Failed to create account. Please check your information and try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -253,6 +266,7 @@ const SignupMobile: React.FC = () => {
               required
             />
           </div>
+          <PasswordStrengthIndicator password={formData.password} />
         </div>
 
         <div className={styles.inputGroup}>

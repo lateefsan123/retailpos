@@ -12,6 +12,7 @@ import { useSuppliers } from '../hooks/useSuppliers'
 import AddProductModal from '../components/modals/AddProductModal'
 import EditProductModal from '../components/modals/EditProductModal'
 import { printProductLabel, printBulkLabels } from '../utils/labelUtils'
+import { ensureStorageBucket } from '../utils/storageUtils'
 
 async function uploadProductImage(file: File, productId: string, businessId: number | null) {
   
@@ -21,6 +22,13 @@ async function uploadProductImage(file: File, productId: string, businessId: num
   }
 
   try {
+    // Ensure the products bucket exists
+    const bucketReady = await ensureStorageBucket('products')
+    if (!bucketReady) {
+      console.error('❌ Failed to ensure products bucket exists')
+      return null
+    }
+
     // Upload original file directly to Supabase Storage
     const fileName = `product-images/${productId}.${file.name.split('.').pop()}`
     
@@ -32,7 +40,7 @@ async function uploadProductImage(file: File, productId: string, businessId: num
       })
     
     if (uploadError) {
-      console.error("? Upload failed:", uploadError)
+      console.error("❌ Upload failed:", uploadError)
       return null
     }
     
@@ -49,13 +57,13 @@ async function uploadProductImage(file: File, productId: string, businessId: num
       .eq('business_id', businessId)
 
     if (dbError) {
-      console.error("? DB update failed:", dbError)
+      console.error("❌ DB update failed:", dbError)
       return null
     }
 
     return publicUrl
   } catch (error) {
-    console.error("?? Unexpected error during upload:", error)
+    console.error("💥 Unexpected error during upload:", error)
     return null
   }
 }
