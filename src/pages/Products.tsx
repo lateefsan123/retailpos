@@ -12,25 +12,18 @@ import { useSuppliers } from '../hooks/useSuppliers'
 import AddProductModal from '../components/modals/AddProductModal'
 import EditProductModal from '../components/modals/EditProductModal'
 import { printProductLabel, printBulkLabels } from '../utils/labelUtils'
-import { ensureStorageBucket } from '../utils/storageUtils'
 
-async function uploadProductImage(file: File, productId: string, businessId: number | null) {
+async function uploadProductImage(file: File, productId: string, businessId: number | null, branchId: number | null) {
   
-  if (businessId == null) {
-    console.error('Cannot upload product image without an active business')
+  if (businessId == null || branchId == null) {
+    console.error('Cannot upload product image without an active business and branch')
     return null
   }
 
   try {
-    // Ensure the products bucket exists
-    const bucketReady = await ensureStorageBucket('products')
-    if (!bucketReady) {
-      console.error('❌ Failed to ensure products bucket exists')
-      return null
-    }
-
-    // Upload original file directly to Supabase Storage
-    const fileName = `product-images/${productId}.${file.name.split('.').pop()}`
+    // Upload with multi-tenant path structure: products/{business_id}/{branch_id}/{filename}
+    const fileExt = file.name.split('.').pop()
+    const fileName = `product-images/${businessId}/${branchId}/${productId}.${fileExt}`
     
     const { error: uploadError } = await supabase.storage
       .from('products')
@@ -40,7 +33,11 @@ async function uploadProductImage(file: File, productId: string, businessId: num
       })
     
     if (uploadError) {
-      console.error("❌ Upload failed:", uploadError)
+      console.error("❌ Upload failed:", {
+        message: uploadError.message,
+        statusCode: uploadError.statusCode,
+        error: uploadError.error
+      })
       return null
     }
     
@@ -55,6 +52,7 @@ async function uploadProductImage(file: File, productId: string, businessId: num
       .update({ image_url: publicUrl })
       .eq('product_id', productId)
       .eq('business_id', businessId)
+      .eq('branch_id', branchId)
 
     if (dbError) {
       console.error("❌ DB update failed:", dbError)
@@ -1343,7 +1341,7 @@ const Products = () => {
     }
 
     try {
-      const imageUrl = await uploadProductImage(selectedImage, productId, businessId)
+      const imageUrl = await uploadProductImage(selectedImage, productId, businessId, selectedBranchId)
       return imageUrl
     } catch (error) {
       console.error('Image upload failed:', error)

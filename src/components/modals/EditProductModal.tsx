@@ -4,7 +4,6 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useBusinessId } from '../../hooks/useBusinessId'
 import { useBranch } from '../../contexts/BranchContext'
 import { useSuppliers } from '../../hooks/useSuppliers'
-import { ensureStorageBucket } from '../../utils/storageUtils'
 import styles from './AddProductModal.module.css'
 
 interface Product {
@@ -38,18 +37,16 @@ interface EditProductModalProps {
   onCategoryAdded?: (category: string) => void
 }
 
-async function uploadProductImage(file: File, productId: string, businessId: number | null) {
-  try {
-    // Ensure the products bucket exists
-    const bucketReady = await ensureStorageBucket('products')
-    if (!bucketReady) {
-      throw new Error('Failed to ensure products bucket exists')
-    }
+async function uploadProductImage(file: File, productId: string, businessId: number | null, branchId: number | null) {
+  if (businessId == null || branchId == null) {
+    throw new Error('Business ID and Branch ID are required for image upload')
+  }
 
-    // Create a unique filename
+  try {
+    // Create a unique filename with multi-tenant path structure
     const fileExt = file.name.split('.').pop()
     const fileName = `${productId}-${Date.now()}.${fileExt}`
-    const filePath = `product-images/${fileName}`
+    const filePath = `product-images/${businessId}/${branchId}/${fileName}`
 
     // Upload the file to Supabase Storage
     const { data, error } = await supabase.storage
@@ -57,7 +54,11 @@ async function uploadProductImage(file: File, productId: string, businessId: num
       .upload(filePath, file)
 
     if (error) {
-      console.error('Error uploading image:', error)
+      console.error('Upload error:', {
+        message: error.message,
+        statusCode: error.statusCode,
+        error: error.error
+      })
       throw error
     }
 
@@ -197,7 +198,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
 
       // Upload new image if selected
       if (selectedImage) {
-        imageUrl = await uploadProductImage(selectedImage, editingProduct.product_id, businessId)
+        imageUrl = await uploadProductImage(selectedImage, editingProduct.product_id, businessId, selectedBranchId)
       }
 
       // Update product in database

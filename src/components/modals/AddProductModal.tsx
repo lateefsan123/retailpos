@@ -4,7 +4,6 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useBusinessId } from '../../hooks/useBusinessId'
 import { useBranch } from '../../contexts/BranchContext'
 import { useSuppliers } from '../../hooks/useSuppliers'
-import { ensureStorageBucket } from '../../utils/storageUtils'
 import styles from './AddProductModal.module.css'
 
 interface Product {
@@ -37,21 +36,15 @@ interface AddProductModalProps {
   onCategoryAdded?: (category: string) => void
 }
 
-async function uploadProductImage(file: File, productId: string, businessId: number | null) {
-  if (businessId == null) {
-    throw new Error('Business ID is required for image upload')
+async function uploadProductImage(file: File, productId: string, businessId: number | null, branchId: number | null) {
+  if (businessId == null || branchId == null) {
+    throw new Error('Business ID and Branch ID are required for image upload')
   }
 
   try {
-    // Ensure the products bucket exists
-    const bucketReady = await ensureStorageBucket('products')
-    if (!bucketReady) {
-      throw new Error('Failed to ensure products bucket exists')
-    }
-
     const fileExt = file.name.split('.').pop()
     const fileName = `${productId}.${fileExt}`
-    const filePath = `product-images/${businessId}/${fileName}`
+    const filePath = `product-images/${businessId}/${branchId}/${fileName}`
 
     const { error: uploadError } = await supabase.storage
       .from('products')
@@ -61,6 +54,11 @@ async function uploadProductImage(file: File, productId: string, businessId: num
       })
 
     if (uploadError) {
+      console.error('Upload error:', {
+        message: uploadError.message,
+        statusCode: uploadError.statusCode,
+        error: uploadError.error
+      })
       throw uploadError
     }
 
@@ -230,7 +228,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
       // Upload image if selected
       if (selectedImage && insertedProduct.product_id) {
         try {
-          const imageUrl = await uploadProductImage(selectedImage, insertedProduct.product_id, businessId)
+          const imageUrl = await uploadProductImage(selectedImage, insertedProduct.product_id, businessId, selectedBranchId)
           const { error: updateError } = await supabase
             .from('products')
             .update({ image_url: imageUrl })

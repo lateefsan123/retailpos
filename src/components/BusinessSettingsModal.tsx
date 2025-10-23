@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useBusiness } from '../contexts/BusinessContext';
+import { useBranch } from '../contexts/BranchContext';
 import { supabase } from '../lib/supabaseClient';
-import { ensureStorageBucket } from '../utils/storageUtils';
 import styles from './BusinessSettingsModal.module.css';
 
 interface BusinessSettingsModalProps {
@@ -137,6 +137,7 @@ function LogoPreview({ src }: { src: string | null | undefined }) {
 
 const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, onClose }) => {
   const { currentBusiness, refreshBusiness } = useBusiness();
+  const { selectedBranchId } = useBranch();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -229,24 +230,26 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
     update({ logo: file, logoPreview: url });
   };
 
-  const uploadLogo = async (file: File): Promise<string | null> => {
+  const uploadLogo = async (file: File, branchId: number): Promise<string | null> => {
     try {
-      // Ensure the products bucket exists
-      const bucketReady = await ensureStorageBucket('products')
-      if (!bucketReady) {
-        console.error('❌ Failed to ensure products bucket exists')
-        return null
+      if (!currentBusiness?.business_id || !branchId) {
+        throw new Error('Business ID and Branch ID are required for logo upload');
       }
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${currentBusiness?.business_id}/business-logos/${fileName}`;
+      const filePath = `business-logos/${currentBusiness.business_id}/${branchId}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('products')
         .upload(filePath, file);
 
       if (uploadError) {
+        console.error('Upload error:', {
+          message: uploadError.message,
+          statusCode: uploadError.statusCode,
+          error: uploadError.error
+        });
         throw uploadError;
       }
 
@@ -273,7 +276,7 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
 
       // Upload new logo if selected
       if (form.logo) {
-        const uploadedLogoUrl = await uploadLogo(form.logo);
+        const uploadedLogoUrl = await uploadLogo(form.logo, selectedBranchId);
         if (uploadedLogoUrl) {
           logoUrl = uploadedLogoUrl;
         }

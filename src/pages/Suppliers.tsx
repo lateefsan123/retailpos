@@ -8,7 +8,6 @@ import BranchSelector from '../components/BranchSelector'
 import SupplierCalendar from '../components/SupplierCalendar'
 import { Supplier, SupplierRequest } from '../types/multitenant'
 import { formatCurrency } from '../utils/currency'
-import { ensureStorageBucket } from '../utils/storageUtils'
 import styles from './Suppliers.module.css'
 
 // Vehicle icon colors and types
@@ -30,7 +29,7 @@ const VEHICLE_COLORS = [
 const VEHICLE_TYPES = ['truck', 'van']
 
 // Function to get a consistent vehicle icon for a supplier
-async function uploadSupplierImage(file: File, supplierId: number, businessId: number) {
+async function uploadSupplierImage(file: File, supplierId: number, businessId: number, branchId: number) {
   console.log("🔄 Starting image upload for supplier:", supplierId)
   console.log("📁 File details:", {
     name: file.name,
@@ -38,21 +37,15 @@ async function uploadSupplierImage(file: File, supplierId: number, businessId: n
     type: file.type
   })
   
-  if (!businessId) {
-    console.error('Cannot upload supplier image without an active business')
+  if (!businessId || !branchId) {
+    console.error('Cannot upload supplier image without an active business and branch')
     return null
   }
 
   try {
-    // Ensure the products bucket exists
-    const bucketReady = await ensureStorageBucket('products')
-    if (!bucketReady) {
-      console.error('❌ Failed to ensure products bucket exists')
-      return null
-    }
-
-    // Upload original file directly to Supabase Storage
-    const fileName = `supplier-images/${supplierId}.${file.name.split('.').pop()}`
+    // Upload with multi-tenant path structure: products/{business_id}/{branch_id}/{filename}
+    const fileExt = file.name.split('.').pop()
+    const fileName = `supplier-images/${businessId}/${branchId}/${supplierId}.${fileExt}`
     console.log("📤 Uploading to Supabase Storage:", fileName)
     
     const { error: uploadError } = await supabase.storage
@@ -63,7 +56,11 @@ async function uploadSupplierImage(file: File, supplierId: number, businessId: n
       })
     
     if (uploadError) {
-      console.error("❌ Upload failed:", uploadError)
+      console.error("❌ Upload failed:", {
+        message: uploadError.message,
+        statusCode: uploadError.statusCode,
+        error: uploadError.error
+      })
       return null
     }
     
@@ -81,6 +78,7 @@ async function uploadSupplierImage(file: File, supplierId: number, businessId: n
       .update({ image_url: publicUrl })
       .eq('supplier_id', supplierId)
       .eq('business_id', businessId)
+      .eq('branch_id', branchId)
 
     if (dbError) {
       console.error("❌ DB update failed:", dbError)
@@ -272,7 +270,7 @@ const Suppliers = () => {
       // Upload image if provided
       if (imageFile && savedSupplier) {
         console.log('🔄 Uploading supplier image...')
-        const imageUrl = await uploadSupplierImage(imageFile, savedSupplier.supplier_id, businessId)
+        const imageUrl = await uploadSupplierImage(imageFile, savedSupplier.supplier_id, businessId, selectedBranchId)
         if (imageUrl) {
           // Update the supplier in the list with the new image URL
           setSuppliers(prev => 

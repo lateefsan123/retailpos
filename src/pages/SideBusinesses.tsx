@@ -4,27 +4,20 @@ import { useAuth } from '../contexts/AuthContext'
 import { useBranch } from '../contexts/BranchContext'
 import SearchContainer from '../components/SearchContainer'
 import PageHeader from '../components/PageHeader'
-import { ensureStorageBucket } from '../utils/storageUtils'
 import styles from './SideBusinesses.module.css'
 
-async function uploadSideBusinessImage(file: File, businessId: string, userId: number) {
+async function uploadSideBusinessImage(file: File, businessId: string, userId: number, parentBusinessId: number, branchId: number) {
   
   try {
     // User authentication is handled by the calling component
-    if (!userId) {
-      console.error("❌ No user ID provided")
+    if (!userId || !parentBusinessId || !branchId) {
+      console.error("❌ Missing required IDs for upload")
       return null
     }
     
-    // Ensure the products bucket exists
-    const bucketReady = await ensureStorageBucket('products')
-    if (!bucketReady) {
-      console.error('❌ Failed to ensure products bucket exists')
-      return null
-    }
-    
-    // Upload original file directly to Supabase Storage
-    const fileName = `sidebusiness-images/${businessId}.${file.name.split('.').pop()}`
+    // Upload with multi-tenant path structure: products/{business_id}/{branch_id}/{filename}
+    const fileExt = file.name.split('.').pop()
+    const fileName = `sidebusiness-images/${parentBusinessId}/${branchId}/${businessId}.${fileExt}`
 
     const { error: uploadError } = await supabase.storage
       .from('products') // Using 'products' bucket
@@ -34,7 +27,11 @@ async function uploadSideBusinessImage(file: File, businessId: string, userId: n
       })
 
     if (uploadError) {
-      console.error("❌ Upload failed:", uploadError)
+      console.error("❌ Upload failed:", {
+        message: uploadError.message,
+        statusCode: uploadError.statusCode,
+        error: uploadError.error
+      })
       return null
     }
 
@@ -134,7 +131,7 @@ const SideBusinesses = () => {
     setUploadingImages(prev => new Set(prev).add(businessId))
     
     try {
-      const imageUrl = await uploadSideBusinessImage(file, businessId.toString(), user.user_id)
+      const imageUrl = await uploadSideBusinessImage(file, businessId.toString(), user.user_id, user.business_id, selectedBranchId)
       
       if (imageUrl) {
         // Update the business in the state
@@ -393,7 +390,7 @@ const SideBusinesses = () => {
       if (newBusinessImage) {
         setUploadingNewBusinessImage(true)
         try {
-          await uploadSideBusinessImage(newBusinessImage, newBusinessId.toString(), user.user_id)
+          await uploadSideBusinessImage(newBusinessImage, newBusinessId.toString(), user.user_id, user.business_id, selectedBranchId)
         } catch (imageError) {
           console.error('Error uploading image:', imageError)
           // Don't fail the entire operation if image upload fails
