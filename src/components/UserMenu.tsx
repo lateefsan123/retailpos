@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useRole } from '../contexts/RoleContext'
 import { useTheme } from '../contexts/ThemeContext'
-import SelectUserModal from './SelectUserModal'
 import BusinessSettingsModal from './BusinessSettingsModal'
 import ChangeNameModal from './ChangeNameModal'
 import ThemeToggle from './ThemeToggle'
@@ -20,7 +19,6 @@ const UserMenu: React.FC<UserMenuProps> = ({ variant = 'floating' }) => {
   const { theme } = useTheme()
   const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
-  const [showSelectUserModal, setShowSelectUserModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [showChangeNameModal, setShowChangeNameModal] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -158,22 +156,9 @@ const UserMenu: React.FC<UserMenuProps> = ({ variant = 'floating' }) => {
 
   const handleSwitchUser = () => {
     setIsOpen(false)
-    setShowSelectUserModal(true)
+    navigate('/switch-user')
   }
 
-  const handleUserSwitch = async (selectedUser: any, password: string, usePin?: boolean) => {
-    try {
-      const success = await switchUser(selectedUser.user_id, password, usePin)
-      if (success) {
-        setShowSelectUserModal(false)
-      } else {
-        throw new Error(usePin ? 'Invalid PIN' : 'Invalid password')
-      }
-    } catch (error) {
-      console.error('Error switching user:', error)
-      throw error
-    }
-  }
 
   const handleSettings = () => {
     setShowSettingsModal(true)
@@ -495,11 +480,6 @@ const UserMenu: React.FC<UserMenuProps> = ({ variant = 'floating' }) => {
         </div>
       )}
 
-      <SelectUserModal
-        isOpen={showSelectUserModal}
-        onClose={() => setShowSelectUserModal(false)}
-        onUserSwitch={handleUserSwitch}
-      />
 
       <BusinessSettingsModal
         isOpen={showSettingsModal}

@@ -163,7 +163,7 @@ export const useSalesData = () => {
   const { user } = useAuth()
   const { selectedBranchId } = useBranch()
   
-  return useQuery({
+  const query = useQuery({
     queryKey: ['salesData', user?.business_id, selectedBranchId],
     queryFn: () => fetchSalesData(user?.business_id!, selectedBranchId),
     enabled: !!user?.business_id,
@@ -171,4 +171,18 @@ export const useSalesData = () => {
     refetchOnWindowFocus: false, // Don't refetch on window focus to prevent infinite calls
     refetchOnMount: false, // Don't refetch on mount if data is fresh
   })
+
+  // Debug logging
+  console.log('useSalesData Debug:', {
+    businessId: user?.business_id,
+    selectedBranchId,
+    enabled: !!user?.business_id,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    dataLength: query.data?.sales?.length,
+    sideBusinessDataLength: query.data?.sideBusinessSales?.length
+  })
+
+  return query
 }

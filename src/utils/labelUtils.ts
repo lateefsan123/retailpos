@@ -72,93 +72,29 @@ export const generateProductLabelHTML = (
       background: white;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-    }
-    .header { 
-      display: flex;
-      justify-content: space-between;
+      justify-content: center;
       align-items: center;
-      margin-bottom: 2px;
+      gap: 8px;
     }
-    .logo {
-      width: 20px;
-      height: 20px;
-      object-fit: contain;
-    }
-    .business-name {
-      font-size: 8px;
-      font-weight: bold;
-      color: #333;
-      flex: 1;
+    .price { 
+      font-size: 16px; 
+      font-weight: bold; 
+      color: #000;
       text-align: center;
     }
     .product-name { 
-      font-size: 11px; 
-      font-weight: bold; 
-      color: #000;
-      margin: 2px 0;
-      line-height: 1.1;
-      text-align: center;
-    }
-    .price { 
       font-size: 12px; 
       font-weight: bold; 
-      color: #2d5a27;
+      color: #000;
+      line-height: 1.1;
       text-align: center;
-      margin: 2px 0;
-    }
-    .barcode-section {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 2px;
-    }
-    .barcode {
-      font-family: 'Courier New', monospace;
-      font-size: 8px;
-      color: #666;
-      background: #f5f5f5;
-      padding: 1px 3px;
-      border-radius: 2px;
-    }
-    .category {
-      font-size: 7px;
-      color: #888;
-      text-transform: uppercase;
-    }
-    .stock-info {
-      font-size: 7px;
-      color: #666;
-      text-align: center;
-      margin-top: 1px;
-    }
-    .quantity {
-      font-size: 8px;
-      color: #333;
-      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <div class="label">
-    <div class="header">
-      <img src="${businessLogo}" alt="${businessName}" class="logo" onerror="this.style.display='none'">
-      <div class="business-name">${businessName}</div>
-    </div>
-    
-    <div class="product-name">${product.name}</div>
-    
     <div class="price">${formatPrice()}</div>
-    
-    <div class="barcode-section">
-      ${product.barcode ? `<div class="barcode">${product.barcode}</div>` : ''}
-      <div class="category">${product.category}</div>
-    </div>
-    
-    <div class="stock-info">
-      Stock: ${product.stock_quantity} ${product.is_weighted ? product.weight_unit || 'units' : 'units'}
-      ${quantity > 1 ? `<span class="quantity"> | Qty: ${quantity}</span>` : ''}
-    </div>
+    <div class="product-name">${product.name}</div>
   </div>
 </body>
 </html>`
@@ -205,71 +141,23 @@ export const generateBulkLabelsHTML = (
       background: white;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
       page-break-inside: avoid;
     }
-    .header { 
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2px;
-    }
-    .logo {
-      width: 20px;
-      height: 20px;
-      object-fit: contain;
-    }
-    .business-name {
-      font-size: 8px;
-      font-weight: bold;
-      color: #333;
-      flex: 1;
+    .price { 
+      font-size: 16px; 
+      font-weight: bold; 
+      color: #000;
       text-align: center;
     }
     .product-name { 
-      font-size: 11px; 
-      font-weight: bold; 
-      color: #000;
-      margin: 2px 0;
-      line-height: 1.1;
-      text-align: center;
-    }
-    .price { 
       font-size: 12px; 
       font-weight: bold; 
-      color: #2d5a27;
+      color: #000;
+      line-height: 1.1;
       text-align: center;
-      margin: 2px 0;
-    }
-    .barcode-section {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 2px;
-    }
-    .barcode {
-      font-family: 'Courier New', monospace;
-      font-size: 8px;
-      color: #666;
-      background: #f5f5f5;
-      padding: 1px 3px;
-      border-radius: 2px;
-    }
-    .category {
-      font-size: 7px;
-      color: #888;
-      text-transform: uppercase;
-    }
-    .stock-info {
-      font-size: 7px;
-      color: #666;
-      text-align: center;
-      margin-top: 1px;
-    }
-    .quantity {
-      font-size: 8px;
-      color: #333;
-      font-weight: bold;
     }
   </style>
 </head>
@@ -296,24 +184,8 @@ export const generateBulkLabelsHTML = (
 
       return `
         <div class="label">
-          <div class="header">
-            <img src="${businessLogo}" alt="${businessName}" class="logo" onerror="this.style.display='none'">
-            <div class="business-name">${businessName}</div>
-          </div>
-          
-          <div class="product-name">${product.name}</div>
-          
           <div class="price">${formatPrice()}</div>
-          
-          <div class="barcode-section">
-            ${product.barcode ? `<div class="barcode">${product.barcode}</div>` : ''}
-            <div class="category">${product.category}</div>
-          </div>
-          
-          <div class="stock-info">
-            Stock: ${product.stock_quantity} ${product.is_weighted ? product.weight_unit || 'units' : 'units'}
-            ${quantity > 1 ? `<span class="quantity"> | Qty: ${quantity}</span>` : ''}
-          </div>
+          <div class="product-name">${product.name}</div>
         </div>
       `
     }).join('')}

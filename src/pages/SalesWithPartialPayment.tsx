@@ -10,6 +10,7 @@ import SalesSummaryModal from '../components/sales/SalesSummaryModal'
 import { printReceipt } from '../utils/receiptUtils'
 import { Product, SideBusinessItem } from '../types/sales'
 import { supabase } from '../lib/supabaseClient'
+import { getRandomCustomerIcon } from '../utils/customerIcons'
 
 const SalesWithPartialPayment = () => {
   const { user } = useAuth()
@@ -49,6 +50,7 @@ const SalesWithPartialPayment = () => {
 
   // Local state for UI
   const [customerName, setCustomerName] = useState('')
+  const [customerGender, setCustomerGender] = useState<'male' | 'female' | null>(null)
   const [showSalesSummary, setShowSalesSummary] = useState(false)
   const [showCustomPriceModal, setShowCustomPriceModal] = useState(false)
   const [pendingSideBusinessItem, setPendingSideBusinessItem] = useState<SideBusinessItem | null>(null)
@@ -184,6 +186,7 @@ const SalesWithPartialPayment = () => {
           customerId = existingCustomer.customer_id
         } else {
           // Create new customer
+          const customerIcon = customerGender ? getRandomCustomerIcon(customerGender) : null
           const { data: newCustomer, error: customerError } = await supabase
             .from('customers')
             .insert([{
@@ -191,7 +194,9 @@ const SalesWithPartialPayment = () => {
               phone_number: '000-000-0000', // Default phone number
               email: null,
               business_id: currentBusiness.business_id,
-              branch_id: null // No branch selection in this component
+              branch_id: null, // No branch selection in this component
+              gender: customerGender,
+              icon: customerIcon
             }])
             .select()
             .single()
@@ -568,12 +573,14 @@ Remaining Balance: €${partialPayment.amountRemaining.toFixed(2)}`
       <OrderSidebar
         order={order}
         customerName={customerName}
+        customerGender={customerGender}
         user={user}
         onUpdateQuantity={updateQuantity}
         onUpdateWeight={updateWeight}
         onRemoveFromOrder={removeFromOrder}
         onShowWeightEditModal={showWeightEditModal}
         onSetCustomerName={setCustomerName}
+        onSetCustomerGender={setCustomerGender}
         onShowSalesSummary={() => setShowSalesSummary(true)}
         onResetTransaction={handleResetTransaction}
         getCurrentDateTime={getCurrentDateTime}

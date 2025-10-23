@@ -399,6 +399,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           // Use bcrypt to verify hashed PIN
           try {
             isPinValid = await verifyPassword(password, userData.pin_hash)
+            console.log('PIN bcrypt verification result:', isPinValid)
           } catch (error) {
             console.error('Error verifying hashed PIN:', error)
             isPinValid = false
@@ -406,6 +407,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         } else if (userData.pin) {
           // Legacy: plaintext PIN comparison (for backward compatibility)
           isPinValid = userData.pin === password
+          console.log('PIN legacy verification result:', isPinValid)
           
           // Auto-migrate: hash the PIN for next time
           if (isPinValid) {
@@ -423,7 +425,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           }
         }
         
+        console.log('Final PIN validation result:', isPinValid)
         if (!isPinValid) {
+          console.log('PIN validation failed, returning false')
           return false
         }
         
@@ -445,13 +449,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         let isPasswordValid = false
         try {
           isPasswordValid = await verifyPassword(password, userData.password_hash)
-        } catch {
+          console.log('Bcrypt verification result:', isPasswordValid)
+        } catch (error) {
+          console.log('Bcrypt verification failed, trying legacy hash:', error)
           // If bcrypt fails, try legacy hash
           const legacyHash = hashPasswordLegacy(password)
           isPasswordValid = userData.password_hash === legacyHash || userData.password_hash === legacyHash.toString()
+          console.log('Legacy hash verification result:', isPasswordValid)
         }
         
+        console.log('Final password validation result:', isPasswordValid)
         if (!isPasswordValid) {
+          console.log('Password validation failed, returning false')
           return false
         }
         
@@ -501,6 +510,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       })
 
       // Update the current user state
+      console.log('Authentication successful, updating user state for user:', newUserData.username)
       setUser(newUserData)
       localStorage.setItem('pos_user', JSON.stringify(newUserData))
       localStorage.setItem('auth_token', token)
@@ -509,8 +519,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         localStorage.setItem('lastPassword', password)
       }
       
+      console.log('switchUser returning true')
       return true
     } catch (error) {
+      console.log('switchUser caught error:', error)
       return false
     } finally {
       setLoading(false)

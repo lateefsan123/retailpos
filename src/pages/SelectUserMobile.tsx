@@ -157,11 +157,21 @@ const SelectUserMobile: React.FC = () => {
         localStorage.setItem('selected_branch_name', selectedBranch.branch_name);
         navigate('/dashboard-mobile');
       } else {
-        throw new Error(usePinAuth ? 'Invalid PIN' : 'Invalid password');
+        // Authentication failed - show error without throwing
+        if (usePinAuth) {
+          setPasswordError('Incorrect PIN. Please check your PIN and try again.');
+        } else {
+          setPasswordError('Incorrect password. Please check your password and try again.');
+        }
       }
     } catch (error) {
       console.log('Password error:', error);
-      setPasswordError(usePinAuth ? 'Invalid PIN. Please try again.' : 'Invalid password. Please try again.');
+      // Provide more specific error messages
+      if (usePinAuth) {
+        setPasswordError('Incorrect PIN. Please check your PIN and try again.');
+      } else {
+        setPasswordError('Incorrect password. Please check your password and try again.');
+      }
     } finally {
       setIsAuthenticating(false);
     }

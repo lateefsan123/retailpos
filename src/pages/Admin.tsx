@@ -577,7 +577,8 @@ const Admin = () => {
         role: newUser.role,
         active: true,
         business_id: businessId,
-        branch_id: newUser.branch_id
+        branch_id: newUser.branch_id,
+        private_preview: true  // Allow newly created users to login immediately
       }
 
       // Hash and add PIN if provided
