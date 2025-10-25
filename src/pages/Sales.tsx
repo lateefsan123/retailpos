@@ -2952,7 +2952,6 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   }}
                   style={{
                     padding: '14px 32px',
-                    border: 'none',
                     borderRadius: '8px',
                     fontSize: '16px',
                     fontWeight: '500',
