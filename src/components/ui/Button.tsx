@@ -36,28 +36,28 @@ const Button: React.FC<ButtonProps> = ({
 
   const variantStyles = {
     primary: {
-      background: '#7d8d86',
-      color: '#ffffff'
+      background: 'var(--primary-bg)',
+      color: 'var(--primary-text)'
     },
     secondary: {
-      background: '#f3f4f6',
-      color: '#374151',
-      border: '1px solid #d1d5db'
+      background: 'var(--secondary-bg)',
+      color: 'var(--secondary-text)',
+      border: '1px solid var(--secondary-border)'
     },
     danger: {
-      background: '#6b7280',
-      color: '#ffffff'
+      background: 'var(--danger-bg)',
+      color: 'var(--danger-text)'
     },
     success: {
-      background: '#10b981',
+      background: 'var(--success-color)',
       color: '#ffffff'
     }
   }
 
   const hoverStyles = {
-    primary: { background: '#6a7a73' },
-    secondary: { background: '#e5e7eb' },
-    danger: { background: '#4b5563' },
+    primary: { background: 'var(--primary-bg-hover)' },
+    secondary: { background: 'var(--secondary-bg-hover)' },
+    danger: { background: 'var(--danger-bg-hover)' },
     success: { background: '#059669' }
   }
 
