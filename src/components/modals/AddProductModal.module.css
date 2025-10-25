@@ -329,6 +329,142 @@
   gap: 16px;
 }
 
+.variationsSection {
+  margin: 24px 0;
+  padding: 18px;
+  border: 1px dashed rgba(125, 141, 134, 0.6);
+  border-radius: 12px;
+  background: rgba(20, 20, 20, 0.85);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.variationsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.variationsTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #f9fafb;
+}
+
+.variationsDescription {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #9ca3af;
+  max-width: 520px;
+}
+
+.variationsToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #d1d5db;
+  cursor: pointer;
+  user-select: none;
+}
+
+.variationsToggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: #7d8d86;
+}
+
+.variationsHint {
+  margin: 0;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.variationsEmpty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px dashed #4b5563;
+  background: rgba(255, 255, 255, 0.04);
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.variationsEmpty i {
+  color: #7d8d86;
+}
+
+.variationList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.variationRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 140px) minmax(0, 160px) minmax(0, 160px) 44px;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.variationField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.variationField label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #d1d5db;
+}
+
+.removeVariationButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #4b5563;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  height: 42px;
+  width: 42px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.removeVariationButton:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #f87171;
+}
+
+.addVariationButton {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px dashed #4b5563;
+  background: transparent;
+  color: #e5e7eb;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.addVariationButton:hover {
+  border-style: solid;
+  border-color: #7d8d86;
+  background: rgba(125, 141, 134, 0.15);
+  color: #ffffff;
+}
+
 .imageUploadSection {
   margin-bottom: 16px;
 }
@@ -577,3 +713,4 @@ label.imageUploadButton:hover {
     border-radius: 2px;
   }
 }
+

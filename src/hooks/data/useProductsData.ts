@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../contexts/AuthContext'
 import { useBranch } from '../../contexts/BranchContext'
+import { ProductVariation } from '../../types/productVariation'
 
 export interface Product {
   product_id: string
@@ -24,6 +25,7 @@ export interface Product {
   last_sold_date?: string
   business_id: number
   branch_id?: number
+  variations?: ProductVariation[] | null
 }
 
 export interface SideBusinessItem {

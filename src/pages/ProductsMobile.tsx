@@ -13,6 +13,7 @@ import { printBulkLabels } from '../utils/labelUtils'
 import BranchSelector from '../components/BranchSelector'
 import MobileBottomNav from '../components/MobileBottomNav'
 import styles from './ProductsMobile.module.css'
+import { ProductVariation } from '../types/productVariation'
 
 interface Product {
   product_id: string
@@ -34,6 +35,7 @@ interface Product {
   sales_count?: number
   total_revenue?: number
   last_sold_date?: string
+  variations?: ProductVariation[] | null
 }
 
 const ProductsMobile = () => {

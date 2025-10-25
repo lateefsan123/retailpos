@@ -4,6 +4,8 @@
 // Updated TypeScript interfaces for the new multi-tenant schema
 // =====================================================
 
+import { ProductVariation } from './productVariation'
+
 // =====================================================
 // CORE BUSINESS TYPES
 // =====================================================
@@ -60,6 +62,7 @@ export interface Product {
   total_revenue: number
   last_sold_date?: string
   business_id: number // Multi-tenant support
+  variations?: ProductVariation[] | null
 }
 
 export interface NewProduct {
@@ -76,6 +79,7 @@ export interface NewProduct {
   is_weighted: boolean
   weight_unit: string
   price_per_unit: string
+  variations?: ProductVariation[]
 }
 
 // =====================================================

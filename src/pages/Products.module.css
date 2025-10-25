@@ -215,6 +215,22 @@
   border-color: #7d8d86;
 }
 
+.searchInputWithIcon {
+  padding-left: 40px !important;
+}
+
+.searchIcon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary);
+  pointer-events: none;
+  opacity: 0.85;
+}
+
 .filterSelect {
   padding: 12px 16px;
   border: var(--input-border);

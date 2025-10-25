@@ -5,6 +5,7 @@ import { useBusinessId } from '../../hooks/useBusinessId'
 import { useBranch } from '../../contexts/BranchContext'
 import { useSuppliers } from '../../hooks/useSuppliers'
 import styles from './AddProductModal.module.css'
+import { ProductVariation } from '../../types/productVariation'
 
 interface Product {
   product_id: string
@@ -26,6 +27,7 @@ interface Product {
   sales_count?: number
   total_revenue?: number
   last_sold_date?: string
+  variations?: ProductVariation[] | null
 }
 
 interface AddProductModalProps {
@@ -34,6 +36,14 @@ interface AddProductModalProps {
   onProductAdded: (product: Product) => void
   categories: string[]
   onCategoryAdded?: (category: string) => void
+}
+
+interface ProductVariationForm {
+  id: string
+  label: string
+  price: string
+  sku: string
+  barcode: string
 }
 
 async function uploadProductImage(file: File, productId: string, businessId: number | null, branchId: number | null) {
@@ -108,6 +118,23 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [showCategorySuggestions, setShowCategorySuggestions] = useState(false)
   const [hasFormChanged, setHasFormChanged] = useState(false)
+  const [variationsEnabled, setVariationsEnabled] = useState(false)
+  const [variationForms, setVariationForms] = useState<ProductVariationForm[]>([])
+
+  const generateVariationId = () => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID()
+    }
+    return Math.random().toString(36).slice(2, 10)
+  }
+
+  const createEmptyVariation = (): ProductVariationForm => ({
+    id: generateVariationId(),
+    label: '',
+    price: '',
+    sku: '',
+    barcode: ''
+  })
 
   const resetForm = () => {
     setNewProduct({
@@ -123,14 +150,43 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
       barcode: '',
       description: '',
       is_weighted: false,
-      weight_unit: 'kg',
-      price_per_unit: 0
-    })
-    setError(null)
-    setSelectedImage(null)
-    setImagePreview(null)
-    setShowCategorySuggestions(false)
-    setHasFormChanged(false)
+    weight_unit: 'kg',
+    price_per_unit: 0
+  })
+  setVariationsEnabled(false)
+  setVariationForms([])
+  setError(null)
+  setSelectedImage(null)
+  setImagePreview(null)
+  setShowCategorySuggestions(false)
+  setHasFormChanged(false)
+}
+
+  const handleToggleVariations = (checked: boolean) => {
+    setVariationsEnabled(checked)
+    setHasFormChanged(true)
+    if (checked && variationForms.length === 0) {
+      setVariationForms([createEmptyVariation()])
+    }
+  }
+
+  const handleAddVariation = () => {
+    setVariationForms(prev => [...prev, createEmptyVariation()])
+    setHasFormChanged(true)
+  }
+
+  const handleVariationChange = <T extends keyof ProductVariationForm>(id: string, field: T, value: ProductVariationForm[T]) => {
+    setVariationForms(prev =>
+      prev.map(variation =>
+        variation.id === id ? { ...variation, [field]: value } : variation
+      )
+    )
+    setHasFormChanged(true)
+  }
+
+  const handleRemoveVariation = (id: string) => {
+    setVariationForms(prev => prev.filter(variation => variation.id !== id))
+    setHasFormChanged(true)
   }
 
   const handleClose = () => {
@@ -188,6 +244,22 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
       // Generate a unique product ID
       const productId = crypto.randomUUID()
 
+      const sanitizedVariations = variationsEnabled
+        ? variationForms
+            .map(({ label, price, sku, barcode }) => ({
+              label: label.trim(),
+              price: parseFloat(price),
+              sku: sku.trim() || null,
+              barcode: barcode.trim() || null
+            }))
+            .filter(
+              variation =>
+                variation.label.length > 0 &&
+                Number.isFinite(variation.price) &&
+                variation.price >= 0
+            )
+        : []
+
       const productData = {
         product_id: productId,
         business_id: businessId,
@@ -208,7 +280,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
         price_per_unit: newProduct.is_weighted ? parseFloat(newProduct.price_per_unit.toString()) : null,
         last_updated: new Date().toISOString(),
         sales_count: 0,
-        total_revenue: 0
+        total_revenue: 0,
+        variations: sanitizedVariations.length > 0 ? sanitizedVariations : null
       }
 
       const { data, error: insertError } = await supabase
@@ -224,6 +297,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
       if (!insertedProduct) {
         throw new Error('Failed to create product')
       }
+
+      insertedProduct.variations = sanitizedVariations.length > 0 ? sanitizedVariations : null
 
       // Upload image if selected
       if (selectedImage && insertedProduct.product_id) {
@@ -419,7 +494,107 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                   className={styles.formInput}
                   placeholder="100"
                 />
+            </div>
+          </div>
+
+            <div className={styles.variationsSection}>
+              <div className={styles.variationsHeader}>
+                <div>
+                  <p className={styles.variationsTitle}>Product Variations</p>
+                  <p className={styles.variationsDescription}>
+                    Define alternate pack sizes like "Full Box" or "Half Box" with their own pricing.
+                  </p>
+                </div>
+                <label className={styles.variationsToggle}>
+                  <input
+                    type="checkbox"
+                    checked={variationsEnabled}
+                    onChange={(e) => handleToggleVariations(e.target.checked)}
+                  />
+                  <span>Enable variations</span>
+                </label>
               </div>
+
+              {variationsEnabled ? (
+                <>
+                  {variationForms.length > 0 ? (
+                    <div className={styles.variationList}>
+                      {variationForms.map((variation) => (
+                        <div key={variation.id} className={styles.variationRow}>
+                          <div className={styles.variationField}>
+                            <label className={styles.formLabel}>Label</label>
+                            <input
+                              type="text"
+                              value={variation.label}
+                              onChange={(e) => handleVariationChange(variation.id, 'label', e.target.value)}
+                              className={styles.formInput}
+                              placeholder="e.g., Full Box"
+                            />
+                          </div>
+                          <div className={styles.variationField}>
+                            <label className={styles.formLabel}>Price</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={variation.price}
+                              onChange={(e) => handleVariationChange(variation.id, 'price', e.target.value)}
+                              className={styles.formInput}
+                              placeholder="0.00"
+                            />
+                          </div>
+                          <div className={styles.variationField}>
+                            <label className={styles.formLabel}>SKU (optional)</label>
+                            <input
+                              type="text"
+                              value={variation.sku}
+                              onChange={(e) => handleVariationChange(variation.id, 'sku', e.target.value)}
+                              className={styles.formInput}
+                              placeholder="Variation SKU"
+                            />
+                          </div>
+                          <div className={styles.variationField}>
+                            <label className={styles.formLabel}>Barcode (optional)</label>
+                            <input
+                              type="text"
+                              value={variation.barcode}
+                              onChange={(e) => handleVariationChange(variation.id, 'barcode', e.target.value)}
+                              className={styles.formInput}
+                              placeholder="Scan or enter"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveVariation(variation.id)}
+                            className={styles.removeVariationButton}
+                            aria-label="Remove variation"
+                          >
+                            <i className="fa-solid fa-trash"></i>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className={styles.variationsEmpty}>
+                      <i className="fa-solid fa-layer-group"></i>
+                      <span>Add different pack sizes like boxes or bundles to keep pricing organised.</span>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleAddVariation}
+                    className={styles.addVariationButton}
+                  >
+                    <i className="fa-solid fa-plus"></i>
+                    {variationForms.length > 0 ? 'Add another variation' : 'Add a variation'}
+                  </button>
+                </>
+              ) : (
+                <p className={styles.variationsHint}>
+                  Toggle this on to capture alternate configurations such as box, half box or bundle pricing.
+                </p>
+              )}
             </div>
 
             <div className={styles.formGrid}>

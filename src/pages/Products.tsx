@@ -120,6 +120,7 @@ const Products = () => {
   const [productInsights, setProductInsights] = useState<any>(null)
   const [insightsLoading, setInsightsLoading] = useState(false)
   const [activeChart, setActiveChart] = useState<'daily' | 'weekly' | 'monthly'>('daily')
+  const [activeInsightsTab, setActiveInsightsTab] = useState<'overview' | 'sales' | 'customers'>('overview')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedProductForActions, setSelectedProductForActions] = useState<string | null>(null)
@@ -797,9 +798,18 @@ const Products = () => {
 
   // Handle product row click to show insights
   const handleProductClick = (product: Product) => {
+    console.log('Opening insights modal for product:', product.name)
     setSelectedProductForInsights(product)
     setShowInsightsModal(true)
     fetchProductInsights(product)
+  }
+
+  // Close insights modal
+  const closeInsightsModal = () => {
+    setShowInsightsModal(false)
+    setSelectedProductForInsights(null)
+    setProductInsights(null)
+    setActiveInsightsTab('overview')
   }
 
   // Since we're now doing server-side filtering, we use products directly
@@ -2255,7 +2265,7 @@ const Products = () => {
                             
                             {/* Product Icon */}
                             <i className="fa-solid fa-box" style={{
-                              color: '#7d8d86',
+                              color: 'var(--text-secondary)',
                               fontSize: '14px',
                               flexShrink: 0
                             }}></i>
@@ -2264,7 +2274,7 @@ const Products = () => {
                           <>
                             {/* Category Icon */}
                             <i className="fa-solid fa-tags" style={{
-                              color: '#7d8d86',
+                              color: 'var(--text-secondary)',
                               fontSize: '16px',
                               width: '16px',
                               flexShrink: 0
@@ -2290,7 +2300,7 @@ const Products = () => {
                             
                             {/* Category Icon */}
                             <i className="fa-solid fa-arrow-right" style={{
-                              color: '#7d8d86',
+                              color: 'var(--text-secondary)',
                               fontSize: '12px',
                               flexShrink: 0
                             }}></i>
@@ -2953,7 +2963,7 @@ const Products = () => {
                   background: 'none',
                   border: 'none',
                   fontSize: '24px',
-                  color: '#7d8d86',
+                  color: 'var(--text-secondary)',
                   cursor: 'pointer',
                   padding: '4px',
                   borderRadius: '4px',
@@ -3596,7 +3606,7 @@ const Products = () => {
                   background: 'none',
                   border: 'none',
                   fontSize: '24px',
-                  color: '#7d8d86',
+                  color: 'var(--text-secondary)',
                   cursor: 'pointer',
                   padding: '4px',
                   borderRadius: '4px',
@@ -4353,7 +4363,7 @@ const Products = () => {
           zIndex: 2000,
           padding: '20px'
         }}
-        onClick={() => setShowInsightsModal(false)}
+        onClick={closeInsightsModal}
         >
           <div style={{
             background: 'var(--bg-card)',
@@ -4406,39 +4416,39 @@ const Products = () => {
                 )}
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    <i className="fas fa-analytics" style={{ color: '#7d8d86', fontSize: '20px' }}></i>
+                    <i className="fas fa-analytics" style={{ color: 'var(--text-secondary)', fontSize: '20px' }}></i>
                     <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '700', color: 'var(--text-header)', letterSpacing: '-0.025em' }}>
                       Product Insights
                     </h2>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
-                    <i className="fas fa-box" style={{ color: '#7d8d86', fontSize: '16px' }}></i>
-                    <p style={{ margin: 0, fontSize: '18px', color: '#374151', fontWeight: '600' }}>
+                    <i className="fas fa-box" style={{ color: 'var(--text-secondary)', fontSize: '16px' }}></i>
+                    <p style={{ margin: 0, fontSize: '18px', color: 'var(--text-primary)', fontWeight: '600' }}>
                       {selectedProductForInsights.name}
                     </p>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <i className="fas fa-tags" style={{ color: '#9ca3af', fontSize: '14px' }}></i>
-                    <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
+                    <i className="fas fa-tags" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}></i>
+                    <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-secondary)' }}>
                       {selectedProductForInsights.category}
                     </p>
                     {selectedProductForInsights.sku && (
                       <>
-                        <i className="fas fa-barcode" style={{ color: '#9ca3af', fontSize: '14px', marginLeft: '16px' }}></i>
-                        <span style={{ fontSize: '14px', color: '#6b7280' }}>SKU: {selectedProductForInsights.sku}</span>
+                        <i className="fas fa-barcode" style={{ color: 'var(--text-secondary)', fontSize: '14px', marginLeft: '16px' }}></i>
+                        <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>SKU: {selectedProductForInsights.sku}</span>
                       </>
                     )}
                   </div>
                 </div>
               </div>
               <button
-                onClick={() => setShowInsightsModal(false)}
+                onClick={closeInsightsModal}
                 style={{
                   width: '40px',
                   height: '40px',
                   borderRadius: '50%',
                   border: '2px solid #e2e8f0',
-                  color: '#6b7280',
+                  color: 'var(--text-secondary)',
                   cursor: 'pointer',
                   fontSize: '18px',
                   display: 'flex',
@@ -4462,6 +4472,56 @@ const Products = () => {
               </button>
             </div>
 
+            {/* Tab Navigation */}
+            <div style={{ 
+              display: 'flex', 
+              borderBottom: '2px solid #f1f5f9', 
+              marginBottom: '32px',
+              gap: '4px'
+            }}>
+              {[
+                { key: 'overview', label: 'Overview', icon: 'fas fa-chart-pie' },
+                { key: 'sales', label: 'Sales Data', icon: 'fas fa-chart-line' },
+                { key: 'customers', label: 'Customers', icon: 'fas fa-users' }
+              ].map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveInsightsTab(tab.key as 'overview' | 'sales' | 'customers')}
+                  style={{
+                    flex: 1,
+                    padding: '16px 24px',
+                    border: 'none',
+                    background: activeInsightsTab === tab.key ? '#7d8d86' : 'transparent',
+                    color: activeInsightsTab === tab.key ? 'white' : '#6b7280',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    borderRadius: '8px 8px 0 0',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (activeInsightsTab !== tab.key) {
+                      e.currentTarget.style.background = '#f1f5f9'
+                      e.currentTarget.style.color = '#374151'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (activeInsightsTab !== tab.key) {
+                      e.currentTarget.style.background = 'transparent'
+                      e.currentTarget.style.color = '#6b7280'
+                    }
+                  }}
+                >
+                  <i className={tab.icon} style={{ fontSize: '14px' }}></i>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
             {insightsLoading ? (
               <div style={{ textAlign: 'center', padding: '60px' }}>
                 <div style={{ 
@@ -4469,7 +4529,7 @@ const Products = () => {
                   alignItems: 'center', 
                   gap: '12px', 
                   fontSize: '18px', 
-                  color: '#7d8d86',
+                  color: 'var(--text-secondary)',
                   padding: '20px 32px',
                   borderRadius: '12px',
                   border: '1px solid #e2e8f0'
@@ -4477,12 +4537,14 @@ const Products = () => {
                   <i className="fas fa-spinner fa-spin" style={{ fontSize: '20px', color: '#3b82f6' }}></i>
                   Loading insights...
                 </div>
-                <div style={{ fontSize: '14px', color: '#9ca3af', marginTop: '12px' }}>
+                <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '12px' }}>
                   Analyzing sales data and trends
                 </div>
               </div>
             ) : productInsights ? (
               <div>
+                {activeInsightsTab === 'overview' && (
+                  <>
                 {/* Key Metrics */}
                 <div style={{ marginBottom: '40px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
@@ -4493,12 +4555,12 @@ const Products = () => {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
                     <div style={{ 
-                      background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)', 
+                      background: 'var(--bg-nested)', 
                       padding: '24px', 
                       borderRadius: '16px', 
                       textAlign: 'center',
-                      border: '1px solid #93c5fd',
-                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+                      border: '1px solid var(--border-color)',
+                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
                       position: 'relative',
                       overflow: 'hidden'
                     }}>
@@ -4511,18 +4573,18 @@ const Products = () => {
                       }}>
                         <i className="fas fa-shopping-cart"></i>
                       </div>
-                      <div style={{ fontSize: '32px', fontWeight: '700', color: '#1e40af', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '32px', fontWeight: '700', color: 'var(--text-header)', marginBottom: '8px' }}>
                         {productInsights.totalSales}
                       </div>
-                      <div style={{ fontSize: '14px', color: '#1e40af', fontWeight: '500' }}>Total Sales</div>
+                      <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '500' }}>Total Sales</div>
                     </div>
                     <div style={{ 
-                      background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)', 
+                      background: 'var(--bg-nested)', 
                       padding: '24px', 
                       borderRadius: '16px', 
                       textAlign: 'center',
-                      border: '1px solid #86efac',
-                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+                      border: '1px solid var(--border-color)',
+                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
                       position: 'relative',
                       overflow: 'hidden'
                     }}>
@@ -4535,18 +4597,18 @@ const Products = () => {
                       }}>
                         <i className="fas fa-euro-sign"></i>
                       </div>
-                      <div style={{ fontSize: '32px', fontWeight: '700', color: '#166534', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '32px', fontWeight: '700', color: 'var(--text-header)', marginBottom: '8px' }}>
                         {formatCurrency(productInsights.totalRevenue)}
                       </div>
-                      <div style={{ fontSize: '14px', color: '#166534', fontWeight: '500' }}>Total Revenue</div>
+                      <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '500' }}>Total Revenue</div>
                     </div>
                     <div style={{ 
-                      background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', 
+                      background: 'var(--bg-nested)', 
                       padding: '24px', 
                       borderRadius: '16px', 
                       textAlign: 'center',
-                      border: '1px solid #fbbf24',
-                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+                      border: '1px solid var(--border-color)',
+                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
                       position: 'relative',
                       overflow: 'hidden'
                     }}>
@@ -4559,20 +4621,20 @@ const Products = () => {
                       }}>
                         <i className="fas fa-weight"></i>
                       </div>
-                      <div style={{ fontSize: '32px', fontWeight: '700', color: '#92400e', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '32px', fontWeight: '700', color: 'var(--text-header)', marginBottom: '8px' }}>
                         {productInsights.totalQuantitySold.toFixed(1)}
                       </div>
-                      <div style={{ fontSize: '14px', color: '#92400e', fontWeight: '500' }}>
+                      <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '500' }}>
                         {selectedProductForInsights.is_weighted ? (selectedProductForInsights.weight_unit || 'kg') : 'Units'} Sold
                       </div>
                     </div>
                     <div style={{ 
-                      background: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)', 
+                      background: 'var(--bg-nested)', 
                       padding: '24px', 
                       borderRadius: '16px', 
                       textAlign: 'center',
-                      border: '1px solid #f9a8d4',
-                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+                      border: '1px solid var(--border-color)',
+                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
                       position: 'relative',
                       overflow: 'hidden'
                     }}>
@@ -4585,10 +4647,10 @@ const Products = () => {
                       }}>
                         <i className="fas fa-percentage"></i>
                       </div>
-                      <div style={{ fontSize: '32px', fontWeight: '700', color: '#be185d', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '32px', fontWeight: '700', color: 'var(--text-header)', marginBottom: '8px' }}>
                         {productInsights.profitMargin.toFixed(1)}%
                       </div>
-                      <div style={{ fontSize: '14px', color: '#be185d', fontWeight: '500' }}>Est. Profit Margin</div>
+                      <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '500' }}>Est. Profit Margin</div>
                     </div>
                   </div>
                 </div>
@@ -4809,44 +4871,44 @@ const Products = () => {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
                     <i className="fas fa-info-circle" style={{ color: '#7d8d86', fontSize: '20px' }}></i>
-                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#1e293b' }}>
+                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: 'var(--text-header)' }}>
                       Product Information
                     </h3>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--input-bg)', borderRadius: '8px', border: 'var(--border-subtle)' }}>
-                      <i className="fas fa-barcode" style={{ color: '#6b7280', fontSize: '16px' }}></i>
+                      <i className="fas fa-barcode" style={{ color: 'var(--text-secondary)', fontSize: '16px' }}></i>
                       <div>
-                        <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Product ID</div>
-                        <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>{selectedProductForInsights.product_id}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>Product ID</div>
+                        <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '600' }}>{selectedProductForInsights.product_id}</div>
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--input-bg)', borderRadius: '8px', border: 'var(--border-subtle)' }}>
-                      <i className="fas fa-tags" style={{ color: '#6b7280', fontSize: '16px' }}></i>
+                      <i className="fas fa-tags" style={{ color: 'var(--text-secondary)', fontSize: '16px' }}></i>
                       <div>
-                        <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Category</div>
-                        <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>{selectedProductForInsights.category}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>Category</div>
+                        <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '600' }}>{selectedProductForInsights.category}</div>
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--input-bg)', borderRadius: '8px', border: 'var(--border-subtle)' }}>
-                      <i className="fas fa-boxes" style={{ color: '#6b7280', fontSize: '16px' }}></i>
+                      <i className="fas fa-boxes" style={{ color: 'var(--text-secondary)', fontSize: '16px' }}></i>
                       <div>
-                        <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Current Stock</div>
-                        <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>{selectedProductForInsights.stock_quantity}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>Current Stock</div>
+                        <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '600' }}>{selectedProductForInsights.stock_quantity}</div>
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--input-bg)', borderRadius: '8px', border: 'var(--border-subtle)' }}>
-                      <i className="fas fa-exclamation-triangle" style={{ color: '#6b7280', fontSize: '16px' }}></i>
+                      <i className="fas fa-exclamation-triangle" style={{ color: 'var(--text-secondary)', fontSize: '16px' }}></i>
                       <div>
-                        <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Reorder Level</div>
-                        <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>{selectedProductForInsights.reorder_level}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>Reorder Level</div>
+                        <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '600' }}>{selectedProductForInsights.reorder_level}</div>
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--input-bg)', borderRadius: '8px', border: 'var(--border-subtle)' }}>
-                      <i className="fas fa-euro-sign" style={{ color: '#6b7280', fontSize: '16px' }}></i>
+                      <i className="fas fa-euro-sign" style={{ color: 'var(--text-secondary)', fontSize: '16px' }}></i>
                       <div>
-                        <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Price</div>
-                        <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>Price</div>
+                        <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '600' }}>
                           {selectedProductForInsights.is_weighted 
                             ? `${formatCurrency(selectedProductForInsights.price_per_unit)}/${selectedProductForInsights.weight_unit}`
                             : formatCurrency(selectedProductForInsights.price)
@@ -4855,22 +4917,28 @@ const Products = () => {
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--input-bg)', borderRadius: '8px', border: 'var(--border-subtle)' }}>
-                      <i className="fas fa-weight" style={{ color: '#6b7280', fontSize: '16px' }}></i>
+                      <i className="fas fa-weight" style={{ color: 'var(--text-secondary)', fontSize: '16px' }}></i>
                       <div>
-                        <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>Type</div>
-                        <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>{selectedProductForInsights.is_weighted ? 'Weighted Product' : 'Regular Product'}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>Type</div>
+                        <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '600' }}>{selectedProductForInsights.is_weighted ? 'Weighted Product' : 'Regular Product'}</div>
                       </div>
                     </div>
                   </div>
                 </div>
 
+                {/* Product Info Section */}
+                  </>
+                )}
+
+                {activeInsightsTab === 'sales' && (
+                  <>
                 {/* Additional Stats */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '32px' }}>
                   <div style={{ padding: '20px', borderRadius: '12px' }}>
                     <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: 'var(--text-primary) !important' }}>
                       Sales Performance
                     </h3>
-                    <div style={{ fontSize: '14px', color: '#7d8d86', lineHeight: '1.6' }}>
+                    <div style={{ fontSize: '14px', color: 'var(--text-primary)', lineHeight: '1.6' }}>
                       <div style={{ marginBottom: '8px' }}>
                         <strong>Average sales per day:</strong> {productInsights.averageSalesPerDay.toFixed(1)}
                       </div>
@@ -4897,7 +4965,7 @@ const Products = () => {
                       Top Selling Days (Last 30 Days)
                     </h3>
                     {productInsights.topSellingDays.length > 0 ? (
-                      <div style={{ fontSize: '14px', color: '#7d8d86' }}>
+                      <div style={{ fontSize: '14px', color: 'var(--text-primary)' }}>
                         {productInsights.topSellingDays.map((day, index) => (
                           <div key={index} style={{ marginBottom: '4px' }}>
                             {new Date(day.date).toLocaleDateString()}: {day.count} sales
@@ -4905,11 +4973,16 @@ const Products = () => {
                         ))}
                       </div>
                     ) : (
-                      <div style={{ fontSize: '14px', color: '#7d8d86' }}>No sales in the last 30 days</div>
+                      <div style={{ fontSize: '14px', color: 'var(--text-primary)' }}>No sales in the last 30 days</div>
                     )}
                   </div>
                 </div>
 
+                  </>
+                )}
+
+                {activeInsightsTab === 'customers' && (
+                  <>
                 {/* Recent Sales */}
                 <div style={{ 
                   padding: '24px', 
@@ -4919,7 +4992,7 @@ const Products = () => {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
                     <i className="fas fa-receipt" style={{ color: '#7d8d86', fontSize: '20px' }}></i>
-                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#1e293b' }}>
+                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: 'var(--text-header)' }}>
                       Recent Sales
                     </h3>
                   </div>
@@ -4928,24 +5001,24 @@ const Products = () => {
                       <table style={{ width: '100%', fontSize: '14px' }}>
                         <thead>
                           <tr style={{ borderBottom: '2px solid #e5e7eb', background: '#f9fafb' }}>
-                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151' }}>
-                              <i className="fas fa-calendar" style={{ fontSize: '12px', color: '#6b7280', marginRight: '6px' }}></i>
+                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                              <i className="fas fa-calendar" style={{ fontSize: '12px', color: 'var(--text-secondary)', marginRight: '6px' }}></i>
                               Date
                             </th>
-                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151' }}>
-                              <i className="fas fa-hashtag" style={{ fontSize: '12px', color: '#6b7280', marginRight: '6px' }}></i>
+                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                              <i className="fas fa-hashtag" style={{ fontSize: '12px', color: 'var(--text-secondary)', marginRight: '6px' }}></i>
                               Quantity
                             </th>
-                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151' }}>
-                              <i className="fas fa-euro-sign" style={{ fontSize: '12px', color: '#6b7280', marginRight: '6px' }}></i>
+                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                              <i className="fas fa-euro-sign" style={{ fontSize: '12px', color: 'var(--text-secondary)', marginRight: '6px' }}></i>
                               Price
                             </th>
-                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151' }}>
-                              <i className="fas fa-user" style={{ fontSize: '12px', color: '#6b7280', marginRight: '6px' }}></i>
+                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                              <i className="fas fa-user" style={{ fontSize: '12px', color: 'var(--text-secondary)', marginRight: '6px' }}></i>
                               Customer
                             </th>
-                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: '#374151' }}>
-                              <i className="fas fa-user-tie" style={{ fontSize: '12px', color: '#6b7280', marginRight: '6px' }}></i>
+                            <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                              <i className="fas fa-user-tie" style={{ fontSize: '12px', color: 'var(--text-secondary)', marginRight: '6px' }}></i>
                               Cashier
                             </th>
                           </tr>
@@ -4974,11 +5047,13 @@ const Products = () => {
                       </table>
                     </div>
                   ) : (
-                    <div style={{ fontSize: '14px', color: '#7d8d86', textAlign: 'center', padding: '20px' }}>
+                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>
                       No sales recorded for this product
                     </div>
                   )}
                 </div>
+                  </>
+                )}
               </div>
               ) : (
                 <div>
@@ -5364,3 +5439,9 @@ const Products = () => {
 }
 
 export default Products
+
+
+
+
+
+

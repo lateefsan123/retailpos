@@ -21,6 +21,7 @@ import CustomerAutocomplete from '../components/CustomerAutocomplete'
 import StockAlertModal from '../components/sales/StockAlertModal'
 import AddProductModal from '../components/modals/AddProductModal'
 import styles from '../components/sales/SalesSummaryModal.module.css'
+import { ProductVariation } from '../types/productVariation'
 
 // Helper function to get local time in database format
 const getLocalDateTime = () => {
@@ -178,8 +179,9 @@ interface Product {
   stock_quantity: number
   image_url?: string
   weight_unit?: string // e.g., 'kg', 'g', 'lb', 'oz'
-  price_per_unit?: number // price per weight unit (e.g., 3.00 for €3 per kg)
+  price_per_unit?: number // price per weight unit (e.g., 3.00 per kg)
   is_weighted?: boolean // true if item is sold by weight
+  variations?: ProductVariation[] | null
 }
 
 interface SideBusinessItem {
@@ -2369,7 +2371,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 
                 <input
                   type="text"
-                  placeholder="Search products or scan barcode..."
+                  placeholder="Search products"
                   value={searchTerm}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   onFocus={(e) => {
@@ -2717,53 +2719,42 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               </button>
               
               {/* Add Product Button */}
-              <button 
+              <Button
                 onClick={() => {
                   console.log('Add Product button clicked!');
                   setShowAddProductModal(true);
                 }}
+                variant="secondary"
+                className="inline-flex items-center gap-2 px-8 py-3 text-base font-medium"
                 style={{
-                  padding: '14px 32px',
-                  border: 'none',
                   borderRadius: '8px',
-                  fontSize: '16px',
-                  fontWeight: '500',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  position: 'relative',
-                  overflow: 'hidden',
                   minWidth: '120px',
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                  background: '#000000',
-                  color: 'white'
+                  transform: 'translateY(0)'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#333333';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.3)';
+                  const target = e.currentTarget as HTMLButtonElement;
+                  target.style.transform = 'translateY(-2px)';
+                  target.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.3)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#000000';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                  const target = e.currentTarget as HTMLButtonElement;
+                  target.style.transform = 'translateY(0)';
+                  target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
                 }}
                 onMouseDown={(e) => {
-                  e.currentTarget.style.background = '#1a1a1a';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
+                  const target = e.currentTarget as HTMLButtonElement;
+                  target.style.transform = 'translateY(0)';
                 }}
                 onMouseUp={(e) => {
-                  e.currentTarget.style.background = '#333333';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.3)';
+                  const target = e.currentTarget as HTMLButtonElement;
+                  target.style.transform = 'translateY(-2px)';
                 }}
               >
-                <i className="fa-solid fa-plus" style={{ marginRight: '8px' }}></i>
+                <i className="fa-solid fa-plus" style={{ fontSize: '16px' }}></i>
                 Add Product
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -2945,57 +2936,44 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   <i className="fa-solid fa-calculator" style={{ marginRight: '8px' }}></i>
                   Calculator
                 </button>
-                <button 
+                <Button
                   onClick={() => {
                     console.log('Add Product button clicked!');
                     navigate('/products');
                   }}
+                  variant="primary"
+                  className="inline-flex items-center gap-2 px-8 py-3 text-base font-medium"
                   style={{
-                    padding: '14px 32px',
+                    background: '#000000 !important',
+                    color: '#ffffff !important',
                     borderRadius: '8px',
-                    fontSize: '16px',
-                    fontWeight: '500',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                    position: 'relative',
-                    overflow: 'hidden',
                     minWidth: '120px',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                    background: '#dc2626',
-                    color: 'white',
-                    border: '2px solid #dc2626'
+                    transform: 'translateY(0)'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#b91c1c';
-                    e.currentTarget.style.borderColor = '#b91c1c';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.3)';
+                    const target = e.currentTarget as HTMLButtonElement;
+                    target.style.transform = 'translateY(-2px)';
+                    target.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.3)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#dc2626';
-                    e.currentTarget.style.borderColor = '#dc2626';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                    const target = e.currentTarget as HTMLButtonElement;
+                    target.style.transform = 'translateY(0)';
+                    target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
                   }}
                   onMouseDown={(e) => {
-                    e.currentTarget.style.background = '#991b1b';
-                    e.currentTarget.style.borderColor = '#991b1b';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.2)';
+                    const target = e.currentTarget as HTMLButtonElement;
+                    target.style.transform = 'translateY(0)';
                   }}
                   onMouseUp={(e) => {
-                    e.currentTarget.style.background = '#b91c1c';
-                    e.currentTarget.style.borderColor = '#b91c1c';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.3)';
+                    const target = e.currentTarget as HTMLButtonElement;
+                    target.style.transform = 'translateY(-2px)';
                   }}
                 >
-                  <i className="fa-solid fa-plus" style={{ marginRight: '8px' }}></i>
+                  <i className="fa-solid fa-plus" style={{ fontSize: '16px' }}></i>
                   Add Product
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -3315,8 +3293,26 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                     e.stopPropagation()
                     addToOrder(product)
                   }}
-                  className="w-full bg-[#7d8d86] hover:bg-[#3e3f29] text-white text-xs font-medium h-8"
+                  variant="secondary"
+                  className="w-full h-8 text-xs font-medium"
                   size="sm"
+                  style={{
+                    width: '100%',
+                    borderRadius: '6px',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',
+                    transform: 'translateY(0)'
+                  }}
+                  onMouseEnter={(e) => {
+                    const target = e.currentTarget as HTMLButtonElement
+                    target.style.transform = 'translateY(-1px)'
+                    target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.12)'
+                  }}
+                  onMouseLeave={(e) => {
+                    const target = e.currentTarget as HTMLButtonElement
+                    target.style.transform = 'translateY(0)'
+                    target.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.08)'
+                  }}
                 >
                   <i className="fa-solid fa-plus mr-1" style={{ fontSize: '10px' }} />
                   Add
@@ -3403,17 +3399,35 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               }}>
                 {item.price ? `€${item.price.toFixed(2)}` : 'Custom Price'}
               </p>
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  addSideBusinessItemToOrder(item)
-                }}
-                className="w-full bg-[#7d8d86] hover:bg-[#3e3f29] text-white text-xs font-medium h-8"
-                size="sm"
-              >
-                <i className="fa-solid fa-plus mr-1" style={{ fontSize: '10px' }} />
-                Add
-              </Button>
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    addSideBusinessItemToOrder(item)
+                  }}
+                  variant="secondary"
+                  className="w-full h-8 text-xs font-medium"
+                  size="sm"
+                  style={{
+                    width: '100%',
+                    borderRadius: '6px',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',
+                    transform: 'translateY(0)'
+                  }}
+                  onMouseEnter={(e) => {
+                    const target = e.currentTarget as HTMLButtonElement
+                    target.style.transform = 'translateY(-1px)'
+                    target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.12)'
+                  }}
+                  onMouseLeave={(e) => {
+                    const target = e.currentTarget as HTMLButtonElement
+                    target.style.transform = 'translateY(0)'
+                    target.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.08)'
+                  }}
+                >
+                  <i className="fa-solid fa-plus mr-1" style={{ fontSize: '10px' }} />
+                  Add
+                </Button>
             </div>
             ))}
             </div>
@@ -5492,3 +5506,4 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
 }
 
 export default Sales
+

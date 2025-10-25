@@ -1,3 +1,5 @@
+import { ProductVariation } from './productVariation'
+
 export interface Product {
   product_id: string
   name: string
@@ -16,6 +18,7 @@ export interface Product {
   sales_count?: number
   total_revenue?: number
   last_sold_date?: string
+  variations?: ProductVariation[] | null
 }
 
 export interface SideBusinessItem {
