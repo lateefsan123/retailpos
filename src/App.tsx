@@ -40,6 +40,7 @@ import VerificationAdmin from './pages/VerificationAdmin'
 import CustomerLoyalty from './pages/CustomerLoyalty'
 import TransactionsMobile from './pages/TransactionsMobile'
 import ProductDatabase from './pages/ProductDatabase'
+import CustomerPortal from './pages/CustomerPortal'
 
 const AppContent = () => {
   const location = useLocation()
@@ -95,8 +96,7 @@ const AppContent = () => {
           display: 'flex',
           flexDirection: 'column',
           minHeight: '100vh',
-          position: 'relative',
-          zIndex: 1
+          position: 'relative'
         }}>
           <main style={{
             flex: 1,
@@ -111,8 +111,7 @@ const AppContent = () => {
               width: '100%',
               maxWidth: '1400px',
               margin: '0 auto',
-              position: 'relative',
-              zIndex: 1
+              position: 'relative'
             }}>
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />
@@ -228,6 +227,7 @@ function App() {
                           <Route path="/select-user" element={<SelectUser />} />
                           <Route path="/select-user-mobile" element={<SelectUserMobile />} />
                           <Route path="/switch-user" element={<SwitchUser />} />
+                          <Route path="/customer-portal" element={<CustomerPortal />} />
                           <Route path="/*" element={
                             <ProtectedRoute>
                               <AppContent />

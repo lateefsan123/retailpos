@@ -4,7 +4,7 @@ interface ButtonProps {
   children: React.ReactNode
   onClick?: () => void
   type?: 'button' | 'submit' | 'reset'
-  variant?: 'primary' | 'secondary' | 'danger' | 'success'
+  variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'outline' | 'ghost'
   size?: 'sm' | 'md' | 'lg'
   disabled?: boolean
   className?: string
@@ -51,6 +51,16 @@ const Button: React.FC<ButtonProps> = ({
     success: {
       background: 'var(--success-color)',
       color: '#ffffff'
+    },
+    outline: {
+      background: 'transparent',
+      color: '#374151',
+      border: '1px solid #d1d5db'
+    },
+    ghost: {
+      background: 'transparent',
+      color: '#374151',
+      border: 'none'
     }
   }
 
@@ -58,7 +68,9 @@ const Button: React.FC<ButtonProps> = ({
     primary: { background: 'var(--primary-bg-hover)' },
     secondary: { background: 'var(--secondary-bg-hover)' },
     danger: { background: 'var(--danger-bg-hover)' },
-    success: { background: '#059669' }
+    success: { background: '#059669' },
+    outline: { background: '#f9fafb' },
+    ghost: { background: '#f9fafb' }
   }
 
   const sizeStyles = {
