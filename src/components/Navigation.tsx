@@ -393,9 +393,6 @@ const Navigation = ({ allowedPaths }: NavigationProps) => {
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
           <i className="fa-kit fa-test fa-4x" style={{ color: '#fca5a5' }}></i>
         </div>
-        <h1 style={brandSecondaryTextStyle} className={`${theme === 'light' ? styles.lightModeBrandSecondary : ''}`}>
-          Tillpoint POS
-        </h1>
       </div>
 
       <nav style={navContainerStyle}>

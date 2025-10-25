@@ -13,6 +13,8 @@ import { ttsService, TTSSettings } from '../lib/ttsService'
 import { calculateChangeBreakdown } from '../utils/changeBreakdown'
 import { getRandomCustomerIcon } from '../utils/customerIcons'
 import { RetroButton } from '../components/ui/RetroButton'
+import { Button } from '../components/ui/button'
+import { Separator } from '../components/ui/separator'
 import BranchSelector from '../components/BranchSelector'
 import Calculator from '../components/Calculator'
 import CustomerAutocomplete from '../components/CustomerAutocomplete'
@@ -226,7 +228,7 @@ const Sales = () => {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [filteredSideBusinessItems, setFilteredSideBusinessItems] = useState<SideBusinessItem[]>([])
   const [categories, setCategories] = useState<string[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<string>('All')
+  const [selectedCategory, setSelectedCategory] = useState<string>('Quick Access')
   const [searchTerm, setSearchTerm] = useState('')
   const [searchSuggestions, setSearchSuggestions] = useState<(Product | SideBusinessItem)[]>([])
   const [topProducts, setTopProducts] = useState<Product[]>([])
@@ -262,6 +264,20 @@ const Sales = () => {
   const [pendingWeightedProduct, setPendingWeightedProduct] = useState<Product | null>(null)
   const [weightInput, setWeightInput] = useState('')
   const [pendingItemId, setPendingItemId] = useState<string | null>(null)
+  
+  // Quick Access states
+  const [quickAccessProductIds, setQuickAccessProductIds] = useState<Set<string>>(new Set())
+  const [quickAccessSideBusinessIds, setQuickAccessSideBusinessIds] = useState<Set<string>>(new Set())
+  const [isLoadingQuickAccess, setIsLoadingQuickAccess] = useState(false)
+  
+  // Category display states
+  const [showAllCategories, setShowAllCategories] = useState(false)
+  
+  // Multiply mode states
+  const [multiplyMode, setMultiplyMode] = useState(false)
+  const [showQuantityModal, setShowQuantityModal] = useState(false)
+  const [pendingProduct, setPendingProduct] = useState<Product | null>(null)
+  const [quantityInput, setQuantityInput] = useState('1')
   
   // Quick Service states
   const [showQuickServiceModal, setShowQuickServiceModal] = useState(false)
@@ -312,7 +328,7 @@ const Sales = () => {
       setProducts([])
       setSideBusinessItems([])
       setTopProducts([])
-      setCategories(['All'])
+      setCategories(['Quick Access'])
       setServiceBusinesses([])
       setExistingTransaction(null)
       setExistingTransactionId(null)
@@ -323,6 +339,7 @@ const Sales = () => {
     // Load initial products and categories
     fetchAllProductsAndCategories()
     fetchServiceBusinesses()
+    fetchQuickAccessItems()
 
     const transactionParam = searchParams.get('transaction')
     if (transactionParam) {
@@ -335,7 +352,7 @@ const Sales = () => {
   // Filter products function
   const filterProducts = useCallback(() => {
     // Check if selected category is a side business category
-    const isSideBusinessCategory = selectedCategory !== 'All' && 
+    const isSideBusinessCategory = selectedCategory !== 'Quick Access' &&
       sideBusinessItems.some(item => item.side_businesses?.name === selectedCategory)
     
     // Debug logging removed per user preference
@@ -343,16 +360,7 @@ const Sales = () => {
     // Filter the cached top products client-side
     let filteredProducts = topProducts
 
-    if (selectedCategory !== 'All') {
-      if (isSideBusinessCategory) {
-        // If it's a side business category, show no regular products
-        filteredProducts = []
-      } else {
-        // If it's a regular product category, filter by category
-        filteredProducts = filteredProducts.filter(p => p.category === selectedCategory)
-      }
-    }
-
+    // If there's a search term, search across ALL products regardless of category
     if (searchTerm) {
       const searchTermLower = searchTerm.toLowerCase().trim()
       filteredProducts = filteredProducts.filter(p => 
@@ -361,6 +369,18 @@ const Sales = () => {
         p.description?.toLowerCase().includes(searchTermLower) ||
         p.sku?.toLowerCase().includes(searchTermLower)
       )
+    } else {
+      // Only apply category filtering when there's no search term
+      if (selectedCategory === 'Quick Access') {
+        // Show only products that are in quick access
+        filteredProducts = filteredProducts.filter(p => quickAccessProductIds.has(p.product_id))
+      } else if (isSideBusinessCategory) {
+        // If it's a side business category, show no regular products
+        filteredProducts = []
+      } else {
+        // If it's a regular product category, filter by category
+        filteredProducts = filteredProducts.filter(p => p.category === selectedCategory)
+      }
     }
 
     setFilteredProducts(filteredProducts)
@@ -368,8 +388,19 @@ const Sales = () => {
     // Filter side business items (client-side since there are typically fewer)
     let filteredSideBusiness = sideBusinessItems
 
-    if (selectedCategory !== 'All') {
-      if (isSideBusinessCategory) {
+    // If there's a search term, search across ALL side business items regardless of category
+    if (searchTerm) {
+      filteredSideBusiness = filteredSideBusiness.filter(item => 
+        item.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    } else {
+      // Only apply category filtering when there's no search term
+      if (selectedCategory === 'Quick Access') {
+        // Show only side business items that are in quick access
+        filteredSideBusiness = filteredSideBusiness.filter(item => 
+          quickAccessSideBusinessIds.has(item.item_id.toString())
+        )
+      } else if (isSideBusinessCategory) {
         // If it's a side business category, show only items from that side business
         filteredSideBusiness = filteredSideBusiness.filter(item => 
           item.side_businesses?.name === selectedCategory
@@ -380,16 +411,10 @@ const Sales = () => {
       }
     }
 
-    if (searchTerm) {
-      filteredSideBusiness = filteredSideBusiness.filter(item => 
-        item.name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    }
-
     setFilteredSideBusinessItems(filteredSideBusiness)
     
     // Debug logging removed per user preference
-  }, [selectedCategory, searchTerm, sideBusinessItems, topProducts])
+  }, [selectedCategory, searchTerm, sideBusinessItems, topProducts, quickAccessProductIds, quickAccessSideBusinessIds])
 
   // Separate effect for filtering products when category or search changes
   useEffect(() => {
@@ -507,7 +532,7 @@ const Sales = () => {
       setProducts([])
       setSideBusinessItems([])
       setTopProducts([])
-      setCategories(['All'])
+      setCategories(['Quick Access'])
       setLoading(false)
       setIsFiltering(false)
       return
@@ -547,7 +572,7 @@ const Sales = () => {
       // Build categories from all products
       const productCategories = safeProducts.map(p => p.category).filter(Boolean)
       const sideBusinessCategories = safeSideBusinessItems.map(item => item.side_businesses?.name).filter(Boolean)
-      const allCategories = ['All', ...new Set([...productCategories, ...sideBusinessCategories])]
+      const allCategories = ['Quick Access', ...new Set([...productCategories, ...sideBusinessCategories])]
       setCategories(allCategories)
 
       setLoading(false)
@@ -557,9 +582,99 @@ const Sales = () => {
       setProducts([])
       setSideBusinessItems([])
       setTopProducts([])
-      setCategories(['All'])
+      setCategories(['Quick Access'])
       setLoading(false)
       setIsFiltering(false)
+    }
+  }
+
+  const fetchQuickAccessItems = async () => {
+    if (!user || !businessId) {
+      return
+    }
+
+    try {
+      setIsLoadingQuickAccess(true)
+
+      // Fetch quick access products
+      const { data: quickAccessProducts, error: productsError } = await supabase
+        .from('product_quick_access')
+        .select('product_id')
+        .eq('user_id', user.user_id)
+        .eq('business_id', businessId)
+
+      if (productsError) throw productsError
+
+      // Fetch quick access side business items
+      const { data: quickAccessSideBusiness, error: sideBusinessError } = await supabase
+        .from('side_business_quick_access')
+        .select('item_id')
+        .eq('user_id', user.user_id)
+        .eq('business_id', businessId)
+
+      if (sideBusinessError) throw sideBusinessError
+
+      // Update state with quick access IDs
+      const productIds = new Set(quickAccessProducts?.map(item => item.product_id) || [])
+      const sideBusinessIds = new Set(quickAccessSideBusiness?.map(item => item.item_id) || [])
+      
+      setQuickAccessProductIds(productIds)
+      setQuickAccessSideBusinessIds(sideBusinessIds)
+    } catch (error) {
+      console.error('Error fetching quick access items:', error)
+    } finally {
+      setIsLoadingQuickAccess(false)
+    }
+  }
+
+  const toggleQuickAccess = async (itemId: string, isProduct: boolean) => {
+    if (!user || !businessId) {
+      return
+    }
+
+    try {
+      const tableName = isProduct ? 'product_quick_access' : 'side_business_quick_access'
+      const idField = isProduct ? 'product_id' : 'item_id'
+      const setIdState = isProduct ? setQuickAccessProductIds : setQuickAccessSideBusinessIds
+      const currentIds = isProduct ? quickAccessProductIds : quickAccessSideBusinessIds
+
+      const isCurrentlyQuickAccess = currentIds.has(itemId)
+
+      if (isCurrentlyQuickAccess) {
+        // Remove from quick access
+        const { error } = await supabase
+          .from(tableName)
+          .delete()
+          .eq('user_id', user.user_id)
+          .eq('business_id', businessId)
+          .eq(idField, itemId)
+
+        if (error) throw error
+
+        // Update local state
+        setIdState(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(itemId)
+          return newSet
+        })
+      } else {
+        // Add to quick access
+        const { error } = await supabase
+          .from(tableName)
+          .insert({
+            user_id: user.user_id,
+            business_id: businessId,
+            [idField]: itemId
+          })
+
+        if (error) throw error
+
+        // Update local state
+        setIdState(prev => new Set([...prev, itemId]))
+      }
+    } catch (error) {
+      console.error('Error toggling quick access:', error)
+      // Could add toast notification here for user feedback
     }
   }
 
@@ -954,6 +1069,14 @@ const Sales = () => {
       return
     }
 
+    // If multiply mode is enabled, show quantity modal
+    if (multiplyMode) {
+      setPendingProduct(product)
+      setQuantityInput('1')
+      setShowQuantityModal(true)
+      return
+    }
+
     // Check stock availability for regular products
     const existingItem = order.items.find(item => 
       item.product?.product_id === product.product_id && !item.weight
@@ -989,6 +1112,51 @@ const Sales = () => {
         return {
           ...prev,
           items: [...prev.items, { product, quantity: 1, originalQuantity: 0 }]
+        }
+      }
+    })
+  }
+
+  const addToOrderWithQuantity = (product: Product, quantity: number) => {
+    // Find existing item in cart (non-weighted products only)
+    const existingItem = order.items.find(item => 
+      item.product?.product_id === product.product_id && !item.weight
+    )
+    
+    // Calculate total quantity after adding
+    const currentQuantity = existingItem ? existingItem.quantity : 0
+    const newTotalQuantity = currentQuantity + quantity
+    
+    // Check stock availability
+    if (product.stock_quantity < newTotalQuantity) {
+      setStockAlertProduct(product)
+      setStockAlertCurrentStock(product.stock_quantity)
+      setStockAlertRequestedQuantity(newTotalQuantity)
+      setShowStockAlert(true)
+      return
+    }
+
+    // Add or update product in cart
+    setOrder(prev => {
+      if (existingItem) {
+        // Update existing item quantity
+        return {
+          ...prev,
+          items: prev.items.map(item =>
+            item.product?.product_id === product.product_id && !item.weight
+              ? { ...item, quantity: newTotalQuantity }
+              : item
+          )
+        }
+      } else {
+        // Add new item to cart
+        return {
+          ...prev,
+          items: [...prev.items, { 
+            product, 
+            quantity, 
+            originalQuantity: 0 
+          }]
         }
       }
     })
@@ -2244,6 +2412,63 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   }}
                 />
                 
+                {/* Separator */}
+                <Separator orientation="vertical" className="h-8 mx-2" />
+                
+                {/* Multiply Mode Toggle Switch */}
+                <div className="flex items-center gap-2">
+                  <span style={{ fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+                    Multiply:
+                  </span>
+                  <div
+                    onClick={() => setMultiplyMode(!multiplyMode)}
+                    style={{
+                      width: '50px',
+                      height: '26px',
+                      borderRadius: '13px',
+                      background: multiplyMode ? '#f43f5e' : '#d1d5db',
+                      position: 'relative',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      border: '2px solid transparent',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.05)'
+                      e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)'
+                      e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)'
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        background: '#ffffff',
+                        position: 'absolute',
+                        top: '2px',
+                        left: multiplyMode ? '26px' : '2px',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      {multiplyMode && (
+                        <i className="fa-solid fa-check" style={{ 
+                          fontSize: '10px', 
+                          color: '#f43f5e',
+                          fontWeight: 'bold'
+                        }} />
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
                 {/* Clear search button */}
                 {searchTerm && (
                   <button
@@ -2792,15 +3017,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
             paddingBottom: '0px',
             borderBottom: '2px solid #e5e7eb'
           }}>
-            {categories.map(category => {
-              // Calculate count for each category
-              let count = 0
-              if (category === 'All') {
-                count = products.length + sideBusinessItems.length
-              } else {
-                count = sideBusinessItems.filter(item => item.side_businesses?.name === category).length
-              }
-
+            {(() => {
               // Get random pastel color for each category
               const getCategoryColor = (cat: string) => {
                 const pastelColors = [
@@ -2822,56 +3039,101 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 return pastelColors[Math.abs(hash) % pastelColors.length]
               }
 
-              const isSelected = selectedCategory === category
-              const colors = getCategoryColor(category)
-              
+              const renderCategoryButton = (category: string) => {
+                // Calculate count for each category
+                let count = 0
+                if (category === 'Quick Access') {
+                  count = quickAccessProductIds.size + quickAccessSideBusinessIds.size
+                } else {
+                  count = sideBusinessItems.filter(item => item.side_businesses?.name === category).length
+                }
+
+                const isSelected = selectedCategory === category
+                const colors = getCategoryColor(category)
+                
+                return (
+                  <button
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
+                    style={{
+                      background: isSelected ? colors.bg : '#ffffff',
+                      color: isSelected ? colors.text : colors.text,
+                      border: isSelected ? `2px solid ${colors.border}` : `2px solid ${colors.border}`,
+                      borderBottom: isSelected ? `2px solid ${colors.bg}` : 'none',
+                      borderRadius: '8px 8px 0 0',
+                      padding: '12px 24px',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      transition: 'all 0.2s ease',
+                      position: 'relative',
+                      zIndex: isSelected ? 2 : 1,
+                      marginBottom: isSelected ? '-2px' : '0px'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.background = colors.bg
+                        e.currentTarget.style.color = colors.text
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.background = '#ffffff'
+                        e.currentTarget.style.color = colors.text
+                      }
+                    }}
+                  >
+                    {category} {count > 0 ? `(${count})` : ''}
+                  </button>
+                )
+              }
+
+              // Show first 4 categories by default, or all if showAllCategories is true
+              const categoriesToShow = showAllCategories ? categories : categories.slice(0, 4)
+              const hasMoreCategories = categories.length > 4
+
               return (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  style={{
-                    background: isSelected ? colors.bg : '#ffffff',
-                    color: isSelected ? colors.text : colors.text,
-                    border: isSelected ? `2px solid ${colors.border}` : `2px solid ${colors.border}`,
-                    borderBottom: isSelected ? `2px solid ${colors.bg}` : 'none',
-                    borderRadius: '8px 8px 0 0',
-                    padding: '12px 24px',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    transition: 'all 0.2s ease',
-                    position: 'relative',
-                    zIndex: isSelected ? 2 : 1,
-                    marginBottom: isSelected ? '-2px' : '0px'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.background = colors.bg
-                      e.currentTarget.style.color = colors.text
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.background = '#ffffff'
-                      e.currentTarget.style.color = colors.text
-                    }
-                  }}
-                >
-                  {category} {count > 0 ? `(${count})` : ''}
-                </button>
+                <>
+                  {categoriesToShow.map(renderCategoryButton)}
+                  
+                  {/* Show More/Show Less Button */}
+                  {hasMoreCategories && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowAllCategories(!showAllCategories)}
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 border-2 border-gray-300 border-b-0 rounded-t-lg px-4 py-3 text-sm font-medium whitespace-nowrap relative z-10 flex items-center gap-1"
+                    >
+                      {showAllCategories ? (
+                        <>
+                          <i className="fa-solid fa-chevron-up text-xs" />
+                          Show Less
+                        </>
+                      ) : (
+                        <>
+                          <i className="fa-solid fa-chevron-down text-xs" />
+                          Show More ({categories.length - 4})
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </>
               )
-            })}
+            })()}
           </div>
         </div>
 
         {/* Products Grid */}
-        <div style={{ 
-          flex: 1, 
-          padding: '24px 32px',
-          overflowY: 'auto',
-          transition: 'opacity 0.2s ease'
-        }}>
+        <div 
+          className="hide-scrollbar"
+          style={{ 
+            flex: 1, 
+            padding: '24px 32px',
+            overflowY: 'auto',
+            transition: 'opacity 0.2s ease',
+            scrollbarWidth: 'none', // Firefox
+            msOverflowStyle: 'none' // IE and Edge
+          }}>
           <div style={{ marginBottom: '16px' }}>
             <h3 style={{ 
               fontSize: '18px', 
@@ -2928,6 +3190,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 position: 'relative',
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
               }}
+              onClick={() => addToOrder(product)}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-1px)'
                 e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)'
@@ -2970,6 +3233,25 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   }
                   return null
                 })()}
+                
+                {/* Quick Access Star Button - Top Right */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleQuickAccess(product.product_id, true)
+                  }}
+                  className="absolute top-2 right-2 w-8 h-8 bg-white/90 hover:bg-white hover:scale-110 transition-all duration-200 shadow-sm z-10"
+                >
+                  <i 
+                    className={quickAccessProductIds.has(product.product_id) ? "fa-solid fa-star" : "fa-regular fa-star"}
+                    style={{ 
+                      fontSize: '16px', 
+                      color: quickAccessProductIds.has(product.product_id) ? '#fbbf24' : '#9ca3af'
+                    }}
+                  />
+                </Button>
                 
                 <div style={{
                   width: '100%',
@@ -3029,34 +3311,17 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                     `€${product.price.toFixed(2)}`
                   )}
                 </p>
-                <button
-                  onClick={() => addToOrder(product)}
-                  style={{
-                    background: '#7d8d86',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    padding: '6px 12px',
-                    fontSize: '12px',
-                    fontWeight: '500',
-                    cursor: 'pointer',
-                    width: '100%',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '4px'
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    addToOrder(product)
                   }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#3e3f29'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#7d8d86'
-                  }}
+                  className="w-full bg-[#7d8d86] hover:bg-[#3e3f29] text-white text-xs font-medium h-8"
+                  size="sm"
                 >
-                  <i className="fa-solid fa-plus" style={{ fontSize: '10px' }}></i>
+                  <i className="fa-solid fa-plus mr-1" style={{ fontSize: '10px' }} />
                   Add
-                </button>
+                </Button>
               </div>
             ))}
             
@@ -3073,6 +3338,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               position: 'relative',
               boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
             }}
+            onClick={() => addSideBusinessItemToOrder(item)}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-1px)'
               e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)'
@@ -3082,6 +3348,25 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               e.currentTarget.style.boxShadow = 'none'
             }}
             >
+              {/* Quick Access Star Button - Top Right */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  toggleQuickAccess(item.item_id.toString(), false)
+                }}
+                className="absolute top-2 right-2 w-8 h-8 bg-white/90 hover:bg-white hover:scale-110 transition-all duration-200 shadow-sm z-10"
+              >
+                <i 
+                  className={quickAccessSideBusinessIds.has(item.item_id.toString()) ? "fa-solid fa-star" : "fa-regular fa-star"}
+                  style={{ 
+                    fontSize: '16px', 
+                    color: quickAccessSideBusinessIds.has(item.item_id.toString()) ? '#fbbf24' : '#9ca3af'
+                  }}
+                />
+              </Button>
+              
               <div style={{
                 width: '100%',
                 height: '100px',
@@ -3119,34 +3404,17 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
               }}>
                 {item.price ? `€${item.price.toFixed(2)}` : 'Custom Price'}
               </p>
-              <button
-                onClick={() => addSideBusinessItemToOrder(item)}
-                style={{
-                  background: '#7d8d86',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  padding: '6px 12px',
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  width: '100%',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '4px'
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  addSideBusinessItemToOrder(item)
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#3e3f29'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#7d8d86'
-                }}
+                className="w-full bg-[#7d8d86] hover:bg-[#3e3f29] text-white text-xs font-medium h-8"
+                size="sm"
               >
-                <i className="fa-solid fa-plus" style={{ fontSize: '10px' }}></i>
+                <i className="fa-solid fa-plus mr-1" style={{ fontSize: '10px' }} />
                 Add
-              </button>
+              </Button>
             </div>
             ))}
             </div>
@@ -3289,24 +3557,14 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                     {/* Show quantity controls for regular items */}
                     {!item.weight && (
                       <>
-                        <button
-                          onClick={() => updateQuantity(itemId, item.quantity - 1)}
-                          style={{
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '4px',
-                            border: 'var(--border-subtle)',
-                            background: '#ffffff',
-                            color: '#374151',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '12px'
-                          }}
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => updateQuantity(itemId, Math.max(1, item.quantity - 1))}
+                          className="w-6 h-6 text-xs"
                         >
                           -
-                        </button>
+                        </Button>
                         <span style={{ 
                           minWidth: '20px', 
                           textAlign: 'center', 
@@ -3316,24 +3574,14 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                         }}>
                           {item.quantity}
                         </span>
-                        <button
+                        <Button
+                          variant="outline"
+                          size="icon"
                           onClick={() => updateQuantity(itemId, item.quantity + 1)}
-                          style={{
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '4px',
-                            border: 'var(--border-subtle)',
-                            background: '#ffffff',
-                            color: '#374151',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '12px'
-                          }}
+                          className="w-6 h-6 text-xs"
                         >
                           +
-                        </button>
+                        </Button>
                       </>
                     )}
                     
@@ -3432,7 +3680,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
           <div style={{
             background: '#ffffff',
             border: 'var(--border-subtle)',
-            borderRadius: '8px',
+            borderRadius: '0px',
             padding: '12px 16px',
             marginBottom: '8px',
             display: 'flex',
@@ -3509,7 +3757,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
           <div style={{
             background: '#f1f3f4',
             border: 'var(--border-subtle)',
-            borderRadius: '8px',
+            borderRadius: '0px',
             padding: '16px',
             marginBottom: '12px',
             display: 'flex',
@@ -5118,6 +5366,128 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
           setStockAlertRequestedQuantity(0)
         }}
       />
+
+      {/* Quantity Modal */}
+      {showQuantityModal && pendingProduct && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '90%',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#1f2937',
+              margin: '0 0 8px 0',
+              textAlign: 'center'
+            }}>
+              Add {pendingProduct.name}
+            </h3>
+            
+            {/* Show current quantity in cart */}
+            {(() => {
+              const existingItem = order.items.find(item => 
+                item.product?.product_id === pendingProduct.product_id && !item.weight
+              )
+              return existingItem ? (
+                <p style={{
+                  fontSize: '14px',
+                  color: '#6b7280',
+                  textAlign: 'center',
+                  margin: '0 0 16px 0'
+                }}>
+                  Current in cart: {existingItem.quantity}
+                </p>
+              ) : null
+            })()}
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '8px'
+              }}>
+                {(() => {
+                  const existingItem = order.items.find(item => 
+                    item.product?.product_id === pendingProduct.product_id && !item.weight
+                  )
+                  return existingItem ? 'Additional quantity to add:' : 'Quantity:'
+                })()}
+              </label>
+              <input
+                type="number"
+                value={quantityInput}
+                onChange={(e) => setQuantityInput(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: '2px solid #6b7280',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  outline: 'none',
+                  transition: 'border-color 0.2s ease'
+                }}
+                min="1"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const quantity = parseInt(quantityInput) || 1
+                    addToOrderWithQuantity(pendingProduct, quantity)
+                    setShowQuantityModal(false)
+                    setPendingProduct(null)
+                    setQuantityInput('1')
+                  }
+                }}
+              />
+            </div>
+            
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end'
+            }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowQuantityModal(false)
+                  setPendingProduct(null)
+                  setQuantityInput('1')
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  const quantity = parseInt(quantityInput) || 1
+                  addToOrderWithQuantity(pendingProduct, quantity)
+                  setShowQuantityModal(false)
+                  setPendingProduct(null)
+                  setQuantityInput('1')
+                }}
+              >
+                Add to Order
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

@@ -1,0 +1,97 @@
+.dropdownContainer {
+  position: relative;
+  display: inline-block;
+}
+
+.triggerButton {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  width: 32px;
+  height: 32px;
+}
+
+.triggerButton:hover {
+  background: rgba(125, 141, 134, 0.1);
+  color: var(--text-primary);
+}
+
+.triggerButton:focus {
+  outline: none;
+  background: rgba(125, 141, 134, 0.1);
+  color: var(--text-primary);
+}
+
+.triggerButton:active {
+  background: rgba(125, 141, 134, 0.2);
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
+  border-radius: 8px;
+  box-shadow: var(--modal-shadow);
+  z-index: 1000;
+  min-width: 180px;
+  margin-top: 4px;
+  overflow: hidden;
+  padding: 4px 0;
+}
+
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-primary);
+  transition: background-color 0.2s ease;
+  text-decoration: none;
+}
+
+.dropdownItem:hover {
+  background: var(--hover-bg);
+}
+
+.dropdownItem:focus {
+  outline: none;
+  background: var(--hover-bg);
+}
+
+.dropdownItem:active {
+  background: var(--secondary-bg-hover);
+}
+
+.separator {
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}
+
+/* Screen reader only text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

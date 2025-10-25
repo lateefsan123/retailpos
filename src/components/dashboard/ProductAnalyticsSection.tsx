@@ -1,19 +1,140 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useProductAnalytics, ProductAnalytics } from '../../hooks/derived/useProductAnalytics'
 import { formatCurrency } from '../../utils/currency'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, ChartContainer, ChartTooltipContent, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from '../ui'
 
 type TimePeriod = 'today' | 'week' | 'month'
 
 interface Props {
   activePeriod?: TimePeriod
   selectedDate?: Date
+  embedded?: boolean
 }
 
-const DONUT_COLORS = ['#4c6ef5', '#22d3ee', '#a855f7', '#f97316', '#facc15', '#38bdf8']
+const CHART_COLORS = [
+  '#FF6B7A', // Coral pink
+  '#FFB366', // Orange
+  '#FFD93D', // Golden yellow
+  '#6BCF7F', // Green
+  '#4D96FF', // Blue
+  '#9B59B6', // Purple
+  '#E74C3C', // Red
+  '#1ABC9C'  // Turquoise
+]
 
-const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }: Props) => {
+// Product List Component for Modal
+const ProductList = ({ products, totalSalesValue }: { products: ProductAnalytics[], totalSalesValue: number }) => {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {products.map((product, index) => {
+        const percentage = totalSalesValue === 0 ? 0 : (product.total_sales / totalSalesValue) * 100
+        const clampedPercentage = Math.min(Math.max(percentage, 0), 100)
+        const roundedPercentage = Math.round(clampedPercentage * 10) / 10
+        const displayPercentage = Number.isInteger(roundedPercentage) ? roundedPercentage.toFixed(0) : roundedPercentage.toFixed(1)
+        const accentColor = CHART_COLORS[index % CHART_COLORS.length]
+        
+        return (
+          <div
+            key={product.product_id}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '12px',
+              background: 'var(--bg-nested)',
+              borderRadius: '10px',
+              border: '1px solid var(--border-color)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <div
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                background: product.image_url ? 'transparent' : accentColor,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: 700,
+                fontSize: '12px',
+                flexShrink: 0,
+                overflow: 'hidden',
+                position: 'relative'
+              }}
+            >
+              {product.image_url ? (
+                <img
+                  src={product.image_url}
+                  alt={product.product_name}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    borderRadius: '8px'
+                  }}
+                  onError={(e) => {
+                    // Fallback to numbered badge if image fails to load
+                    const target = e.target as HTMLImageElement
+                    target.style.display = 'none'
+                    const parent = target.parentElement
+                    if (parent) {
+                      parent.style.background = accentColor
+                      parent.textContent = `#${index + 1}`
+                    }
+                  }}
+                />
+              ) : (
+                `#${index + 1}`
+              )}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ 
+                fontSize: '14px', 
+                fontWeight: 600, 
+                color: 'var(--text-primary)', 
+                marginBottom: '2px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                {product.product_name}
+              </div>
+              <div style={{ 
+                fontSize: '12px', 
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <span>{product.quantity_sold} units</span>
+                <span style={{ fontWeight: '600' }}>{formatCurrency(product.total_sales)}</span>
+              </div>
+            </div>
+            <div style={{ 
+              fontSize: '12px', 
+              fontWeight: 600, 
+              color: 'var(--text-primary)',
+              background: 'var(--bg-card)',
+              padding: '4px 8px',
+              borderRadius: '6px',
+              border: '1px solid var(--border-color)'
+            }}>
+              {displayPercentage}%
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate, embedded = false }: Props) => {
   const { todayProducts, weekProducts, monthProducts, loading, error } = useProductAnalytics(selectedDate)
   const [activePeriod, setActivePeriod] = useState<TimePeriod>(externalPeriod ?? 'today')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [chartType, setChartType] = useState<'pie' | 'bar'>('pie')
 
   useEffect(() => {
     if (externalPeriod) {
@@ -59,33 +180,21 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
     [topProducts]
   )
 
-  const donutSize = 170
-  const donutStroke = 20
-  const donutRadius = (donutSize - donutStroke) / 2
-  const circumference = 2 * Math.PI * donutRadius
-
-  const donutSegments = useMemo(() => {
-    let cumulative = 0
-    return topProducts.map((product, index) => {
-      const fraction = totalSalesValue === 0 ? 0 : product.total_sales / totalSalesValue
-      const dashArray = `${fraction * circumference} ${circumference}`
-      const dashOffset = circumference * (1 - cumulative)
-      cumulative += fraction
-      return {
-        product,
-        color: DONUT_COLORS[index % DONUT_COLORS.length],
-        dashArray,
-        dashOffset,
-        percentage: fraction * 100
-      }
-    })
-  }, [topProducts, totalSalesValue, circumference])
+  // Prepare data for PieChart
+  const chartData = useMemo(() => {
+    return topProducts.map((product, index) => ({
+      name: product.product_name,
+      value: product.total_sales,
+      color: CHART_COLORS[index % CHART_COLORS.length],
+      percentage: totalSalesValue > 0 ? (product.total_sales / totalSalesValue) * 100 : 0
+    }))
+  }, [topProducts, totalSalesValue])
 
   if (loading) {
     return (
       <div
-        className="dashboardCard"
-        style={{
+        className={embedded ? '' : 'dashboardCard'}
+        style={embedded ? {} : {
           background: 'var(--bg-card)',
           borderRadius: '18px',
           padding: '24px',
@@ -133,8 +242,13 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
   if (error) {
     return (
         <div
-          className="dashboardCard"
-          style={{
+          className={embedded ? '' : 'dashboardCard'}
+          style={embedded ? {
+            minHeight: '120px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          } : {
             background: 'var(--bg-card)',
             borderRadius: '18px',
             padding: '24px',
@@ -154,37 +268,107 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
     )
   }
 
-  return (
-    <div
-      className="dashboardCard"
-      style={{
-        background: 'var(--bg-card)',
-        borderRadius: '18px',
-        padding: '24px',
-        boxShadow: 'var(--shadow-card)',
-        border: 'var(--border-primary)'
-      }}
-    >
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-        <div
-          style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '10px',
-            background: 'var(--bg-nested)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <i className="fa-solid fa-chart-line" style={{ fontSize: '18px', color: 'var(--text-primary)' }}></i>
-        </div>
-        <h3 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Top Products</h3>
-      </div>
+  console.log('ProductAnalyticsSection rendering:', { 
+    topProducts: topProducts.length, 
+    totalSalesValue, 
+    isModalOpen,
+    activePeriod,
+    embedded,
+    chartData: chartData.length
+  })
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+  return (
+    <>
+      <style>{`
+        .product-list-scroll::-webkit-scrollbar {
+          width: 6px;
+        }
+        .product-list-scroll::-webkit-scrollbar-track {
+          background: var(--bg-nested);
+          border-radius: 3px;
+        }
+        .product-list-scroll::-webkit-scrollbar-thumb {
+          background: var(--border-color);
+          border-radius: 3px;
+        }
+        .product-list-scroll::-webkit-scrollbar-thumb:hover {
+          background: var(--text-secondary);
+        }
+      `}</style>
+      <div
+        className={embedded ? '' : 'dashboardCard'}
+        style={embedded ? {} : {
+          background: 'var(--bg-card)',
+          borderRadius: '18px',
+          padding: '24px',
+          boxShadow: 'var(--shadow-card)',
+          border: 'var(--border-primary)'
+        }}
+      >
+       {/* Header */}
+       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+           <div
+             style={{
+               width: '40px',
+               height: '40px',
+               borderRadius: '10px',
+               background: 'var(--bg-nested)',
+               display: 'flex',
+               alignItems: 'center',
+               justifyContent: 'center'
+             }}
+           >
+             <i className="fa-solid fa-chart-line" style={{ fontSize: '18px', color: 'var(--text-primary)' }}></i>
+           </div>
+           <h3 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Top Products</h3>
+         </div>
+         
+         {/* Chart Type Toggle */}
+         <div style={{ display: 'flex', gap: '4px' }}>
+           <button
+             onClick={() => setChartType('pie')}
+             style={{
+               padding: '6px 10px',
+               borderRadius: '6px',
+               border: '1px solid #d1d5db',
+               background: chartType === 'pie' ? '#7d8d86' : 'var(--bg-card)',
+               color: chartType === 'pie' ? '#f1f0e4' : 'var(--text-secondary)',
+               fontSize: '12px',
+               fontWeight: 600,
+               cursor: 'pointer',
+               transition: 'all 0.2s ease',
+               display: 'flex',
+               alignItems: 'center',
+               gap: '4px'
+             }}
+           >
+             <i className="fa-solid fa-chart-pie" style={{ fontSize: '12px' }}></i>
+           </button>
+           <button
+             onClick={() => setChartType('bar')}
+             style={{
+               padding: '6px 10px',
+               borderRadius: '6px',
+               border: '1px solid #d1d5db',
+               background: chartType === 'bar' ? '#7d8d86' : 'var(--bg-card)',
+               color: chartType === 'bar' ? '#f1f0e4' : 'var(--text-secondary)',
+               fontSize: '12px',
+               fontWeight: 600,
+               cursor: 'pointer',
+               transition: 'all 0.2s ease',
+               display: 'flex',
+               alignItems: 'center',
+               gap: '4px'
+             }}
+           >
+             <i className="fa-solid fa-chart-bar" style={{ fontSize: '12px' }}></i>
+           </button>
+         </div>
+       </div>
+
+       {/* Tabs */}
+       <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
         {periods.map((periodKey) => (
           <button
             key={periodKey}
@@ -210,157 +394,220 @@ const ProductAnalyticsSection = ({ activePeriod: externalPeriod, selectedDate }:
             {getPeriodLabel(periodKey)}
           </button>
         ))}
-      </div>
+       </div>
 
-      {/* Visualization + List */}
+
+       {/* Visualization + List */}
       {topProducts.length === 0 ? (
         <div style={{ textAlign: 'center', color: 'var(--text-primary)', padding: '16px' }}>
           No products for {getPeriodLabel(activePeriod)}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', alignItems: 'stretch' }}>
-          <div style={{ minWidth: 220, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-            {totalSalesValue > 0 ? (
-              <svg width={donutSize} height={donutSize} viewBox={`0 0 ${donutSize} ${donutSize}`}>
-                <circle
-                  cx={donutSize / 2}
-                  cy={donutSize / 2}
-                  r={donutRadius}
-                  fill="transparent"
-                  stroke="#e2e8f0"
-                  strokeWidth={donutStroke}
-                  opacity={0.35}
-                />
-                {donutSegments.map((segment, index) => (
-                  <circle
-                    key={`${segment.product.product_id}-${index}`}
-                    cx={donutSize / 2}
-                    cy={donutSize / 2}
-                    r={donutRadius}
-                    fill="transparent"
-                    stroke={segment.color}
-                    strokeWidth={donutStroke}
-                    strokeDasharray={segment.dashArray}
-                    strokeDashoffset={segment.dashOffset}
-                    strokeLinecap="round"
-                    transform={`rotate(-90 ${donutSize / 2} ${donutSize / 2})`}
-                  />
-                ))}
-                <circle
-                  cx={donutSize / 2}
-                  cy={donutSize / 2}
-                  r={donutRadius - donutStroke * 0.65}
-                  fill="var(--bg-card)"
-                />
-                <text x="50%" y="48%" textAnchor="middle" style={{ fontSize: '14px', fontWeight: 600, fill: 'var(--text-primary)' }}>
-                  {formatCurrency(totalSalesValue)}
-                </text>
-                <text x="50%" y="63%" textAnchor="middle" style={{ fontSize: '11px', fill: 'var(--text-secondary)', letterSpacing: '0.04em' }}>
-                  Total
-                </text>
-              </svg>
+         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+             {totalSalesValue > 0 ? (
+               chartType === 'pie' ? (
+                 <>
+                   <div style={{ height: '250px', width: '250px', margin: '0 auto' }}>
+                     <PieChart width={250} height={250}>
+                       <Pie
+                         data={chartData}
+                         cx="50%"
+                         cy="50%"
+                         dataKey="value"
+                         nameKey="name"
+                         stroke="0"
+                         radius={[60, 100]}
+                       >
+                         {chartData.map((entry, index) => (
+                           <Cell key={`cell-${index}`} fill={entry.color} />
+                         ))}
+                       </Pie>
+                       <Tooltip 
+                         content={({ active, payload }) => {
+                           if (active && payload && payload.length) {
+                             const data = payload[0].payload;
+                             return (
+                               <div style={{
+                                 background: 'var(--bg-card)',
+                                 border: '1px solid var(--border-color)',
+                                 borderRadius: '8px',
+                                 padding: '12px',
+                                 boxShadow: 'var(--shadow-card)',
+                                 fontSize: '14px',
+                                 color: 'var(--text-primary)'
+                               }}>
+                                 <p style={{ margin: '0 0 4px 0', fontWeight: '600' }}>
+                                   {data.name}
+                                 </p>
+                                 <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+                                   {formatCurrency(data.value)}
+                                 </p>
+                               </div>
+                             );
+                           }
+                           return null;
+                         }}
+                       />
+                     </PieChart>
+                   </div>
+                   <div style={{ textAlign: 'center', color: 'var(--text-primary)', fontSize: '12px' }}>
+                     Share of revenue · {getPeriodLabel(activePeriod)}
+                   </div>
+                   
+                   {/* Pie Chart Legend */}
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', maxWidth: '250px' }}>
+                     {chartData.slice(0, 4).map((entry, index) => (
+                       <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+                         <div
+                           style={{
+                             width: '14px',
+                             height: '14px',
+                             borderRadius: '2px',
+                             background: entry.color,
+                             flexShrink: 0
+                           }}
+                         />
+                         <span style={{ color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                           {entry.name}
+                         </span>
+                         <span style={{ color: 'var(--text-secondary)', marginLeft: 'auto' }}>
+                           {entry.percentage.toFixed(1)}%
+                         </span>
+                       </div>
+                     ))}
+                     {chartData.length > 4 && (
+                       <div style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', marginTop: '4px' }}>
+                         +{chartData.length - 4} more in modal
+                       </div>
+                     )}
+                   </div>
+                 </>
+               ) : (
+                 <>
+                   <div style={{ height: '300px', width: '100%' }}>
+                     <ResponsiveContainer width="100%" height="100%">
+                       <BarChart
+                         data={chartData}
+                         layout="vertical"
+                         margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+                       >
+                         <YAxis
+                           dataKey="name"
+                           type="category"
+                           tickLine={false}
+                           tickMargin={10}
+                           axisLine={false}
+                           tick={{ fontSize: 12, fill: 'var(--text-primary)' }}
+                         />
+                         <XAxis 
+                           dataKey="value" 
+                           type="number" 
+                           hide 
+                         />
+                         <Tooltip 
+                           content={({ active, payload }) => {
+                             if (active && payload && payload.length) {
+                               const data = payload[0].payload;
+                               return (
+                                 <div style={{
+                                   background: 'var(--bg-card)',
+                                   border: '1px solid var(--border-color)',
+                                   borderRadius: '8px',
+                                   padding: '12px',
+                                   boxShadow: 'var(--shadow-card)',
+                                   fontSize: '14px',
+                                   color: 'var(--text-primary)'
+                                 }}>
+                                   <p style={{ margin: '0 0 4px 0', fontWeight: '600' }}>
+                                     {data.name}
+                                   </p>
+                                   <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+                                     {formatCurrency(data.value)}
+                                   </p>
+                                 </div>
+                               );
+                             }
+                             return null;
+                           }}
+                         />
+                         <Bar 
+                           dataKey="value" 
+                           layout="vertical" 
+                           radius={5}
+                         >
+                           {chartData.map((entry, index) => (
+                             <Cell key={`cell-${index}`} fill={entry.color} />
+                           ))}
+                         </Bar>
+                       </BarChart>
+                     </ResponsiveContainer>
+                   </div>
+                   <div style={{ textAlign: 'center', color: 'var(--text-primary)', fontSize: '12px' }}>
+                     Revenue by product · {getPeriodLabel(activePeriod)}
+                   </div>
+                 </>
+               )
             ) : (
               <div style={{ color: 'var(--text-primary)', fontSize: '12px', padding: '16px', textAlign: 'center' }}>
                 No revenue recorded in this period
               </div>
             )}
-            <div style={{ textAlign: 'center', color: 'var(--text-primary)', fontSize: '12px' }}>
-              Share of revenue · {getPeriodLabel(activePeriod)}
-            </div>
-          </div>
-
-          <div style={{ flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {topProducts.map((product, index) => {
-              const percentage = totalSalesValue === 0 ? 0 : (product.total_sales / totalSalesValue) * 100
-              const clampedPercentage = Math.min(Math.max(percentage, 0), 100)
-              const roundedPercentage = Math.round(clampedPercentage * 10) / 10
-              const displayPercentage = Number.isInteger(roundedPercentage) ? roundedPercentage.toFixed(0) : roundedPercentage.toFixed(1)
-              const accentColor = DONUT_COLORS[index % DONUT_COLORS.length]
-              return (
-                <div
-                  key={product.product_id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '12px',
-                    background: 'var(--bg-nested)',
-                    borderRadius: '10px',
-                    border: 'var(--border-subtle)',
-                    boxShadow: 'var(--shadow-card)'
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '10px',
-                      background: product.image_url ? 'transparent' : accentColor,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'var(--text-primary)',
-                      fontWeight: 700,
-                      fontSize: '14px',
-                      overflow: 'hidden',
-                      border: product.image_url ? '1px solid #e5e7eb' : 'none'
-                    }}
-                  >
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.product_name}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          borderRadius: '10px'
-                        }}
-                        onError={(e) => {
-                          // Fallback to numbered badge if image fails to load
-                          const target = e.target as HTMLImageElement
-                          target.style.display = 'none'
-                          const parent = target.parentElement
-                          if (parent) {
-                            parent.style.background = accentColor
-                            parent.innerHTML = `#${index + 1}`
-                          }
-                        }}
-                      />
-                    ) : (
-                      `#${index + 1}`
-                    )}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {product.product_name}
-                      </span>
-                      <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                        {displayPercentage}%
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-primary)' }}>
-                      <span>{product.quantity_sold} sold</span>
-                      <span>{formatCurrency(product.total_sales)}</span>
-                    </div>
-                    <div style={{ height: '6px', borderRadius: '999px', background: 'var(--secondary-bg)', overflow: 'hidden' }}>
-                      <div
-                        style={{
-                          width: `${clampedPercentage}%`,
-                          height: '100%',
-                          background: accentColor
-                        }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+             
+             {/* View All Products Button */}
+             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+               <DialogTrigger asChild>
+                 <button
+                   onClick={() => console.log('Button clicked!', { isModalOpen, topProducts: topProducts.length })}
+                   style={{
+                     padding: '12px 16px',
+                     background: 'var(--bg-nested)',
+                     border: '1px solid var(--border-color)',
+                     borderRadius: '8px',
+                     color: 'var(--text-primary)',
+                     fontSize: '16px',
+                     fontWeight: '600',
+                     cursor: 'pointer',
+                     transition: 'all 0.2s ease',
+                     display: 'flex',
+                     alignItems: 'center',
+                     justifyContent: 'center',
+                     gap: '8px'
+                   }}
+                   onMouseEnter={(e) => {
+                     e.currentTarget.style.background = 'var(--bg-card)'
+                     e.currentTarget.style.borderColor = 'var(--text-secondary)'
+                   }}
+                   onMouseLeave={(e) => {
+                     e.currentTarget.style.background = 'var(--bg-nested)'
+                     e.currentTarget.style.borderColor = 'var(--border-color)'
+                   }}
+                 >
+                   <i className="fa-solid fa-list" style={{ fontSize: '16px' }}></i>
+                   View All Products ({topProducts.length})
+                 </button>
+               </DialogTrigger>
+               <DialogContent style={{ maxWidth: '600px', maxHeight: '80vh', overflow: 'hidden' }}>
+                 <DialogHeader>
+                   <DialogTitle>
+                     Top Products - {getPeriodLabel(activePeriod)}
+                   </DialogTitle>
+                 </DialogHeader>
+                 <div className="product-list-scroll" style={{ 
+                   maxHeight: '60vh', 
+                   overflowY: 'auto',
+                   paddingRight: '8px',
+                   marginRight: '-8px'
+                 }}>
+                   <ProductList products={topProducts} totalSalesValue={totalSalesValue} />
+                 </div>
+               </DialogContent>
+             </Dialog>
+           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }
 

@@ -12,6 +12,8 @@ import { useSuppliers } from '../hooks/useSuppliers'
 import AddProductModal from '../components/modals/AddProductModal'
 import EditProductModal from '../components/modals/EditProductModal'
 import { printProductLabel, printBulkLabels } from '../utils/labelUtils'
+import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
+import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui'
 
 async function uploadProductImage(file: File, productId: string, businessId: number | null, branchId: number | null) {
   
@@ -120,6 +122,7 @@ const Products = () => {
   const [activeChart, setActiveChart] = useState<'daily' | 'weekly' | 'monthly'>('daily')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [selectedProductForActions, setSelectedProductForActions] = useState<string | null>(null)
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false)
   const [searchSuggestions, setSearchSuggestions] = useState<Array<{type: 'product', product: Product} | {type: 'category', name: string}>>([])
   const [showAddModal, setShowAddModal] = useState(false)
@@ -168,6 +171,23 @@ const Products = () => {
   const [suggestionsCache, setSuggestionsCache] = useState<{data: {product_id: any, name: any, category: any}[], timestamp: number, businessId: number, branchId?: number} | null>(null)
   const [summaryStatsCache, setSummaryStatsCache] = useState<{data: any, timestamp: number, businessId: number, branchId?: number} | null>(null)
   const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (selectedProductForActions) {
+        setSelectedProductForActions(null)
+      }
+    }
+
+    if (selectedProductForActions) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [selectedProductForActions])
 
   // Fetch all products for search suggestions (not paginated)
   const fetchAllProductsForSuggestions = async (forceRefresh = false) => {
@@ -1414,17 +1434,17 @@ const Products = () => {
   }
 
   const getStockStatus = (stock: number, reorderLevel: number) => {
-    if (stock === 0) return { status: 'out', color: '#ef4444', bgColor: 'rgba(239, 68, 68, 0.2)', textColor: '#ef4444' }
-    if (stock <= reorderLevel) return { status: 'low', color: '#f59e0b', bgColor: 'rgba(245, 158, 11, 0.2)', textColor: '#f59e0b' }
-    return { status: 'good', color: '#22c55e', bgColor: 'rgba(34, 197, 94, 0.2)', textColor: '#22c55e' }
+    if (stock === 0) return { status: 'out', color: 'var(--error-text)', bgColor: 'var(--error-bg)', textColor: 'var(--error-text)' }
+    if (stock <= reorderLevel) return { status: 'low', color: 'var(--warning-color)', bgColor: 'var(--warning-bg)', textColor: 'var(--warning-color)' }
+    return { status: 'good', color: 'var(--success-color)', bgColor: 'var(--success-bg)', textColor: 'var(--success-color)' }
   }
 
   const getCategoryColor = (category: string) => {
     const lowerCategory = category.toLowerCase()
-    if (lowerCategory.includes('small')) return '#3b82f6' // Blue
-    if (lowerCategory.includes('large')) return '#ef4444' // Red
-    if (lowerCategory.includes('medium')) return '#f59e0b' // Orange/Yellow
-    return '#7d8d86' // Default color
+    if (lowerCategory.includes('small')) return 'var(--info-color)' // Blue
+    if (lowerCategory.includes('large')) return 'var(--error-text)' // Red
+    if (lowerCategory.includes('medium')) return 'var(--warning-color)' // Orange/Yellow
+    return 'var(--text-secondary)' // Default color
   }
 
   const highlightSizeKeywords = (text: string) => {
@@ -1433,9 +1453,9 @@ const Products = () => {
       const lowerWord = word.toLowerCase()
       let color = 'var(--text-primary)' // Default color
       
-      if (lowerWord === 'small') color = '#3b82f6' // Blue
-      else if (lowerWord === 'large') color = '#ef4444' // Red
-      else if (lowerWord === 'medium') color = '#f59e0b' // Orange/Yellow
+      if (lowerWord === 'small') color = 'var(--info-color)' // Blue
+      else if (lowerWord === 'large') color = 'var(--error-text)' // Red
+      else if (lowerWord === 'medium') color = 'var(--warning-color)' // Orange/Yellow
       
       return (
         <span key={index} style={{ color }}>
@@ -1548,7 +1568,8 @@ const Products = () => {
   return (
     <div style={{ 
       padding: '24px',
-      minHeight: '100vh'
+      minHeight: '100vh',
+      background: 'var(--bg-page)'
     }}>
       {/* Header */}
       <PageHeader
@@ -1887,12 +1908,12 @@ const Products = () => {
       {/* Pending Products Section */}
       {pendingProducts.length > 0 && (
         <div style={{
-          background: 'var(--bg-card)',
+          background: 'rgba(255, 251, 235, 0.9)',
           borderRadius: '12px',
-          padding: pendingProducts.length === 1 ? '16px' : '20px',
+          padding: '20px',
           marginBottom: '24px',
-          boxShadow: 'var(--shadow-card)',
-          border: 'var(--border-subtle)',
+          boxShadow: '0 2px 8px rgba(245, 158, 11, 0.2)',
+          border: '2px solid #f59e0b',
           backdropFilter: 'blur(10px)'
         }}>
           <div style={{
@@ -1934,18 +1955,16 @@ const Products = () => {
             <>
               <p style={{
                 fontSize: '14px',
-                color: 'var(--text-primary)',
-                marginBottom: '16px',
-                opacity: 0.8
+                color: 'var(--text-secondary)',
+                marginBottom: '16px'
               }}>
                 These products were added from the Product Database and need confirmation. Set the price and stock levels to add them to your inventory.
               </p>
 
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: pendingProducts.length === 1 ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))',
-                gap: '16px',
-                maxWidth: pendingProducts.length === 1 ? '400px' : 'none'
+                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                gap: '16px'
               }}>
                 {pendingProducts.map((product) => (
                   <div
@@ -1955,14 +1974,16 @@ const Products = () => {
                       borderRadius: '8px',
                       padding: '16px',
                       boxShadow: 'var(--shadow-card)',
-                      border: 'var(--border-subtle)',
-                      transition: 'box-shadow 0.2s ease'
+                      border: '1px solid #fbbf24',
+                      transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                     }}
                     onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-elevated)'
+                      (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'
+                      ;(e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-elevated)'
                     }}
                     onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-card)'
+                      (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'
+                      ;(e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-card)'
                     }}
                   >
                     <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
@@ -2033,9 +2054,9 @@ const Products = () => {
                         onClick={() => setConfirmingProduct(product)}
                         style={{
                           flex: 1,
-                          background: 'var(--bg-card)',
-                          color: 'var(--text-primary)',
-                          border: 'var(--border-primary)',
+                          background: '#10b981',
+                          color: 'white',
+                          border: 'none',
                           padding: '10px',
                           borderRadius: '6px',
                           cursor: 'pointer',
@@ -2045,16 +2066,10 @@ const Products = () => {
                           alignItems: 'center',
                           justifyContent: 'center',
                           gap: '6px',
-                          transition: 'all 0.2s ease'
+                          transition: 'background 0.2s ease'
                         }}
-                        onMouseEnter={(e) => {
-                          (e.target as HTMLButtonElement).style.background = 'var(--bg-nested)'
-                          (e.target as HTMLButtonElement).style.borderColor = 'var(--border-color)'
-                        }}
-                        onMouseLeave={(e) => {
-                          (e.target as HTMLButtonElement).style.background = 'var(--bg-card)'
-                          (e.target as HTMLButtonElement).style.borderColor = 'var(--border-primary)'
-                        }}
+                        onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = '#059669'}
+                        onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = '#10b981'}
                       >
                         <i className="fa-solid fa-check"></i>
                         Confirm & Set Details
@@ -2092,34 +2107,13 @@ const Products = () => {
         </div>
       )}
 
-        {/* Filters */}
-        <div style={{
-          background: 'var(--bg-card)',
-          borderRadius: '12px',
-          padding: '20px',
-          marginBottom: '24px',
-          boxShadow: 'var(--shadow-card)',
-          border: 'var(--border-primary)',
-          backdropFilter: 'blur(10px)',
-          position: 'relative',
-          zIndex: 10
-        }}>
-        <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
+        {/* Search and Filter Controls */}
+        <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '24px' }}>
           <div style={{ flex: '1', minWidth: '250px', maxWidth: '400px' }}>
             <div style={{ position: 'relative', display: 'flex', gap: '8px' }}>
               <div style={{ position: 'relative', flex: 1 }}>
-                <i className="fa-solid fa-search" style={{
-                  position: 'absolute',
-                  left: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: '#7d8d86',
-                  fontSize: '14px',
-                  zIndex: 1
-                }}></i>
-                <input
+                <Input
                   type="text"
-                  placeholder="Search products... (Press Enter to search)"
                   value={searchTerm}
                   onChange={handleSearchInputChange}
                   onKeyPress={handleSearchKeyPress}
@@ -2132,16 +2126,7 @@ const Products = () => {
                       setShowSearchSuggestions(true)
                     }
                   }}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px 10px 36px',
-                    border: '2px solid #000000',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    color: 'var(--text-primary) !important',
-                    background: 'var(--input-bg)',
-                    boxSizing: 'border-box'
-                  }}
+                  className="pr-10"
                 />
                 {searchTerm && (
                   <button
@@ -2153,7 +2138,7 @@ const Products = () => {
                       transform: 'translateY(-50%)',
                       background: 'none',
                       border: 'none',
-                      color: '#7d8d86',
+                      color: 'var(--text-secondary)',
                       cursor: 'pointer',
                       padding: '4px',
                       borderRadius: '4px',
@@ -2161,7 +2146,7 @@ const Products = () => {
                       transition: 'color 0.2s ease'
                     }}
                     onMouseEnter={(e) => (e.target as HTMLButtonElement).style.color = '#ef4444'}
-                    onMouseLeave={(e) => (e.target as HTMLButtonElement).style.color = '#7d8d86'}
+                    onMouseLeave={(e) => (e.target as HTMLButtonElement).style.color = 'var(--text-secondary)'}
                   >
                     <i className="fa-solid fa-times"></i>
                   </button>
@@ -2175,7 +2160,7 @@ const Products = () => {
                     left: 0,
                     right: 0,
                     backgroundColor: 'var(--bg-card)',
-                    border: '1px solid var(--text-primary)',
+                    border: '1px solid var(--border-subtle)',
                     borderTop: 'none',
                     borderRadius: '0 0 8px 8px',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
@@ -2316,56 +2301,31 @@ const Products = () => {
                   </div>
                 )}
               </div>
-              <button
+              <Button
                 onClick={handleSearchSubmit}
-                style={{
-                  padding: '10px 16px',
-                  background: 'var(--bg-card)',
-                  color: 'var(--text-primary) !important',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  transition: 'background 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  whiteSpace: 'nowrap'
-                }}
-                onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = '#374151'}
-                onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = 'var(--bg-card)'}
+                className="flex items-center gap-2"
               >
                 <i className="fa-solid fa-search" style={{ fontSize: '12px' }}></i>
                 Search
-              </button>
+              </Button>
             </div>
           </div>
           
           <div style={{ minWidth: '180px' }}>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '2px solid #000000',
-                borderRadius: '8px',
-                fontSize: '14px',
-                color: 'var(--text-primary) !important',
-                background: 'var(--input-bg)',
-                cursor: 'pointer'
-              }}
-            >
-              {categories.map(category => (
-                <option key={category} value={category}>
-                  {category === 'all' ? 'All Categories' : category}
-                </option>
-              ))}
-            </select>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map(category => (
+                  <SelectItem key={category} value={category}>
+                    {category === 'all' ? 'All Categories' : category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
-      </div>
 
         {/* Products Table */}
         <div style={{
@@ -2461,22 +2421,12 @@ const Products = () => {
                  }}>
                    Status
                  </th>
-                 <th style={{ 
-                   padding: '16px', 
-                   textAlign: 'left', 
-                   color: 'var(--text-primary) !important', 
-                   fontSize: '12px', 
-                   fontWeight: '600', 
-                   textTransform: 'uppercase'
-                 }}>
-                   Actions
-                 </th>
                </tr>
              </thead>
             <tbody>
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={isPrintMode ? 7 : 6} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  <td colSpan={isPrintMode ? 6 : 5} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
                     <img 
                       src="/images/vectors/no products.png" 
                       alt="No products" 
@@ -2493,6 +2443,7 @@ const Products = () => {
                   const stockStatus = getStockStatus(product.stock_quantity, product.reorder_level)
                   return (
                     <tr key={product.product_id} style={{ 
+                      background: 'var(--bg-card)',
                       borderBottom: '1px solid rgba(229, 231, 235, 0.3)',
                       transition: 'background 0.2s ease',
                       cursor: isPrintMode ? 'default' : 'pointer'
@@ -2505,7 +2456,7 @@ const Products = () => {
                     }}
                     onMouseLeave={(e) => {
                       if (!isPrintMode) {
-                        (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'
+                        (e.currentTarget as HTMLTableRowElement).style.background = 'var(--bg-card)'
                       }
                     }}
                     >
@@ -2563,7 +2514,7 @@ const Products = () => {
                               }}
                             />
                           )}
-                          <div>
+                          <div style={{ flex: 1 }}>
                             <p style={{ fontSize: '14px', fontWeight: '400', margin: '0 0 4px 0' }}>
                               {highlightSizeKeywords(product.name)}
                             </p>
@@ -2616,55 +2567,148 @@ const Products = () => {
                         {stockStatus.status === 'good' ? 'In Stock' : 
                          stockStatus.status === 'low' ? 'Low Stock' : 'Out of Stock'}
                       </td>
-                      <td style={{ padding: '16px' }}>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handlePrintIndividualLabel(product)
-                            }}
-                            className={styles.actionButton}
-                            onMouseEnter={() => {
-                              setLilyMessage(`Click to print a label for "${product.name}". This will open a print dialog with a formatted product label!`)
-                              setShowLilyMessage(true)
-                            }}
-                            onMouseLeave={() => {
-                              setShowLilyMessage(false)
-                            }}
-                          >
-                            <i className="fa-solid fa-print" style={{ marginRight: '4px' }}></i>
-                            Print Label
-                          </button>
-                          {hasPermission('canManageProducts') && (
+                      <td style={{ 
+                        padding: '16px',
+                        textAlign: 'center',
+                        verticalAlign: 'middle',
+                        position: 'relative'
+                      }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            // Toggle dropdown for this product
+                            setSelectedProductForActions(selectedProductForActions === product.product_id ? null : product.product_id)
+                          }}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '4px',
+                            borderRadius: '4px',
+                            color: 'var(--text-secondary)',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            (e.target as HTMLButtonElement).style.background = 'var(--bg-nested)'
+                            (e.target as HTMLButtonElement).style.color = 'var(--text-primary)'
+                          }}
+                          onMouseLeave={(e) => {
+                            (e.target as HTMLButtonElement).style.background = 'transparent'
+                            (e.target as HTMLButtonElement).style.color = 'var(--text-secondary)'
+                          }}
+                        >
+                          <i className="fa-solid fa-ellipsis-vertical" style={{ fontSize: '14px' }}></i>
+                        </button>
+                        
+                        {/* Dropdown Menu */}
+                        {selectedProductForActions === product.product_id && (
+                          <div style={{
+                            position: 'absolute',
+                            right: '16px',
+                            top: '100%',
+                            marginTop: '4px',
+                            background: 'var(--bg-card)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                            zIndex: 1000,
+                            minWidth: '160px',
+                            overflow: 'hidden'
+                          }}>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
-                                startEditProduct(product)
+                                handlePrintIndividualLabel(product)
+                                setSelectedProductForActions(null)
                               }}
-                              className={styles.actionButton}
-                              onMouseEnter={() => {
-                                setLilyMessage(`Click to edit "${product.name}". You can update the price, stock quantity, reorder level, and other details!`)
-                                setShowLilyMessage(true)
+                              style={{
+                                width: '100%',
+                                padding: '12px 16px',
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--text-primary)',
+                                fontSize: '14px',
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                transition: 'background 0.2s ease'
                               }}
-                              onMouseLeave={() => {
-                                setShowLilyMessage(false)
+                              onMouseEnter={(e) => {
+                                (e.target as HTMLButtonElement).style.background = 'var(--bg-nested)'
+                              }}
+                              onMouseLeave={(e) => {
+                                (e.target as HTMLButtonElement).style.background = 'transparent'
                               }}
                             >
-                              <i className="fa-solid fa-pen-to-square" style={{ marginRight: '4px' }}></i>
-                              Edit
+                              <i className="fa-solid fa-print" style={{ fontSize: '12px' }}></i>
+                              Print Label
                             </button>
-                          )}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setProductToDelete(product)
-                            }}
-                            className={styles.deleteButton}
-                          >
-                            <i className="fa-solid fa-trash-can" style={{ marginRight: '4px' }}></i>
-                            Delete
-                          </button>
-                        </div>
+                            {hasPermission('canManageProducts') && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  startEditProduct(product)
+                                  setSelectedProductForActions(null)
+                                }}
+                                style={{
+                                  width: '100%',
+                                  padding: '12px 16px',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: 'var(--text-primary)',
+                                  fontSize: '14px',
+                                  textAlign: 'left',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                  transition: 'background 0.2s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  (e.target as HTMLButtonElement).style.background = 'var(--bg-nested)'
+                                }}
+                                onMouseLeave={(e) => {
+                                  (e.target as HTMLButtonElement).style.background = 'transparent'
+                                }}
+                              >
+                                <i className="fa-solid fa-pen-to-square" style={{ fontSize: '12px' }}></i>
+                                Edit Product
+                              </button>
+                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setProductToDelete(product)
+                                setSelectedProductForActions(null)
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '12px 16px',
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--error-text)',
+                                fontSize: '14px',
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                transition: 'background 0.2s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                (e.target as HTMLButtonElement).style.background = 'var(--error-bg)'
+                              }}
+                              onMouseLeave={(e) => {
+                                (e.target as HTMLButtonElement).style.background = 'transparent'
+                              }}
+                            >
+                              <i className="fa-solid fa-trash-can" style={{ fontSize: '12px' }}></i>
+                              Delete Product
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   )
@@ -2711,7 +2755,8 @@ const Products = () => {
           borderRadius: '12px',
           boxShadow: '0 2px 8px rgba(62, 63, 41, 0.1)',
           border: 'var(--border-subtle)',
-          marginBottom: '24px'
+          marginBottom: '24px',
+          background: 'var(--bg-card)'
         }}>
           {/* Items per page selector */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -2723,10 +2768,11 @@ const Products = () => {
               onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value))}
               style={{
                 padding: '6px 12px',
-                      border: '2px solid #000000',
+                border: '2px solid var(--input-border)',
                 borderRadius: '6px',
                 fontSize: '14px',
                 color: 'var(--text-primary) !important',
+                backgroundColor: 'var(--input-bg)',
                 cursor: 'pointer'
               }}
             >
@@ -2746,10 +2792,10 @@ const Products = () => {
               disabled={currentPage === 1}
               style={{
                 padding: '8px 12px',
-                      border: '2px solid #000000',
+                border: '2px solid var(--input-border)',
                 borderRadius: '6px',
                 background: currentPage === 1 ? 'var(--bg-nested)' : 'var(--bg-card)',
-                color: currentPage === 1 ? '#9ca3af' : '#3e3f29',
+                color: currentPage === 1 ? 'var(--text-disabled)' : 'var(--text-primary)',
                 cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
                 fontSize: '14px',
                 transition: 'all 0.2s ease'
@@ -2757,11 +2803,13 @@ const Products = () => {
               onMouseEnter={(e) => {
                 if (currentPage !== 1) {
                   (e.target as HTMLButtonElement).style.background = 'var(--bg-nested)'
+                  (e.target as HTMLButtonElement).style.color = 'var(--text-primary)'
                 }
               }}
               onMouseLeave={(e) => {
                 if (currentPage !== 1) {
                   (e.target as HTMLButtonElement).style.background = 'var(--bg-card)'
+                  (e.target as HTMLButtonElement).style.color = 'var(--text-primary)'
                 }
               }}
             >
@@ -2789,10 +2837,10 @@ const Products = () => {
                     onClick={() => handlePageChange(pageNum)}
                     style={{
                       padding: '8px 12px',
-                      border: '2px solid #000000',
+                      border: '2px solid var(--input-border)',
                       borderRadius: '6px',
-                      background: currentPage === pageNum ? 'var(--bg-card)' : 'var(--bg-nested)',
-                      color: currentPage === pageNum ? '#f1f0e4' : '#3e3f29',
+                      background: currentPage === pageNum ? 'var(--bg-nested)' : 'var(--bg-card)',
+                      color: currentPage === pageNum ? 'var(--text-primary)' : 'var(--text-primary)',
                       cursor: 'pointer',
                       fontSize: '14px',
                       fontWeight: currentPage === pageNum ? '600' : '400',
@@ -2802,11 +2850,13 @@ const Products = () => {
                     onMouseEnter={(e) => {
                       if (currentPage !== pageNum) {
                         (e.target as HTMLButtonElement).style.background = 'var(--bg-nested)'
+                        (e.target as HTMLButtonElement).style.color = 'var(--text-primary)'
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (currentPage !== pageNum) {
                         (e.target as HTMLButtonElement).style.background = 'var(--bg-card)'
+                        (e.target as HTMLButtonElement).style.color = 'var(--text-primary)'
                       }
                     }}
                   >
@@ -2821,10 +2871,10 @@ const Products = () => {
               disabled={currentPage === totalPages}
               style={{
                 padding: '8px 12px',
-                      border: '2px solid #000000',
+                border: '2px solid var(--input-border)',
                 borderRadius: '6px',
                 background: currentPage === totalPages ? 'var(--bg-nested)' : 'var(--bg-card)',
-                color: currentPage === totalPages ? '#9ca3af' : '#3e3f29',
+                color: currentPage === totalPages ? 'var(--text-disabled)' : 'var(--text-primary)',
                 cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
                 fontSize: '14px',
                 transition: 'all 0.2s ease'
@@ -2832,11 +2882,13 @@ const Products = () => {
               onMouseEnter={(e) => {
                 if (currentPage !== totalPages) {
                   (e.target as HTMLButtonElement).style.background = 'var(--bg-nested)'
+                  (e.target as HTMLButtonElement).style.color = 'var(--text-primary)'
                 }
               }}
               onMouseLeave={(e) => {
                 if (currentPage !== totalPages) {
                   (e.target as HTMLButtonElement).style.background = 'var(--bg-card)'
+                  (e.target as HTMLButtonElement).style.color = 'var(--text-primary)'
                 }
               }}
             >
@@ -4559,8 +4611,8 @@ const Products = () => {
                           padding: '12px 20px',
                           borderRadius: '12px',
                           border: 'none',
-                          background: activeChart === 'daily' ? '#3b82f6' : '#f8fafc',
-                          color: activeChart === 'daily' ? 'white' : '#6b7280',
+                          background: activeChart === 'daily' ? 'var(--primary-color)' : 'var(--bg-nested)',
+                          color: activeChart === 'daily' ? 'white' : 'var(--text-secondary)',
                           cursor: 'pointer',
                           fontSize: '14px',
                           fontWeight: '500',
@@ -4580,8 +4632,8 @@ const Products = () => {
                           padding: '12px 20px',
                           borderRadius: '12px',
                           border: 'none',
-                          background: activeChart === 'weekly' ? '#10b981' : '#f8fafc',
-                          color: activeChart === 'weekly' ? 'white' : '#6b7280',
+                          background: activeChart === 'weekly' ? 'var(--success-color)' : 'var(--bg-nested)',
+                          color: activeChart === 'weekly' ? 'white' : 'var(--text-secondary)',
                           cursor: 'pointer',
                           fontSize: '14px',
                           fontWeight: '500',
@@ -4601,8 +4653,8 @@ const Products = () => {
                           padding: '12px 20px',
                           borderRadius: '12px',
                           border: 'none',
-                          background: activeChart === 'monthly' ? '#f59e0b' : '#f8fafc',
-                          color: activeChart === 'monthly' ? 'white' : '#6b7280',
+                          background: activeChart === 'monthly' ? 'var(--warning-color)' : 'var(--bg-nested)',
+                          color: activeChart === 'monthly' ? 'white' : 'var(--text-secondary)',
                           cursor: 'pointer',
                           fontSize: '14px',
                           fontWeight: '500',
@@ -4622,109 +4674,125 @@ const Products = () => {
                     <div style={{ 
                       padding: '24px', 
                       borderRadius: '16px', 
-                      minHeight: '220px',
-                      border: '1px solid #e2e8f0',
-                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)'
+                      height: '300px',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-nested)'
                     }}>
                       {activeChart === 'daily' && (
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-                            <i className="fas fa-chart-bar" style={{ color: '#3b82f6', fontSize: '16px' }}></i>
-                            <h4 style={{ margin: 0, fontSize: '16px', color: 'var(--text-header)', fontWeight: '600' }}>
+                            <i className="fas fa-chart-bar" style={{ color: 'var(--primary-color)', fontSize: '16px' }}></i>
+                            <h4 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)', fontWeight: '600' }}>
                               Daily Sales (Last 30 Days)
                             </h4>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'end', gap: '4px', height: '150px' }}>
-                            {productInsights.chartData.daily.map((day, index) => {
-                              const maxSales = Math.max(...productInsights.chartData.daily.map(d => d.sales))
-                              const height = maxSales > 0 ? (day.sales / maxSales) * 120 : 0
-                              return (
-                                <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-                                  <div
-                                    style={{
-                                      width: '100%',
-                                      height: `${height}px`,
-                                      background: day.sales > 0 ? 'var(--bg-card)' : '#e5e7eb',
-                                      borderRadius: '2px 2px 0 0',
-                                      minHeight: '2px'
-                                    }}
-                                    title={`${day.date}: ${day.sales} sales, ?${day.revenue.toFixed(2)}`}
-                                  />
-                                  <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '4px', textAlign: 'center' }}>
-                                    {day.day}
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
+                          <ResponsiveContainer width="100%" height={200}>
+                            <BarChart data={productInsights.chartData.daily}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                              <XAxis 
+                                dataKey="day" 
+                                stroke="var(--text-secondary)"
+                                fontSize={12}
+                              />
+                              <YAxis 
+                                stroke="var(--text-secondary)"
+                                fontSize={12}
+                              />
+                              <Tooltip 
+                                contentStyle={{
+                                  backgroundColor: 'var(--bg-card)',
+                                  border: '1px solid var(--border-color)',
+                                  borderRadius: '8px',
+                                  color: 'var(--text-primary)'
+                                }}
+                              />
+                              <Bar 
+                                dataKey="sales" 
+                                fill="var(--primary-color)"
+                                radius={[4, 4, 0, 0]}
+                              />
+                            </BarChart>
+                          </ResponsiveContainer>
                         </div>
                       )}
 
                       {activeChart === 'weekly' && (
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-                            <i className="fas fa-chart-area" style={{ color: '#10b981', fontSize: '16px' }}></i>
-                            <h4 style={{ margin: 0, fontSize: '16px', color: 'var(--text-header)', fontWeight: '600' }}>
+                            <i className="fas fa-chart-area" style={{ color: 'var(--success-color)', fontSize: '16px' }}></i>
+                            <h4 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)', fontWeight: '600' }}>
                               Weekly Sales (Last 4 Weeks)
                             </h4>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'end', gap: '8px', height: '150px' }}>
-                            {productInsights.chartData.weekly.map((week, index) => {
-                              const maxSales = Math.max(...productInsights.chartData.weekly.map(w => w.sales))
-                              const height = maxSales > 0 ? (week.sales / maxSales) * 120 : 0
-                              return (
-                                <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-                                  <div
-                                    style={{
-                                      width: '100%',
-                                      height: `${height}px`,
-                                      background: week.sales > 0 ? '#10b981' : '#e5e7eb',
-                                      borderRadius: '4px 4px 0 0',
-                                      minHeight: '2px'
-                                    }}
-                                    title={`${week.week}: ${week.sales} sales, ?${week.revenue.toFixed(2)}`}
-                                  />
-                                  <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '4px', textAlign: 'center' }}>
-                                    {week.week}
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
+                          <ResponsiveContainer width="100%" height={200}>
+                            <AreaChart data={productInsights.chartData.weekly}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                              <XAxis 
+                                dataKey="week" 
+                                stroke="var(--text-secondary)"
+                                fontSize={12}
+                              />
+                              <YAxis 
+                                stroke="var(--text-secondary)"
+                                fontSize={12}
+                              />
+                              <Tooltip 
+                                contentStyle={{
+                                  backgroundColor: 'var(--bg-card)',
+                                  border: '1px solid var(--border-color)',
+                                  borderRadius: '8px',
+                                  color: 'var(--text-primary)'
+                                }}
+                              />
+                              <Area 
+                                type="monotone" 
+                                dataKey="sales" 
+                                stroke="var(--success-color)" 
+                                fill="var(--success-color)"
+                                fillOpacity={0.3}
+                              />
+                            </AreaChart>
+                          </ResponsiveContainer>
                         </div>
                       )}
 
                       {activeChart === 'monthly' && (
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-                            <i className="fas fa-chart-pie" style={{ color: '#f59e0b', fontSize: '16px' }}></i>
-                            <h4 style={{ margin: 0, fontSize: '16px', color: 'var(--text-header)', fontWeight: '600' }}>
+                            <i className="fas fa-chart-line" style={{ color: 'var(--warning-color)', fontSize: '16px' }}></i>
+                            <h4 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)', fontWeight: '600' }}>
                               Monthly Sales (Last 6 Months)
                             </h4>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'end', gap: '8px', height: '150px' }}>
-                            {productInsights.chartData.monthly.map((month, index) => {
-                              const maxSales = Math.max(...productInsights.chartData.monthly.map(m => m.sales))
-                              const height = maxSales > 0 ? (month.sales / maxSales) * 120 : 0
-                              return (
-                                <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-                                  <div
-                                    style={{
-                                      width: '100%',
-                                      height: `${height}px`,
-                                      background: month.sales > 0 ? '#f59e0b' : '#e5e7eb',
-                                      borderRadius: '4px 4px 0 0',
-                                      minHeight: '2px'
-                                    }}
-                                    title={`${month.month}: ${month.sales} sales, ?${month.revenue.toFixed(2)}`}
-                                  />
-                                  <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '4px', textAlign: 'center' }}>
-                                    {month.month.split(' ')[0]}
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
+                          <ResponsiveContainer width="100%" height={200}>
+                            <LineChart data={productInsights.chartData.monthly}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                              <XAxis 
+                                dataKey="month" 
+                                stroke="var(--text-secondary)"
+                                fontSize={12}
+                              />
+                              <YAxis 
+                                stroke="var(--text-secondary)"
+                                fontSize={12}
+                              />
+                              <Tooltip 
+                                contentStyle={{
+                                  backgroundColor: 'var(--bg-card)',
+                                  border: '1px solid var(--border-color)',
+                                  borderRadius: '8px',
+                                  color: 'var(--text-primary)'
+                                }}
+                              />
+                              <Line 
+                                type="monotone" 
+                                dataKey="sales" 
+                                stroke="var(--warning-color)" 
+                                strokeWidth={3}
+                                dot={{ fill: 'var(--warning-color)', strokeWidth: 2, r: 4 }}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
                         </div>
                       )}
                     </div>
@@ -5044,19 +5112,18 @@ const Products = () => {
                 price: parseFloat(formData.get('price') as string) || 0,
                 stock_quantity: parseInt(formData.get('stock_quantity') as string) || 0,
                 reorder_level: parseInt(formData.get('reorder_level') as string) || 10,
-                tax_rate: 0
+                tax_rate: parseFloat(formData.get('tax_rate') as string) || 20
               }
               handleConfirmPendingProduct(confirmingProduct, updatedData)
             }}>
               {/* Product Info Summary */}
               <div style={{
-                background: 'var(--bg-card)',
+                background: '#f9fafb',
                 borderRadius: '8px',
                 padding: '16px',
                 marginBottom: '20px',
                 display: 'flex',
-                gap: '12px',
-                border: 'var(--border-subtle)'
+                gap: '12px'
               }}>
                 {confirmingProduct.image_url ? (
                   <img
@@ -5126,7 +5193,7 @@ const Products = () => {
                     display: 'block',
                     fontSize: '14px',
                     fontWeight: '500',
-                    color: 'var(--text-primary)',
+                    color: '#374151',
                     marginBottom: '6px'
                   }}>
                     <i className="fa-solid fa-euro-sign" style={{ marginRight: '6px', color: '#10b981' }}></i>
@@ -5142,11 +5209,9 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px',
-                      border: 'var(--border-primary)',
+                      border: '2px solid #d1d5db',
                       borderRadius: '6px',
                       fontSize: '14px',
-                      background: 'var(--input-bg)',
-                      color: 'var(--text-primary)',
                       boxSizing: 'border-box'
                     }}
                   />
@@ -5157,7 +5222,7 @@ const Products = () => {
                     display: 'block',
                     fontSize: '14px',
                     fontWeight: '500',
-                    color: 'var(--text-primary)',
+                    color: '#374151',
                     marginBottom: '6px'
                   }}>
                     <i className="fa-solid fa-boxes-stacked" style={{ marginRight: '6px', color: '#3b82f6' }}></i>
@@ -5172,11 +5237,9 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px',
-                      border: 'var(--border-primary)',
+                      border: '2px solid #d1d5db',
                       borderRadius: '6px',
                       fontSize: '14px',
-                      background: 'var(--input-bg)',
-                      color: 'var(--text-primary)',
                       boxSizing: 'border-box'
                     }}
                   />
@@ -5187,7 +5250,7 @@ const Products = () => {
                     display: 'block',
                     fontSize: '14px',
                     fontWeight: '500',
-                    color: 'var(--text-primary)',
+                    color: '#374151',
                     marginBottom: '6px'
                   }}>
                     <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: '6px', color: '#f59e0b' }}></i>
@@ -5201,16 +5264,42 @@ const Products = () => {
                     style={{
                       width: '100%',
                       padding: '10px',
-                      border: 'var(--border-primary)',
+                      border: '2px solid #d1d5db',
                       borderRadius: '6px',
                       fontSize: '14px',
-                      background: 'var(--input-bg)',
-                      color: 'var(--text-primary)',
                       boxSizing: 'border-box'
                     }}
                   />
                 </div>
 
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px'
+                  }}>
+                    <i className="fa-solid fa-percent" style={{ marginRight: '6px', color: '#6b7280' }}></i>
+                    Tax Rate (%)
+                  </label>
+                  <input
+                    type="number"
+                    name="tax_rate"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    defaultValue="20"
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
               </div>
 
               {/* Action Buttons */}
@@ -5226,33 +5315,27 @@ const Products = () => {
                   type="button"
                   onClick={() => setConfirmingProduct(null)}
                   style={{
-                    background: 'var(--bg-card)',
-                    color: 'var(--text-primary)',
-                    border: 'var(--border-primary)',
+                    background: '#f3f4f6',
+                    color: '#374151',
+                    border: 'none',
                     padding: '10px 20px',
                     borderRadius: '6px',
                     cursor: 'pointer',
                     fontSize: '14px',
                     fontWeight: '500',
-                    transition: 'all 0.2s ease'
+                    transition: 'background 0.2s ease'
                   }}
-                  onMouseEnter={(e) => {
-                    (e.target as HTMLButtonElement).style.background = 'var(--bg-nested)'
-                    (e.target as HTMLButtonElement).style.borderColor = 'var(--border-color)'
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.target as HTMLButtonElement).style.background = 'var(--bg-card)'
-                    (e.target as HTMLButtonElement).style.borderColor = 'var(--border-primary)'
-                  }}
+                  onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = '#e5e7eb'}
+                  onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = '#f3f4f6'}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   style={{
-                    background: 'var(--bg-card)',
-                    color: 'var(--text-primary)',
-                    border: 'var(--border-primary)',
+                    background: '#10b981',
+                    color: 'white',
+                    border: 'none',
                     padding: '10px 24px',
                     borderRadius: '6px',
                     cursor: 'pointer',
@@ -5261,16 +5344,10 @@ const Products = () => {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
-                    transition: 'all 0.2s ease'
+                    transition: 'background 0.2s ease'
                   }}
-                  onMouseEnter={(e) => {
-                    (e.target as HTMLButtonElement).style.background = 'var(--bg-nested)'
-                    (e.target as HTMLButtonElement).style.borderColor = 'var(--border-color)'
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.target as HTMLButtonElement).style.background = 'var(--bg-card)'
-                    (e.target as HTMLButtonElement).style.borderColor = 'var(--border-primary)'
-                  }}
+                  onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = '#059669'}
+                  onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = '#10b981'}
                 >
                   <i className="fa-solid fa-check"></i>
                   Confirm & Add to Inventory

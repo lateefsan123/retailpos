@@ -1,6 +1,6 @@
 import React from 'react'
 import { Transaction } from '../../hooks/useTransactions'
-import Button from '../ui/Button'
+import { Button } from '../ui/Button'
 
 interface TransactionCardProps {
   transaction: Transaction
