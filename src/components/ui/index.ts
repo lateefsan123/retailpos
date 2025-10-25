@@ -1,6 +1,6 @@
-export { Button } from "./button"
+export { Button } from "./Button"
 export { Input } from "./input"
-export { Card } from "./card"
+export { Card } from "./Card"
 export { 
   Dialog, 
   DialogPortal, 
