@@ -15,6 +15,7 @@ interface User {
   pin?: string;
   branch_id?: number;
   branch_name?: string;
+  branch_display_name?: string;
 }
 
 interface Branch {
@@ -27,7 +28,79 @@ interface Branch {
   business_id: number;
   active: boolean;
   created_at: string;
+  display_name?: string;
+  display_label?: string;
 }
+
+const GENERIC_BRANCH_NAMES = new Set(['branch', 'main branch']);
+
+const buildBranchDisplayName = (
+  branch?: { branch_name?: string | null; display_name?: string | null; address?: string | null },
+  fallbackIndex?: number
+) => {
+  if (!branch) {
+    return typeof fallbackIndex === 'number' ? `Branch ${fallbackIndex + 1}` : 'Branch';
+  }
+
+  const addressLine = branch.address
+    ?.split(',')
+    .map((part) => part.trim())
+    .find(Boolean);
+
+  const displayName = branch.display_name?.trim();
+  if (displayName && !GENERIC_BRANCH_NAMES.has(displayName.toLowerCase())) {
+    if (addressLine && !displayName.toLowerCase().includes(addressLine.toLowerCase())) {
+      return `${displayName} · ${addressLine}`;
+    }
+    return displayName;
+  }
+
+  const rawName = branch.branch_name?.trim();
+  if (rawName) {
+    const lowerRawName = rawName.toLowerCase();
+    if (!GENERIC_BRANCH_NAMES.has(lowerRawName)) {
+      if (addressLine && !rawName.toLowerCase().includes(addressLine.toLowerCase())) {
+        return `${rawName} · ${addressLine}`;
+      }
+      return rawName;
+    }
+  }
+
+  if (addressLine && addressLine.length > 0) {
+    const fallbackName =
+      rawName && rawName.toLowerCase() === 'main branch'
+        ? 'Main Branch'
+        : typeof fallbackIndex === 'number'
+          ? `Branch ${fallbackIndex + 1}`
+          : addressLine;
+
+    if (!fallbackName.toLowerCase().includes(addressLine.toLowerCase())) {
+      return `${fallbackName} · ${addressLine}`;
+    }
+    return fallbackName;
+  }
+
+  if (rawName && rawName.length > 0) {
+    if (rawName.toLowerCase() === 'main branch' && typeof fallbackIndex === 'number') {
+      return `Branch ${fallbackIndex + 1}`;
+    }
+    return rawName;
+  }
+
+  if (typeof fallbackIndex === 'number') {
+    return `Branch ${fallbackIndex + 1}`;
+  }
+
+  return 'Branch';
+};
+
+const getBranchLabel = (branch?: Branch | null) => {
+  if (!branch) {
+    return 'Branch';
+  }
+
+  return branch.display_label || branch.display_name || branch.branch_name || 'Branch';
+};
 
 const SelectUserMobile: React.FC = () => {
   const navigate = useNavigate();
@@ -35,6 +108,7 @@ const SelectUserMobile: React.FC = () => {
 
   const [users, setUsers] = useState<User[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [branchDisplayMap, setBranchDisplayMap] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
@@ -51,6 +125,28 @@ const SelectUserMobile: React.FC = () => {
       fetchBranches();
     }
   }, [user?.business_id]);
+
+  useEffect(() => {
+    if (!Object.keys(branchDisplayMap).length) return;
+
+    setUsers((prevUsers) =>
+      prevUsers.map((userRecord) => {
+        if (!userRecord.branch_id) {
+          return userRecord;
+        }
+
+        const mappedName = branchDisplayMap[userRecord.branch_id];
+        if (!mappedName || userRecord.branch_display_name === mappedName) {
+          return userRecord;
+        }
+
+        return {
+          ...userRecord,
+          branch_display_name: mappedName,
+        };
+      })
+    );
+  }, [branchDisplayMap]);
 
   // PIN prompt completely disabled
 
@@ -76,19 +172,24 @@ const SelectUserMobile: React.FC = () => {
         if (user.branch_id) {
           const { data: branchData } = await supabase
             .from('branches')
-            .select('branch_name')
+            .select('branch_id, branch_name, address, display_name')
             .eq('branch_id', user.branch_id)
             .single();
-          
+
+          const displayName =
+            branchDisplayMap[user.branch_id] ?? buildBranchDisplayName(branchData);
+
           return {
             ...user,
-            branch_name: branchData?.branch_name || 'Branch Not Found'
+            branch_name: branchData?.branch_name || 'Branch Not Found',
+            branch_display_name: displayName
           };
         }
         
         return {
           ...user,
-          branch_name: 'No Branch Assigned'
+          branch_name: 'No Branch Assigned',
+          branch_display_name: 'No Branch Assigned'
         };
       }));
 
@@ -116,12 +217,37 @@ const SelectUserMobile: React.FC = () => {
         return;
       }
 
-      setBranches(data || []);
+      const totalBranches = data?.length ?? 0;
+      const formattedBranches = (data || []).map((branch, index) => {
+        const displayLabel = buildBranchDisplayName(
+          branch,
+          totalBranches > 1 ? index : undefined
+        );
+        return {
+          ...branch,
+          display_label: displayLabel,
+        };
+      });
+
+      setBranches(formattedBranches);
+
+      const displayMap = formattedBranches.reduce<Record<number, string>>((acc, branch) => {
+        acc[branch.branch_id] =
+          branch.display_label || branch.display_name || branch.branch_name;
+        return acc;
+      }, {});
+      setBranchDisplayMap(displayMap);
+
       // Show branch selection if multiple branches exist
-      if (data && data.length > 1) {
+      if (formattedBranches.length > 1) {
         setShowBranchSelection(true);
-      } else if (data && data.length === 1) {
-        setSelectedBranch(data[0]);
+        setSelectedBranch(null);
+      } else if (formattedBranches.length === 1) {
+        setSelectedBranch(formattedBranches[0]);
+        setShowBranchSelection(false);
+      } else {
+        setSelectedBranch(null);
+        setShowBranchSelection(false);
       }
     } catch (error) {
       console.error('Error fetching branches:', error);
@@ -155,6 +281,7 @@ const SelectUserMobile: React.FC = () => {
         // Store selected branch in localStorage
         localStorage.setItem('selected_branch_id', selectedBranch.branch_id.toString());
         localStorage.setItem('selected_branch_name', selectedBranch.branch_name);
+        localStorage.setItem('selected_branch_display_name', getBranchLabel(selectedBranch));
         navigate('/dashboard-mobile');
       } else {
         // Authentication failed - show error without throwing
@@ -242,11 +369,11 @@ const SelectUserMobile: React.FC = () => {
               <div className={styles.branchImage}>
                 <img
                   src={`/images/shop/${branch.shop_image}.png`}
-                  alt={branch.branch_name}
+                  alt={getBranchLabel(branch)}
                 />
               </div>
               <div className={styles.branchInfo}>
-                <h3 className={styles.branchName}>{branch.branch_name}</h3>
+                <h3 className={styles.branchName}>{getBranchLabel(branch)}</h3>
                 <p className={styles.branchAddress}>{branch.address}</p>
               </div>
             </button>
@@ -401,7 +528,7 @@ const SelectUserMobile: React.FC = () => {
                 </div>
                 <div className={styles.userBranch}>
                   <i className="fa-solid fa-building"></i>
-                  {u.branch_name || 'No Branch'}
+                  {u.branch_display_name || u.branch_name || 'No Branch'}
                 </div>
                 <div className={styles.userLastUsed}>
                   Last login: {formatLastUsed(u.last_used)}

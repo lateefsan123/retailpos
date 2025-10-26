@@ -15,4 +15,5 @@ export const T = {
   inventoryMovements: 'inventory_movements',
   refunds: 'refunds',
   users: 'users',
+  customerShoppingLists: 'customer_shopping_lists',
 } as const;

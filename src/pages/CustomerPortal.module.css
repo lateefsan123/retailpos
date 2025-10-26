@@ -1,0 +1,281 @@
+/* Customer Portal CSS Module */
+
+/* Rewards Container Styles */
+.salesCard {
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.salesHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.salesTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #000000;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.salesDescription {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.salesList {
+  padding: 0 1.5rem 1.5rem 1.5rem;
+}
+
+.portalBottomNav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 62px;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: center;
+  padding: 0 6px;
+  z-index: 3200;
+  box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.portalNavButton {
+  height: 46px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #6b7280;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  width: 100%;
+}
+
+.portalNavButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.portalNavButton:hover:not(:disabled),
+.portalNavButton:focus-visible:not(:disabled) {
+  background: #f3f4f6;
+  outline: none;
+}
+
+.portalNavButtonActive {
+  color: #111827;
+  background: #eef2ff;
+}
+
+.portalNavLabel {
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 600;
+}
+
+.portalNavCaption {
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+@media (min-width: 768px) {
+  .portalBottomNav {
+    left: 50%;
+    transform: translateX(-50%);
+    width: 420px;
+    border-radius: 16px 16px 0 0;
+    border: 1px solid #e5e7eb;
+    border-bottom: none;
+    box-shadow: 0 -10px 35px rgba(15, 23, 42, 0.1);
+  }
+}
+
+/* Reward Item Layout */
+.rewardItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  gap: 1rem;
+}
+
+.rewardImage {
+  width: 4rem;
+  height: 4rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.rewardImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rewardImageFallback {
+  font-size: 1.5rem;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.rewardInfo {
+  flex: 1;
+}
+
+.rewardName {
+  font-weight: 500;
+  color: #1f2937;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.rewardPoints {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.rewardStock {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin: 0.125rem 0 0 0;
+}
+
+/* Action Buttons */
+.rewardActions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.statusBadge {
+  padding: 0.5rem 1rem;
+  color: #ffffff;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.statusBadgeAvailable {
+  background-color: #fbbf24;
+}
+
+.statusBadgeDisabled {
+  background-color: #9ca3af;
+}
+
+.redeemButton {
+  padding: 0.5rem 1rem;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  justify-content: center;
+  width: 100%;
+}
+
+.redeemButtonEnabled {
+  background-color: #10b981;
+  cursor: pointer;
+}
+
+.redeemButtonDisabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 2rem 0;
+  color: #6b7280;
+}
+
+.emptyStateIcon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.emptyStateText {
+  margin: 0;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .salesHeader {
+    flex-direction: column;
+    padding: 1rem;
+  }
+  
+  .rewardItem {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem;
+    gap: 1rem;
+  }
+  
+  .rewardImage {
+    align-self: center;
+    width: 5rem;
+    height: 5rem;
+  }
+  
+  .rewardInfo {
+    text-align: center;
+  }
+  
+  .rewardActions {
+    flex-direction: row;
+    gap: 0.75rem;
+    min-width: auto;
+  }
+  
+  .statusBadge,
+  .redeemButton {
+    flex: 1;
+    min-width: auto;
+  }
+}

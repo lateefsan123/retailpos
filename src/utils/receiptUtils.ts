@@ -79,12 +79,14 @@ export const generateReceiptHTML = (
         }
         .logo-fallback {
           display: none;
-          background: #333;
-          color: white;
-          padding: 8px;
+          background: #f8f9fa;
+          color: #1f2937;
+          padding: 12px;
           text-align: center;
           font-weight: bold;
           margin-bottom: 10px;
+          border: 1px solid #e5e7eb;
+          border-radius: 4px;
         }
         .business-info { 
           font-size: 12px; 
@@ -160,7 +162,7 @@ export const generateReceiptHTML = (
       <div class="receipt">
         <div class="header">
           <img src="${businessLogo}" alt="${businessName}" style="max-width: 110px; height: auto; display: block; margin: 0 auto 10px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-          <div class="logo-fallback" style="display: none; font-size: 24px; font-weight: bold; margin-bottom: 8px; color: #3e3f29;">${businessName}</div>
+          <div class="logo-fallback" style="display: none; font-size: 24px; font-weight: bold; margin-bottom: 8px; color: #1f2937;">${businessName}</div>
           <div class="business-info">
             ${businessAddress ? `<div>${businessAddress}</div>` : ''}
             ${businessPhone ? `<div>${businessPhone}</div>` : ''}

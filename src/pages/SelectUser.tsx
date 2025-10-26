@@ -14,6 +14,7 @@ interface User {
   pin?: string;
   branch_id?: number;
   branch_name?: string;
+  branch_display_name?: string;
 }
 
 interface Branch {
@@ -26,7 +27,79 @@ interface Branch {
   business_id: number;
   active: boolean;
   created_at: string;
+  display_name?: string;
+  display_label?: string;
 }
+
+const GENERIC_BRANCH_NAMES = new Set(['branch', 'main branch']);
+
+const buildBranchDisplayName = (
+  branch?: { branch_name?: string | null; display_name?: string | null; address?: string | null },
+  fallbackIndex?: number
+) => {
+  if (!branch) {
+    return typeof fallbackIndex === 'number' ? `Branch ${fallbackIndex + 1}` : 'Branch';
+  }
+
+  const addressLine = branch.address
+    ?.split(',')
+    .map((part) => part.trim())
+    .find(Boolean);
+
+  const displayName = branch.display_name?.trim();
+  if (displayName && !GENERIC_BRANCH_NAMES.has(displayName.toLowerCase())) {
+    if (addressLine && !displayName.toLowerCase().includes(addressLine.toLowerCase())) {
+      return `${displayName} · ${addressLine}`;
+    }
+    return displayName;
+  }
+
+  const rawName = branch.branch_name?.trim();
+  if (rawName) {
+    const lowerRawName = rawName.toLowerCase();
+    if (!GENERIC_BRANCH_NAMES.has(lowerRawName)) {
+      if (addressLine && !rawName.toLowerCase().includes(addressLine.toLowerCase())) {
+        return `${rawName} · ${addressLine}`;
+      }
+      return rawName;
+    }
+  }
+
+  if (addressLine && addressLine.length > 0) {
+    const fallbackName =
+      rawName && rawName.toLowerCase() === 'main branch'
+        ? 'Main Branch'
+        : typeof fallbackIndex === 'number'
+          ? `Branch ${fallbackIndex + 1}`
+          : addressLine;
+
+    if (!fallbackName.toLowerCase().includes(addressLine.toLowerCase())) {
+      return `${fallbackName} · ${addressLine}`;
+    }
+    return fallbackName;
+  }
+
+  if (rawName && rawName.length > 0) {
+    if (rawName.toLowerCase() === 'main branch' && typeof fallbackIndex === 'number') {
+      return `Branch ${fallbackIndex + 1}`;
+    }
+    return rawName;
+  }
+
+  if (typeof fallbackIndex === 'number') {
+    return `Branch ${fallbackIndex + 1}`;
+  }
+
+  return 'Branch';
+};
+
+const getBranchLabel = (branch?: Branch | null) => {
+  if (!branch) {
+    return 'Branch';
+  }
+
+  return branch.display_label || branch.display_name || branch.branch_name || 'Branch';
+};
 
 
 const SelectUser: React.FC = () => {
@@ -35,6 +108,7 @@ const SelectUser: React.FC = () => {
 
   const [users, setUsers] = useState<User[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [branchDisplayMap, setBranchDisplayMap] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
@@ -60,6 +134,28 @@ const SelectUser: React.FC = () => {
     }
   }, [user?.business_id]);
 
+  useEffect(() => {
+    if (!Object.keys(branchDisplayMap).length) return;
+
+    setUsers((prevUsers) =>
+      prevUsers.map((userRecord) => {
+        if (!userRecord.branch_id) {
+          return userRecord;
+        }
+
+        const mappedName = branchDisplayMap[userRecord.branch_id];
+        if (!mappedName || userRecord.branch_display_name === mappedName) {
+          return userRecord;
+        }
+
+        return {
+          ...userRecord,
+          branch_display_name: mappedName,
+        };
+      })
+    );
+  }, [branchDisplayMap]);
+
   // PIN prompt completely disabled
 
   const fetchUsers = async () => {
@@ -80,23 +176,29 @@ const SelectUser: React.FC = () => {
       }
 
       // Get branch information for users
-      const usersWithBranches = await Promise.all((data || []).map(async (user) => {
-        if (user.branch_id) {
+      const usersWithBranches = await Promise.all((data || []).map(async (userRecord) => {
+        if (userRecord.branch_id) {
           const { data: branchData } = await supabase
             .from('branches')
-            .select('branch_name')
-            .eq('branch_id', user.branch_id)
+            .select('branch_id, branch_name, address, display_name')
+            .eq('branch_id', userRecord.branch_id)
             .single();
-          
+
+          const displayName =
+            branchDisplayMap[userRecord.branch_id] ??
+            buildBranchDisplayName(branchData)
+
           return {
-            ...user,
-            branch_name: branchData?.branch_name || 'Branch Not Found'
+            ...userRecord,
+            branch_name: branchData?.branch_name || 'Branch Not Found',
+            branch_display_name: displayName
           };
         }
-        
+
         return {
-          ...user,
-          branch_name: 'No Branch Assigned'
+          ...userRecord,
+          branch_name: 'No Branch Assigned',
+          branch_display_name: 'No Branch Assigned'
         };
       }));
 
@@ -124,12 +226,38 @@ const SelectUser: React.FC = () => {
         return;
       }
 
-      setBranches(data || []);
-      // Show branch selection if multiple branches exist
-      if (data && data.length > 1) {
+      const totalBranches = data?.length ?? 0;
+      const formattedBranches = (data || []).map((branch, index) => {
+        const displayLabel = buildBranchDisplayName(
+          branch,
+          totalBranches > 1 ? index : undefined
+        );
+        return {
+          ...branch,
+          display_label: displayLabel,
+        };
+      });
+
+      setBranches(formattedBranches);
+
+      const displayMap = formattedBranches.reduce<Record<number, string>>((acc, branch) => {
+        acc[branch.branch_id] =
+          branch.display_label || branch.display_name || branch.branch_name;
+        return acc;
+      }, {});
+      setBranchDisplayMap(displayMap);
+
+      setCurrentBranchIndex(0);
+
+      if (formattedBranches.length > 1) {
         setShowBranchSelection(true);
-      } else if (data && data.length === 1) {
-        setSelectedBranch(data[0]);
+        setSelectedBranch(null);
+      } else if (formattedBranches.length === 1) {
+        setSelectedBranch(formattedBranches[0]);
+        setShowBranchSelection(false);
+      } else {
+        setSelectedBranch(null);
+        setShowBranchSelection(false);
       }
     } catch (error) {
       console.error('Error fetching branches:', error);
@@ -181,6 +309,7 @@ const SelectUser: React.FC = () => {
         // Store selected branch in localStorage
         localStorage.setItem('selected_branch_id', selectedBranch.branch_id.toString());
         localStorage.setItem('selected_branch_name', selectedBranch.branch_name);
+        localStorage.setItem('selected_branch_display_name', getBranchLabel(selectedBranch));
         navigate('/dashboard');
       } else {
         // Authentication failed - show error without throwing
@@ -1407,7 +1536,7 @@ const SelectUser: React.FC = () => {
                           transition: 'all 0.3s ease-in-out',
                           marginTop: '8px'
                         }}>
-                          {branches[currentBranchIndex].branch_name}
+                          {getBranchLabel(branches[currentBranchIndex])}
                         </div>
                       </div>
                     )}
@@ -1561,7 +1690,7 @@ const SelectUser: React.FC = () => {
                               fontWeight: '500'
                             }}>
                               <i className="fa-solid fa-building" style={{ fontSize: '12px' }}></i>
-                              <span>{u.branch_name || 'No Branch Assigned'}</span>
+                              <span>{u.branch_display_name || u.branch_name || 'No Branch Assigned'}</span>
                             </div>
                             <div style={{ fontSize: 14, color: '#9ca3af', lineHeight: '1.4' }}>
                               Last login: {formatLastUsed(u.last_used)}

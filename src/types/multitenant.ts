@@ -58,6 +58,7 @@ export interface Product {
   weight_unit?: string
   description?: string
   sku?: string
+  barcode?: string | null
   sales_count: number
   total_revenue: number
   last_sold_date?: string
@@ -105,6 +106,20 @@ export interface NewCustomer {
   loyalty_points?: number
   gender?: 'male' | 'female'
   icon?: string
+}
+
+export interface ShoppingListItem {
+  list_item_id: number
+  customer_id: number
+  text: string
+  product_id?: string | null
+  completed: boolean
+  created_at: string
+  business_id: number
+  quantity?: number
+  weight?: number
+  calculated_price?: number // For weighted items
+  products?: Product | null // Joined from products table
 }
 
 // =====================================================

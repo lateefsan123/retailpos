@@ -19,7 +19,20 @@ const ActionDropdown: React.FC<ActionDropdownProps> = ({
   size = 'md'
 }) => {
   const [isOpen, setIsOpen] = useState(false)
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 })
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  // Calculate dropdown position
+  const calculatePosition = () => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 4,
+        right: window.innerWidth - rect.right - window.scrollX
+      })
+    }
+  }
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -59,7 +72,11 @@ const ActionDropdown: React.FC<ActionDropdownProps> = ({
     <div className="dropdown-container" ref={dropdownRef} style={{ position: 'relative', display: 'inline-block' }}>
       {/* Trigger Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        ref={buttonRef}
+        onClick={() => {
+          calculatePosition()
+          setIsOpen(!isOpen)
+        }}
         style={{
           background: 'var(--bg-card)',
           border: '1px solid #e5e7eb',
@@ -89,16 +106,15 @@ const ActionDropdown: React.FC<ActionDropdownProps> = ({
       {isOpen && (
         <div
           style={{
-            position: 'absolute',
-            top: '100%',
-            right: 0,
+            position: 'fixed',
+            top: dropdownPosition.top,
+            right: dropdownPosition.right,
             background: '#ffffff',
             border: '1px solid #e5e7eb',
             borderRadius: '8px',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-            zIndex: 1000,
+            zIndex: 9999,
             minWidth: '160px',
-            marginTop: '4px',
             overflow: 'hidden'
           }}
         >

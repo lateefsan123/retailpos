@@ -1028,7 +1028,7 @@ const Admin = () => {
         borderRadius: '12px',
         boxShadow: 'var(--shadow-card)',
         border: 'var(--border-primary)',
-        overflow: 'hidden'
+        overflow: 'visible'
       }}>
         <div style={{
           padding: '20px 24px',
@@ -1063,8 +1063,8 @@ const Admin = () => {
             />
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+          <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'auto' }}>
               <thead>
                 <tr style={{ background: 'var(--bg-nested)' }}>
                   <th style={{ 
@@ -1073,8 +1073,7 @@ const Admin = () => {
                     fontWeight: '600',
                     color: 'var(--text-primary)',
                     borderBottom: 'var(--border-primary)',
-                    fontSize: '16px',
-                    width: '25%'
+                    fontSize: '16px'
                   }}>
                     User
                   </th>
@@ -1085,7 +1084,7 @@ const Admin = () => {
                     color: 'var(--text-primary)',
                     borderBottom: 'var(--border-primary)',
                     fontSize: '16px',
-                    width: '15%'
+                    width: '80px'
                   }}>
                     Icon
                   </th>
@@ -1095,8 +1094,7 @@ const Admin = () => {
                     fontWeight: '600',
                     color: 'var(--text-primary)',
                     borderBottom: 'var(--border-primary)',
-                    fontSize: '16px',
-                    width: '20%'
+                    fontSize: '16px'
                   }}>
                     Role
                   </th>
@@ -1106,8 +1104,7 @@ const Admin = () => {
                     fontWeight: '600',
                     color: 'var(--text-primary)',
                     borderBottom: 'var(--border-primary)',
-                    fontSize: '16px',
-                    width: '20%'
+                    fontSize: '16px'
                   }}>
                     Status
                   </th>
@@ -1117,10 +1114,20 @@ const Admin = () => {
                      fontWeight: '600',
                     color: 'var(--text-primary)',
                      borderBottom: 'var(--border-primary)',
-                    fontSize: '16px',
-                    width: '20%'
+                    fontSize: '16px'
                    }}>
                      User ID
+                  </th>
+                  <th style={{ 
+                    padding: '16px 24px', 
+                    textAlign: 'center', 
+                    fontWeight: '600',
+                    color: 'var(--text-primary)',
+                    borderBottom: 'var(--border-primary)',
+                    fontSize: '16px',
+                    width: '60px'
+                  }}>
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -1221,11 +1228,13 @@ const Admin = () => {
                          {user.active ? 'Active' : 'Inactive'}
                        </span>
                      </td>
+                     <td style={{ padding: '16px 24px', color: 'var(--text-primary)', fontSize: '15px' }}>
+                       User #{user.user_id}
+                     </td>
                      <td 
-                       style={{ padding: '16px 24px', color: 'var(--text-primary)', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                       style={{ padding: '16px 24px', textAlign: 'center' }}
                        onClick={(e) => e.stopPropagation()}
                      >
-                       <span>User #{user.user_id}</span>
                        <ActionDropdown
                          actions={[
                            {
@@ -1262,7 +1271,7 @@ const Admin = () => {
         borderRadius: '12px',
         boxShadow: 'var(--shadow-card)',
         border: 'var(--border-primary)',
-        overflow: 'hidden',
+        overflow: 'visible',
         marginTop: '32px'
       }}>
         <div style={{
@@ -1292,8 +1301,8 @@ const Admin = () => {
             <p style={{ fontSize: '16px', margin: '0' }}>Add your first branch to get started</p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+          <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'auto' }}>
               <thead>
                 <tr style={{ background: 'var(--bg-nested)' }}>
                   <th style={{ 
@@ -1302,8 +1311,7 @@ const Admin = () => {
                     fontWeight: '600',
                     color: 'var(--text-primary)',
                     borderBottom: 'var(--border-primary)',
-                    fontSize: '16px',
-                    width: '25%'
+                    fontSize: '16px'
                   }}>
                     Branch Name
                   </th>
@@ -1314,7 +1322,7 @@ const Admin = () => {
                     color: 'var(--text-primary)',
                     borderBottom: 'var(--border-primary)',
                     fontSize: '16px',
-                    width: '15%'
+                    width: '100px'
                   }}>
                     Shop Image
                   </th>
@@ -1324,8 +1332,7 @@ const Admin = () => {
                     fontWeight: '600',
                     color: 'var(--text-primary)',
                     borderBottom: 'var(--border-primary)',
-                    fontSize: '16px',
-                    width: '25%'
+                    fontSize: '16px'
                   }}>
                     Address
                   </th>
@@ -1335,8 +1342,7 @@ const Admin = () => {
                     fontWeight: '600',
                     color: 'var(--text-primary)',
                     borderBottom: 'var(--border-primary)',
-                    fontSize: '16px',
-                    width: '15%'
+                    fontSize: '16px'
                   }}>
                     Phone
                   </th>
@@ -1346,10 +1352,20 @@ const Admin = () => {
                     fontWeight: '600',
                     color: 'var(--text-primary)',
                     borderBottom: 'var(--border-primary)',
-                    fontSize: '16px',
-                    width: '20%'
+                    fontSize: '16px'
                   }}>
                     Manager
+                  </th>
+                  <th style={{ 
+                    padding: '16px 24px', 
+                    textAlign: 'center', 
+                    fontWeight: '600',
+                    color: 'var(--text-primary)',
+                    borderBottom: 'var(--border-primary)',
+                    fontSize: '16px',
+                    width: '60px'
+                  }}>
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -1432,8 +1448,13 @@ const Admin = () => {
                     <td style={{ padding: '16px 24px', color: 'var(--text-primary)', fontSize: '15px' }}>
                       {branch.phone || 'N/A'}
                     </td>
-                    <td style={{ padding: '16px 24px', color: 'var(--text-primary)', fontSize: '15px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', verticalAlign: 'top' }}>
-                      <span style={{ paddingTop: '2px' }}>{getManagerName(branch.manager_id)}</span>
+                    <td style={{ padding: '16px 24px', color: 'var(--text-primary)', fontSize: '15px' }}>
+                      {getManagerName(branch.manager_id)}
+                    </td>
+                    <td 
+                      style={{ padding: '16px 24px', textAlign: 'center' }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <ActionDropdown
                         actions={[
                           {
