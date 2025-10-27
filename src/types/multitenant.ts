@@ -99,6 +99,42 @@ export interface Customer {
   icon?: string
   business_id: number // Multi-tenant support
   branch_id?: number // Branch support
+  custom_fields?: CustomerCustomField[] // Custom field values
+}
+
+export interface CustomerFieldDefinition {
+  field_id: number
+  business_id: number
+  field_name: string
+  field_label: string
+  field_type: 'text' | 'number' | 'date' | 'select' | 'boolean' | 'email' | 'phone'
+  field_options?: string[]
+  is_required: boolean
+  is_active: boolean
+  display_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CustomerCustomField {
+  custom_field_id: number
+  customer_id: number
+  field_id: number
+  field_value?: string
+  created_at: string
+  updated_at: string
+  field_definition?: CustomerFieldDefinition
+}
+
+export interface CustomerFieldRequest {
+  business_id: number
+  field_name: string
+  field_label: string
+  field_type: 'text' | 'number' | 'date' | 'select' | 'boolean' | 'email' | 'phone'
+  field_options?: string[]
+  is_required?: boolean
+  is_active?: boolean
+  display_order?: number
 }
 
 export interface NewCustomer {

@@ -180,7 +180,7 @@ const SelectUser: React.FC = () => {
         if (userRecord.branch_id) {
           const { data: branchData } = await supabase
             .from('branches')
-            .select('branch_id, branch_name, address, display_name')
+            .select('branch_id, branch_name, address')
             .eq('branch_id', userRecord.branch_id)
             .single();
 

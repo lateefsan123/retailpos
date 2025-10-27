@@ -39,6 +39,7 @@ import Promotions from './pages/Promotions'
 import Vouchers from './pages/Vouchers'
 import VerificationAdmin from './pages/VerificationAdmin'
 import CustomerLoyalty from './pages/CustomerLoyalty'
+import CustomerCustomization from './pages/CustomerCustomization'
 import TransactionsMobile from './pages/TransactionsMobile'
 import ProductDatabase from './pages/ProductDatabase'
 import CustomerPortal from './pages/CustomerPortal'
@@ -154,6 +155,11 @@ const AppContent = () => {
               <Route path="/customer-loyalty" element={
                 <RoleProtectedRoute requiredPermission="canProcessSales">
                   <CustomerLoyalty />
+                </RoleProtectedRoute>
+              } />
+              <Route path="/customer-customization" element={
+                <RoleProtectedRoute requiredPermission="canProcessSales">
+                  <CustomerCustomization />
                 </RoleProtectedRoute>
               } />
               <Route path="/admin" element={

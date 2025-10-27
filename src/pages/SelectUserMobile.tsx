@@ -172,7 +172,7 @@ const SelectUserMobile: React.FC = () => {
         if (user.branch_id) {
           const { data: branchData } = await supabase
             .from('branches')
-            .select('branch_id, branch_name, address, display_name')
+            .select('branch_id, branch_name, address')
             .eq('branch_id', user.branch_id)
             .single();
 

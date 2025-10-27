@@ -1762,3 +1762,76 @@
     font-size: 20px;
   }
 }
+
+/* Customer Actions Styles */
+.customerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.editButton {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-size: 12px;
+}
+
+.editButton:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.editButton i {
+  font-size: 12px;
+}
+
+/* Modal Tabs */
+.modalTabs {
+  display: flex;
+  border-bottom: 1px solid #374151;
+  margin-bottom: 20px;
+}
+
+.modalTab {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  padding: 12px 20px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.modalTab:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.modalTabActive {
+  color: #ffffff;
+  border-bottom-color: #3b82f6;
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.modalTab i {
+  font-size: 14px;
+}
+
+/* Profile Tab Content */
+.profileTabContent {
+  padding: 20px;
+  color: var(--text-primary);
+  background: transparent;
+}
+

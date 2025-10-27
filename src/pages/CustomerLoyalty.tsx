@@ -9,6 +9,8 @@ import { Customer, LoyaltyPrize, Product, NewLoyaltyPrize } from '../types/multi
 import { formatCurrency } from '../utils/currency'
 import { getRandomCustomerIcon, getIconFromName, getFallbackCustomerIcon } from '../utils/customerIcons'
 import CustomerIcon from '../components/CustomerIcon'
+import CustomerProfileEditor from '../components/CustomerProfileEditor'
+import { Button } from '../components/ui/Button'
 import styles from './CustomerLoyalty.module.css'
 
 interface CustomerRequest {
@@ -44,9 +46,12 @@ const CustomerLoyalty = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [pointsToAdd, setPointsToAdd] = useState('')
   const [pointsToRedeem, setPointsToRedeem] = useState('')
+  const [modalTab, setModalTab] = useState<'points' | 'profile'>('points')
   const [activeDropdown, setActiveDropdown] = useState<number | null>(null)
   const [customerTransactions, setCustomerTransactions] = useState<any[]>([])
   const [loadingTransactions, setLoadingTransactions] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null)
 
   // New state for loyalty prizes
   const [activeTab, setActiveTab] = useState<'customers' | 'prizes'>('customers')
@@ -219,6 +224,49 @@ const CustomerLoyalty = () => {
     })
     setShowAddModal(true)
   }
+
+  const handleEditProfile = (customer: Customer) => {
+    setSelectedCustomer(customer)
+    setModalTab('profile')
+    setShowPointsModal(true)
+  }
+
+  const handleDeleteCustomer = (customer: Customer) => {
+    setCustomerToDelete(customer)
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmDeleteCustomer = async () => {
+    if (!customerToDelete) return
+
+    try {
+      setError(null)
+
+      // Delete customer from database
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('customer_id', customerToDelete.customer_id)
+
+      if (error) throw error
+
+      // Remove from local state
+      setCustomers(prev => prev.filter(c => c.customer_id !== customerToDelete.customer_id))
+      
+      // Close confirmation modal
+      setShowDeleteConfirm(false)
+      setCustomerToDelete(null)
+    } catch (err) {
+      console.error('Error deleting customer:', err)
+      setError(err instanceof Error ? err.message : 'Failed to delete customer')
+    }
+  }
+
+  const cancelDeleteCustomer = () => {
+    setShowDeleteConfirm(false)
+    setCustomerToDelete(null)
+  }
+
 
   const resetForm = () => {
     setFormData({
@@ -664,6 +712,28 @@ const CustomerLoyalty = () => {
                             <div className={styles.customerName}>
                               {customer.name}
                             </div>
+                            <div className={styles.customerActions}>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditProfile(customer);
+                                }}
+                                className={styles.editButton}
+                                title="Edit customer profile"
+                              >
+                                <i className="fa-solid fa-edit"></i>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteCustomer(customer);
+                                }}
+                                className={styles.deleteButton}
+                                title="Delete customer"
+                              >
+                                <i className="fa-solid fa-trash"></i>
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -1072,7 +1142,7 @@ const CustomerLoyalty = () => {
                     customer={selectedCustomer} 
                     size="medium"
                   />
-                  {selectedCustomer.name} - Loyalty Management
+                  {selectedCustomer.name}
                 </h2>
                 <button
                   onClick={() => {
@@ -1081,6 +1151,7 @@ const CustomerLoyalty = () => {
                     setPointsToAdd('')
                     setPointsToRedeem('')
                     setCustomerTransactions([])
+                    setModalTab('points')
                   }}
                   className={styles.modalCloseButton}
                 >
@@ -1088,8 +1159,29 @@ const CustomerLoyalty = () => {
                 </button>
               </div>
 
-              {/* Current Status */}
-              <div className={styles.statusGrid}>
+              {/* Modal Tabs */}
+              <div className={styles.modalTabs}>
+                <button
+                  className={`${styles.modalTab} ${modalTab === 'points' ? styles.modalTabActive : ''}`}
+                  onClick={() => setModalTab('points')}
+                >
+                  <i className="fa-solid fa-coins"></i>
+                  Loyalty Points
+                </button>
+                <button
+                  className={`${styles.modalTab} ${modalTab === 'profile' ? styles.modalTabActive : ''}`}
+                  onClick={() => setModalTab('profile')}
+                >
+                  <i className="fa-solid fa-user-edit"></i>
+                  Edit Profile
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              {modalTab === 'points' && (
+                <>
+                  {/* Current Status */}
+                  <div className={styles.statusGrid}>
                 <div className={styles.statusItem}>
                   <div className={`${styles.statusValue} ${styles.statusValuePoints}`}>
                     {selectedCustomer.loyalty_points.toLocaleString()}
@@ -1246,10 +1338,109 @@ const CustomerLoyalty = () => {
                   </div>
                 )}
               </div>
+                </>
+              )}
+
+              {/* Profile Tab Content */}
+              {modalTab === 'profile' && selectedCustomer && (
+                <div className={styles.profileTabContent}>
+                  <CustomerProfileEditor
+                    customer={selectedCustomer}
+                    businessId={businessId!}
+                    onSave={(updatedCustomer) => {
+                      setCustomers(prev => 
+                        prev.map(c => c.customer_id === updatedCustomer.customer_id ? { ...c, ...updatedCustomer } : c)
+                      )
+                      setSelectedCustomer(updatedCustomer)
+                    }}
+                    onCancel={() => setModalTab('points')}
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && customerToDelete && (
+        <div className={`${styles.modalOverlay} ${styles.open}`}>
+          <div className={styles.pointsModalContent}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.pointsModalTitle}>
+                <i className="fa-solid fa-exclamation-triangle" style={{ color: '#ef4444', marginRight: '0.5rem' }}></i>
+                Delete Customer
+              </h2>
+              <button
+                onClick={cancelDeleteCustomer}
+                className={styles.modalCloseButton}
+              >
+                <i className="fa-solid fa-times"></i>
+              </button>
+            </div>
+
+            <div style={{ padding: '20px' }}>
+              <p style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                Are you sure you want to delete <strong>{customerToDelete.name}</strong>?
+              </p>
+              
+              <div style={{ 
+                background: 'var(--bg-secondary)', 
+                padding: '1rem', 
+                borderRadius: '0.5rem', 
+                marginBottom: '1rem',
+                border: '1px solid var(--border-primary)'
+              }}>
+                <p style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                  <strong>Warning:</strong> This action cannot be undone. The following data will be permanently deleted:
+                </p>
+                <ul style={{ margin: '0', paddingLeft: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                  <li>Customer profile information</li>
+                  <li>Loyalty points ({customerToDelete.loyalty_points.toLocaleString()})</li>
+                  <li>Custom field data</li>
+                  <li>All associated customer data</li>
+                </ul>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <Button
+                  variant="ghost"
+                  onClick={cancelDeleteCustomer}
+                >
+                  Cancel
+                </Button>
+                <button
+                  onClick={confirmDeleteCustomer}
+                  style={{ 
+                    backgroundColor: '#ef4444', 
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.375rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    transition: 'background-color 0.2s ease'
+                  }}
+                  onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.currentTarget.style.backgroundColor = '#dc2626';
+                  }}
+                  onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.currentTarget.style.backgroundColor = '#ef4444';
+                  }}
+                >
+                  <i className="fa-solid fa-trash"></i>
+                  Delete Customer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

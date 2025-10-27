@@ -71,6 +71,28 @@ export const setupCustomerAccount = async (
   email: string,
   password: string
 ) => {
+  // First check if email is already in use by another customer
+  const { data: existingCustomer, error: checkError } = await supabase
+    .from('customers')
+    .select('customer_id, email')
+    .eq('email', email)
+    .neq('customer_id', customerId)
+    .maybeSingle();
+  
+  if (checkError) {
+    return { data: null, error: checkError };
+  }
+  
+  if (existingCustomer) {
+    return { 
+      data: null, 
+      error: { 
+        message: 'Email address is already in use by another customer',
+        code: 'EMAIL_ALREADY_EXISTS'
+      } 
+    };
+  }
+  
   const passwordHash = await hashPassword(password);
   
   const { data, error } = await supabase
