@@ -212,29 +212,6 @@ const CustomerLoyalty = () => {
     }
   }
 
-  const handleEdit = (customer: Customer) => {
-    setEditingCustomer(customer)
-    setFormData({
-      business_id: customer.business_id,
-      branch_id: customer.branch_id,
-      name: customer.name,
-      phone_number: customer.phone_number,
-      email: customer.email || '',
-      loyalty_points: customer.loyalty_points
-    })
-    setShowAddModal(true)
-  }
-
-  const handleEditProfile = (customer: Customer) => {
-    setSelectedCustomer(customer)
-    setModalTab('profile')
-    setShowPointsModal(true)
-  }
-
-  const handleDeleteCustomer = (customer: Customer) => {
-    setCustomerToDelete(customer)
-    setShowDeleteConfirm(true)
-  }
 
   const confirmDeleteCustomer = async () => {
     if (!customerToDelete) return
@@ -711,28 +688,6 @@ const CustomerLoyalty = () => {
                           <div className={styles.customerDetails}>
                             <div className={styles.customerName}>
                               {customer.name}
-                            </div>
-                            <div className={styles.customerActions}>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditProfile(customer);
-                                }}
-                                className={styles.editButton}
-                                title="Edit customer profile"
-                              >
-                                <i className="fa-solid fa-edit"></i>
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteCustomer(customer);
-                                }}
-                                className={styles.deleteButton}
-                                title="Delete customer"
-                              >
-                                <i className="fa-solid fa-trash"></i>
-                              </button>
                             </div>
                           </div>
                         </div>

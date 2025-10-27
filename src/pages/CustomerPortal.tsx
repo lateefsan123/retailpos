@@ -38,7 +38,7 @@ import { formatCurrency } from '../utils/currency';
 import { generateVoucherCode, formatDiscount } from '../utils/voucherUtils';
 import { QRCodeSVG } from 'qrcode.react';
 
-const SESSION_STORAGE_KEY = 'customerPortal.session';
+// Session caching removed - no longer storing customer data in localStorage
 
 // Responsive styles
 const getResponsiveStyles = (windowWidth: number) => {
@@ -502,18 +502,9 @@ const CustomerPortal = () => {
     return matchingBranch ? formatBranchLabel(matchingBranch) : '';
   }, [branches]);
 
-  const saveSession = useCallback((customerData: Customer, branchIdValue?: string | null, branchLabelValue?: string) => {
-    if (typeof window === 'undefined') return;
-    try {
-      const payload = {
-        customer: customerData,
-        selectedBranch: branchIdValue ?? '',
-        branchSearch: branchLabelValue ?? ''
-      };
-      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
-    } catch (err) {
-      console.error('Failed to persist customer portal session', err);
-    }
+  // Session caching removed - no longer saving to localStorage
+  const saveSession = useCallback(() => {
+    // Session caching disabled - customer must log in each time
   }, []);
   const location = useLocation();
   const navigate = useNavigate();
@@ -675,7 +666,7 @@ const CustomerPortal = () => {
     if (!trimmedValue) {
       setSelectedBranch('');
       if (customer) {
-        saveSession(customer, null, '');
+        // Session caching disabled
       }
       return;
     }
@@ -690,7 +681,7 @@ const CustomerPortal = () => {
         if (trimmedValue.toLowerCase() !== currentLabel.toLowerCase()) {
           setSelectedBranch('');
           if (customer) {
-            saveSession(customer, null, '');
+            // Session caching disabled
           }
         }
       }
@@ -703,8 +694,7 @@ const CustomerPortal = () => {
     setIsBranchListOpen(false);
     fetchActivePromotions(branch.business_id, branch.branch_id);
     if (customer) {
-      const label = formatBranchLabel(branch);
-      saveSession(customer, branch.branch_id.toString(), label);
+      // Session caching disabled
     }
   };
 
@@ -915,7 +905,7 @@ const CustomerPortal = () => {
       // Update customer points locally
       const updatedCustomer = { ...customer, loyalty_points: customer.loyalty_points - voucher.points_cost };
       setCustomer(updatedCustomer);
-      saveSession(updatedCustomer, selectedBranch || null, branchSearch);
+      // Session caching disabled
 
       // Refresh vouchers
       await fetchCustomerVouchers(customer.customer_id);
@@ -985,7 +975,7 @@ const CustomerPortal = () => {
           .eq('customer_id', customer.customer_id);
         
         if (error) throw error;
-        saveSession(updatedCustomer, selectedBranch || null, branchSearch);
+        // Session caching disabled
       } catch (err) {
         console.error('Error updating customer icon:', err);
       }
@@ -1120,7 +1110,7 @@ const CustomerPortal = () => {
       const resolvedBranchLabel = getBranchLabel(resolvedBranchId, branchSearch);
       setSelectedBranch(resolvedBranchId);
       setBranchSearch(resolvedBranchLabel);
-      saveSession(data, resolvedBranchId || null, resolvedBranchLabel);
+      // Session caching disabled
       
       // Fetch additional data
       await Promise.all([
@@ -1140,7 +1130,7 @@ const CustomerPortal = () => {
           .eq('customer_id', data.customer_id);
         const updatedCustomer = { ...data, icon: randomIcon };
         setCustomer(updatedCustomer);
-        saveSession(updatedCustomer, resolvedBranchId || null, resolvedBranchLabel);
+        // Session caching disabled
       }
     } catch (err) {
       console.error('Account setup error:', err);
@@ -1190,7 +1180,7 @@ const CustomerPortal = () => {
       const resolvedBranchLabel = getBranchLabel(resolvedBranchId, branchSearch);
       setSelectedBranch(resolvedBranchId);
       setBranchSearch(resolvedBranchLabel);
-      saveSession(pendingCustomer, resolvedBranchId || null, resolvedBranchLabel);
+      // Session caching disabled
       
       // Fetch additional data
       await Promise.all([
@@ -1210,7 +1200,7 @@ const CustomerPortal = () => {
           .eq('customer_id', pendingCustomer.customer_id);
         const updatedCustomer = { ...pendingCustomer, icon: randomIcon };
         setCustomer(updatedCustomer);
-        saveSession(updatedCustomer, resolvedBranchId || null, resolvedBranchLabel);
+        // Session caching disabled
       }
     } catch (err) {
       console.error('Login error:', err);
@@ -1721,72 +1711,10 @@ const CustomerPortal = () => {
     );
   };
 
+  // Session caching removed - no longer restoring from localStorage
   useEffect(() => {
-    if (sessionRestoredRef.current) return;
-
-    const restoreSession = async () => {
-      if (typeof window === 'undefined') {
-        sessionRestoredRef.current = true;
-        return;
-      }
-      sessionRestoredRef.current = true;
-
-      try {
-        const stored = localStorage.getItem(SESSION_STORAGE_KEY);
-        if (!stored) {
-          return;
-        }
-
-        const parsed = JSON.parse(stored);
-        if (!parsed?.customer) {
-          localStorage.removeItem(SESSION_STORAGE_KEY);
-          return;
-        }
-
-        const storedCustomer: Customer = parsed.customer;
-        const storedBranchId: string = parsed.selectedBranch ?? '';
-        const storedBranchLabel: string = getBranchLabel(
-          storedBranchId,
-          parsed.branchSearch
-        );
-
-        setCustomer(storedCustomer);
-        setSelectedBranch(storedBranchId);
-        setBranchSearch(storedBranchLabel);
-        setView('dashboard');
-        saveSession(storedCustomer, storedBranchId || null, storedBranchLabel);
-
-        const branchIdNumeric =
-          storedCustomer.branch_id ?? (storedBranchId ? Number(storedBranchId) : undefined);
-        const branchIdForFetch =
-          typeof branchIdNumeric === 'number' && !Number.isNaN(branchIdNumeric)
-            ? branchIdNumeric
-            : undefined;
-
-        await Promise.all([
-          fetchBusinessInfo(storedCustomer.business_id),
-          fetchLoyaltyPrizes(storedCustomer.business_id),
-          fetchCustomerSales(storedCustomer.customer_id),
-          fetchShoppingList(storedCustomer.customer_id),
-          fetchAvailableProducts(storedCustomer.business_id, branchIdForFetch ?? null),
-          fetchActivePromotions(storedCustomer.business_id, branchIdForFetch ?? null)
-        ]);
-
-        if (!storedBranchLabel && storedBranchId) {
-          const refreshedLabel = getBranchLabel(storedBranchId, '');
-          if (refreshedLabel) {
-            setBranchSearch(refreshedLabel);
-            saveSession(storedCustomer, storedBranchId, refreshedLabel);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to restore customer portal session', err);
-        localStorage.removeItem(SESSION_STORAGE_KEY);
-      }
-    };
-
-    restoreSession();
-  }, [getBranchLabel, saveSession]);
+    // Session restoration disabled - customers must log in each time
+  }, []);
 
   useEffect(() => {
     if (!customer) return;
@@ -1796,9 +1724,9 @@ const CustomerPortal = () => {
     const resolvedLabel = getBranchLabel(selectedBranch, branchSearch);
     if (resolvedLabel) {
       setBranchSearch(resolvedLabel);
-      saveSession(customer, selectedBranch, resolvedLabel);
+      // Session caching disabled
     }
-  }, [customer, selectedBranch, branchSearch, getBranchLabel, saveSession]);
+  }, [customer, selectedBranch, branchSearch, getBranchLabel]);
 
   const handlePromotionAdd = (promotion: Promotion) => {
     if (!promotion.products || promotion.products.length === 0) return;
@@ -1890,13 +1818,7 @@ const CustomerPortal = () => {
     setCartFeedback(null);
     setCartSubmissionStatus('idle');
     setShowCartDrawer(false);
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem(SESSION_STORAGE_KEY);
-      } catch (err) {
-        console.error('Failed to clear customer portal session', err);
-      }
-    }
+    // Session caching removed - no longer clearing localStorage
     sessionRestoredRef.current = false;
     navigate('/customer-portal', { replace: true });
   };
@@ -2335,7 +2257,7 @@ const CustomerPortal = () => {
                               // Update local state
                               const updatedCustomer = { ...customer, loyalty_points: newPoints };
                               setCustomer(updatedCustomer);
-                              saveSession(updatedCustomer, selectedBranch || null, branchSearch);
+                              // Session caching disabled
 
                               // Refresh prizes
                               fetchLoyaltyPrizes(customer.business_id);
