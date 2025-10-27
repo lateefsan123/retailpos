@@ -254,6 +254,33 @@ const ClickAndCollectWidget: React.FC = () => {
         }
       }
 
+      // Award loyalty points if customer exists
+      if (order.customer_id && totalAmount > 0) {
+        try {
+          const pointsToAward = Math.floor(totalAmount);
+          
+          const { data: currentCustomer } = await supabase
+            .from('customers')
+            .select('loyalty_points')
+            .eq('customer_id', order.customer_id)
+            .single();
+
+          if (currentCustomer) {
+            const newPoints = currentCustomer.loyalty_points + pointsToAward;
+            const { error: pointsError } = await supabase
+              .from('customers')
+              .update({ loyalty_points: newPoints })
+              .eq('customer_id', order.customer_id);
+
+            if (pointsError) {
+              console.error('Error updating loyalty points:', pointsError);
+            }
+          }
+        } catch (error) {
+          console.error('Error awarding loyalty points:', error);
+        }
+      }
+
       const itemIds = order.items.map(item => item.list_item_id);
       if (itemIds.length > 0) {
         const { error: updateError } = await supabase

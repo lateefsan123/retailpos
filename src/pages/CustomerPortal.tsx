@@ -1382,6 +1382,61 @@ const CustomerPortal = () => {
     if (!customer) return;
 
     try {
+      // For click & collect items with a product_id, check if the same item already exists
+      if (isClickAndCollect && product && !weight) {
+        // Check for existing non-weighted click & collect items for this product
+        const { data: existingItems, error: fetchError } = await supabase
+          .from(T.customerShoppingLists)
+          .select('*')
+          .eq('customer_id', customer.customer_id)
+          .eq('product_id', product.product_id)
+          .eq('is_click_and_collect', true)
+          .eq('completed', false)
+          .is('weight', null);
+
+        if (fetchError) throw fetchError;
+
+        if (existingItems && existingItems.length > 0) {
+          // Update existing item's quantity
+          const existingItem = existingItems[0];
+          const newQuantity = existingItem.quantity + quantity;
+
+          const { data: updatedItem, error: updateError } = await supabase
+            .from(T.customerShoppingLists)
+            .update({ quantity: newQuantity })
+            .eq('list_item_id', existingItem.list_item_id)
+            .select(`
+              *,
+              products (
+                product_id,
+                name,
+                price,
+                stock_quantity,
+                image_url,
+                category,
+                is_weighted
+              )
+            `)
+            .single();
+
+          if (updateError) throw updateError;
+
+          // Update local state
+          setShoppingList(prev =>
+            prev.map(item =>
+              item.list_item_id === existingItem.list_item_id
+                ? updatedItem
+                : item
+            )
+          );
+
+          setShowProductSearch(false);
+          setProductSearchQuery('');
+          return;
+        }
+      }
+
+      // Insert new item (for weighted products, custom text items, or new products)
       const { data, error } = await supabase
         .from(T.customerShoppingLists)
         .insert([{
