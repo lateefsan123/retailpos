@@ -32,6 +32,7 @@ const SwitchUserModal: React.FC<SwitchUserModalProps> = ({ isOpen, onClose, onUs
   const [passwordError, setPasswordError] = useState('')
   const [isAuthenticating, setIsAuthenticating] = useState(false)
   const [usePinAuth, setUsePinAuth] = useState(false)
+  const [capsLockOn, setCapsLockOn] = useState(false)
 
   useEffect(() => {
     console.log('SwitchUserModal useEffect - isOpen:', isOpen, 'currentUser:', currentUser)
@@ -39,6 +40,40 @@ const SwitchUserModal: React.FC<SwitchUserModalProps> = ({ isOpen, onClose, onUs
       fetchUsers()
     }
   }, [isOpen])
+
+  // Caps Lock detection
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Check Caps Lock state on any key press
+      if (e.getModifierState && e.getModifierState('CapsLock')) {
+        setCapsLockOn(true)
+      } else {
+        setCapsLockOn(false)
+      }
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Also check on keydown for immediate response
+      if (e.getModifierState && e.getModifierState('CapsLock')) {
+        setCapsLockOn(true)
+      } else {
+        setCapsLockOn(false)
+      }
+    }
+
+    if (showPasswordView) {
+      document.addEventListener('keypress', handleKeyPress)
+      document.addEventListener('keydown', handleKeyDown)
+      
+      // Check initial state when password view opens
+      setCapsLockOn(false) // Start with false, will be updated on first key press
+    }
+
+    return () => {
+      document.removeEventListener('keypress', handleKeyPress)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showPasswordView])
 
   const fetchUsers = async () => {
     // Get business_id from current user or sessionStorage
@@ -269,7 +304,7 @@ const SwitchUserModal: React.FC<SwitchUserModalProps> = ({ isOpen, onClose, onUs
           <div style={{ padding: '24px' }}>
             {showPasswordView ? (
               /* Password View */
-              <div>
+              <div style={{ position: 'relative' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                   <div style={{
                     width: '48px',
@@ -321,6 +356,37 @@ const SwitchUserModal: React.FC<SwitchUserModalProps> = ({ isOpen, onClose, onUs
                 </div>
 
                 <form onSubmit={handlePasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {/* Caps Lock Warning - Absolute Position */}
+                  {capsLockOn && (
+                    <div style={{
+                      background: '#fef3c7',
+                      border: '1px solid #fbbf24',
+                      borderRadius: '6px',
+                      padding: '8px 12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      position: 'absolute',
+                      top: '-50px',
+                      left: '0',
+                      right: '0',
+                      zIndex: 10
+                    }}>
+                      <i className="fa-solid fa-exclamation-triangle" style={{
+                        color: '#f59e0b',
+                        fontSize: '14px'
+                      }}></i>
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#92400e',
+                        margin: 0,
+                        fontWeight: '500'
+                      }}>
+                        Caps Lock is ON
+                      </p>
+                    </div>
+                  )}
+
                   {/* Authentication Method Toggle */}
                   {selectedUser?.pin && (
                     <div style={{ marginBottom: '16px' }}>
@@ -417,6 +483,8 @@ const SwitchUserModal: React.FC<SwitchUserModalProps> = ({ isOpen, onClose, onUs
                       required
                       autoFocus
                     />
+                    
+                    {/* Password error warning only */}
                     {passwordError && (
                       <div style={{
                         background: '#fef2f2',
@@ -457,7 +525,11 @@ const SwitchUserModal: React.FC<SwitchUserModalProps> = ({ isOpen, onClose, onUs
                         fontSize: '16px',
                         fontWeight: '500',
                         cursor: 'pointer',
-                        transition: 'background 0.2s ease'
+                        transition: 'background 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background = '#d1d5db'
@@ -466,7 +538,8 @@ const SwitchUserModal: React.FC<SwitchUserModalProps> = ({ isOpen, onClose, onUs
                         e.currentTarget.style.background = '#e5e7eb'
                       }}
                     >
-                      Back
+                      <i className="fa-solid fa-arrow-left" style={{ fontSize: '14px' }}></i>
+                      Back to users
                     </button>
                     <button
                       type="submit"
@@ -504,6 +577,20 @@ const SwitchUserModal: React.FC<SwitchUserModalProps> = ({ isOpen, onClose, onUs
                         'Sign In'
                       )}
                     </button>
+                  </div>
+                  
+                  {/* Press Enter to sign in text */}
+                  <div style={{
+                    textAlign: 'right',
+                    marginTop: '12px'
+                  }}>
+                    <span style={{
+                      fontSize: '14px',
+                      color: '#6b7280',
+                      fontStyle: 'italic'
+                    }}>
+                      Press Enter to sign in
+                    </span>
                   </div>
                 </form>
               </div>

@@ -797,6 +797,11 @@ const Sales = () => {
         return
       }
       setExistingTransaction(transactionData)
+      
+      // Clear any existing voucher state when loading a transaction
+      setAppliedVoucher(null)
+      setVoucherCode('')
+      setShowVoucherInput(false)
 
       const { data: itemsData, error: itemsError } = await supabase
         .from('sale_items')
@@ -926,18 +931,67 @@ const Sales = () => {
       const combinedItems = [...existingItems, ...existingServiceItems]
 
       // Set the order with items first, then let calculateOrderTotal handle the totals
+      const discountAmount = transactionData.discount_applied || 0
+      console.log('Loading transaction with discount:', discountAmount)
+      
       setOrder({
         items: combinedItems,
         subtotal: 0,
         tax: 0,
-        discount: 0,
+        discount: discountAmount,
         total: 0
       })
       
       setOrderDetailNumber(Number.isFinite(saleId) ? saleId : generateOrderDetailNumber())
 
+      // Recalculate order totals to include the discount
+      setTimeout(() => {
+        setOrder(prevOrder => {
+          const subtotal = combinedItems.reduce((sum, item) => {
+            const price = item.product?.price || item.customPrice || item.sideBusinessItem?.price || 0
+            const quantity = item.quantity
+            return sum + (price * quantity)
+          }, 0)
+          
+          const discount = transactionData.discount_applied || 0
+          const total = subtotal - discount
+          
+          console.log('Recalculating order totals:', { subtotal, discount, total })
+          
+          return {
+            ...prevOrder,
+            subtotal,
+            total: Math.max(0, total)
+          }
+        })
+      }, 100)
+
       if (transactionData.customers?.name) {
         setCustomerName(transactionData.customers.name)
+      }
+
+      // If there's a discount, fetch the voucher information
+      if (transactionData.discount_applied > 0) {
+        try {
+          const { data: voucherData, error: voucherError } = await supabase
+            .from('customer_vouchers')
+            .select(`
+              *,
+              vouchers (*)
+            `)
+            .eq('sale_id', saleId)
+            .eq('is_used', true)
+            .single()
+
+          if (voucherData && !voucherError) {
+            setAppliedVoucher(voucherData)
+            console.log('Voucher loaded for transaction:', voucherData)
+          } else {
+            console.log('No voucher found for transaction with discount')
+          }
+        } catch (error) {
+          console.error('Error fetching voucher for transaction:', error)
+        }
       }
 
     } catch (error) {
