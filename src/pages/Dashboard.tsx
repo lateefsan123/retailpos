@@ -13,6 +13,7 @@ import PageHeader from '../components/PageHeader'
 import LowStockSection from '../components/dashboard/LowStockSection'
 import SalesChart from '../components/dashboard/SalesChart'
 import TabbedInsightsSection from '../components/dashboard/TabbedInsightsSection'
+import ClickAndCollectWidget from '../components/dashboard/ClickAndCollectWidget'
 
 interface Transaction {
   transaction_id: string
@@ -1279,6 +1280,17 @@ const Dashboard = () => {
 
         {/* Right Sidebar - Stacked Secondary Cards */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* Click & Collect Widget */}
+          <div style={{
+            background: 'var(--bg-card)',
+            borderRadius: '8px',
+            padding: '24px',
+            border: 'var(--border-primary)',
+            boxShadow: 'var(--shadow-card)'
+          }}>
+            <ClickAndCollectWidget />
+          </div>
+
           {/* Low Stock Section */}
           <div style={{
             background: 'var(--bg-card)',

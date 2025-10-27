@@ -47,7 +47,7 @@
   background: #ffffff;
   border-top: 1px solid #e5e7eb;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   align-items: center;
   padding: 0 6px;
   z-index: 3200;
@@ -82,8 +82,8 @@
 }
 
 .portalNavButtonActive {
-  color: #111827;
-  background: #eef2ff;
+  color: #ef4444;
+  background: transparent;
 }
 
 .portalNavLabel {
@@ -97,6 +97,78 @@
   line-height: 1;
   font-weight: 500;
   color: #9ca3af;
+}
+
+.portalNavButtonFab {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #ffffff;
+  border: 4px solid #ffffff;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: -20px;
+}
+
+.portalNavButtonFab:hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 32px rgba(59, 130, 246, 0.5);
+}
+
+.fabBadge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  border: 2px solid #ffffff;
+}
+
+.cartNavButton {
+  position: relative;
+  height: 46px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #6b7280;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  width: 100%;
+}
+
+.cartNavButton:hover {
+  background: #f3f4f6;
+}
+
+.cartNavBadge {
+  position: absolute;
+  top: 2px;
+  right: 16px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
 }
 
 @media (min-width: 768px) {

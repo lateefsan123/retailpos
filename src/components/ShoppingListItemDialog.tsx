@@ -6,14 +6,16 @@ interface ShoppingListItemDialogProps {
   isOpen: boolean;
   onClose: () => void;
   product: Product | null;
-  onAddItem: (product: Product | null, quantity: number, weight?: number, calculatedPrice?: number, customText?: string) => void;
+  onAddItem: (product: Product | null, quantity: number, weight?: number, calculatedPrice?: number, customText?: string, isClickAndCollect?: boolean) => void;
+  isClickAndCollect?: boolean;
 }
 
 const ShoppingListItemDialog: React.FC<ShoppingListItemDialogProps> = ({
   isOpen,
   onClose,
   product,
-  onAddItem
+  onAddItem,
+  isClickAndCollect = false
 }) => {
   const [quantity, setQuantity] = useState('1');
   const [weight, setWeight] = useState('');
@@ -72,7 +74,14 @@ const ShoppingListItemDialog: React.FC<ShoppingListItemDialogProps> = ({
       return;
     }
 
-    onAddItem(product, quantityValue, weightValue, calculatedPrice || undefined, customText.trim() || undefined);
+    onAddItem(
+      product,
+      quantityValue,
+      weightValue,
+      calculatedPrice || undefined,
+      customText.trim() || undefined,
+      isClickAndCollect
+    );
     onClose();
   };
 
@@ -498,7 +507,7 @@ const ShoppingListItemDialog: React.FC<ShoppingListItemDialogProps> = ({
               }}
             >
               <Package style={{ width: '1rem', height: '1rem' }} />
-              Add to List
+              {isClickAndCollect ? 'Add to Click & Collect' : 'Add to List'}
             </button>
           </div>
         </form>

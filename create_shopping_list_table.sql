@@ -31,6 +31,13 @@ BEGIN
                  AND column_name = 'weight') THEN
     ALTER TABLE public.customer_shopping_lists ADD COLUMN weight NUMERIC(10, 2);
   END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                 WHERE table_schema = 'public' 
+                 AND table_name = 'customer_shopping_lists' 
+                 AND column_name = 'is_click_and_collect') THEN
+    ALTER TABLE public.customer_shopping_lists ADD COLUMN is_click_and_collect BOOLEAN DEFAULT false;
+  END IF;
 END $$;
 
 -- Create indexes for better query performance (if they don't exist)
@@ -39,6 +46,7 @@ CREATE INDEX IF NOT EXISTS idx_customer_shopping_lists_product_id ON public.cust
 CREATE INDEX IF NOT EXISTS idx_customer_shopping_lists_business_id ON public.customer_shopping_lists(business_id);
 CREATE INDEX IF NOT EXISTS idx_customer_shopping_lists_completed ON public.customer_shopping_lists(completed);
 CREATE INDEX IF NOT EXISTS idx_customer_shopping_lists_created_at ON public.customer_shopping_lists(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_customer_shopping_lists_click_collect ON public.customer_shopping_lists(is_click_and_collect);
 
 -- Enable Row Level Security
 ALTER TABLE public.customer_shopping_lists ENABLE ROW LEVEL SECURITY;

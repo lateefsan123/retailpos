@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 // Use a simple Card component with inline styles to avoid global CSS conflicts
 const Card = ({ children, className = '', style = {} }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) => (
   <div 
@@ -18,11 +19,11 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import { Download, Store, Phone, CreditCard, Calendar, LogOut, Mail, MessageSquare, User, Camera, X, ShoppingCart, Plus, Trash2, Check, Search as SearchIcon, Home, Heart, ListChecks, Megaphone, RotateCcw } from 'lucide-react';
+import { Download, Store, Phone, CreditCard, Calendar, LogOut, Mail, MessageSquare, User, Camera, X, ShoppingCart, Plus, Trash2, Check, Search as SearchIcon, Home, ReceiptText, Megaphone, RotateCcw, Package, Scan, ChevronRight, ArrowLeft, SlidersHorizontal, ArrowUpDown, List, Ticket } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { getAllAvailableIcons, getRandomCustomerIcon } from '../utils/customerIcons';
 import { generateReceiptHTML } from '../utils/receiptUtils';
-import { LoyaltyPrize, ShoppingListItem, Product, Promotion } from '../types/multitenant';
+import { LoyaltyPrize, ShoppingListItem, Product, Promotion, Voucher, CustomerVoucher } from '../types/multitenant';
 import { T } from '../lib/tables';
 import cssStyles from './CustomerPortal.module.css';
 import ShoppingListItemDialog from '../components/ShoppingListItemDialog';
@@ -32,6 +33,11 @@ import {
   validatePassword, 
   setupCustomerAccount 
 } from '../utils/customerAuth';
+import { formatCurrency } from '../utils/currency';
+import { generateVoucherCode, formatDiscount } from '../utils/voucherUtils';
+import { QRCodeSVG } from 'qrcode.react';
+
+const SESSION_STORAGE_KEY = 'customerPortal.session';
 
 // Responsive styles
 const getResponsiveStyles = (windowWidth: number) => {
@@ -40,7 +46,7 @@ const getResponsiveStyles = (windowWidth: number) => {
   return {
     container: {
       minHeight: '100vh',
-      background: 'linear-gradient(to bottom right, #f1f0e4, #e0ded1)',
+      background: 'linear-gradient(to bottom right, #f3f4f6, #e2e8f0)',
       
       
       
@@ -415,7 +421,6 @@ const CustomerPortal = () => {
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);
   const [loyaltyPrizes, setLoyaltyPrizes] = useState<LoyaltyPrize[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
-  const [activeTab, setActiveTab] = useState<'home' | 'transactions' | 'shopping-list' | 'search'>('home');
   
   // New authentication state variables
   const [setupEmail, setSetupEmail] = useState('');
@@ -429,6 +434,12 @@ const CustomerPortal = () => {
   const [showProductSearch, setShowProductSearch] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState('');
   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [inStockOnly, setInStockOnly] = useState(false);
+  const [sortOption, setSortOption] = useState<'recommended' | 'price_asc' | 'price_desc'>('recommended');
+  const [showCartDrawer, setShowCartDrawer] = useState(false);
+  const [cartSubmissionStatus, setCartSubmissionStatus] = useState<'idle' | 'loading'>('idle');
+  const [cartFeedback, setCartFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   
   // Dialog state
   const [showItemDialog, setShowItemDialog] = useState(false);
@@ -436,6 +447,32 @@ const CustomerPortal = () => {
   
   const branchSearchRef = useRef<HTMLDivElement | null>(null);
   const productSearchRef = useRef<HTMLDivElement | null>(null);
+  const promotionsCarouselRef = useRef<HTMLDivElement | null>(null);
+  const promotionAutoIndexRef = useRef(0);
+  const sessionRestoredRef = useRef(false);
+
+  const getBranchLabel = useCallback((branchIdValue?: string | null, existingLabel?: string) => {
+    if (existingLabel) return existingLabel;
+    if (!branchIdValue) return '';
+    const matchingBranch = branches.find(branch => branch.branch_id.toString() === branchIdValue);
+    return matchingBranch ? formatBranchLabel(matchingBranch) : '';
+  }, [branches]);
+
+  const saveSession = useCallback((customerData: Customer, branchIdValue?: string | null, branchLabelValue?: string) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const payload = {
+        customer: customerData,
+        selectedBranch: branchIdValue ?? '',
+        branchSearch: branchLabelValue ?? ''
+      };
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
+    } catch (err) {
+      console.error('Failed to persist customer portal session', err);
+    }
+  }, []);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const availableIcons = getAllAvailableIcons();
 
@@ -453,6 +490,98 @@ const CustomerPortal = () => {
     });
   }, [branchSearch, branches]);
 
+  const productCategories = useMemo(() => {
+    const categoryMap = new Map<string, Product[]>();
+
+    availableProducts.forEach((product) => {
+      const categoryName = product.category?.trim() || 'Uncategorized';
+      const existing = categoryMap.get(categoryName);
+      if (existing) {
+        existing.push(product);
+      } else {
+        categoryMap.set(categoryName, [product]);
+      }
+    });
+
+    return Array.from(categoryMap.entries())
+      .map(([name, products]) => ({ name, products }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [availableProducts]);
+
+  const applyFiltersAndSort = useCallback((products: Product[]) => {
+    let result = [...products];
+
+    if (inStockOnly) {
+      result = result.filter((product) => (product.stock_quantity ?? 0) > 0);
+    }
+
+    switch (sortOption) {
+      case 'price_asc':
+        result.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+        break;
+      case 'price_desc':
+        result.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+        break;
+      case 'recommended':
+      default:
+        result.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+    }
+
+    return result;
+  }, [inStockOnly, sortOption]);
+
+  const selectedCategoryProducts = useMemo(() => {
+    if (!selectedCategory) return [];
+
+    const category = productCategories.find((item) => item.name === selectedCategory);
+    if (!category) return [];
+
+    return applyFiltersAndSort(category.products);
+  }, [selectedCategory, productCategories, applyFiltersAndSort]);
+
+  const searchResults = useMemo(() => {
+    const query = productSearchQuery.trim().toLowerCase();
+    if (!query) return [];
+
+    const matches = availableProducts.filter((product) => {
+      const nameMatch = product.name.toLowerCase().includes(query);
+      const categoryMatch = product.category?.toLowerCase().includes(query);
+      return nameMatch || categoryMatch;
+    });
+
+    return applyFiltersAndSort(matches);
+  }, [availableProducts, productSearchQuery, applyFiltersAndSort]);
+
+  const sortOptionLabel = useMemo(() => {
+    if (sortOption === 'price_asc') return 'Price: Low to High';
+    if (sortOption === 'price_desc') return 'Price: High to Low';
+    return 'Recommended';
+  }, [sortOption]);
+
+  const visibleSearchResults = useMemo(() => {
+    if (!productSearchQuery.trim()) return [];
+    return searchResults.slice(0, 50);
+  }, [productSearchQuery, searchResults]);
+
+  const cartItems = useMemo(
+    () => shoppingList.filter((item) => item.is_click_and_collect && !item.completed),
+    [shoppingList]
+  );
+
+  const cartItemCount = cartItems.length;
+
+  const cartTotal = useMemo(() => {
+    return cartItems.reduce((sum, item) => {
+      if (typeof item.calculated_price === 'number') {
+        return sum + item.calculated_price;
+      }
+      const price = item.products?.price ?? 0;
+      const quantity = item.quantity ?? 1;
+      return sum + price * quantity;
+    }, 0);
+  }, [cartItems]);
+
   useEffect(() => {
     if (branches.length === 1 && !selectedBranch) {
       const branch = branches[0];
@@ -460,6 +589,12 @@ const CustomerPortal = () => {
       setBranchSearch(formatBranchLabel(branch));
     }
   }, [branches, selectedBranch]);
+
+  useEffect(() => {
+    if (productSearchQuery.trim().length > 0 && selectedCategory !== null) {
+      setSelectedCategory(null);
+    }
+  }, [productSearchQuery, selectedCategory]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -495,6 +630,9 @@ const CustomerPortal = () => {
     const trimmedValue = value.trim();
     if (!trimmedValue) {
       setSelectedBranch('');
+      if (customer) {
+        saveSession(customer, null, '');
+      }
       return;
     }
 
@@ -507,6 +645,9 @@ const CustomerPortal = () => {
         const currentLabel = formatBranchLabel(currentBranch);
         if (trimmedValue.toLowerCase() !== currentLabel.toLowerCase()) {
           setSelectedBranch('');
+          if (customer) {
+            saveSession(customer, null, '');
+          }
         }
       }
     }
@@ -517,6 +658,10 @@ const CustomerPortal = () => {
     setBranchSearch(formatBranchLabel(branch));
     setIsBranchListOpen(false);
     fetchActivePromotions(branch.business_id, branch.branch_id);
+    if (customer) {
+      const label = formatBranchLabel(branch);
+      saveSession(customer, branch.branch_id.toString(), label);
+    }
   };
 
   // Fetch branches on component mount
@@ -612,7 +757,13 @@ const CustomerPortal = () => {
     try {
       const { data, error } = await supabase
         .from('promotions')
-        .select('*')
+        .select(`
+          *,
+          promotion_products (
+            product_id,
+            products (*)
+          )
+        `)
         .eq('business_id', businessId)
         .eq('active', true)
         .order('start_date', { ascending: false });
@@ -620,14 +771,20 @@ const CustomerPortal = () => {
       if (error) throw error;
 
       const now = new Date();
-      const filtered = (data || []).filter((promotion) => {
+      const filtered = (data || []).filter((promotion: any) => {
+        const startDateValid = promotion.start_date ? new Date(promotion.start_date) <= now : true;
         const endDateValid = promotion.end_date ? new Date(promotion.end_date) >= now : true;
         const branchMatches =
           branchId == null || promotion.branch_id == null || promotion.branch_id === branchId;
-        return endDateValid && branchMatches;
+        return startDateValid && endDateValid && branchMatches;
+      }).map((promotion: any) => {
+        const { promotion_products, ...rest } = promotion;
+        return {
+          ...rest,
+          products: promotion_products?.map((pp: any) => pp.products).filter(Boolean) || []
+        };
       });
-
-      setPromotions(filtered);
+      setPromotions(filtered as Promotion[]);
     } catch (err) {
       console.error('Error fetching promotions:', err);
       setPromotions([]);
@@ -647,6 +804,22 @@ const CustomerPortal = () => {
     fetchActivePromotions(customer.business_id, branchId);
   }, [customer, selectedBranch, fetchActivePromotions]);
 
+  // Derive active tab from current pathname
+  const deriveActiveTab = useCallback((pathname: string) => {
+    if (pathname.startsWith('/customer-portal/transactions')) {
+      return 'transactions';
+    }
+    if (pathname.startsWith('/customer-portal/shopping-list')) {
+      return 'shopping-list';
+    }
+    if (pathname.startsWith('/customer-portal/search')) {
+      return 'search';
+    }
+    return 'home';
+  }, []);
+
+  const activeTab = useMemo(() => deriveActiveTab(location.pathname), [deriveActiveTab, location.pathname]);
+
   useEffect(() => {
     if (activeTab !== 'transactions') {
       setShowTransactionModal(false);
@@ -656,7 +829,8 @@ const CustomerPortal = () => {
 
   const handleIconChange = async (icon: string) => {
     if (customer) {
-      setCustomer({ ...customer, icon: icon });
+      const updatedCustomer = { ...customer, icon };
+      setCustomer(updatedCustomer);
       setShowIconPicker(false);
       
       // Update in database
@@ -667,6 +841,7 @@ const CustomerPortal = () => {
           .eq('customer_id', customer.customer_id);
         
         if (error) throw error;
+        saveSession(updatedCustomer, selectedBranch || null, branchSearch);
       } catch (err) {
         console.error('Error updating customer icon:', err);
       }
@@ -796,7 +971,12 @@ const CustomerPortal = () => {
       // Auto-login after setup
       setCustomer(data);
       setView('dashboard');
-      setActiveTab('home');
+      navigate('/customer-portal/home', { replace: true });
+      const resolvedBranchId = data.branch_id ? data.branch_id.toString() : (selectedBranch || '');
+      const resolvedBranchLabel = getBranchLabel(resolvedBranchId, branchSearch);
+      setSelectedBranch(resolvedBranchId);
+      setBranchSearch(resolvedBranchLabel);
+      saveSession(data, resolvedBranchId || null, resolvedBranchLabel);
       
       // Fetch additional data
       await Promise.all([
@@ -814,7 +994,9 @@ const CustomerPortal = () => {
           .from('customers')
           .update({ icon: randomIcon })
           .eq('customer_id', data.customer_id);
-        setCustomer({ ...data, icon: randomIcon });
+        const updatedCustomer = { ...data, icon: randomIcon };
+        setCustomer(updatedCustomer);
+        saveSession(updatedCustomer, resolvedBranchId || null, resolvedBranchLabel);
       }
     } catch (err) {
       console.error('Account setup error:', err);
@@ -859,7 +1041,12 @@ const CustomerPortal = () => {
       // Successful login
       setCustomer(pendingCustomer);
       setView('dashboard');
-      setActiveTab('home');
+      navigate('/customer-portal/home', { replace: true });
+      const resolvedBranchId = pendingCustomer.branch_id ? pendingCustomer.branch_id.toString() : (selectedBranch || '');
+      const resolvedBranchLabel = getBranchLabel(resolvedBranchId, branchSearch);
+      setSelectedBranch(resolvedBranchId);
+      setBranchSearch(resolvedBranchLabel);
+      saveSession(pendingCustomer, resolvedBranchId || null, resolvedBranchLabel);
       
       // Fetch additional data
       await Promise.all([
@@ -877,7 +1064,9 @@ const CustomerPortal = () => {
           .from('customers')
           .update({ icon: randomIcon })
           .eq('customer_id', pendingCustomer.customer_id);
-        setCustomer({ ...pendingCustomer, icon: randomIcon });
+        const updatedCustomer = { ...pendingCustomer, icon: randomIcon };
+        setCustomer(updatedCustomer);
+        saveSession(updatedCustomer, resolvedBranchId || null, resolvedBranchLabel);
       }
     } catch (err) {
       console.error('Login error:', err);
@@ -990,6 +1179,38 @@ const CustomerPortal = () => {
     }
   };
 
+  const removeItemFromCart = async (itemId: number) => {
+    try {
+      const { error } = await supabase
+        .from(T.customerShoppingLists)
+        .update({ is_click_and_collect: false })
+        .eq('list_item_id', itemId);
+
+      if (error) throw error;
+
+      setShoppingList(prev =>
+        prev.map(item =>
+          item.list_item_id === itemId
+            ? { ...item, is_click_and_collect: false }
+            : item
+        )
+      );
+
+      setCartFeedback({
+        type: 'success',
+        message: 'Removed from your click & collect cart.'
+      });
+    } catch (err) {
+      console.error('Error removing item from cart:', err);
+      setCartFeedback({
+        type: 'error',
+        message: 'Could not remove that item from the cart. Please try again.'
+      });
+    } finally {
+      setCartSubmissionStatus('idle');
+    }
+  };
+
   const clearShoppingList = async () => {
     if (!customer) return;
 
@@ -1013,7 +1234,7 @@ const CustomerPortal = () => {
     }
   };
 
-  const addProductToShoppingList = async (product: Product | null, quantity: number = 1, weight?: number, calculatedPrice?: number, customText?: string) => {
+  const addProductToShoppingList = async (product: Product | null, quantity: number = 1, weight?: number, calculatedPrice?: number, customText?: string, isClickAndCollect: boolean = false) => {
     if (!customer) return;
 
     try {
@@ -1027,7 +1248,8 @@ const CustomerPortal = () => {
           business_id: customer.business_id,
           quantity: quantity,
           weight: weight,
-          calculated_price: calculatedPrice
+          calculated_price: calculatedPrice,
+          is_click_and_collect: isClickAndCollect
         }])
         .select(`
           *,
@@ -1050,6 +1272,339 @@ const CustomerPortal = () => {
     } catch (err) {
       console.error('Error adding product to list:', err);
     }
+  };
+
+  const handleProductSelectForSearch = (product: Product) => {
+    setSelectedProduct(product);
+    setShowItemDialog(true);
+  };
+
+  const handleCategorySelect = (categoryName: string) => {
+    setSelectedCategory(categoryName);
+    setProductSearchQuery('');
+    setInStockOnly(false);
+    setSortOption('recommended');
+  };
+
+  const handleReturnToCategories = () => {
+    setSelectedCategory(null);
+    setProductSearchQuery('');
+    setInStockOnly(false);
+    setSortOption('recommended');
+  };
+
+  const handleToggleStockFilter = () => {
+    setInStockOnly((prev) => !prev);
+  };
+
+  const handleCycleSortOption = () => {
+    setSortOption((prev) => {
+      if (prev === 'recommended') return 'price_asc';
+      if (prev === 'price_asc') return 'price_desc';
+      return 'recommended';
+    });
+  };
+
+  useEffect(() => {
+    if (!cartFeedback) return;
+    const timeout = window.setTimeout(() => setCartFeedback(null), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [cartFeedback]);
+
+  const handleSubmitClickCollect = async () => {
+    if (!customer || cartItemCount === 0 || cartSubmissionStatus === 'loading') return;
+
+    try {
+      setCartSubmissionStatus('loading');
+      const itemIds = cartItems.map((item) => item.list_item_id);
+
+      if (itemIds.length > 0) {
+        const { error } = await supabase
+          .from(T.customerShoppingLists)
+          .update({ is_click_and_collect: true })
+          .in('list_item_id', itemIds);
+
+        if (error) {
+          throw error;
+        }
+      }
+
+      setShoppingList(prev =>
+        prev.map(item =>
+          itemIds.includes(item.list_item_id)
+            ? { ...item, is_click_and_collect: true }
+            : item
+        )
+      );
+
+      setCartSubmissionStatus('idle');
+      setCartFeedback({
+        type: 'success',
+        message: 'Thanks! Your click & collect request was sent. We will let you know as soon as it is ready for pickup.'
+      });
+      setShowCartDrawer(false);
+    } catch (err) {
+      console.error('Error submitting click & collect request:', err);
+      setCartSubmissionStatus('idle');
+      setCartFeedback({
+        type: 'error',
+        message: 'We could not submit your click & collect request. Please try again.'
+      });
+    }
+  };
+
+  const renderFilterSortControls = () => (
+    <div style={{
+      display: 'flex',
+      gap: '0.75rem',
+      flexWrap: 'wrap',
+      marginBottom: '1rem'
+    }}>
+      <button
+        onClick={handleToggleStockFilter}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          padding: '0.55rem 1rem',
+          borderRadius: '999px',
+          border: '1px solid',
+          borderColor: inStockOnly ? '#2563eb' : '#d1d5db',
+          backgroundColor: inStockOnly ? 'rgba(37, 99, 235, 0.08)' : '#ffffff',
+          color: inStockOnly ? '#1d4ed8' : '#374151',
+          fontSize: '0.875rem',
+          fontWeight: 500,
+          cursor: 'pointer',
+          transition: 'background-color 0.2s ease, color 0.2s ease'
+        }}
+      >
+        <SlidersHorizontal style={{ width: '1rem', height: '1rem' }} />
+        {inStockOnly ? 'In Stock Only' : 'Filter'}
+      </button>
+      <button
+        onClick={handleCycleSortOption}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          padding: '0.55rem 1rem',
+          borderRadius: '999px',
+          border: '1px solid #d1d5db',
+          backgroundColor: '#ffffff',
+          color: '#374151',
+          fontSize: '0.875rem',
+          fontWeight: 500,
+          cursor: 'pointer',
+          transition: 'background-color 0.2s ease'
+        }}
+      >
+        <ArrowUpDown style={{ width: '1rem', height: '1rem' }} />
+        {sortOptionLabel}
+      </button>
+    </div>
+  );
+
+  const renderProductRow = (product: Product, index: number, total: number) => {
+    const outOfStock = (product.stock_quantity ?? 0) <= 0;
+    const unitLabel = product.is_weighted && product.price_per_unit
+      ? `${formatCurrency(product.price_per_unit)} / ${product.weight_unit || 'kg'}`
+      : null;
+
+    return (
+      <div
+        key={product.product_id}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1rem',
+          padding: '1rem 1.25rem',
+          borderBottom: index === total - 1 ? 'none' : '1px solid #f3f4f6',
+          backgroundColor: '#ffffff'
+        }}
+      >
+        {product.image_url ? (
+          <img
+            src={product.image_url}
+            alt={product.name}
+            style={{
+              width: '3.5rem',
+              height: '3.5rem',
+              objectFit: 'cover',
+              borderRadius: '0.75rem',
+              flexShrink: 0
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              width: '3.5rem',
+              height: '3.5rem',
+              borderRadius: '0.75rem',
+              backgroundColor: '#f3f4f6',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}
+          >
+            <Package style={{ width: '1.75rem', height: '1.75rem', color: '#9ca3af' }} />
+          </div>
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h4 style={{
+            margin: 0,
+            fontSize: '0.95rem',
+            fontWeight: 600,
+            color: '#111827',
+            lineHeight: 1.35
+          }}>
+            {product.name}
+          </h4>
+          {product.category && (
+            <p style={{
+              margin: '0.25rem 0',
+              fontSize: '0.75rem',
+              color: '#6b7280'
+            }}>
+              {product.category}
+            </p>
+          )}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            flexWrap: 'wrap'
+          }}>
+            <span style={{
+              fontSize: '1rem',
+              fontWeight: 700,
+              color: '#0f172a'
+            }}>
+              {formatCurrency(product.price)}
+            </span>
+            {unitLabel && (
+              <span style={{
+                fontSize: '0.75rem',
+                color: '#6b7280',
+                backgroundColor: '#f3f4f6',
+                padding: '0.125rem 0.5rem',
+                borderRadius: '999px'
+              }}>
+                {unitLabel}
+              </span>
+            )}
+            <span style={{
+              fontSize: '0.75rem',
+              fontWeight: 500,
+              color: outOfStock ? '#ef4444' : '#10b981'
+            }}>
+              {outOfStock ? 'Out of stock' : `In stock: ${product.stock_quantity}`}
+            </span>
+          </div>
+        </div>
+        <button
+          onClick={() => !outOfStock && handleProductSelectForSearch(product)}
+          disabled={outOfStock}
+          style={{
+            padding: '0.6rem 1.15rem',
+            borderRadius: '999px',
+            border: 'none',
+            background: outOfStock ? '#d1d5db' : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+            color: outOfStock ? '#6b7280' : '#ffffff',
+            fontWeight: 600,
+            fontSize: '0.9rem',
+            cursor: outOfStock ? 'not-allowed' : 'pointer'
+          }}
+        >
+          {outOfStock ? 'Unavailable' : 'Add to Cart'}
+        </button>
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    if (sessionRestoredRef.current) return;
+
+    const restoreSession = async () => {
+      if (typeof window === 'undefined') {
+        sessionRestoredRef.current = true;
+        return;
+      }
+      sessionRestoredRef.current = true;
+
+      try {
+        const stored = localStorage.getItem(SESSION_STORAGE_KEY);
+        if (!stored) {
+          return;
+        }
+
+        const parsed = JSON.parse(stored);
+        if (!parsed?.customer) {
+          localStorage.removeItem(SESSION_STORAGE_KEY);
+          return;
+        }
+
+        const storedCustomer: Customer = parsed.customer;
+        const storedBranchId: string = parsed.selectedBranch ?? '';
+        const storedBranchLabel: string = getBranchLabel(
+          storedBranchId,
+          parsed.branchSearch
+        );
+
+        setCustomer(storedCustomer);
+        setSelectedBranch(storedBranchId);
+        setBranchSearch(storedBranchLabel);
+        setView('dashboard');
+        saveSession(storedCustomer, storedBranchId || null, storedBranchLabel);
+
+        const branchIdNumeric =
+          storedCustomer.branch_id ?? (storedBranchId ? Number(storedBranchId) : undefined);
+        const branchIdForFetch =
+          typeof branchIdNumeric === 'number' && !Number.isNaN(branchIdNumeric)
+            ? branchIdNumeric
+            : undefined;
+
+        await Promise.all([
+          fetchBusinessInfo(storedCustomer.business_id),
+          fetchLoyaltyPrizes(storedCustomer.business_id),
+          fetchCustomerSales(storedCustomer.customer_id),
+          fetchShoppingList(storedCustomer.customer_id),
+          fetchAvailableProducts(storedCustomer.business_id, branchIdForFetch ?? null),
+          fetchActivePromotions(storedCustomer.business_id, branchIdForFetch ?? null)
+        ]);
+
+        if (!storedBranchLabel && storedBranchId) {
+          const refreshedLabel = getBranchLabel(storedBranchId, '');
+          if (refreshedLabel) {
+            setBranchSearch(refreshedLabel);
+            saveSession(storedCustomer, storedBranchId, refreshedLabel);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to restore customer portal session', err);
+        localStorage.removeItem(SESSION_STORAGE_KEY);
+      }
+    };
+
+    restoreSession();
+  }, [getBranchLabel, saveSession]);
+
+  useEffect(() => {
+    if (!customer) return;
+    if (!selectedBranch) return;
+    if (branchSearch) return;
+
+    const resolvedLabel = getBranchLabel(selectedBranch, branchSearch);
+    if (resolvedLabel) {
+      setBranchSearch(resolvedLabel);
+      saveSession(customer, selectedBranch, resolvedLabel);
+    }
+  }, [customer, selectedBranch, branchSearch, getBranchLabel, saveSession]);
+
+  const handlePromotionAdd = (promotion: Promotion) => {
+    if (!promotion.products || promotion.products.length === 0) return;
+    const primaryProduct = promotion.products[0];
+    void addProductToShoppingList(primaryProduct, 1, undefined, undefined, undefined, true);
   };
 
 
@@ -1132,8 +1687,19 @@ const CustomerPortal = () => {
     setBusinessInfo(null);
     setLoyaltyPrizes([]);
     setPromotions([]);
-    setActiveTab('home');
     setFilterMonth('');
+    setCartFeedback(null);
+    setCartSubmissionStatus('idle');
+    setShowCartDrawer(false);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem(SESSION_STORAGE_KEY);
+      } catch (err) {
+        console.error('Failed to clear customer portal session', err);
+      }
+    }
+    sessionRestoredRef.current = false;
+    navigate('/customer-portal', { replace: true });
   };
 
   const formatDate = (dateString: string) => {
@@ -1152,6 +1718,29 @@ const CustomerPortal = () => {
     });
   };
 
+  const getPromotionPricing = (promotion: Promotion) => {
+    const primaryProduct = promotion.products && promotion.products.length > 0 ? promotion.products[0] : null;
+
+    if (!primaryProduct || typeof primaryProduct.price !== 'number') {
+      return null;
+    }
+
+    const originalPrice = primaryProduct.price;
+    let discountedPrice: number | null = null;
+
+    if (promotion.discount_type === 'percentage' && promotion.discount_value != null) {
+      discountedPrice = Math.max(originalPrice * (1 - promotion.discount_value / 100), 0);
+    } else if (promotion.discount_type === 'fixed_amount' && promotion.discount_value != null) {
+      discountedPrice = Math.max(originalPrice - promotion.discount_value, 0);
+    }
+
+    return {
+      product: primaryProduct,
+      originalPrice,
+      discountedPrice
+    };
+  };
+
   const filteredSales = filterMonth 
     ? sales.filter(sale => sale.datetime.startsWith(filterMonth))
     : sales;
@@ -1160,34 +1749,158 @@ const CustomerPortal = () => {
   const styles = getResponsiveStyles(windowSize.width);
   const isMobileView = windowSize.width < 768;
 
+  useEffect(() => {
+    promotionAutoIndexRef.current = 0;
+    if (promotionsCarouselRef.current) {
+      promotionsCarouselRef.current.scrollTo({ left: 0 });
+    }
+  }, [promotions]);
+
+  useEffect(() => {
+    if (promotions.length < 2) return;
+    const container = promotionsCarouselRef.current;
+    if (!container) return;
+    if (container.scrollWidth <= container.clientWidth + 1) return;
+
+    const motionQuery = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+    if (motionQuery && motionQuery.matches) return;
+
+    let paused = false;
+    let scrollFrame = 0;
+
+    const handlePointerEnter = () => {
+      paused = true;
+    };
+
+    const handlePointerLeave = () => {
+      paused = false;
+    };
+
+    const handlePointerDown = () => {
+      paused = true;
+    };
+
+    const handlePointerUp = () => {
+      paused = false;
+    };
+
+    const handleScroll = () => {
+      if (scrollFrame) cancelAnimationFrame(scrollFrame);
+      scrollFrame = requestAnimationFrame(() => {
+        const items = Array.from(container.children) as HTMLElement[];
+        if (!items.length) return;
+        let closestIndex = 0;
+        let minDistance = Number.POSITIVE_INFINITY;
+        items.forEach((item, index) => {
+          const distance = Math.abs(item.offsetLeft - container.scrollLeft);
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestIndex = index;
+          }
+        });
+        promotionAutoIndexRef.current = closestIndex;
+      });
+    };
+
+    container.addEventListener('pointerenter', handlePointerEnter);
+    container.addEventListener('pointerleave', handlePointerLeave);
+    container.addEventListener('pointerdown', handlePointerDown);
+    container.addEventListener('pointerup', handlePointerUp);
+    container.addEventListener('scroll', handleScroll, { passive: true });
+
+    handleScroll();
+
+    const interval = window.setInterval(() => {
+      if (document.hidden || paused) return;
+      const items = Array.from(container.children) as HTMLElement[];
+      if (!items.length) return;
+      const nextIndex = (promotionAutoIndexRef.current + 1) % items.length;
+      const target = items[nextIndex];
+      container.scrollTo({ left: target.offsetLeft, behavior: 'smooth' });
+      promotionAutoIndexRef.current = nextIndex;
+    }, 5000);
+
+    return () => {
+      if (scrollFrame) cancelAnimationFrame(scrollFrame);
+      window.clearInterval(interval);
+      container.removeEventListener('pointerenter', handlePointerEnter);
+      container.removeEventListener('pointerleave', handlePointerLeave);
+      container.removeEventListener('pointerdown', handlePointerDown);
+      container.removeEventListener('pointerup', handlePointerUp);
+      container.removeEventListener('scroll', handleScroll);
+    };
+  }, [promotions, isMobileView]);
+
+
   const navItems: Array<{
     key: 'home' | 'transactions' | 'shopping-list' | 'search';
     label: string;
     icon: React.ComponentType<{ size?: number; color?: string }>;
+    path: string;
     disabled?: boolean;
   }> = [
     {
       key: 'home',
       label: 'Home',
-      icon: Home
+      icon: Home,
+      path: '/customer-portal/home'
     },
     {
       key: 'transactions',
       label: 'Transactions',
-      icon: Heart
+      icon: ReceiptText,
+      path: '/customer-portal/transactions'
     },
     {
       key: 'shopping-list',
       label: 'Shopping',
-      icon: ListChecks
+      icon: List,
+      path: '/customer-portal/shopping-list'
     },
     {
       key: 'search',
       label: 'Search',
       icon: SearchIcon,
-      disabled: true
+      path: '/customer-portal/search'
     }
   ];
+
+  useEffect(() => {
+    if (!location.pathname.startsWith('/customer-portal')) return;
+
+    const suffix = location.pathname.replace('/customer-portal', '') || '/';
+    if (suffix.startsWith('/rewards')) {
+      if (customer) {
+        if (view !== 'rewards') {
+          setView('rewards');
+        }
+      } else if (view !== 'login') {
+        setView('login');
+      }
+      return;
+    }
+
+    const dashboardPaths = ['/home', '/transactions', '/shopping-list', '/search'];
+    if (dashboardPaths.includes(suffix)) {
+      if (customer) {
+        if (view !== 'dashboard') {
+          setView('dashboard');
+        }
+      } else if (view !== 'login') {
+        setView('login');
+      }
+    }
+  }, [customer, location.pathname, view]);
+
+  useEffect(() => {
+    if (!customer || view !== 'dashboard') return;
+    if (!location.pathname.startsWith('/customer-portal')) return;
+
+    const suffix = location.pathname.replace('/customer-portal', '') || '/';
+    if (suffix === '/' || suffix === '') {
+      navigate('/customer-portal/home', { replace: true });
+    }
+  }, [customer, view, location.pathname, navigate]);
 
 
   // Rewards View
@@ -1274,7 +1987,7 @@ const CustomerPortal = () => {
             variant="outline" 
             onClick={() => {
               setView('dashboard');
-              setActiveTab('home');
+              navigate('/customer-portal/home');
             }}
             style={{ marginBottom: '1rem' }}
           >
@@ -1421,7 +2134,9 @@ const CustomerPortal = () => {
                               }
 
                               // Update local state
-                              setCustomer({ ...customer, loyalty_points: newPoints });
+                              const updatedCustomer = { ...customer, loyalty_points: newPoints };
+                              setCustomer(updatedCustomer);
+                              saveSession(updatedCustomer, selectedBranch || null, branchSearch);
 
                               // Refresh prizes
                               fetchLoyaltyPrizes(customer.business_id);
@@ -2232,12 +2947,36 @@ const CustomerPortal = () => {
                 Customer Portal
               </p>
             </div>
-          </div>
-        )}
+        </div>
+      )}
 
-        {activeTab === 'home' && (
-          <>
-            {/* Profile and Points Cards Container */}
+
+
+      {view === 'dashboard' && cartFeedback && (
+        <div
+          style={{
+            marginBottom: '1.25rem',
+            borderRadius: '0.75rem',
+            border: `1px solid ${cartFeedback.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+            backgroundColor: cartFeedback.type === 'success' ? '#ecfdf5' : '#fef2f2',
+            color: cartFeedback.type === 'success' ? '#166534' : '#b91c1c',
+            padding: '0.85rem 1rem',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '0.6rem'
+          }}
+        >
+          <i
+            className={`fa-solid ${cartFeedback.type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation'}`}
+            style={{ marginTop: '0.2rem' }}
+          ></i>
+          <span style={{ fontSize: '0.9rem', lineHeight: 1.5 }}>{cartFeedback.message}</span>
+        </div>
+      )}
+
+      {activeTab === 'home' && (
+        <>
+          {/* Profile and Points Cards Container */}
             <div style={{
           display: windowSize.width < 768 ? 'block' : 'flex',
           flexDirection: windowSize.width < 768 ? 'column' : 'row',
@@ -2459,7 +3198,10 @@ const CustomerPortal = () => {
                   <p style={styles.pointsValue}>{customer?.loyalty_points?.toLocaleString()}</p>
                   <p style={styles.pointsSubtext}>Keep shopping to earn more rewards!</p>
                   <button
-                    onClick={() => setView('rewards')}
+                    onClick={() => {
+                      setView('rewards');
+                      navigate('/customer-portal/rewards');
+                    }}
                     style={{
                       marginTop: '0.75rem',
                       padding: '0.5rem 1rem',
@@ -2528,95 +3270,210 @@ const CustomerPortal = () => {
                     Stay up to date with offers just for you
                   </p>
                 </div>
-              </div>
+            </div>
               <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {promotions.length > 0 ? (
-                  promotions.map((promotion) => {
+                  <div
+                    ref={promotionsCarouselRef}
+                    style={{
+                      display: 'flex',
+                      gap: '1.25rem',
+                      overflowX: 'auto',
+                      paddingBottom: '0.5rem',
+                      marginLeft: '-0.25rem',
+                      paddingLeft: '0.25rem',
+                      scrollSnapType: isMobileView ? 'x mandatory' : 'none',
+                      WebkitOverflowScrolling: 'touch',
+                      scrollbarWidth: 'thin'
+                    }}
+                  >
+                  {promotions.map((promotion) => {
                     const discountLabel = promotion.discount_type === 'percentage' && promotion.discount_value != null
                       ? `${promotion.discount_value}% off`
                       : promotion.discount_type === 'fixed_amount' && promotion.discount_value != null
-                        ? `Save $${promotion.discount_value.toFixed(2)}`
+                        ? `Save ${formatCurrency(promotion.discount_value)}`
                         : null;
-                    const endDateLabel = promotion.end_date ? `Ends ${formatDate(promotion.end_date)}` : 'Active now';
-                    const appliesLabel = promotion.applies_to === 'all' ? 'Storewide' : 'Selected items';
+                    const endDateLabel = promotion.end_date ? `Valid until ${formatDate(promotion.end_date)}` : 'Available now';
+                    const appliesLabel = promotion.applies_to === 'all' ? 'Storewide offer' : 'Selected items';
+                    const pricingInfo = getPromotionPricing(promotion);
+                    const hasDiscount = pricingInfo?.discountedPrice != null && Math.abs((pricingInfo.discountedPrice ?? 0) - pricingInfo.originalPrice) > 0.009;
+                    const finalPriceValue = pricingInfo ? (hasDiscount && pricingInfo.discountedPrice != null ? pricingInfo.discountedPrice : pricingInfo.originalPrice) : null;
+                    const finalPriceLabel = finalPriceValue != null ? formatCurrency(finalPriceValue) : null;
+                    const originalPriceLabel = hasDiscount && pricingInfo ? formatCurrency(pricingInfo.originalPrice) : null;
+                    const unitPriceLabel = pricingInfo && pricingInfo.product?.price_per_unit
+                      ? `${formatCurrency(pricingInfo.product.price_per_unit)} / ${pricingInfo.product.weight_unit || (pricingInfo.product.is_weighted ? 'kg' : 'unit')}`
+                      : null;
+                    const promotionTypeLabel = promotion.promotion_type === 'buy_x_get_y_free' && promotion.quantity_required && promotion.quantity_reward
+                      ? `Buy ${promotion.quantity_required}, Get ${promotion.quantity_reward} Free`
+                      : promotion.promotion_type === 'buy_x_discount' && promotion.quantity_required
+                        ? `Buy ${promotion.quantity_required} & Save`
+                        : null;
+                    const multipleProductsLabel = promotion.products && promotion.products.length > 1
+                      ? `${promotion.products.length} products included`
+                      : null;
+                    const minSpendLabel = promotion.min_purchase_amount && promotion.min_purchase_amount > 0
+                      ? `Min spend ${formatCurrency(promotion.min_purchase_amount)}`
+                      : null;
+                    const badgeItems = [
+                      discountLabel,
+                      promotionTypeLabel,
+                      multipleProductsLabel,
+                      appliesLabel,
+                      minSpendLabel
+                    ].filter(Boolean) as string[];
+                    const productImage = pricingInfo?.product?.image_url;
+                    const cardTitle = pricingInfo?.product?.name || promotion.name;
+                    const supplementaryTitle = pricingInfo?.product && pricingInfo.product.name !== promotion.name ? promotion.name : null;
+                    const showAddButton = Boolean(pricingInfo?.product);
+                    const cardWidth = isMobileView ? '78%' : '320px';
+
                     return (
                       <div
                         key={promotion.promotion_id}
                         style={{
                           border: '1px solid #e5e7eb',
-                          borderRadius: '0.75rem',
-                          padding: '1rem 1.25rem',
-                          backgroundColor: '#f9fafb',
+                          borderRadius: '1rem',
+                          padding: '1.5rem',
+                          backgroundColor: '#ffffff',
                           display: 'flex',
-                          flexDirection: windowSize.width < 768 ? 'column' : 'row',
-                          gap: '0.75rem'
+                          flexDirection: 'column',
+                          gap: '0.85rem',
+                          boxShadow: '0 8px 18px -6px rgba(15, 23, 42, 0.15)',
+                          flex: `0 0 ${cardWidth}`,
+                          minWidth: cardWidth,
+                          maxWidth: cardWidth,
+                          scrollSnapAlign: isMobileView ? 'start' : 'center'
                         }}
                       >
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{
-                            margin: 0,
-                            fontSize: '1rem',
-                            fontWeight: 600,
-                            color: '#1f2937'
-                          }}>
-                            {promotion.name}
-                          </p>
+                        <div
+                          style={{
+                            width: '100%',
+                            borderRadius: '0.85rem',
+                            background: 'linear-gradient(135deg, #f9fafb 0%, #eef2ff 100%)',
+                            padding: '1.5rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          {productImage ? (
+                            <img
+                              src={productImage}
+                              alt={cardTitle}
+                              style={{
+                                maxHeight: '160px',
+                                width: 'auto',
+                                maxWidth: '100%',
+                                objectFit: 'contain'
+                              }}
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                height: '140px',
+                                width: '100%',
+                                borderRadius: '0.75rem',
+                                border: '1px dashed #d1d5db',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#6b7280',
+                                fontSize: '0.85rem',
+                                backgroundColor: '#f9fafb'
+                              }}
+                            >
+                              Image coming soon
+                            </div>
+                          )}
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                          {supplementaryTitle && (
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: '#6366f1', letterSpacing: '0.05em' }}>
+                              {supplementaryTitle}
+                            </span>
+                          )}
+                          <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1f2937', lineHeight: 1.3 }}>
+                            {cardTitle}
+                          </h4>
                           {promotion.description && (
-                            <p style={{
-                              margin: '0.35rem 0 0 0',
-                              fontSize: '0.875rem',
-                              color: '#4b5563'
-                            }}>
+                            <p style={{ margin: 0, fontSize: '0.9rem', color: '#4b5563', lineHeight: 1.4 }}>
                               {promotion.description}
                             </p>
                           )}
-                        </div>
-                        <div style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: windowSize.width < 768 ? 'flex-start' : 'flex-end',
-                          gap: '0.35rem',
-                          minWidth: windowSize.width < 768 ? 'auto' : '10rem'
-                        }}>
-                          {discountLabel && (
-                            <span style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              padding: '0.35rem 0.75rem',
-                              borderRadius: '999px',
-                              backgroundColor: '#fef3c7',
-                              color: '#b45309',
-                              fontSize: '0.75rem',
-                              fontWeight: 600
-                            }}>
-                              {discountLabel}
-                            </span>
+                          {pricingInfo?.product && promotion.products && promotion.products.length > 1 && (
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#6b7280' }}>
+                              Applies to more items in this range.
+                            </p>
                           )}
-                          <span style={{
-                            fontSize: '0.75rem',
-                            color: '#6b7280'
-                          }}>
-                            {endDateLabel}
-                          </span>
-                          <span style={{
-                            fontSize: '0.75rem',
-                            color: '#6b7280'
-                          }}>
-                            {appliesLabel}
-                          </span>
-                          {promotion.min_purchase_amount && promotion.min_purchase_amount > 0 ? (
-                            <span style={{
-                              fontSize: '0.75rem',
-                              color: '#6b7280'
-                            }}>
-                              Min spend ${promotion.min_purchase_amount.toFixed(2)}
-                            </span>
-                          ) : null}
                         </div>
+
+                        {finalPriceLabel && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f172a' }}>
+                                {finalPriceLabel}
+                              </span>
+                              {hasDiscount && originalPriceLabel && (
+                                <span style={{ fontSize: '1rem', color: '#9ca3af', textDecoration: 'line-through' }}>
+                                  {originalPriceLabel}
+                                </span>
+                              )}
+                            </div>
+                            {unitPriceLabel && (
+                              <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>
+                                {unitPriceLabel}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {showAddButton && (
+                          <button
+                            onClick={() => handlePromotionAdd(promotion)}
+                            style={{
+                              padding: '0.65rem 1rem',
+                              borderRadius: '999px',
+                              border: 'none',
+                              background: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)',
+                              color: '#ffffff',
+                              fontWeight: 600,
+                              fontSize: '0.95rem',
+                              cursor: 'pointer',
+                              boxShadow: '0 10px 20px -10px rgba(37, 99, 235, 0.6)'
+                            }}
+                          >
+                            Add
+                          </button>
+                        )}
+
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          {badgeItems.map((badge, index) => (
+                            <span
+                              key={`${promotion.promotion_id}-badge-${index}`}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                padding: '0.35rem 0.65rem',
+                                borderRadius: '0.65rem',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                backgroundColor: index === 0 ? '#fde68a' : '#e0e7ff',
+                                color: index === 0 ? '#92400e' : '#1e3a8a'
+                              }}
+                            >
+                              {badge}
+                            </span>
+                          ))}
+                        </div>
+
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#6b7280' }}>
+                          {endDateLabel}
+                        </p>
                       </div>
                     );
-                  })
+                  })}
+                  </div>
                 ) : (
                   <div style={{
                     padding: '1.25rem',
@@ -3005,49 +3862,339 @@ const CustomerPortal = () => {
         )}
 
         {activeTab === 'search' && (
-          <div style={{
-            ...styles.card,
-            marginBottom: '1.5rem',
-            padding: '2rem',
-            textAlign: 'center'
-          }}>
+          <>
+            {/* Top Search Bar */}
             <div style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 100,
+              backgroundColor: '#ffffff',
+              padding: '1rem 1.5rem',
+              borderBottom: '1px solid #e5e7eb',
               display: 'flex',
-              flexDirection: 'column',
               alignItems: 'center',
               gap: '1rem'
             }}>
-              <div style={{
-                width: '3.5rem',
-                height: '3.5rem',
-                borderRadius: '999px',
-                backgroundColor: '#f3f4f6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <SearchIcon style={{ width: '1.75rem', height: '1.75rem', color: '#6b7280' }} />
-              </div>
-              <div>
-                <h3 style={{
-                  margin: 0,
-                  fontSize: '1.25rem',
-                  fontWeight: 600,
+              <button
+                onClick={() => setShowCartDrawer(true)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  padding: '0.5rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   color: '#111827'
-                }}>
-                  Search is on the way
-                </h3>
-                <p style={{
-                  margin: '0.5rem 0 0 0',
-                  fontSize: '0.95rem',
+                }}
+              >
+                <ArrowLeft style={{ width: '1.5rem', height: '1.5rem' }} />
+              </button>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <SearchIcon style={{
+                  position: 'absolute',
+                  left: '1rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: '1.25rem',
+                  height: '1.25rem',
                   color: '#6b7280',
-                  maxWidth: '26rem'
-                }}>
-                  We’re building a smarter search experience so you can quickly find past purchases, favourite products, and more. Stay tuned!
-                </p>
+                  pointerEvents: 'none'
+                }} />
+                <input
+                  type="text"
+                  placeholder="Search for a product"
+                  value={productSearchQuery}
+                  onChange={(e) => setProductSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '1rem 1rem 1rem 3rem',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    fontSize: '1rem',
+                    backgroundColor: '#f9fafb',
+                    transition: 'all 0.2s',
+                    boxShadow: 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.backgroundColor = '#ffffff';
+                    e.target.style.outline = '2px solid #2563eb';
+                    e.target.style.outlineOffset = '-2px';
+                    e.target.style.boxShadow = '0 1px 2px 0 rgb(0 0 0 / 0.05)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.backgroundColor = '#f9fafb';
+                    e.target.style.outline = 'none';
+                    e.target.style.boxShadow = 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)';
+                  }}
+                />
               </div>
             </div>
-          </div>
+
+            <div style={{
+              ...styles.card,
+              marginBottom: '1.5rem',
+              padding: '1.5rem'
+            }}>
+              {selectedCategory && !productSearchQuery.trim() && (
+                <div style={{ marginBottom: '1rem' }}>
+                  <button
+                    onClick={handleReturnToCategories}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '0.5rem 0.85rem',
+                      borderRadius: '999px',
+                      border: '1px solid #d1d5db',
+                      backgroundColor: '#ffffff',
+                      color: '#1d4ed8',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <ArrowLeft style={{ width: '0.9rem', height: '0.9rem' }} />
+                    Back to categories
+                  </button>
+                </div>
+              )}
+              <div>
+
+              {productSearchQuery.trim() ? (
+                <div>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: isMobileView ? 'column' : 'row',
+                    alignItems: isMobileView ? 'flex-start' : 'center',
+                    justifyContent: 'space-between',
+                    gap: '0.75rem',
+                    marginBottom: '0.75rem'
+                  }}>
+                    <div>
+                      <h3 style={{
+                        margin: 0,
+                        fontSize: '1.1rem',
+                        fontWeight: 700,
+                        color: '#0f172a'
+                      }}>
+                        {`Results for "{productSearchQuery.trim()}"`}
+                      </h3>
+                      <p style={{
+                        margin: '0.25rem 0 0 0',
+                        fontSize: '0.85rem',
+                        color: '#6b7280'
+                      }}>
+                        {searchResults.length} {searchResults.length === 1 ? 'product' : 'products'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {renderFilterSortControls()}
+
+                  {visibleSearchResults.length > 0 ? (
+                    <div style={{
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '0.85rem',
+                      overflow: 'hidden',
+                      backgroundColor: '#ffffff'
+                    }}>
+                      {visibleSearchResults.map((product, index) =>
+                        renderProductRow(product, index, visibleSearchResults.length)
+                      )}
+                      {searchResults.length > visibleSearchResults.length && (
+                        <div style={{
+                          padding: '1rem',
+                          textAlign: 'center',
+                          fontSize: '0.8rem',
+                          color: '#6b7280',
+                          backgroundColor: '#f9fafb'
+                        }}>
+                          Showing first {visibleSearchResults.length} results
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{
+                      padding: '2rem',
+                      textAlign: 'center',
+                      color: '#6b7280',
+                      border: '1px dashed #d1d5db',
+                      borderRadius: '0.75rem'
+                    }}>
+                      <Package style={{ width: '2rem', height: '2rem', margin: '0 auto 0.5rem', opacity: 0.5 }} />
+                      <p style={{ margin: 0, fontSize: '0.875rem' }}>No matches found</p>
+                      <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.75rem' }}>Try a different search term</p>
+                    </div>
+                  )}
+                </div>
+              ) : selectedCategory ? (
+                <div>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: isMobileView ? 'column' : 'row',
+                    alignItems: isMobileView ? 'flex-start' : 'center',
+                    justifyContent: 'space-between',
+                    gap: '0.75rem',
+                    marginBottom: '0.75rem'
+                  }}>
+                    <div>
+                      <h3 style={{
+                        margin: 0,
+                        fontSize: '1.2rem',
+                        fontWeight: 700,
+                        color: '#0f172a'
+                      }}>
+                        {selectedCategory}
+                      </h3>
+                      <p style={{
+                        margin: '0.25rem 0 0 0',
+                        fontSize: '0.85rem',
+                        color: '#6b7280'
+                      }}>
+                        {selectedCategoryProducts.length} {selectedCategoryProducts.length === 1 ? 'product' : 'products'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {renderFilterSortControls()}
+
+                  {selectedCategoryProducts.length > 0 ? (
+                    <div style={{
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '0.85rem',
+                      overflow: 'hidden',
+                      backgroundColor: '#ffffff'
+                    }}>
+                      {selectedCategoryProducts.map((product, index) =>
+                        renderProductRow(product, index, selectedCategoryProducts.length)
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{
+                      padding: '2rem',
+                      textAlign: 'center',
+                      color: '#6b7280',
+                      border: '1px dashed #d1d5db',
+                      borderRadius: '0.75rem'
+                    }}>
+                      <Package style={{ width: '2rem', height: '2rem', margin: '0 auto 0.5rem', opacity: 0.5 }} />
+                      <p style={{ margin: 0, fontSize: '0.875rem' }}>No products found in this category</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div>
+                    <h4 style={{
+                      margin: '0 0 1rem 0',
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      color: '#111827'
+                    }}>
+                      Browse all categories
+                    </h4>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: isMobileView ? 'repeat(2, minmax(0, 1fr))' : 'repeat(3, minmax(0, 1fr))',
+                      gap: '1rem'
+                    }}>
+                      {productCategories.map((category) => {
+                        const previewImages = category.products
+                          .filter((product) => !!product.image_url)
+                          .slice(0, 3);
+
+                        const previewImage = previewImages[0];
+
+                        return (
+                          <button
+                            key={category.name}
+                            onClick={() => handleCategorySelect(category.name)}
+                            style={{
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '1rem',
+                              padding: '1rem',
+                              backgroundColor: '#ffffff',
+                              textAlign: 'left',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '0.75rem',
+                              cursor: 'pointer',
+                              boxShadow: '0 8px 18px -10px rgba(15, 23, 42, 0.12)'
+                            }}
+                          >
+                            <div style={{
+                              width: '100%',
+                              height: '3.5rem',
+                              borderRadius: '0.75rem',
+                              backgroundColor: '#f9fafb',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              overflow: 'hidden'
+                            }}>
+                              {previewImage ? (
+                                <img
+                                  src={previewImage.image_url!}
+                                  alt={previewImage.name}
+                                  style={{
+                                    maxWidth: '100%',
+                                    maxHeight: '100%',
+                                    objectFit: 'contain',
+                                    padding: '0.25rem'
+                                  }}
+                                />
+                              ) : (
+                                <Package style={{ width: '1.75rem', height: '1.75rem', color: '#9ca3af' }} />
+                              )}
+                            </div>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: '0.5rem'
+                            }}>
+                              <div>
+                                <p style={{
+                                  margin: 0,
+                                  fontWeight: 600,
+                                  fontSize: '0.95rem',
+                                  color: '#0f172a'
+                                }}>
+                                  {category.name}
+                                </p>
+                                <span style={{
+                                  fontSize: '0.75rem',
+                                  color: '#6b7280'
+                                }}>
+                                  {category.products.length} items
+                                </span>
+                              </div>
+                              <ChevronRight style={{ width: '1rem', height: '1rem', color: '#2563eb' }} />
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {productCategories.length === 0 && (
+                      <div style={{
+                        marginTop: '1rem',
+                        padding: '2rem',
+                        textAlign: 'center',
+                        color: '#6b7280',
+                        border: '1px dashed #d1d5db',
+                        borderRadius: '0.75rem'
+                      }}>
+                        <Package style={{ width: '2rem', height: '2rem', margin: '0 auto 0.5rem', opacity: 0.5 }} />
+                        <p style={{ margin: 0, fontSize: '0.875rem' }}>No categories available yet</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              </div>
+            </div>
+          </>
         )}
 
         {activeTab === 'transactions' && (
@@ -3655,28 +4802,346 @@ const CustomerPortal = () => {
         )}
       </div>
 
-      <nav className={cssStyles.portalBottomNav} aria-label="Customer portal navigation">
-        {navItems.map(({ key, label, icon: Icon, disabled }) => {
-          const isActive = activeTab === key;
-          return (
-            <button
-              key={key}
-              type="button"
-              className={`${cssStyles.portalNavButton} ${isActive ? cssStyles.portalNavButtonActive : ''}`}
-              onClick={() => {
-                if (!disabled) {
-                  setActiveTab(key);
-                }
+      {view === 'dashboard' && (
+        <nav className={cssStyles.portalBottomNav} aria-label="Customer portal navigation">
+          {/* First 2 nav items */}
+          {navItems.slice(0, 2).map(({ key, label, icon: Icon, disabled, path }) => {
+            const isActive = activeTab === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                className={`${cssStyles.portalNavButton} ${isActive ? cssStyles.portalNavButtonActive : ''}`}
+                onClick={() => {
+                  if (disabled) return;
+                  if (view !== 'dashboard') {
+                    setView('dashboard');
+                  }
+                  navigate(path);
+                }}
+                disabled={disabled}
+                aria-pressed={isActive}
+              >
+                <Icon size={22} />
+                <span className={cssStyles.portalNavLabel}>{label}</span>
+              </button>
+            );
+          })}
+          
+          {/* Search nav item */}
+          {(() => {
+            const searchItem = navItems.find(item => item.key === 'search');
+            if (searchItem) {
+              const isActive = activeTab === searchItem.key;
+              return (
+                <button
+                  type="button"
+                  className={`${cssStyles.portalNavButton} ${isActive ? cssStyles.portalNavButtonActive : ''}`}
+                  onClick={() => {
+                    if (view !== 'dashboard') {
+                      setView('dashboard');
+                    }
+                    navigate(searchItem.path);
+                  }}
+                  aria-pressed={isActive}
+                >
+                  <searchItem.icon size={22} />
+                  <span className={cssStyles.portalNavLabel}>{searchItem.label}</span>
+                </button>
+              );
+            }
+            return null;
+          })()}
+
+          {/* Shopping List nav item */}
+          {(() => {
+            const shoppingItem = navItems.find(item => item.key === 'shopping-list');
+            if (shoppingItem) {
+              const isActive = activeTab === shoppingItem.key;
+              return (
+                <button
+                  type="button"
+                  className={`${cssStyles.portalNavButton} ${isActive ? cssStyles.portalNavButtonActive : ''}`}
+                  onClick={() => {
+                    if (view !== 'dashboard') {
+                      setView('dashboard');
+                    }
+                    navigate(shoppingItem.path);
+                  }}
+                  aria-pressed={isActive}
+                >
+                  <shoppingItem.icon size={22} />
+                  <span className={cssStyles.portalNavLabel}>{shoppingItem.label}</span>
+                </button>
+              );
+            }
+            return null;
+          })()}
+
+          {/* Cart nav item with badge */}
+          <button
+            type="button"
+            className={cssStyles.cartNavButton}
+            onClick={() => {
+              setShowCartDrawer(true);
+            }}
+            aria-label="Shopping Cart"
+          >
+            <ShoppingCart size={22} />
+            <span className={cssStyles.portalNavLabel}>
+              {cartItemCount > 0 ? cartItemCount : 'Cart'}
+            </span>
+            {cartItemCount > 0 && (
+              <span className={cssStyles.cartNavBadge}>{cartItemCount}</span>
+            )}
+          </button>
+        </nav>
+      )}
+
+      {showCartDrawer && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.55)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 10000,
+            display: 'flex',
+            justifyContent: 'flex-end'
+          }}
+          onClick={() => {
+            setShowCartDrawer(false);
+            setCartSubmissionStatus('idle');
+          }}
+        >
+          <div
+            style={{
+              width: windowSize.width < 640 ? '100%' : '420px',
+              height: '100%',
+              backgroundColor: '#ffffff',
+              boxShadow: '0 20px 45px -20px rgba(15, 23, 42, 0.4)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                padding: '1.5rem',
+                borderBottom: '1px solid #e5e7eb',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '1rem'
               }}
-              disabled={disabled}
-              aria-pressed={isActive}
             >
-              <Icon size={22} />
-              <span className={cssStyles.portalNavLabel}>{label}</span>
-            </button>
-          );
-        })}
-      </nav>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#111827' }}>
+                  Click & Collect Cart
+                </h3>
+                <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.85rem', color: '#6b7280' }}>
+                  {cartItemCount} {cartItemCount === 1 ? 'item' : 'items'} ready for pickup
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCartDrawer(false);
+                  setCartSubmissionStatus('idle');
+                }}
+                style={{
+                  border: 'none',
+                  background: '#f3f4f6',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+                aria-label="Close cart"
+              >
+                <X style={{ width: '1rem', height: '1rem', color: '#374151' }} />
+              </button>
+            </div>
+
+            <div style={{ padding: '0 1.5rem 1rem', borderBottom: '1px solid #e5e7eb' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  backgroundColor: '#eef2ff',
+                  border: '1px solid #c7d2fe',
+                  borderRadius: '0.75rem',
+                  padding: '0.75rem 1rem',
+                  fontSize: '0.85rem',
+                  color: '#4338ca'
+                }}
+              >
+                <i className="fa-solid fa-credit-card"></i>
+                Secure online checkout via Stripe coming soon.
+              </div>
+            </div>
+
+            <div
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '1rem 1.5rem'
+              }}
+            >
+              {cartItemCount === 0 ? (
+                <div
+                  style={{
+                    marginTop: '2rem',
+                    textAlign: 'center',
+                    color: '#6b7280'
+                  }}
+                >
+                  <ShoppingCart style={{ width: '2.5rem', height: '2.5rem', marginBottom: '0.75rem', opacity: 0.35 }} />
+                  <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: 500 }}>Your cart is empty</p>
+                  <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.8rem' }}>
+                    Browse products in the Search tab to add click & collect items.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {cartItems.map((item) => {
+                    const product = item.products;
+                    const name = product?.name || item.text || 'Unnamed item';
+                    const quantity = item.quantity ?? 1;
+                    const itemTotal =
+                      typeof item.calculated_price === 'number'
+                        ? item.calculated_price
+                        : (product?.price ?? 0) * quantity;
+                    const weightLabel =
+                      item.weight && product?.is_weighted
+                        ? `${item.weight}${product.weight_unit ? ` ${product.weight_unit}` : ''}`
+                        : undefined;
+
+                    return (
+                      <div
+                        key={`cart-item-${item.list_item_id}`}
+                        style={{
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '0.85rem',
+                          padding: '0.85rem 1rem',
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '0.85rem',
+                          backgroundColor: '#ffffff'
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: '64px',
+                            height: '64px',
+                            borderRadius: '0.75rem',
+                            backgroundColor: '#f9fafb',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            overflow: 'hidden',
+                            flexShrink: 0
+                          }}
+                        >
+                          {product?.image_url ? (
+                            <img
+                              src={product.image_url}
+                              alt={name}
+                              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                            />
+                          ) : (
+                            <Package style={{ width: '1.5rem', height: '1.5rem', color: '#9ca3af' }} />
+                          )}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: '#111827' }}>
+                            {name}
+                          </h4>
+                          <div style={{ marginTop: '0.35rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>Qty: {quantity}</span>
+                            {weightLabel && (
+                              <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>Weight: {weightLabel}</span>
+                            )}
+                            <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                              {product?.price ? `Unit: ${formatCurrency(product.price)}` : 'Unit price unavailable'}
+                            </span>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem' }}>
+                          <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a' }}>
+                            {formatCurrency(itemTotal)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeItemFromCart(item.list_item_id)}
+                            style={{
+                              fontSize: '0.75rem',
+                              color: '#ef4444',
+                              background: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              padding: 0
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div style={{ padding: '1.25rem 1.5rem', borderTop: '1px solid #e5e7eb' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                  color: '#0f172a',
+                  marginBottom: '0.75rem'
+                }}
+              >
+                <span>Estimated Total</span>
+                <span>{formatCurrency(cartTotal)}</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleSubmitClickCollect}
+                disabled={cartItemCount === 0 || cartSubmissionStatus === 'loading'}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '0.75rem',
+                  border: 'none',
+                  cursor: cartItemCount === 0 || cartSubmissionStatus === 'loading' ? 'not-allowed' : 'pointer',
+                  background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  fontSize: '0.95rem',
+                  opacity: cartItemCount === 0 ? 0.45 : 1,
+                  boxShadow: cartItemCount === 0 ? 'none' : '0 14px 28px -16px rgba(37, 99, 235, 0.65)',
+                  transition: 'box-shadow 0.2s ease'
+                }}
+              >
+                {cartSubmissionStatus === 'loading'
+                  ? 'Sending request...'
+                  : 'Submit Click & Collect Request'}
+              </button>
+              <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.75rem', color: '#6b7280', textAlign: 'center' }}>
+                Online card payments will be available soon.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Shopping List Item Dialog */}
       <ShoppingListItemDialog
@@ -3686,7 +5151,17 @@ const CustomerPortal = () => {
           setSelectedProduct(null);
         }}
         product={selectedProduct}
-        onAddItem={addProductToShoppingList}
+        isClickAndCollect={activeTab === 'search'}
+        onAddItem={(product, quantity, weight, calculatedPrice, customText, isClickCollect) =>
+          addProductToShoppingList(
+            product,
+            quantity,
+            weight,
+            calculatedPrice,
+            customText,
+            isClickCollect ?? (activeTab === 'search')
+          )
+        }
       />
     </div>
   );

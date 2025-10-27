@@ -24,6 +24,7 @@ type BusinessForm = {
   timezone: string;
   hours: string;
   receiptFooter: string;
+  clickAndCollectEnabled: boolean;
 };
 
 const SECTION_IDS = [
@@ -123,6 +124,75 @@ function Select({
   );
 }
 
+function Toggle({
+  label,
+  value,
+  onChange,
+  description,
+}: {
+  label: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+  description?: string;
+}) {
+  return (
+    <label className={styles.field}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: description ? '8px' : '0' }}>
+        <span className={styles.fieldLabel}>{label}</span>
+        <button
+          type="button"
+          onClick={() => onChange(!value)}
+          style={{
+            width: '48px',
+            height: '24px',
+            borderRadius: '12px',
+            border: 'none',
+            backgroundColor: value ? '#3b82f6' : '#d1d5db',
+            position: 'relative',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s ease',
+            outline: 'none'
+          }}
+          onMouseEnter={(e) => {
+            if (!value) {
+              e.currentTarget.style.backgroundColor = '#9ca3af';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!value) {
+              e.currentTarget.style.backgroundColor = '#d1d5db';
+            }
+          }}
+        >
+          <div
+            style={{
+              width: '20px',
+              height: '20px',
+              borderRadius: '50%',
+              backgroundColor: '#ffffff',
+              position: 'absolute',
+              top: '2px',
+              left: value ? '26px' : '2px',
+              transition: 'left 0.2s ease',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+            }}
+          />
+        </button>
+      </div>
+      {description && (
+        <p style={{ 
+          margin: 0, 
+          fontSize: '14px', 
+          color: 'rgba(255, 255, 255, 0.7)',
+          lineHeight: '1.4'
+        }}>
+          {description}
+        </p>
+      )}
+    </label>
+  );
+}
+
 function LogoPreview({ src }: { src: string | null | undefined }) {
   return (
     <div className={styles.logoPreview}>
@@ -158,6 +228,7 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
     timezone: "UTC",
     hours: "9:00 AM - 6:00 PM",
     receiptFooter: "Thank you for shopping with us!",
+    clickAndCollectEnabled: false,
   });
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -187,6 +258,7 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
         timezone: currentBusiness.timezone || "UTC",
         hours: currentBusiness.business_hours || "9:00 AM - 6:00 PM",
         receiptFooter: currentBusiness.receipt_footer || "Thank you for shopping with us!",
+        clickAndCollectEnabled: currentBusiness.click_and_collect_enabled || false,
       });
     }
   }, [isOpen, currentBusiness]);
@@ -302,6 +374,7 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
           timezone: form.timezone,
           receipt_footer: form.receiptFooter,
           logo_url: logoUrl || null,
+          click_and_collect_enabled: form.clickAndCollectEnabled,
           updated_at: new Date().toISOString()
         })
         .eq('business_id', currentBusiness.business_id);
@@ -563,6 +636,12 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
                   value={form.hours} 
                   onChange={(v) => update({ hours: v })} 
                   placeholder="Mon-Fri 9AM-6PM, Sat 10AM-4PM" 
+                />
+                <Toggle
+                  label="Click & Collect"
+                  value={form.clickAndCollectEnabled}
+                  onChange={(v) => update({ clickAndCollectEnabled: v })}
+                  description="Allow customers to create shopping lists and collect orders in-store"
                 />
               </SectionCard>
 

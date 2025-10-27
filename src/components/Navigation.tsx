@@ -13,6 +13,7 @@ import {
   Users,
   Truck,
   Tag,
+  Ticket,
   Briefcase,
   Bell,
   Settings,
@@ -46,6 +47,7 @@ const NAV_SECTIONS: Record<NavSectionKey, { title: string; items: NavItemConfig[
     items: [
       { path: '/suppliers', label: 'Suppliers', icon: Truck },
       { path: '/promotions', label: 'Promotions', icon: Tag },
+      { path: '/vouchers', label: 'Vouchers', icon: Ticket },
       { path: '/side-businesses', label: 'Side Businesses', icon: Briefcase },
       { path: '/reminders', label: 'Reminders', icon: Bell },
       { path: '/admin', label: 'Admin', icon: Settings }

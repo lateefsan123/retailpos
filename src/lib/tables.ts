@@ -16,4 +16,6 @@ export const T = {
   refunds: 'refunds',
   users: 'users',
   customerShoppingLists: 'customer_shopping_lists',
+  vouchers: 'vouchers',
+  customerVouchers: 'customer_vouchers',
 } as const;

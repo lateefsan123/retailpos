@@ -20,6 +20,7 @@ export interface BusinessInfo {
   receipt_footer?: string
   opening_time?: string
   closing_time?: string
+  click_and_collect_enabled?: boolean
   updated_at: string
 }
 
@@ -119,7 +120,18 @@ export interface ShoppingListItem {
   quantity?: number
   weight?: number
   calculated_price?: number // For weighted items
+  is_click_and_collect?: boolean // Distinguishes click & collect items from regular shopping list
   products?: Product | null // Joined from products table
+}
+
+export interface CustomerOrder {
+  customer_id: number
+  customer_name: string
+  customer_phone: string
+  customer_icon?: string
+  items: ShoppingListItem[]
+  total_items: number
+  created_at: string
 }
 
 // =====================================================
@@ -789,4 +801,46 @@ export interface NewLoyaltyRedemption {
   prize_id: number
   quantity?: number
   notes?: string
+}
+
+// =====================================================
+// VOUCHER TYPES
+// =====================================================
+
+export interface Voucher {
+  voucher_id: number
+  business_id: number
+  branch_id?: number
+  name: string
+  description?: string
+  points_cost: number
+  discount_type: 'percentage' | 'fixed_amount'
+  discount_value: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface CustomerVoucher {
+  customer_voucher_id: number
+  voucher_id: number
+  customer_id: number
+  voucher_code: string
+  redeemed_at: string
+  used_at?: string
+  is_used: boolean
+  used_by_user_id?: number
+  sale_id?: number
+  vouchers?: Voucher
+}
+
+export interface VoucherRequest {
+  business_id: number
+  branch_id?: number
+  name: string
+  description?: string
+  points_cost: number
+  discount_type: 'percentage' | 'fixed_amount'
+  discount_value: number
+  is_active: boolean
 }

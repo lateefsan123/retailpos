@@ -36,6 +36,7 @@ import SelectUserMobile from './pages/SelectUserMobile'
 import SwitchUser from './pages/SwitchUser'
 import Suppliers from './pages/Suppliers'
 import Promotions from './pages/Promotions'
+import Vouchers from './pages/Vouchers'
 import VerificationAdmin from './pages/VerificationAdmin'
 import CustomerLoyalty from './pages/CustomerLoyalty'
 import TransactionsMobile from './pages/TransactionsMobile'
@@ -172,6 +173,11 @@ const AppContent = () => {
                   <Promotions />
                 </RoleProtectedRoute>
               } />
+              <Route path="/vouchers" element={
+                <RoleProtectedRoute requiredPermission="canManageProducts">
+                  <Vouchers />
+                </RoleProtectedRoute>
+              } />
               <Route path="/product-database" element={
                 <RoleProtectedRoute requiredPermission="canManageProducts">
                   <ProductDatabase />
@@ -227,7 +233,7 @@ function App() {
                           <Route path="/select-user" element={<SelectUser />} />
                           <Route path="/select-user-mobile" element={<SelectUserMobile />} />
                           <Route path="/switch-user" element={<SwitchUser />} />
-                          <Route path="/customer-portal" element={<CustomerPortal />} />
+                          <Route path="/customer-portal/*" element={<CustomerPortal />} />
                           <Route path="/*" element={
                             <ProtectedRoute>
                               <AppContent />
