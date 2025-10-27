@@ -10,6 +10,7 @@ export interface BusinessInfo {
   vat_number?: string
   receipt_footer: string
   logo_url?: string
+  customer_portal_enabled?: boolean
   updated_at: string
   created_at?: string
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useBusiness } from '../contexts/BusinessContext';
 // Use a simple Card component with inline styles to avoid global CSS conflicts
 const Card = ({ children, className = '', style = {} }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) => (
   <div 
@@ -335,6 +336,12 @@ interface Branch {
   branch_name: string;
   business_id: number;
   address?: string | null;
+  business_info: {
+    business_id: number;
+    name: string;
+    logo_url?: string;
+    customer_portal_enabled: boolean;
+  };
 }
 
 const formatBranchLabel = (branch: Branch) => {
@@ -403,6 +410,7 @@ interface Sale {
 }
 
 const CustomerPortal = () => {
+  const { currentBusiness } = useBusiness();
   const [view, setView] = useState<'login' | 'setup' | 'password' | 'dashboard' | 'transaction-detail' | 'rewards'>('login');
   const [selectedBranch, setSelectedBranch] = useState('');
   const [branchSearch, setBranchSearch] = useState('');
@@ -454,6 +462,38 @@ const CustomerPortal = () => {
   const promotionsCarouselRef = useRef<HTMLDivElement | null>(null);
   const promotionAutoIndexRef = useRef(0);
   const sessionRestoredRef = useRef(false);
+
+  // Check if customer portal is enabled for this business
+  if (currentBusiness && !currentBusiness.customer_portal_enabled) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(to bottom right, #f3f4f6, #e2e8f0)',
+        padding: '2rem'
+      }}>
+        <Card style={{ maxWidth: '500px', textAlign: 'center', padding: '2rem' }}>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <Store size={48} style={{ color: '#6b7280', margin: '0 auto 1rem' }} />
+            <h1 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#1f2937', margin: '0 0 0.5rem' }}>
+              Customer Portal Unavailable
+            </h1>
+            <p style={{ color: '#6b7280', margin: '0' }}>
+              The customer portal is not enabled for this business. Please contact the store administrator to enable this feature.
+            </p>
+          </div>
+          <Button 
+            onClick={() => window.history.back()}
+            style={{ width: '100%' }}
+          >
+            Go Back
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   const getBranchLabel = useCallback((branchIdValue?: string | null, existingLabel?: string) => {
     if (existingLabel) return existingLabel;
@@ -713,11 +753,28 @@ const CustomerPortal = () => {
     try {
       const { data, error } = await supabase
         .from('branches')
-        .select('branch_id, branch_name, business_id, address')
-        .eq('active', true);
+        .select(`
+          branch_id, 
+          branch_name, 
+          business_id, 
+          address,
+          business_info!inner(business_id, name, logo_url, customer_portal_enabled)
+        `)
+        .eq('active', true)
+        .eq('business_info.customer_portal_enabled', true);
 
       if (error) throw error;
-      setBranches(data || []);
+      
+      // Transform the data to match our Branch interface
+      const transformedData = (data || []).map(branch => ({
+        branch_id: branch.branch_id,
+        branch_name: branch.branch_name,
+        business_id: branch.business_id,
+        address: branch.address,
+        business_info: Array.isArray(branch.business_info) ? branch.business_info[0] : branch.business_info
+      })) as Branch[];
+      
+      setBranches(transformedData);
     } catch (err) {
       console.error('Error fetching branches:', err);
     }
@@ -2421,39 +2478,78 @@ const CustomerPortal = () => {
                   <Store style={{ width: '1rem', height: '1rem' }} />
                   Select Your Store
                 </Label>
-                <div
-                  ref={branchSearchRef}
-                  style={{ position: 'relative' }}
-                >
-                  <input
-                    id="branch-search"
-                    type="text"
-                    value={branchSearch}
-                    onChange={(e) => handleBranchSearchChange(e.target.value)}
-                    onFocus={() => setIsBranchListOpen(true)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (filteredBranches.length > 0) {
-                          handleBranchSelect(filteredBranches[0]);
-                        }
-                      } else if (e.key === 'Escape') {
-                        setIsBranchListOpen(false);
-                      }
-                    }}
-                    placeholder="Search by store or address"
-                    style={{
-                      width: '100%',
-                      padding: windowSize.width < 768 ? '0.875rem' : '0.75rem',
-                      background: '#ffffff',
-                      border: windowSize.width < 768 ? '2px solid #e5e7eb' : '1px solid #d1d5db',
-                      borderRadius: windowSize.width < 768 ? '8px' : '0.375rem',
-                      color: '#111827',
-                      fontSize: windowSize.width < 768 ? '1rem' : '0.875rem',
-                      boxSizing: 'border-box',
-                      transition: 'all 0.2s ease'
-                    }}
-                  />
+                 <div
+                   ref={branchSearchRef}
+                   style={{ position: 'relative' }}
+                 >
+                   <div style={{ position: 'relative' }}>
+                     <input
+                       id="branch-search"
+                       type="text"
+                       value={branchSearch}
+                       onChange={(e) => handleBranchSearchChange(e.target.value)}
+                       onFocus={() => setIsBranchListOpen(true)}
+                       onKeyDown={(e) => {
+                         if (e.key === 'Enter') {
+                           e.preventDefault();
+                           if (filteredBranches.length > 0) {
+                             handleBranchSelect(filteredBranches[0]);
+                           }
+                         } else if (e.key === 'Escape') {
+                           setIsBranchListOpen(false);
+                         }
+                       }}
+                       placeholder="Search by store or address"
+                       style={{
+                         width: '100%',
+                         padding: windowSize.width < 768 ? '0.875rem' : '0.75rem',
+                         paddingLeft: selectedBranch ? '3rem' : (windowSize.width < 768 ? '0.875rem' : '0.75rem'),
+                         background: '#ffffff',
+                         border: windowSize.width < 768 ? '2px solid #e5e7eb' : '1px solid #d1d5db',
+                         borderRadius: windowSize.width < 768 ? '8px' : '0.375rem',
+                         color: '#111827',
+                         fontSize: windowSize.width < 768 ? '1rem' : '0.875rem',
+                         boxSizing: 'border-box',
+                         transition: 'all 0.2s ease'
+                       }}
+                     />
+                     {selectedBranch && (() => {
+                       const selectedBranchData = branches.find(b => b.branch_id.toString() === selectedBranch);
+                       const businessLogo = selectedBranchData?.business_info?.logo_url;
+                       const businessName = selectedBranchData?.business_info?.name;
+                       
+                       return (
+                         <div style={{
+                           position: 'absolute',
+                           left: '0.75rem',
+                           top: '50%',
+                           transform: 'translateY(-50%)',
+                           width: '20px',
+                           height: '20px',
+                           borderRadius: '4px',
+                           overflow: 'hidden',
+                           backgroundColor: '#f3f4f6',
+                           display: 'flex',
+                           alignItems: 'center',
+                           justifyContent: 'center'
+                         }}>
+                           {businessLogo ? (
+                             <img 
+                               src={businessLogo} 
+                               alt={businessName}
+                               style={{ 
+                                 width: '100%', 
+                                 height: '100%', 
+                                 objectFit: 'cover' 
+                               }}
+                             />
+                           ) : (
+                             <Store size={12} style={{ color: '#6b7280' }} />
+                           )}
+                         </div>
+                       );
+                     })()}
+                   </div>
                   {isBranchListOpen && (
                     <div
                       style={{
@@ -2470,45 +2566,80 @@ const CustomerPortal = () => {
                         zIndex: 20
                       }}
                     >
-                      {filteredBranches.length > 0 ? (
-                        filteredBranches.map((branch) => {
-                          const storeLabel = branch.branch_name?.trim() || 'Unnamed Location';
-                          const addressLabel = branch.address?.trim();
-                          const isSelected = selectedBranch === branch.branch_id.toString();
-                          const baseColor = isSelected ? '#eff6ff' : '#ffffff';
+                       {filteredBranches.length > 0 ? (
+                         filteredBranches.map((branch) => {
+                           const storeLabel = branch.branch_name?.trim() || 'Unnamed Location';
+                           const addressLabel = branch.address?.trim();
+                           const businessName = branch.business_info?.name || 'Unknown Business';
+                           const businessLogo = branch.business_info?.logo_url;
+                           const isSelected = selectedBranch === branch.branch_id.toString();
+                           const baseColor = isSelected ? '#eff6ff' : '#ffffff';
 
-                          return (
-                            <button
-                              key={branch.branch_id}
-                              type="button"
-                              onClick={() => handleBranchSelect(branch)}
-                              style={{
-                                width: '100%',
-                                textAlign: 'left',
-                                padding: '0.75rem',
-                                backgroundColor: baseColor,
-                                border: 'none',
-                                borderBottom: '1px solid #f3f4f6',
-                                cursor: 'pointer'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = '#f3f4f6';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = baseColor;
-                              }}
-                            >
-                              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1f2937' }}>
-                                {storeLabel}
-                              </div>
-                              {addressLabel && (
-                                <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                                  {addressLabel}
-                                </div>
-                              )}
-                            </button>
-                          );
-                        })
+                           return (
+                             <button
+                               key={branch.branch_id}
+                               type="button"
+                               onClick={() => handleBranchSelect(branch)}
+                               style={{
+                                 width: '100%',
+                                 textAlign: 'left',
+                                 padding: '0.75rem',
+                                 backgroundColor: baseColor,
+                                 border: 'none',
+                                 borderBottom: '1px solid #f3f4f6',
+                                 cursor: 'pointer',
+                                 display: 'flex',
+                                 alignItems: 'center',
+                                 gap: '0.75rem'
+                               }}
+                               onMouseEnter={(e) => {
+                                 e.currentTarget.style.backgroundColor = '#f3f4f6';
+                               }}
+                               onMouseLeave={(e) => {
+                                 e.currentTarget.style.backgroundColor = baseColor;
+                               }}
+                             >
+                               <div style={{ 
+                                 width: '32px', 
+                                 height: '32px', 
+                                 borderRadius: '6px', 
+                                 overflow: 'hidden',
+                                 flexShrink: 0,
+                                 backgroundColor: '#f3f4f6',
+                                 display: 'flex',
+                                 alignItems: 'center',
+                                 justifyContent: 'center'
+                               }}>
+                                 {businessLogo ? (
+                                   <img 
+                                     src={businessLogo} 
+                                     alt={businessName}
+                                     style={{ 
+                                       width: '100%', 
+                                       height: '100%', 
+                                       objectFit: 'cover' 
+                                     }}
+                                   />
+                                 ) : (
+                                   <Store size={16} style={{ color: '#6b7280' }} />
+                                 )}
+                               </div>
+                               <div style={{ flex: 1, minWidth: 0 }}>
+                                 <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1f2937' }}>
+                                   {storeLabel}
+                                 </div>
+                                 <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.125rem' }}>
+                                   {businessName}
+                                 </div>
+                                 {addressLabel && (
+                                   <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                                     {addressLabel}
+                                   </div>
+                                 )}
+                               </div>
+                             </button>
+                           );
+                         })
                       ) : (
                         <div style={{ padding: '0.75rem', fontSize: '0.875rem', color: '#6b7280' }}>
                           No stores match your search

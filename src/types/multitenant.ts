@@ -21,6 +21,7 @@ export interface BusinessInfo {
   opening_time?: string
   closing_time?: string
   click_and_collect_enabled?: boolean
+  customer_portal_enabled?: boolean
   updated_at: string
 }
 

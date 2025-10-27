@@ -25,6 +25,7 @@ type BusinessForm = {
   hours: string;
   receiptFooter: string;
   clickAndCollectEnabled: boolean;
+  customerPortalEnabled: boolean;
 };
 
 const SECTION_IDS = [
@@ -229,6 +230,7 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
     hours: "9:00 AM - 6:00 PM",
     receiptFooter: "Thank you for shopping with us!",
     clickAndCollectEnabled: false,
+    customerPortalEnabled: false,
   });
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -259,6 +261,7 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
         hours: currentBusiness.business_hours || "9:00 AM - 6:00 PM",
         receiptFooter: currentBusiness.receipt_footer || "Thank you for shopping with us!",
         clickAndCollectEnabled: currentBusiness.click_and_collect_enabled || false,
+        customerPortalEnabled: currentBusiness.customer_portal_enabled || false,
       });
     }
   }, [isOpen, currentBusiness]);
@@ -375,6 +378,7 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
           receipt_footer: form.receiptFooter,
           logo_url: logoUrl || null,
           click_and_collect_enabled: form.clickAndCollectEnabled,
+          customer_portal_enabled: form.customerPortalEnabled,
           updated_at: new Date().toISOString()
         })
         .eq('business_id', currentBusiness.business_id);
@@ -642,6 +646,12 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
                   value={form.clickAndCollectEnabled}
                   onChange={(v) => update({ clickAndCollectEnabled: v })}
                   description="Allow customers to create shopping lists and collect orders in-store"
+                />
+                <Toggle
+                  label="Customer Portal"
+                  value={form.customerPortalEnabled}
+                  onChange={(v) => update({ customerPortalEnabled: v })}
+                  description="Enable customer portal for online shopping and account management"
                 />
               </SectionCard>
 
