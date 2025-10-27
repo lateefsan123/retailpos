@@ -16,7 +16,8 @@ export const generateReceiptHTML = (
   paymentInfo: PaymentInfo,
   user: any,
   businessInfo?: BusinessInfo,
-  partialPayment?: PartialPayment
+  partialPayment?: PartialPayment,
+  voucher?: { code: string; name: string }
 ) => {
   const receiptNumber = `RCP-${Date.now()}`
   const currentDate = new Date()
@@ -205,6 +206,18 @@ export const generateReceiptHTML = (
           <span>SUBTOTAL:</span>
           <span>${currencySymbol}${order.subtotal.toFixed(2)}</span>
         </div>
+        ${order.discount > 0 ? `
+        <div class="item-row total-row" style="color: #059669;">
+          <span>VOUCHER DISCOUNT:</span>
+          <span>-${currencySymbol}${order.discount.toFixed(2)}</span>
+        </div>
+        ${voucher ? `
+        <div class="item-row" style="font-size: 11px; color: #6b7280; font-style: italic;">
+          <span>Voucher: ${voucher.code}</span>
+          <span>${voucher.name}</span>
+        </div>
+        ` : ''}
+        ` : ''}
         <div class="item-row total-row grand-total">
           <span>GRAND TOTAL:</span>
           <span>${currencySymbol}${order.total.toFixed(2)}</span>
@@ -291,12 +304,13 @@ export const printReceipt = (
   paymentInfo: PaymentInfo,
   user: any,
   businessInfo?: BusinessInfo,
-  partialPayment?: PartialPayment
+  partialPayment?: PartialPayment,
+  voucher?: { code: string; name: string }
 ) => {
   const printWindow = window.open('', '_blank')
   if (!printWindow) return
 
-  printWindow.document.write(generateReceiptHTML(order, paymentInfo, user, businessInfo, partialPayment))
+  printWindow.document.write(generateReceiptHTML(order, paymentInfo, user, businessInfo, partialPayment, voucher))
   printWindow.document.close()
   printWindow.print()
   printWindow.close()

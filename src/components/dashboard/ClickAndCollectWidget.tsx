@@ -202,8 +202,58 @@ const ClickAndCollectWidget: React.FC = () => {
             throw saleItemsError;
           }
         }
+
+        for (const item of order.items) {
+          if (!item.product_id) continue;
+
+          const quantityUsed =
+            item.products?.is_weighted && item.weight
+              ? item.weight
+              : item.quantity ?? 1;
+
+          const { data: productRecord, error: productFetchError } = await supabase
+            .from('products')
+            .select('stock_quantity')
+            .eq('product_id', item.product_id)
+            .eq('business_id', businessId)
+            .single();
+
+          if (productFetchError && productFetchError.code !== 'PGRST116') {
+            throw productFetchError;
+          }
+
+          const currentStock = productRecord?.stock_quantity ?? 0;
+          const newStock = Math.max(0, currentStock - quantityUsed);
+
+          const { error: stockError } = await supabase
+            .from('products')
+            .update({
+              stock_quantity: newStock,
+              last_updated: getLocalDateTime()
+            })
+            .eq('product_id', item.product_id)
+            .eq('business_id', businessId);
+
+          if (stockError) {
+            throw stockError;
+          }
+
+          const { error: movementError } = await supabase
+            .from('inventory_movements')
+            .insert([{
+              product_id: item.product_id,
+              quantity_change: -quantityUsed,
+              movement_type: 'Sale',
+              reference_id: saleRecord.sale_id,
+              business_id: businessId
+            }]);
+
+          if (movementError) {
+            throw movementError;
+          }
+        }
       }
-      
+
       const itemIds = order.items.map(item => item.list_item_id);
       if (itemIds.length > 0) {
         const { error: updateError } = await supabase
@@ -219,6 +269,7 @@ const ClickAndCollectWidget: React.FC = () => {
       await fetchPendingOrders();
     } catch (err) {
       console.error('Error marking order as collected:', err);
+      setError('Failed to mark order as collected. Please try again.');
       throw err;
     } finally {
       setMarkingAsCollected(false);

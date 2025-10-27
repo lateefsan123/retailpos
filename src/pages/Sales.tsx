@@ -22,6 +22,7 @@ import StockAlertModal from '../components/sales/StockAlertModal'
 import AddProductModal from '../components/modals/AddProductModal'
 import styles from '../components/sales/SalesSummaryModal.module.css'
 import { ProductVariation } from '../types/productVariation'
+import { CustomerVoucher } from '../types/multitenant'
 
 // Helper function to get local time in database format
 const getLocalDateTime = () => {
@@ -251,6 +252,10 @@ const Sales = () => {
   const [customerPhone, setCustomerPhone] = useState('')
   const [customerGender, setCustomerGender] = useState<'male' | 'female' | null>(null)
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
+  const [voucherCode, setVoucherCode] = useState('')
+  const [appliedVoucher, setAppliedVoucher] = useState<any>(null)
+  const [showVoucherInput, setShowVoucherInput] = useState(false)
+  const [customerVouchers, setCustomerVouchers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showSalesSummary, setShowSalesSummary] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('cash')
@@ -746,6 +751,26 @@ const Sales = () => {
     } catch (error) {
       console.error('Error fetching service businesses:', error)
       setServiceBusinesses([])
+    }
+  }
+
+  const fetchCustomerVouchers = async (customerId: number) => {
+    try {
+      const { data, error } = await supabase
+        .from('customer_vouchers')
+        .select(`
+          *,
+          vouchers (*)
+        `)
+        .eq('customer_id', customerId)
+        .eq('is_used', false)
+        .order('redeemed_at', { ascending: false })
+
+      if (error) throw error
+      setCustomerVouchers(data || [])
+    } catch (error) {
+      console.error('Error fetching customer vouchers:', error)
+      setCustomerVouchers([])
     }
   }
 
@@ -1589,6 +1614,62 @@ const Sales = () => {
     }))
   }
 
+  const validateVoucher = async (code: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('customer_vouchers')
+        .select('*, vouchers(*)')
+        .eq('voucher_code', code.trim().toUpperCase())
+        .eq('is_used', false)
+        .single()
+
+      if (error || !data) {
+        alert('Invalid or already used voucher code.')
+        return
+      }
+
+      if (!data.vouchers.is_active) {
+        alert('This voucher is no longer active.')
+        return
+      }
+
+      // Calculate discount based on voucher type
+      let discountAmount = 0
+      if (data.vouchers.discount_type === 'percentage') {
+        discountAmount = (order.subtotal * data.vouchers.discount_value) / 100
+      } else {
+        discountAmount = Math.min(data.vouchers.discount_value, order.subtotal)
+      }
+
+      // Apply discount to order
+      const newTotal = order.subtotal - discountAmount
+      setOrder(prev => ({
+        ...prev,
+        discount: prev.discount + discountAmount,
+        total: newTotal
+      }))
+
+      setAppliedVoucher(data)
+      setShowVoucherInput(false)
+      alert(`Voucher applied! Discount: €${discountAmount.toFixed(2)}`)
+    } catch (err) {
+      console.error('Error validating voucher:', err)
+      alert('Error validating voucher. Please try again.')
+    }
+  }
+
+  const removeVoucher = () => {
+    if (!appliedVoucher) return
+
+    const discountAmount = order.discount
+    setOrder(prev => ({
+      ...prev,
+      discount: 0,
+      total: prev.subtotal
+    }))
+    setAppliedVoucher(null)
+    setVoucherCode('')
+  }
 
   const resetTransaction = () => {
     if (window.confirm('Are you sure you want to reset the current transaction? This will clear all items from the order.')) {
@@ -1608,6 +1689,9 @@ const Sales = () => {
       setChange(0)
       setReceiptNotes('')
       clearCartFromStorage(selectedBranchId || null) // Clear cart from localStorage
+      setVoucherCode('')
+      setAppliedVoucher(null)
+      setShowVoucherInput(false)
       
       // Show success message
       const successMsg = document.createElement('div')
@@ -1648,7 +1732,12 @@ const Sales = () => {
       notes: partialPaymentNotes
     } : undefined
 
-    return generateReceiptHTMLUtil(order, paymentInfo, user, currentBusiness, partialPayment)
+    const voucher = appliedVoucher ? {
+      code: appliedVoucher.voucher_code,
+      name: appliedVoucher.vouchers?.name || 'Voucher'
+    } : undefined
+
+    return generateReceiptHTMLUtil(order, paymentInfo, user, currentBusiness, partialPayment, voucher)
   }
 
   const printReceipt = () => {
@@ -1667,7 +1756,12 @@ const Sales = () => {
       notes: partialPaymentNotes
     } : undefined
 
-    printReceiptUtil(order, paymentInfo, user, currentBusiness, partialPayment)
+    const voucher = appliedVoucher ? {
+      code: appliedVoucher.voucher_code,
+      name: appliedVoucher.vouchers?.name || 'Voucher'
+    } : undefined
+
+    printReceiptUtil(order, paymentInfo, user, currentBusiness, partialPayment, voucher)
   }
 
   const processSale = async () => {
@@ -1826,6 +1920,24 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
 
         if (saleError) throw saleError
         saleData = newSaleData
+
+        // Mark voucher as used if one was applied
+        if (appliedVoucher && voucherCode) {
+          const { error: voucherError } = await supabase
+            .from('customer_vouchers')
+            .update({
+              is_used: true,
+              used_at: getLocalDateTime(),
+              used_by_user_id: user?.user_id,
+              sale_id: saleData.sale_id
+            })
+            .eq('customer_voucher_id', appliedVoucher.customer_voucher_id)
+
+          if (voucherError) {
+            console.error('Error marking voucher as used:', voucherError)
+            // Don't throw - sale is already completed
+          }
+        }
       }
 
       // Create sale items and update stock
@@ -2102,6 +2214,10 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
       setChange(0)
       setReceiptNotes('')
       clearCartFromStorage(selectedBranchId || null) // Clear cart from localStorage
+      setVoucherCode('')
+      setAppliedVoucher(null)
+      setShowVoucherInput(false)
+      setCustomerVouchers([])
       
       // Create reminder for partial payment if applicable
       if (allowPartialPayment && remainingAmount > 0 && saleData?.sale_id) {
@@ -3765,6 +3881,209 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
           </div>
         )}
 
+        {/* Customer Vouchers Section */}
+        {selectedCustomer && customerVouchers.length > 0 && !appliedVoucher && (
+          <div style={{
+            marginBottom: '12px',
+            padding: '12px',
+            backgroundColor: '#fef3c7',
+            border: '1px solid #fbbf24',
+            borderRadius: '8px'
+          }}>
+            <div style={{
+              fontSize: '12px',
+              fontWeight: '600',
+              color: '#92400e',
+              marginBottom: '8px'
+            }}>
+              <i className="fa-solid fa-ticket" style={{ marginRight: '6px' }}></i>
+              {customerVouchers.length} Voucher{customerVouchers.length > 1 ? 's' : ''} Available
+            </div>
+            {customerVouchers.slice(0, 3).map((cv: any) => (
+              <button
+                key={cv.customer_voucher_id}
+                onClick={() => validateVoucher(cv.voucher_code)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  marginBottom: '6px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f9fafb';
+                  e.currentTarget.style.borderColor = '#fbbf24';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#ffffff';
+                  e.currentTarget.style.borderColor = '#d1d5db';
+                }}
+              >
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <div>
+                    <div style={{ fontWeight: '600', color: '#111827' }}>
+                      {cv.vouchers?.name}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>
+                      {cv.voucher_code}
+                    </div>
+                  </div>
+                  <div style={{
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: '#10b981'
+                  }}>
+                    Apply
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Voucher Input Section */}
+        {order.items.length > 0 && !appliedVoucher && !showVoucherInput && (
+          <div style={{ marginBottom: '12px' }}>
+            <button
+              onClick={() => setShowVoucherInput(true)}
+              style={{
+                width: '100%',
+                padding: '12px',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f9fafb';
+                e.currentTarget.style.borderColor = '#d1d5db';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#ffffff';
+                e.currentTarget.style.borderColor = '#e5e7eb';
+              }}
+            >
+              <i className="fa-solid fa-ticket" style={{ fontSize: '14px' }}></i>
+              Apply Voucher
+            </button>
+          </div>
+        )}
+
+        {showVoucherInput && (
+          <div style={{ 
+            marginBottom: '12px',
+            padding: '12px',
+            backgroundColor: '#f9fafb',
+            border: '1px solid #e5e7eb',
+            borderRadius: '8px'
+          }}>
+            <div style={{
+              display: 'flex',
+              gap: '8px',
+              alignItems: 'center'
+            }}>
+              <input
+                type="text"
+                value={voucherCode}
+                onChange={(e) => setVoucherCode(e.target.value)}
+                placeholder="Enter voucher code"
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  fontSize: '14px'
+                }}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && voucherCode.trim()) {
+                    validateVoucher(voucherCode)
+                  }
+                }}
+              />
+              <button
+                onClick={() => {
+                  setShowVoucherInput(false)
+                  setVoucherCode('')
+                }}
+                style={{
+                  padding: '10px',
+                  backgroundColor: '#ef4444',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                <i className="fa-solid fa-times"></i>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {appliedVoucher && (
+          <div style={{
+            marginBottom: '12px',
+            padding: '12px',
+            backgroundColor: '#d1fae5',
+            border: '1px solid #10b981',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <div>
+              <div style={{
+                fontSize: '14px',
+                fontWeight: '600',
+                color: '#065f46'
+              }}>
+                <i className="fa-solid fa-check-circle" style={{ marginRight: '8px' }}></i>
+                Voucher Applied
+              </div>
+              <div style={{
+                fontSize: '12px',
+                color: '#047857',
+                marginTop: '4px'
+              }}>
+                {appliedVoucher.vouchers?.name}
+              </div>
+            </div>
+            <button
+              onClick={removeVoucher}
+              style={{
+                padding: '6px 12px',
+                backgroundColor: '#10b981',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: '600'
+              }}
+            >
+              Remove
+            </button>
+          </div>
+        )}
+
         {/* Order Total Display */}
         {order.items.length > 0 && (
           <div style={{
@@ -3797,7 +4116,7 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                   color: '#10b981',
                   fontWeight: '500'
                 }}>
-                  Discount: -€{order.discount.toFixed(2)}
+                  Voucher: -€{order.discount.toFixed(2)}
                 </div>
               )}
             </div>
@@ -4083,6 +4402,9 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                       setSelectedCustomer(customer)
                       if (customer) {
                         setCustomerPhone(customer.phone_number)
+                        fetchCustomerVouchers(customer.customer_id)
+                      } else {
+                        setCustomerVouchers([])
                       }
                     }}
                     placeholder="Enter customer name and surname"
@@ -4335,6 +4657,222 @@ Remaining Balance: €${remainingAmount.toFixed(2)}`
                 </div>
               )}
             </div>
+
+            {/* Voucher Section */}
+            {order.items.length > 0 && (
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ 
+                  fontSize: '18px', 
+                  fontWeight: '600', 
+                  color: '#1f2937',
+                  margin: '0 0 12px 0'
+                }}>
+                  Vouchers
+                </h3>
+
+                {/* Customer Vouchers */}
+                {selectedCustomer && customerVouchers.length > 0 && !appliedVoucher && (
+                  <div style={{
+                    marginBottom: '12px',
+                    padding: '12px',
+                    backgroundColor: '#fef3c7',
+                    border: '1px solid #fbbf24',
+                    borderRadius: '8px'
+                  }}>
+                    <div style={{
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#92400e',
+                      marginBottom: '8px'
+                    }}>
+                      <i className="fa-solid fa-ticket" style={{ marginRight: '6px' }}></i>
+                      {customerVouchers.length} Voucher{customerVouchers.length > 1 ? 's' : ''} Available
+                    </div>
+                    {customerVouchers.slice(0, 3).map((cv: any) => (
+                      <button
+                        key={cv.customer_voucher_id}
+                        onClick={() => validateVoucher(cv.voucher_code)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          marginBottom: '6px',
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f9fafb';
+                          e.currentTarget.style.borderColor = '#fbbf24';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#ffffff';
+                          e.currentTarget.style.borderColor = '#d1d5db';
+                        }}
+                      >
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}>
+                          <div>
+                            <div style={{ fontWeight: '600', color: '#111827' }}>
+                              {cv.vouchers?.name}
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>
+                              {cv.voucher_code}
+                            </div>
+                          </div>
+                          <div style={{
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            color: '#10b981'
+                          }}>
+                            Apply
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Manual Voucher Input */}
+                {!appliedVoucher && !showVoucherInput && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <button
+                      onClick={() => setShowVoucherInput(true)}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#374151',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f9fafb';
+                        e.currentTarget.style.borderColor = '#d1d5db';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#ffffff';
+                        e.currentTarget.style.borderColor = '#e5e7eb';
+                      }}
+                    >
+                      <i className="fa-solid fa-ticket" style={{ fontSize: '14px' }}></i>
+                      Apply Voucher
+                    </button>
+                  </div>
+                )}
+
+                {showVoucherInput && (
+                  <div style={{ 
+                    marginBottom: '12px',
+                    padding: '12px',
+                    backgroundColor: '#f9fafb',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      gap: '8px',
+                      alignItems: 'center'
+                    }}>
+                      <input
+                        type="text"
+                        value={voucherCode}
+                        onChange={(e) => setVoucherCode(e.target.value)}
+                        placeholder="Enter voucher code"
+                        style={{
+                          flex: 1,
+                          padding: '10px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '14px'
+                        }}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && voucherCode.trim()) {
+                            validateVoucher(voucherCode)
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={() => {
+                          setShowVoucherInput(false)
+                          setVoucherCode('')
+                        }}
+                        style={{
+                          padding: '10px',
+                          backgroundColor: '#ef4444',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '14px'
+                        }}
+                      >
+                        <i className="fa-solid fa-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {appliedVoucher && (
+                  <div style={{
+                    padding: '12px',
+                    backgroundColor: '#d1fae5',
+                    border: '1px solid #10b981',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}>
+                    <div>
+                      <div style={{
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: '#065f46'
+                      }}>
+                        <i className="fa-solid fa-check-circle" style={{ marginRight: '8px' }}></i>
+                        Voucher Applied
+                      </div>
+                      <div style={{
+                        fontSize: '12px',
+                        color: '#047857',
+                        marginTop: '4px'
+                      }}>
+                        {appliedVoucher.vouchers?.name}
+                      </div>
+                    </div>
+                    <button
+                      onClick={removeVoucher}
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#10b981',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Amount Entered */}
             {paymentMethod === 'cash' && (

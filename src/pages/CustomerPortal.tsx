@@ -421,6 +421,10 @@ const CustomerPortal = () => {
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);
   const [loyaltyPrizes, setLoyaltyPrizes] = useState<LoyaltyPrize[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [customerVouchers, setCustomerVouchers] = useState<CustomerVoucher[]>([]);
+  const [showVoucherModal, setShowVoucherModal] = useState(false);
+  const [selectedVoucher, setSelectedVoucher] = useState<CustomerVoucher | null>(null);
   
   // New authentication state variables
   const [setupEmail, setSetupEmail] = useState('');
@@ -791,9 +795,87 @@ const CustomerPortal = () => {
     }
   }, []);
 
+  const fetchVouchers = useCallback(async (businessId: number, branchId?: number | null) => {
+    try {
+      const { data, error } = await supabase
+        .from('vouchers')
+        .select('*')
+        .eq('business_id', businessId)
+        .eq('is_active', true)
+        .order('points_cost', { ascending: true });
+
+      if (error) throw error;
+
+      const filtered = (data || []).filter((voucher: Voucher) => {
+        const branchMatches = branchId == null || voucher.branch_id == null || voucher.branch_id === branchId;
+        return branchMatches;
+      });
+
+      setVouchers(filtered);
+    } catch (err) {
+      console.error('Error fetching vouchers:', err);
+      setVouchers([]);
+    }
+  }, []);
+
+  const fetchCustomerVouchers = useCallback(async (customerId: number) => {
+    try {
+      const { data, error } = await supabase
+        .from('customer_vouchers')
+        .select(`
+          *,
+          vouchers (*)
+        `)
+        .eq('customer_id', customerId)
+        .order('redeemed_at', { ascending: false });
+
+      if (error) throw error;
+      setCustomerVouchers(data || []);
+    } catch (err) {
+      console.error('Error fetching customer vouchers:', err);
+      setCustomerVouchers([]);
+    }
+  }, []);
+
+  const handleRedeemVoucher = async (voucher: Voucher) => {
+    if (!customer || customer.loyalty_points < voucher.points_cost) {
+      alert('Insufficient points to redeem this voucher');
+      return;
+    }
+
+    try {
+      const voucherCode = generateVoucherCode();
+
+      const { data, error } = await supabase.rpc('redeem_voucher', {
+        p_customer_id: customer.customer_id,
+        p_voucher_id: voucher.voucher_id,
+        p_voucher_code: voucherCode,
+        p_points_cost: voucher.points_cost
+      });
+
+      if (error) throw error;
+
+      // Update customer points locally
+      const updatedCustomer = { ...customer, loyalty_points: customer.loyalty_points - voucher.points_cost };
+      setCustomer(updatedCustomer);
+      saveSession(updatedCustomer, selectedBranch || null, branchSearch);
+
+      // Refresh vouchers
+      await fetchCustomerVouchers(customer.customer_id);
+
+      // Show success and display voucher
+      setSelectedVoucher({ ...data, vouchers: voucher });
+      setShowVoucherModal(true);
+    } catch (err) {
+      console.error('Error redeeming voucher:', err);
+      alert(err instanceof Error ? err.message : 'Failed to redeem voucher');
+    }
+  };
+
   useEffect(() => {
     if (!customer) {
       setPromotions([]);
+      setVouchers([]);
       return;
     }
 
@@ -802,7 +884,9 @@ const CustomerPortal = () => {
       : customer.branch_id ?? null;
 
     fetchActivePromotions(customer.business_id, branchId);
-  }, [customer, selectedBranch, fetchActivePromotions]);
+    fetchVouchers(customer.business_id, branchId);
+    fetchCustomerVouchers(customer.customer_id);
+  }, [customer, selectedBranch, fetchActivePromotions, fetchVouchers, fetchCustomerVouchers]);
 
   // Derive active tab from current pathname
   const deriveActiveTab = useCallback((pathname: string) => {
@@ -814,6 +898,9 @@ const CustomerPortal = () => {
     }
     if (pathname.startsWith('/customer-portal/search')) {
       return 'search';
+    }
+    if (pathname.startsWith('/customer-portal/vouchers')) {
+      return 'vouchers';
     }
     return 'home';
   }, []);
@@ -1880,7 +1967,7 @@ const CustomerPortal = () => {
       return;
     }
 
-    const dashboardPaths = ['/home', '/transactions', '/shopping-list', '/search'];
+    const dashboardPaths = ['/home', '/transactions', '/shopping-list', '/search', '/vouchers'];
     if (dashboardPaths.includes(suffix)) {
       if (customer) {
         if (view !== 'dashboard') {
@@ -2947,6 +3034,30 @@ const CustomerPortal = () => {
                 Customer Portal
               </p>
             </div>
+            <button
+              onClick={() => navigate('/customer-portal/vouchers')}
+              style={{
+                padding: '0.75rem',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '0.5rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f9fafb';
+                e.currentTarget.style.borderColor = '#d1d5db';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#ffffff';
+                e.currentTarget.style.borderColor = '#e5e7eb';
+              }}
+            >
+              <i className="fa-solid fa-ticket" style={{ fontSize: '1.25rem', color: '#7c3aed' }}></i>
+            </button>
         </div>
       )}
 
@@ -4306,6 +4417,459 @@ const CustomerPortal = () => {
             )}
         </div>
       </div>
+        )}
+
+        {activeTab === 'vouchers' && (
+          <>
+            {/* Points Balance */}
+            <div style={{
+              ...styles.card,
+              marginBottom: '1.5rem',
+              padding: '1.5rem',
+              background: 'linear-gradient(135deg, #1a1a1a 0%, #2c2c2c 100%)',
+              color: '#ffffff'
+            }}>
+              <h3 style={{
+                fontSize: '1.25rem',
+                fontWeight: '600',
+                color: '#ffffff',
+                margin: '0 0 0.5rem 0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <i className="fa-solid fa-star" style={{ color: '#fbbf24' }}></i>
+                Your Points
+              </h3>
+              <div style={{
+                fontSize: '3rem',
+                fontWeight: '700',
+                margin: '0.5rem 0'
+              }}>
+                {customer?.loyalty_points || 0}
+              </div>
+              <p style={{
+                fontSize: '0.875rem',
+                color: 'rgba(255, 255, 255, 0.7)',
+                margin: 0
+              }}>
+                Available to redeem for vouchers
+              </p>
+            </div>
+
+            {/* Available Vouchers */}
+            <div style={{
+              ...styles.card,
+              marginBottom: '1.5rem',
+              padding: '1.5rem'
+            }}>
+              <h3 style={{
+                fontSize: '1.25rem',
+                fontWeight: '600',
+                color: '#111827',
+                margin: '0 0 1.5rem 0'
+              }}>
+                <i className="fa-solid fa-ticket" style={{ marginRight: '0.5rem', color: '#1a1a1a' }}></i>
+                Available Vouchers
+              </h3>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: isMobileView ? '1fr' : 'repeat(2, 1fr)',
+                gap: '1rem'
+              }}>
+                {vouchers.map(voucher => {
+                  const canAfford = customer && customer.loyalty_points >= voucher.points_cost;
+                  return (
+                    <div
+                      key={voucher.voucher_id}
+                      style={{
+                        padding: '1.25rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '0.75rem',
+                        backgroundColor: '#ffffff'
+                      }}
+                    >
+                      <h4 style={{
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        color: '#111827',
+                        margin: '0 0 0.5rem 0'
+                      }}>
+                        {voucher.name}
+                      </h4>
+                      {voucher.description && (
+                        <p style={{
+                          fontSize: '0.875rem',
+                          color: '#6b7280',
+                          margin: '0 0 1rem 0'
+                        }}>
+                          {voucher.description}
+                        </p>
+                      )}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '1rem',
+                        marginBottom: '1rem',
+                        padding: '0.75rem',
+                        backgroundColor: '#f9fafb',
+                        borderRadius: '0.5rem'
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}>
+                          <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Cost:</span>
+                          <span style={{ fontSize: '1rem', fontWeight: '600', color: '#111827' }}>
+                            {voucher.points_cost} points
+                          </span>
+                        </div>
+                        <div style={{
+                          fontSize: '0.875rem',
+                          fontWeight: '600',
+                          color: '#1a1a1a'
+                        }}>
+                          {formatDiscount(voucher.discount_type, voucher.discount_value)}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleRedeemVoucher(voucher)}
+                        disabled={!canAfford}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          backgroundColor: canAfford ? '#1a1a1a' : '#d1d5db',
+                          color: canAfford ? '#ffffff' : '#9ca3af',
+                          border: 'none',
+                          borderRadius: '0.5rem',
+                          cursor: canAfford ? 'pointer' : 'not-allowed',
+                          fontSize: '0.875rem',
+                          fontWeight: '600',
+                          transition: 'background-color 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (canAfford) {
+                            e.currentTarget.style.backgroundColor = '#2c2c2c';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (canAfford) {
+                            e.currentTarget.style.backgroundColor = '#1a1a1a';
+                          }
+                        }}
+                      >
+                        {canAfford ? 'Redeem Voucher' : 'Insufficient Points'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              {vouchers.length === 0 && (
+                <p style={{
+                  textAlign: 'center',
+                  color: '#6b7280',
+                  padding: '2rem 0'
+                }}>
+                  No vouchers available at this time
+                </p>
+              )}
+            </div>
+
+            {/* My Vouchers Section */}
+            {customerVouchers.length > 0 && (
+              <div style={{
+                ...styles.card,
+                padding: '1.5rem'
+              }}>
+                <h3 style={{
+                  fontSize: '1.25rem',
+                  fontWeight: '600',
+                  color: '#111827',
+                  margin: '0 0 1.5rem 0'
+                }}>
+                  <i className="fa-solid fa-wallet" style={{ marginRight: '0.5rem', color: '#1a1a1a' }}></i>
+                  My Vouchers
+                </h3>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: isMobileView ? '1fr' : 'repeat(2, 1fr)',
+                  gap: '1rem'
+                }}>
+                  {customerVouchers.map((cv: CustomerVoucher) => {
+                    const isUsed = cv.is_used;
+                    return (
+                      <div
+                        key={cv.customer_voucher_id}
+                        style={{
+                          padding: '1.25rem',
+                          border: `2px solid ${isUsed ? '#d1d5db' : '#1a1a1a'}`,
+                          borderRadius: '0.75rem',
+                          backgroundColor: isUsed ? '#f9fafb' : '#ffffff',
+                          opacity: isUsed ? 0.6 : 1
+                        }}
+                      >
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          justifyContent: 'space-between',
+                          marginBottom: '0.75rem'
+                        }}>
+                          <h4 style={{
+                            fontSize: '1rem',
+                            fontWeight: '600',
+                            color: isUsed ? '#9ca3af' : '#111827',
+                            margin: 0
+                          }}>
+                            {cv.vouchers?.name}
+                          </h4>
+                          {isUsed && (
+                            <span style={{
+                              fontSize: '0.75rem',
+                              fontWeight: '600',
+                              color: '#6b7280',
+                              backgroundColor: '#e5e7eb',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '0.25rem'
+                            }}>
+                              Used
+                            </span>
+                          )}
+                        </div>
+                        {cv.vouchers?.description && (
+                          <p style={{
+                            fontSize: '0.875rem',
+                            color: isUsed ? '#9ca3af' : '#6b7280',
+                            margin: '0 0 0.75rem 0'
+                          }}>
+                            {cv.vouchers.description}
+                          </p>
+                        )}
+                        <div style={{
+                          padding: '0.75rem',
+                          backgroundColor: isUsed ? '#f9fafb' : '#f9fafb',
+                          borderRadius: '0.5rem',
+                          marginBottom: '0.75rem',
+                          border: '1px dashed #d1d5db'
+                        }}>
+                          <div style={{
+                            fontSize: '0.75rem',
+                            color: '#6b7280',
+                            marginBottom: '0.25rem'
+                          }}>
+                            Voucher Code
+                          </div>
+                          <div style={{
+                            fontSize: '1rem',
+                            fontWeight: '700',
+                            color: isUsed ? '#9ca3af' : '#111827',
+                            fontFamily: 'monospace',
+                            letterSpacing: '0.05em'
+                          }}>
+                            {cv.voucher_code}
+                          </div>
+                        </div>
+                        <div style={{
+                          fontSize: '0.875rem',
+                          fontWeight: '600',
+                          color: isUsed ? '#9ca3af' : '#10b981',
+                          textAlign: 'center',
+                          padding: '0.5rem',
+                          backgroundColor: isUsed ? '#f9fafb' : '#ecfdf5',
+                          borderRadius: '0.5rem'
+                        }}>
+                          {formatDiscount(cv.vouchers?.discount_type || 'percentage', cv.vouchers?.discount_value || 0)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {customerVouchers.length === 0 && (
+                  <p style={{
+                    textAlign: 'center',
+                    color: '#6b7280',
+                    padding: '2rem 0'
+                  }}>
+                    You haven't redeemed any vouchers yet
+                  </p>
+                )}
+              </div>
+            )}
+            {customerVouchers.length === 0 && vouchers.length > 0 && (
+              <div style={{
+                ...styles.card,
+                padding: '1.5rem',
+                textAlign: 'center'
+              }}>
+                <p style={{
+                  color: '#6b7280',
+                  margin: 0
+                }}>
+                  <i className="fa-solid fa-info-circle" style={{ marginRight: '0.5rem' }}></i>
+                  Redeem vouchers above and they'll appear here
+                </p>
+              </div>
+            )}
+
+            {/* Voucher Redemption Modal */}
+            {showVoucherModal && selectedVoucher && (
+              <div 
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  background: 'rgba(0, 0, 0, 0.8)',
+                  backdropFilter: 'blur(12px)',
+                  zIndex: 10000,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '16px'
+                }}
+                onClick={() => setShowVoucherModal(false)}
+              >
+                <div 
+                  style={{
+                    width: '100%',
+                    maxWidth: '500px',
+                    background: '#ffffff',
+                    borderRadius: '16px',
+                    padding: '2rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1.5rem'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Header */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}>
+                    <h2 style={{
+                      margin: 0,
+                      fontSize: '1.5rem',
+                      fontWeight: '700',
+                      color: '#111827'
+                    }}>
+                      <i className="fa-solid fa-check-circle" style={{ color: '#10b981', marginRight: '0.5rem' }}></i>
+                      Voucher Redeemed!
+                    </h2>
+                    <button
+                      onClick={() => setShowVoucherModal(false)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '1.5rem',
+                        cursor: 'pointer',
+                        color: '#6b7280'
+                      }}
+                    >
+                      <i className="fa-solid fa-times"></i>
+                    </button>
+                  </div>
+
+                  {/* Voucher Code */}
+                  <div style={{
+                    padding: '1.5rem',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '12px',
+                    textAlign: 'center',
+                    border: '2px dashed #d1d5db'
+                  }}>
+                    <p style={{
+                      margin: '0 0 0.5rem 0',
+                      fontSize: '0.875rem',
+                      color: '#6b7280',
+                      fontWeight: '600'
+                    }}>
+                      Your Voucher Code
+                    </p>
+                    <div style={{
+                      fontSize: '2rem',
+                      fontWeight: '700',
+                      color: '#111827',
+                      letterSpacing: '0.1em',
+                      fontFamily: 'monospace'
+                    }}>
+                      {selectedVoucher.voucher_code}
+                    </div>
+                  </div>
+
+                  {/* Discount Info */}
+                  <div style={{
+                    padding: '1rem',
+                    backgroundColor: '#ecfdf5',
+                    borderRadius: '8px',
+                    border: '1px solid #10b981'
+                  }}>
+                    <p style={{
+                      margin: '0',
+                      fontSize: '1rem',
+                      fontWeight: '600',
+                      color: '#065f46'
+                    }}>
+                      <i className="fa-solid fa-tag" style={{ marginRight: '0.5rem' }}></i>
+                      {selectedVoucher.vouchers?.name}
+                    </p>
+                    <p style={{
+                      margin: '0.25rem 0 0 0',
+                      fontSize: '0.875rem',
+                      color: '#047857'
+                    }}>
+                      {formatDiscount(selectedVoucher.vouchers?.discount_type || 'percentage', selectedVoucher.vouchers?.discount_value || 0)}
+                    </p>
+                  </div>
+
+                  {/* Instructions */}
+                  <div style={{
+                    padding: '1rem',
+                    backgroundColor: '#fef3c7',
+                    borderRadius: '8px',
+                    border: '1px solid #fbbf24'
+                  }}>
+                    <p style={{
+                      margin: 0,
+                      fontSize: '0.875rem',
+                      color: '#92400e',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '0.5rem'
+                    }}>
+                      <i className="fa-solid fa-info-circle" style={{ marginTop: '2px' }}></i>
+                      <span>Show this code to the cashier when checking out to apply your discount.</span>
+                    </p>
+                  </div>
+
+                  {/* Close Button */}
+                  <button
+                    onClick={() => setShowVoucherModal(false)}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      backgroundColor: '#1a1a1a',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '0.5rem',
+                      fontSize: '0.875rem',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#2c2c2c';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#1a1a1a';
+                    }}
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Transaction Detail Modal */}
