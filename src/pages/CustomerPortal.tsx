@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useBusiness } from '../contexts/BusinessContext';
+import { getSubdomain } from '../utils/subdomain';
 // Use a simple Card component with inline styles to avoid global CSS conflicts
 const Card = ({ children, className = '', style = {} }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) => (
   <div 
@@ -412,7 +413,8 @@ interface Sale {
 }
 
 const CustomerPortal = () => {
-  const { currentBusiness } = useBusiness();
+  const { currentBusiness, loadBusinessBySubdomain } = useBusiness();
+  const [subdomainError, setSubdomainError] = useState<string | null>(null);
   const [view, setView] = useState<'login' | 'setup' | 'password' | 'dashboard' | 'transaction-detail' | 'rewards'>('login');
   const [selectedBranch, setSelectedBranch] = useState('');
   const [branchSearch, setBranchSearch] = useState('');
@@ -467,6 +469,38 @@ const CustomerPortal = () => {
   const promotionsCarouselRef = useRef<HTMLDivElement | null>(null);
   const promotionAutoIndexRef = useRef(0);
   const sessionRestoredRef = useRef(false);
+
+  // Check for subdomain error
+  if (subdomainError) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(to bottom right, #f3f4f6, #e2e8f0)',
+        padding: '2rem'
+      }}>
+        <Card style={{ maxWidth: '500px', textAlign: 'center', padding: '2rem' }}>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <Store size={48} style={{ color: '#6b7280', margin: '0 auto 1rem' }} />
+            <h1 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#1f2937', margin: '0 0 0.5rem' }}>
+              Store Not Found
+            </h1>
+            <p style={{ color: '#6b7280', margin: '0' }}>
+              {subdomainError}
+            </p>
+          </div>
+          <Button 
+            onClick={() => window.location.href = '/'}
+            style={{ width: '100%' }}
+          >
+            Go to Main Site
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   // Check if customer portal is enabled for this business
   if (currentBusiness && !currentBusiness.customer_portal_enabled) {
@@ -629,6 +663,20 @@ const CustomerPortal = () => {
       setBranchSearch(formatBranchLabel(branch));
     }
   }, [branches, selectedBranch]);
+
+  // Subdomain detection for customer portal
+  useEffect(() => {
+    const subdomain = getSubdomain();
+    
+    if (subdomain) {
+        loadBusinessBySubdomain(subdomain).catch(() => {
+          setSubdomainError('Store not found or unavailable');
+        });
+    } else {
+      // No subdomain - show business selector or error
+      setSubdomainError('Please access your store via your custom URL');
+    }
+  }, [loadBusinessBySubdomain]);
 
   useEffect(() => {
     if (productSearchQuery.trim().length > 0 && selectedCategory !== null) {
@@ -4457,7 +4505,7 @@ const CustomerPortal = () => {
                 onChange={(e) => setFilterMonth(e.target.value)}
                 style={{
                   ...styles.filterSelect,
-                  width: isMobileView ? '100%' : styles.filterSelect.width,
+                  width: isMobileView ? '100%' : 'auto',
                   marginTop: isMobileView ? '0.5rem' : 0
                 }}
               >

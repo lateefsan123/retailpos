@@ -3,6 +3,8 @@ import { useBusiness } from '../contexts/BusinessContext';
 import { useBranch } from '../contexts/BranchContext';
 import { supabase } from '../lib/supabaseClient';
 import PaymentGatewayCard from './payment/PaymentGatewayCard';
+import { validateSubdomain, generateSubdomainFromName } from '../utils/subdomain';
+import { checkSubdomainAvailability } from '../utils/businessFetching';
 import styles from './BusinessSettingsModal.module.css';
 
 interface BusinessSettingsModalProps {
@@ -27,6 +29,7 @@ type BusinessForm = {
   receiptFooter: string;
   clickAndCollectEnabled: boolean;
   customerPortalEnabled: boolean;
+  subdomain: string;
 };
 
 const SECTION_IDS = [
@@ -233,7 +236,32 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
     receiptFooter: "Thank you for shopping with us!",
     clickAndCollectEnabled: false,
     customerPortalEnabled: false,
+    subdomain: "",
   });
+
+  // Subdomain management state
+  const [subdomainAvailable, setSubdomainAvailable] = useState<boolean | null>(null);
+  const [checkingSubdomain, setCheckingSubdomain] = useState(false);
+
+  // Subdomain validation function
+  const handleSubdomainCheck = async (value: string) => {
+    if (!validateSubdomain(value)) {
+      setSubdomainAvailable(false);
+      return;
+    }
+    
+    setCheckingSubdomain(true);
+    const available = await checkSubdomainAvailability(value);
+    setSubdomainAvailable(available);
+    setCheckingSubdomain(false);
+  };
+
+  // Auto-generate subdomain from business name
+  const generateSubdomain = () => {
+    const generated = generateSubdomainFromName(form.name);
+    update({ subdomain: generated });
+    handleSubdomainCheck(generated);
+  };
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useMemo(
@@ -264,6 +292,7 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
         receiptFooter: currentBusiness.receipt_footer || "Thank you for shopping with us!",
         clickAndCollectEnabled: currentBusiness.click_and_collect_enabled || false,
         customerPortalEnabled: currentBusiness.customer_portal_enabled || false,
+        subdomain: currentBusiness.subdomain || "",
       });
     }
   }, [isOpen, currentBusiness]);
@@ -381,6 +410,7 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
           logo_url: logoUrl || null,
           click_and_collect_enabled: form.clickAndCollectEnabled,
           customer_portal_enabled: form.customerPortalEnabled,
+          subdomain: form.subdomain || null,
           updated_at: new Date().toISOString()
         })
         .eq('business_id', currentBusiness.business_id);
@@ -655,6 +685,56 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
                   onChange={(v) => update({ customerPortalEnabled: v })}
                   description="Enable customer portal for online shopping and account management"
                 />
+                {form.customerPortalEnabled && (
+                  <div className={styles.field}>
+                    <label className={styles.label}>Custom Portal URL</label>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        value={form.subdomain}
+                        onChange={(e) => {
+                          const value = e.target.value.toLowerCase();
+                          update({ subdomain: value });
+                          handleSubdomainCheck(value);
+                        }}
+                        placeholder="shopname"
+                        className={styles.input}
+                        style={{ flex: 1 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={generateSubdomain}
+                        className={styles.button}
+                        style={{ 
+                          padding: '0.5rem 1rem', 
+                          fontSize: '0.875rem',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        Generate
+                      </button>
+                      <span style={{ color: '#6b7280' }}>.tillpoint.net</span>
+                    </div>
+                    {subdomainAvailable === false && (
+                      <p style={{ color: '#ef4444', fontSize: '0.875rem', margin: '0.25rem 0 0' }}>
+                        Subdomain unavailable or invalid
+                      </p>
+                    )}
+                    {subdomainAvailable === true && (
+                      <p style={{ color: '#10b981', fontSize: '0.875rem', margin: '0.25rem 0 0' }}>
+                        Available!
+                      </p>
+                    )}
+                    {checkingSubdomain && (
+                      <p style={{ color: '#6b7280', fontSize: '0.875rem', margin: '0.25rem 0 0' }}>
+                        Checking availability...
+                      </p>
+                    )}
+                    <p style={{ color: '#6b7280', fontSize: '0.875rem', margin: '0.5rem 0 0' }}>
+                      Your customers will access the portal at: <strong>{form.subdomain || 'shopname'}.tillpoint.net</strong>
+                    </p>
+                  </div>
+                )}
               </SectionCard>
 
               {/* Receipt */}

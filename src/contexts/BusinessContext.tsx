@@ -2,6 +2,7 @@
 import { supabase } from '../lib/supabaseClient'
 import { BusinessInfo } from '../types/multitenant'
 import { useAuth } from './AuthContext'
+import { fetchBusinessBySubdomain } from '../utils/businessFetching'
 
 interface BusinessContextType {
   currentBusiness: BusinessInfo | null
@@ -9,6 +10,7 @@ interface BusinessContextType {
   loading: boolean
   error: string | null
   refreshBusiness: () => Promise<void>
+  loadBusinessBySubdomain: (subdomain: string) => Promise<void>
 }
 
 const BusinessContext = createContext<BusinessContextType | undefined>(undefined)
@@ -55,6 +57,30 @@ export const BusinessProvider = ({ children }: BusinessProviderProps) => {
     }
   }, [user])
 
+  const loadBusinessBySubdomain = useCallback(async (subdomain: string): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const business = await fetchBusinessBySubdomain(subdomain);
+      
+      if (!business) {
+        setError('Store not found');
+        setCurrentBusiness(null);
+        return;
+      }
+
+      setCurrentBusiness(business);
+      localStorage.setItem('current_business_id', business.business_id.toString());
+    } catch (err) {
+      console.error('Error loading business by subdomain:', err);
+      setError('Failed to load store');
+      setCurrentBusiness(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const refreshBusiness = useCallback(async () => {
     await loadUserBusiness()
   }, [loadUserBusiness])
@@ -70,7 +96,8 @@ export const BusinessProvider = ({ children }: BusinessProviderProps) => {
     currentBusinessId: currentBusiness?.business_id ?? null,
     loading: loading || authLoading,
     error,
-    refreshBusiness
+    refreshBusiness,
+    loadBusinessBySubdomain
   }
 
   return (
