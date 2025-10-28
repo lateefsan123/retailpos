@@ -60,6 +60,12 @@ const ShoppingListItemDialog: React.FC<ShoppingListItemDialogProps> = ({
         return;
       }
 
+      // Check stock availability for non-weighted products
+      if (!product.is_weighted && product.stock_quantity < quantityValue) {
+        alert(`Only ${product.stock_quantity} ${product.name} available in stock.`);
+        return;
+      }
+
       if (product.is_weighted) {
         if (!weightValue || isNaN(weightValue) || weightValue <= 0) {
           alert('Please enter a valid weight');

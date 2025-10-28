@@ -39,9 +39,7 @@ serve(async (req) => {
         businessId: businessId || '',
         branchId: branchId || '',
       },
-      automatic_payment_methods: {
-        enabled: true,
-      },
+      payment_method_types: ['card'], // Only use card payments to avoid warnings
     })
 
     return new Response(

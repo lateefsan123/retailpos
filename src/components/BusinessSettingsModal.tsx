@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useBusiness } from '../contexts/BusinessContext';
 import { useBranch } from '../contexts/BranchContext';
 import { supabase } from '../lib/supabaseClient';
+import PaymentGatewayCard from './payment/PaymentGatewayCard';
 import styles from './BusinessSettingsModal.module.css';
 
 interface BusinessSettingsModalProps {
@@ -34,6 +35,7 @@ const SECTION_IDS = [
   { id: "contact", label: "Contact" },
   { id: "biz", label: "Business Settings" },
   { id: "receipt", label: "Receipt" },
+  { id: "payment", label: "Payment Gateways" },
   { id: "manual", label: "User Manual" },
 ] as const;
 
@@ -663,6 +665,45 @@ const BusinessSettingsModal: React.FC<BusinessSettingsModalProps> = ({ isOpen, o
                   onChange={(v) => update({ receiptFooter: v })} 
                   multiline 
                   placeholder="Thank you for your business! Visit us again soon."
+                />
+              </SectionCard>
+
+              {/* Payment Gateways */}
+              <SectionCard id="payment" ref={sectionRefs.payment} title="Payment Gateways">
+                <div style={{ marginBottom: '16px' }}>
+                  <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 8px 0' }}>
+                    Configure payment gateways to accept online payments for click & collect orders only.
+                  </p>
+                  <p style={{ color: '#9ca3af', fontSize: '12px', margin: '0 0 16px 0' }}>
+                    Note: Regular in-store sales continue to use cash, card, and tap payments at the POS.
+                  </p>
+                </div>
+                
+                <PaymentGatewayCard
+                  gatewayType="stripe"
+                  businessId={currentBusiness?.business_id || 0}
+                  branchId={selectedBranchId}
+                  onUpdate={() => {
+                    // Refresh gateways if needed
+                  }}
+                />
+                
+                <PaymentGatewayCard
+                  gatewayType="revolut"
+                  businessId={currentBusiness?.business_id || 0}
+                  branchId={selectedBranchId}
+                  onUpdate={() => {
+                    // Refresh gateways if needed
+                  }}
+                />
+                
+                <PaymentGatewayCard
+                  gatewayType="paypal"
+                  businessId={currentBusiness?.business_id || 0}
+                  branchId={selectedBranchId}
+                  onUpdate={() => {
+                    // Refresh gateways if needed
+                  }}
                 />
               </SectionCard>
 

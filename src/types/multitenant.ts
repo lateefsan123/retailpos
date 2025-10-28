@@ -881,3 +881,58 @@ export interface VoucherRequest {
   discount_value: number
   is_active: boolean
 }
+
+// =====================================================
+// PAYMENT GATEWAY TYPES
+// =====================================================
+
+export interface PaymentGateway {
+  gateway_id: number
+  business_id: number
+  branch_id?: number
+  gateway_type: 'stripe' | 'revolut' | 'paypal' | 'square'
+  is_enabled: boolean
+  publishable_key?: string
+  test_mode: boolean
+  configuration?: any
+  created_at: string
+  updated_at: string
+}
+
+export interface PaymentGatewayRequest {
+  business_id: number
+  branch_id?: number
+  gateway_type: 'stripe' | 'revolut' | 'paypal' | 'square'
+  publishable_key?: string
+  test_mode?: boolean
+  configuration?: any
+}
+
+export interface PaymentIntent {
+  amount: number
+  currency: string
+  customer_id: number
+  order_items: number[]
+  gateway_type: string
+  business_id: number
+  branch_id?: number
+}
+
+export interface PaymentResult {
+  success: boolean
+  transaction_id?: string
+  payment_intent_id?: string
+  error?: string
+  gateway_response?: any
+}
+
+export interface PaymentStatus {
+  status: 'pending' | 'completed' | 'failed' | 'refunded'
+  transaction_id?: string
+  payment_intent_id?: string
+  gateway_type?: string
+  amount?: number
+  currency?: string
+  created_at?: string
+  updated_at?: string
+}

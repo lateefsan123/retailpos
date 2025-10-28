@@ -28,6 +28,8 @@ import { LoyaltyPrize, ShoppingListItem, Product, Promotion, Voucher, CustomerVo
 import { T } from '../lib/tables';
 import cssStyles from './CustomerPortal.module.css';
 import ShoppingListItemDialog from '../components/ShoppingListItemDialog';
+import PaymentModal from '../components/payment/PaymentModal';
+import { usePaymentModal } from '../hooks/usePaymentGateways';
 import { 
   verifyPassword, 
   validateEmail, 
@@ -452,6 +454,9 @@ const CustomerPortal = () => {
   const [showCartDrawer, setShowCartDrawer] = useState(false);
   const [cartSubmissionStatus, setCartSubmissionStatus] = useState<'idle' | 'loading'>('idle');
   const [cartFeedback, setCartFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  
+  // Payment modal hook
+  const { isOpen: isPaymentModalOpen, openModal: openPaymentModal, closeModal: closePaymentModal } = usePaymentModal();
   
   // Dialog state
   const [showItemDialog, setShowItemDialog] = useState(false);
@@ -1391,6 +1396,12 @@ const CustomerPortal = () => {
           const existingItem = existingItems[0];
           const newQuantity = existingItem.quantity + quantity;
 
+          // Check stock availability before updating
+          if (product.stock_quantity < newQuantity) {
+            alert(`Only ${product.stock_quantity} ${product.name} available in stock. You already have ${existingItem.quantity} in your cart.`);
+            return;
+          }
+
           const { data: updatedItem, error: updateError } = await supabase
             .from(T.customerShoppingLists)
             .update({ quantity: newQuantity })
@@ -1424,6 +1435,12 @@ const CustomerPortal = () => {
           setProductSearchQuery('');
           return;
         }
+      }
+
+      // Check stock availability for new products (non-weighted)
+      if (product && !weight && product.stock_quantity < quantity) {
+        alert(`Only ${product.stock_quantity} ${product.name} available in stock.`);
+        return;
       }
 
       // Insert new item (for weighted products, custom text items, or new products)
@@ -4197,7 +4214,7 @@ const CustomerPortal = () => {
                         fontWeight: 700,
                         color: '#0f172a'
                       }}>
-                        {`Results for "{productSearchQuery.trim()}"`}
+                        {`Results for "${productSearchQuery.trim()}"`}
                       </h3>
                       <p style={{
                         margin: '0.25rem 0 0 0',
@@ -5639,22 +5656,33 @@ const CustomerPortal = () => {
             </div>
 
             <div style={{ padding: '0 1.5rem 1rem', borderBottom: '1px solid #e5e7eb' }}>
-              <div
+              <button
+                onClick={() => {
+                  if (customer && cartItems.length > 0) {
+                    openPaymentModal(cartItems, customer.customer_id);
+                  }
+                }}
+                disabled={!customer || cartItems.length === 0}
                 style={{
+                  width: '100%',
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'center',
                   gap: '0.5rem',
-                  backgroundColor: '#eef2ff',
-                  border: '1px solid #c7d2fe',
+                  backgroundColor: cartItems.length > 0 ? '#059669' : '#9ca3af',
+                  color: 'white',
+                  border: 'none',
                   borderRadius: '0.75rem',
                   padding: '0.75rem 1rem',
-                  fontSize: '0.85rem',
-                  color: '#4338ca'
+                  fontSize: '0.95rem',
+                  fontWeight: '600',
+                  cursor: cartItems.length > 0 ? 'pointer' : 'not-allowed',
+                  transition: 'background-color 0.2s ease'
                 }}
               >
                 <i className="fa-solid fa-credit-card"></i>
-                Secure online checkout via Stripe coming soon.
-              </div>
+                {cartItems.length > 0 ? 'Pay Now' : 'Add items to cart'}
+              </button>
             </div>
 
             <div
@@ -5834,6 +5862,16 @@ const CustomerPortal = () => {
             isClickCollect ?? (activeTab === 'search')
           )
         }
+      />
+      
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={closePaymentModal}
+        orderItems={cartItems}
+        customerId={customer?.customer_id || 0}
+        businessId={currentBusiness?.business_id || 0}
+        branchId={selectedBranch ? parseInt(selectedBranch) : undefined}
       />
     </div>
   );
