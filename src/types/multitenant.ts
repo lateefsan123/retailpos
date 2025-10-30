@@ -160,6 +160,10 @@ export interface ShoppingListItem {
   calculated_price?: number // For weighted items
   is_click_and_collect?: boolean // Distinguishes click & collect items from regular shopping list
   products?: Product | null // Joined from products table
+  approval_status?: 'pending' | 'approved' | 'rejected' | 'ready_for_pickup' | 'collected' // Approval status for click & collect
+  approval_notes?: string | null // Notes from store owner
+  approval_timestamp?: string | null // When approval decision was made
+  approved_by?: number | null // User ID who approved/rejected
 }
 
 export interface CustomerOrder {

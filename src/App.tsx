@@ -239,6 +239,7 @@ function App() {
                           <Route path="/select-user" element={<SelectUser />} />
                           <Route path="/select-user-mobile" element={<SelectUserMobile />} />
                           <Route path="/switch-user" element={<SwitchUser />} />
+                          <Route path="/customer-portal" element={<CustomerPortal />} />
                           <Route path="/customer-portal/*" element={<CustomerPortal />} />
                           <Route path="/*" element={
                             <ProtectedRoute>

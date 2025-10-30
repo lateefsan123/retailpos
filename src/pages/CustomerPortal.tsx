@@ -43,6 +43,26 @@ import { QRCodeSVG } from 'qrcode.react';
 
 // Session caching removed - no longer storing customer data in localStorage
 
+// Color helpers for customizable portal accent
+const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
+const hexToRgb = (hex: string) => {
+  const clean = hex.replace('#', '');
+  const bigint = parseInt(clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean, 16);
+  return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 };
+};
+const rgbToHex = (r: number, g: number, b: number) =>
+  `#${[r, g, b].map(x => clamp(Math.round(x), 0, 255).toString(16).padStart(2, '0')).join('')}`;
+const shadeColor = (hex: string, percent: number) => {
+  try {
+    const { r, g, b } = hexToRgb(hex);
+    const t = percent < 0 ? 0 : 255;
+    const p = Math.abs(percent);
+    return rgbToHex(r + (t - r) * p, g + (t - g) * p, b + (t - b) * p);
+  } catch {
+    return hex; // fallback if invalid
+  }
+};
+
 // Responsive styles
 const getResponsiveStyles = (windowWidth: number) => {
   const isMobile = windowWidth < 768;
@@ -104,7 +124,7 @@ const getResponsiveStyles = (windowWidth: number) => {
       width: '4rem',
       height: '4rem',
       borderRadius: '50%',
-      background: 'linear-gradient(to bottom right, #fbbf24, #d97706)',
+      background: 'linear-gradient(to bottom right, var(--portal-accent-light, #fbbf24), var(--portal-accent-dark, #d97706))',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -126,7 +146,7 @@ const getResponsiveStyles = (windowWidth: number) => {
       margin: '0.25rem 0 0 0'
     },
     pointsCard: {
-      background: 'linear-gradient(to bottom right, #fbbf24, #d97706)',
+      background: 'linear-gradient(to bottom right, var(--portal-accent-light, #fbbf24), var(--portal-accent-dark, #d97706))',
       color: '#ffffff',
       boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
       borderRadius: '0.5rem',
@@ -414,6 +434,10 @@ interface Sale {
 
 const CustomerPortal = () => {
   const { currentBusiness, loadBusinessBySubdomain } = useBusiness();
+  // Configurable portal accent color with sensible defaults
+  const portalAccent = useMemo(() => (currentBusiness as any)?.portalAccentColor || (currentBusiness as any)?.brand_color || '#f59e0b', [currentBusiness]);
+  const portalAccentLight = useMemo(() => shadeColor(portalAccent, 0.35), [portalAccent]);
+  const portalAccentDark = useMemo(() => shadeColor(portalAccent, -0.25), [portalAccent]);
   const [subdomainError, setSubdomainError] = useState<string | null>(null);
   const [view, setView] = useState<'login' | 'setup' | 'password' | 'dashboard' | 'transaction-detail' | 'rewards'>('login');
   const [selectedBranch, setSelectedBranch] = useState('');
@@ -456,6 +480,7 @@ const CustomerPortal = () => {
   const [showCartDrawer, setShowCartDrawer] = useState(false);
   const [cartSubmissionStatus, setCartSubmissionStatus] = useState<'idle' | 'loading'>('idle');
   const [cartFeedback, setCartFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [refreshingShoppingList, setRefreshingShoppingList] = useState(false);
   
   // Payment modal hook
   const { isOpen: isPaymentModalOpen, openModal: openPaymentModal, closeModal: closePaymentModal } = usePaymentModal();
@@ -470,69 +495,24 @@ const CustomerPortal = () => {
   const promotionAutoIndexRef = useRef(0);
   const sessionRestoredRef = useRef(false);
 
-  // Check for subdomain error
-  if (subdomainError) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(to bottom right, #f3f4f6, #e2e8f0)',
-        padding: '2rem'
-      }}>
-        <Card style={{ maxWidth: '500px', textAlign: 'center', padding: '2rem' }}>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <Store size={48} style={{ color: '#6b7280', margin: '0 auto 1rem' }} />
-            <h1 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#1f2937', margin: '0 0 0.5rem' }}>
-              Store Not Found
-            </h1>
-            <p style={{ color: '#6b7280', margin: '0' }}>
-              {subdomainError}
-            </p>
-          </div>
-          <Button 
-            onClick={() => window.location.href = '/'}
-            style={{ width: '100%' }}
-          >
-            Go to Main Site
-          </Button>
-        </Card>
-      </div>
-    );
-  }
-
-  // Check if customer portal is enabled for this business
-  if (currentBusiness && !currentBusiness.customer_portal_enabled) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(to bottom right, #f3f4f6, #e2e8f0)',
-        padding: '2rem'
-      }}>
-        <Card style={{ maxWidth: '500px', textAlign: 'center', padding: '2rem' }}>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <Store size={48} style={{ color: '#6b7280', margin: '0 auto 1rem' }} />
-            <h1 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#1f2937', margin: '0 0 0.5rem' }}>
-              Customer Portal Unavailable
-            </h1>
-            <p style={{ color: '#6b7280', margin: '0' }}>
-              The customer portal is not enabled for this business. Please contact the store administrator to enable this feature.
-            </p>
-          </div>
-          <Button 
-            onClick={() => window.history.back()}
-            style={{ width: '100%' }}
-          >
-            Go Back
-          </Button>
-        </Card>
-      </div>
-    );
-  }
+  // Subdomain detection for customer portal - MUST happen first
+  useEffect(() => {
+    const subdomain = getSubdomain();
+    console.log('🔍 CustomerPortal subdomain detection:', { subdomain, url: window.location.href });
+    
+    if (subdomain) {
+      console.log('🔍 Loading business for subdomain:', subdomain);
+      setSubdomainError(null); // Clear any previous error
+      loadBusinessBySubdomain(subdomain).catch((err) => {
+        console.error('❌ Error loading business by subdomain:', err);
+        setSubdomainError('Store not found or unavailable');
+      });
+    } else {
+      console.log('❌ No subdomain detected - showing business selector');
+      // No subdomain - show business selector interface
+      setSubdomainError(null);
+    }
+  }, [loadBusinessBySubdomain]);
 
   const getBranchLabel = useCallback((branchIdValue?: string | null, existingLabel?: string) => {
     if (existingLabel) return existingLabel;
@@ -664,19 +644,6 @@ const CustomerPortal = () => {
     }
   }, [branches, selectedBranch]);
 
-  // Subdomain detection for customer portal
-  useEffect(() => {
-    const subdomain = getSubdomain();
-    
-    if (subdomain) {
-        loadBusinessBySubdomain(subdomain).catch(() => {
-          setSubdomainError('Store not found or unavailable');
-        });
-    } else {
-      // No subdomain - show business selector or error
-      setSubdomainError('Please access your store via your custom URL');
-    }
-  }, [loadBusinessBySubdomain]);
 
   useEffect(() => {
     if (productSearchQuery.trim().length > 0 && selectedCategory !== null) {
@@ -755,6 +722,23 @@ const CustomerPortal = () => {
   useEffect(() => {
     fetchBranches();
   }, []);
+
+  // Refresh shopping list periodically to show approval status updates
+  useEffect(() => {
+    if (!customer) return;
+
+    const refreshShoppingList = () => {
+      fetchShoppingList(customer.customer_id);
+    };
+
+    // Refresh immediately
+    refreshShoppingList();
+
+    // Set up interval to refresh every 30 seconds
+    const interval = setInterval(refreshShoppingList, 30000);
+
+    return () => clearInterval(interval);
+  }, [customer]);
 
   // Close icon picker when clicking outside
   useEffect(() => {
@@ -1285,8 +1269,12 @@ const CustomerPortal = () => {
     }
   };
 
-  const fetchShoppingList = async (customerId: number) => {
+  const fetchShoppingList = async (customerId: number, showLoading = false) => {
     try {
+      if (showLoading) {
+        setRefreshingShoppingList(true);
+      }
+      
       const { data, error } = await supabase
         .from(T.customerShoppingLists)
         .select(`
@@ -1305,8 +1293,27 @@ const CustomerPortal = () => {
 
       if (error) throw error;
       setShoppingList(data || []);
+      
+      if (showLoading) {
+        setCartFeedback({
+          type: 'success',
+          message: 'Shopping list refreshed! Check for any status updates.'
+        });
+        setTimeout(() => setCartFeedback(null), 3000);
+      }
     } catch (err) {
       console.error('Error fetching shopping list:', err);
+      if (showLoading) {
+        setCartFeedback({
+          type: 'error',
+          message: 'Failed to refresh shopping list. Please try again.'
+        });
+        setTimeout(() => setCartFeedback(null), 3000);
+      }
+    } finally {
+      if (showLoading) {
+        setRefreshingShoppingList(false);
+      }
     }
   };
 
@@ -2088,6 +2095,101 @@ const CustomerPortal = () => {
     }
   }, [customer, view, location.pathname, navigate]);
 
+  // Check for subdomain error FIRST - before any authentication checks
+  if (subdomainError) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(to bottom right, #f3f4f6, #e2e8f0)',
+        padding: '2rem'
+      }}>
+        <Card style={{ maxWidth: '500px', textAlign: 'center', padding: '2rem' }}>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <Store size={48} style={{ color: '#6b7280', margin: '0 auto 1rem' }} />
+            <h1 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#1f2937', margin: '0 0 0.5rem' }}>
+              Store Not Found
+            </h1>
+            <p style={{ color: '#6b7280', margin: '0' }}>
+              {subdomainError}
+            </p>
+          </div>
+          <Button 
+            onClick={() => window.location.href = '/'}
+            style={{ width: '100%' }}
+          >
+            Go to Main Site
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  // Check if no branches are available (no businesses with customer portal enabled)
+  if (branches.length === 0 && !loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(to bottom right, #f3f4f6, #e2e8f0)',
+        padding: '2rem'
+      }}>
+        <Card style={{ maxWidth: '500px', textAlign: 'center', padding: '2rem' }}>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <Store size={48} style={{ color: '#6b7280', margin: '0 auto 1rem' }} />
+            <h1 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#1f2937', margin: '0 0 0.5rem' }}>
+              No Stores Available
+            </h1>
+            <p style={{ color: '#6b7280', margin: '0' }}>
+              There are currently no stores with customer portal access enabled. Please contact your store administrator to enable this feature.
+            </p>
+          </div>
+          <Button 
+            onClick={() => window.location.href = '/'}
+            style={{ width: '100%' }}
+          >
+            Go to Main Site
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  // Check if customer portal is enabled for this business
+  if (currentBusiness && !currentBusiness.customer_portal_enabled) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(to bottom right, #f3f4f6, #e2e8f0)',
+        padding: '2rem'
+      }}>
+        <Card style={{ maxWidth: '500px', textAlign: 'center', padding: '2rem' }}>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <Store size={48} style={{ color: '#6b7280', margin: '0 auto 1rem' }} />
+            <h1 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#1f2937', margin: '0 0 0.5rem' }}>
+              Customer Portal Unavailable
+            </h1>
+            <p style={{ color: '#6b7280', margin: '0' }}>
+              The customer portal is not enabled for this business. Please contact the store administrator to enable this feature.
+            </p>
+          </div>
+          <Button 
+            onClick={() => window.history.back()}
+            style={{ width: '100%' }}
+          >
+            Go Back
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   // Rewards View
   if (view === 'rewards') {
@@ -2747,7 +2849,7 @@ const CustomerPortal = () => {
                 style={{
                   background: windowSize.width < 768 
                     ? 'linear-gradient(135deg, #1a1a1a, #2c2c2c)' 
-                    : '#f59e0b',
+                    : portalAccent,
                   color: '#ffffff',
                   width: '100%',
                   padding: windowSize.width < 768 ? '0.875rem 1rem' : '0.75rem 1rem',
@@ -3323,119 +3425,115 @@ const CustomerPortal = () => {
                     }}
                     title="Change icon"
                   >
-                    <Camera style={{ width: '0.75rem', height: '0.75rem', color: '#6b7280' }} />
+                    <User style={{ width: '0.75rem', height: '0.75rem', color: '#6b7280' }} />
                   </button>
                   {showIconPicker && (
-                    <div data-icon-picker style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: '0',
-                      marginTop: '0.5rem',
-                      backgroundColor: '#ffffff',
-                      borderRadius: '0.5rem',
-                      boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
-                      border: '1px solid #e5e7eb',
-                      padding: '0.75rem',
-                      zIndex: 10,
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(6, 1fr)',
-                      gap: '0.5rem',
-                      maxWidth: '18rem',
-                      maxHeight: '20rem',
-                      overflowY: 'auto'
-                    }}>
-                      {availableIcons.map((icon) => (
-                        <button
-                          key={icon}
-                          onClick={() => handleIconChange(icon)}
-                          style={{
-                            width: '2.5rem',
-                            height: '2.5rem',
-                            borderRadius: '0.5rem',
-                            backgroundColor: customer?.icon === icon ? '#fbbf24' : 'transparent',
-                            border: customer?.icon === icon ? '2px solid #d97706' : '1px solid #e5e7eb',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            overflow: 'hidden'
-                          }}
-                          onMouseEnter={(e) => {
-                            if (customer?.icon !== icon) {
-                            e.currentTarget.style.backgroundColor = '#f3f4f6';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (customer?.icon !== icon) {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                            }
-                          }}
-                          title={icon}
-                        >
-                          <img
-                            src={`/images/icons/${icon}.png`}
-                            alt={icon}
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover',
-                              borderRadius: '0.25rem'
-                            }}
-                            onError={(e) => {
-                              // Fallback to icon name if image fails
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              if (target.parentElement) {
-                                const fallback = document.createElement('div');
-                                fallback.textContent = icon.charAt(0).toUpperCase();
-                                fallback.style.cssText = `
-                                  width: 100%;
-                                  height: 100%;
-                                  display: flex;
-                                  align-items: center;
-                                  justify-content: center;
-                                  background: #6b7280;
-                                  color: white;
-                                  font-size: 0.75rem;
-                                  font-weight: 600;
-                                  border-radius: 0.25rem;
-                                `;
-                                target.parentElement.appendChild(fallback);
-                              }
-                            }}
-                          />
-                        </button>
-                      ))}
-                      <button
-                        onClick={() => handleIconChange('')}
+                    <div
+                      style={{
+                        position: 'fixed',
+                        inset: 0,
+                        backgroundColor: 'rgba(0,0,0,0.35)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1000
+                      }}
+                      onClick={() => setShowIconPicker(false)}
+                    >
+                      <div
+                        data-icon-picker
                         style={{
-                          width: '2.5rem',
-                          height: '2.5rem',
-                          borderRadius: '0.5rem',
-                          backgroundColor: !customer?.icon ? '#fbbf24' : 'transparent',
-                          border: !customer?.icon ? '2px solid #d97706' : '1px solid #e5e7eb',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '0.75rem',
-                          color: '#6b7280',
-                          cursor: 'pointer',
-                          gridColumn: 'span 6'
+                          backgroundColor: '#ffffff',
+                          borderRadius: '0.75rem',
+                          boxShadow: '0 24px 48px rgba(0,0,0,0.2)',
+                          border: '1px solid #e5e7eb',
+                          padding: '1rem',
+                          width: 'min(560px, 92vw)',
+                          maxHeight: '70vh',
+                          overflowY: 'auto'
                         }}
-                        onMouseEnter={(e) => {
-                          if (customer?.icon) {
-                          e.currentTarget.style.backgroundColor = '#f3f4f6';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (customer?.icon) {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                          }
-                        }}
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        <User style={{ width: '1rem', height: '1rem', marginRight: '0.25rem' }} />
-                        Default
-                      </button>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#111827' }}>Choose an icon</h3>
+                          <button
+                            onClick={() => setShowIconPicker(false)}
+                            style={{
+                              background: '#f3f4f6',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '0.5rem',
+                              padding: '0.35rem 0.6rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Close
+                          </button>
+                        </div>
+                        <div
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(8, minmax(0, 1fr))',
+                            gap: '0.5rem'
+                          }}
+                        >
+                          {availableIcons.map((icon) => (
+                            <button
+                              key={icon}
+                              onClick={() => handleIconChange(icon)}
+                              style={{
+                                width: '2.75rem',
+                                height: '2.75rem',
+                                borderRadius: '0.5rem',
+                                backgroundColor: customer?.icon === icon ? portalAccentLight : 'transparent',
+                                border: customer?.icon === icon ? `2px solid ${portalAccentDark}` : '1px solid #e5e7eb',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                overflow: 'hidden'
+                              }}
+                              title={icon}
+                            >
+                              <img
+                                src={`/images/icons/${icon}.png`}
+                                alt={icon}
+                                style={{
+                                  width: '100%',
+                                  height: '100%',
+                                  objectFit: 'cover',
+                                  borderRadius: '0.25rem'
+                                }}
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  const btn = target.closest('button') as HTMLButtonElement | null;
+                                  if (btn) {
+                                    btn.style.display = 'none';
+                                  }
+                                }}
+                              />
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => handleIconChange('')}
+                            style={{
+                              height: '2.75rem',
+                              borderRadius: '0.5rem',
+                              backgroundColor: !customer?.icon ? portalAccentLight : 'transparent',
+                              border: !customer?.icon ? `2px solid ${portalAccentDark}` : '1px solid #e5e7eb',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.75rem',
+                              color: '#6b7280',
+                              cursor: 'pointer',
+                              gridColumn: '1 / -1'
+                            }}
+                          >
+                            <User style={{ width: '1rem', height: '1rem', marginRight: '0.25rem' }} />
+                            Default
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -3501,7 +3599,8 @@ const CustomerPortal = () => {
                       gap: '0.5rem'
                     }}
                   >
-                    🎁 View Rewards
+                    <i className="fa-solid fa-gift"></i>
+                    View Rewards
                   </button>
                 </div>
                 <div style={{
@@ -3578,7 +3677,7 @@ const CustomerPortal = () => {
                         ? `Save ${formatCurrency(promotion.discount_value)}`
                         : null;
                     const endDateLabel = promotion.end_date ? `Valid until ${formatDate(promotion.end_date)}` : 'Available now';
-                    const appliesLabel = promotion.applies_to === 'all' ? 'Storewide offer' : 'Selected items';
+                    const appliesLabel = promotion.applies_to === 'all' ? 'Storewide offer' : null;
                     const pricingInfo = getPromotionPricing(promotion);
                     const hasDiscount = pricingInfo?.discountedPrice != null && Math.abs((pricingInfo.discountedPrice ?? 0) - pricingInfo.originalPrice) > 0.009;
                     const finalPriceValue = pricingInfo ? (hasDiscount && pricingInfo.discountedPrice != null ? pricingInfo.discountedPrice : pricingInfo.originalPrice) : null;
@@ -3633,7 +3732,7 @@ const CustomerPortal = () => {
                           style={{
                             width: '100%',
                             borderRadius: '0.85rem',
-                            background: 'linear-gradient(135deg, #f9fafb 0%, #eef2ff 100%)',
+                          background: '#ffffff',
                             padding: '1.5rem',
                             display: 'flex',
                             alignItems: 'center',
@@ -3673,7 +3772,7 @@ const CustomerPortal = () => {
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                           {supplementaryTitle && (
-                            <span style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: '#6366f1', letterSpacing: '0.05em' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: '#000000', letterSpacing: '0.05em' }}>
                               {supplementaryTitle}
                             </span>
                           )}
@@ -3716,15 +3815,15 @@ const CustomerPortal = () => {
                           <button
                             onClick={() => handlePromotionAdd(promotion)}
                             style={{
-                              padding: '0.65rem 1rem',
-                              borderRadius: '999px',
-                              border: 'none',
-                              background: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)',
+                              padding: '0.6rem 0.9rem',
+                              borderRadius: '0.5rem',
+                              border: '1px solid #d1d5db',
+                              background: '#9ca3af',
                               color: '#ffffff',
                               fontWeight: 600,
                               fontSize: '0.95rem',
                               cursor: 'pointer',
-                              boxShadow: '0 10px 20px -10px rgba(37, 99, 235, 0.6)'
+                              boxShadow: 'none'
                             }}
                           >
                             Add
@@ -3819,7 +3918,7 @@ const CustomerPortal = () => {
                   style={{
                     flex: 1,
                     padding: '0.75rem',
-                    backgroundColor: '#f59e0b',
+                    backgroundColor: portalAccent,
                     color: '#ffffff',
                     border: 'none',
                     borderRadius: '0.375rem',
@@ -3853,8 +3952,35 @@ const CustomerPortal = () => {
                     fontWeight: '500'
                   }}
                 >
-                  <SearchIcon style={{ width: '1rem', height: '1rem' }} />
+                  <SearchIcon style={{ width: '1rem', height: '1rem', color: '#6b7280' }} />
                   Add from Products
+                </button>
+                <button
+                  onClick={() => customer && fetchShoppingList(customer.customer_id, true)}
+                  disabled={refreshingShoppingList}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    backgroundColor: refreshingShoppingList ? '#9ca3af' : '#3b82f6',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '0.375rem',
+                    cursor: refreshingShoppingList ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    opacity: refreshingShoppingList ? 0.7 : 1
+                  }}
+                >
+                  <RotateCcw style={{ 
+                    width: '1rem', 
+                    height: '1rem',
+                    animation: refreshingShoppingList ? 'spin 1s linear infinite' : 'none'
+                  }} />
+                  {refreshingShoppingList ? 'Refreshing...' : 'Refresh Status'}
                 </button>
               <button
                   onClick={clearShoppingList}
@@ -3990,8 +4116,32 @@ const CustomerPortal = () => {
                   const stockColor = product?.stock_quantity > 10 
                     ? '#10b981' 
                     : product?.stock_quantity > 0 
-                      ? '#f59e0b' 
+                      ? portalAccent 
                       : '#ef4444';
+
+                  // Approval status for click and collect items
+                  const approvalStatus = item.approval_status || 'pending';
+                  const getApprovalStatusColor = (status: string) => {
+                    switch (status) {
+                      case 'pending': return portalAccent;
+                      case 'approved': return '#10b981';
+                      case 'rejected': return '#ef4444';
+                      case 'ready_for_pickup': return '#3b82f6';
+                      case 'collected': return '#6b7280';
+                      default: return '#6b7280';
+                    }
+                  };
+
+                  const getApprovalStatusText = (status: string) => {
+                    switch (status) {
+                      case 'pending': return 'Pending Approval';
+                      case 'approved': return 'Approved';
+                      case 'rejected': return 'Rejected';
+                      case 'ready_for_pickup': return 'Ready for Pickup';
+                      case 'collected': return 'Collected';
+                      default: return 'Unknown';
+                    }
+                  };
 
                   return (
                     <div
@@ -4060,8 +4210,8 @@ const CustomerPortal = () => {
                                   {item.text}
                                 </p>
                               )}
-                              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem', alignItems: 'center' }}>
-                                <span style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: '500' }}>
+                              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: '0.75rem', color: portalAccent, fontWeight: '500' }}>
                                   {item.calculated_price ? 
                                     `$${item.calculated_price.toFixed(2)}` : 
                                     `$${product.price?.toFixed(2)}`
@@ -4074,18 +4224,76 @@ const CustomerPortal = () => {
                                 }}>
                                   {stockStatus}
                                 </span>
+                                {item.is_click_and_collect && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                    <span style={{
+                                      fontSize: '0.75rem',
+                                      color: getApprovalStatusColor(approvalStatus),
+                                      fontWeight: '600',
+                                      backgroundColor: `${getApprovalStatusColor(approvalStatus)}20`,
+                                      padding: '0.125rem 0.375rem',
+                                      borderRadius: '0.25rem',
+                                      border: `1px solid ${getApprovalStatusColor(approvalStatus)}40`
+                                    }}>
+                                      {getApprovalStatusText(approvalStatus)}
+                                    </span>
+                                    {item.approval_notes && (
+                                      <span style={{
+                                        fontSize: '0.625rem',
+                                        color: '#6b7280',
+                                        fontStyle: 'italic',
+                                        backgroundColor: '#f3f4f6',
+                                        padding: '0.25rem 0.375rem',
+                                        borderRadius: '0.25rem',
+                                        border: '1px solid #e5e7eb'
+                                      }}>
+                                        Note: {item.approval_notes}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
                         ) : (
-                          <p style={{
-                            margin: 0,
-                            fontSize: '0.875rem',
-                            color: item.completed ? '#9ca3af' : '#111827',
-                            textDecoration: item.completed ? 'line-through' : 'none'
-                          }}>
-                            {item.text}
-                          </p>
+                          <div>
+                            <p style={{
+                              margin: 0,
+                              fontSize: '0.875rem',
+                              color: item.completed ? '#9ca3af' : '#111827',
+                              textDecoration: item.completed ? 'line-through' : 'none'
+                            }}>
+                              {item.text}
+                            </p>
+                            {item.is_click_and_collect && (
+                              <div style={{ marginTop: '0.25rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                <span style={{
+                                  fontSize: '0.75rem',
+                                  color: getApprovalStatusColor(approvalStatus),
+                                  fontWeight: '600',
+                                  backgroundColor: `${getApprovalStatusColor(approvalStatus)}20`,
+                                  padding: '0.125rem 0.375rem',
+                                  borderRadius: '0.25rem',
+                                  border: `1px solid ${getApprovalStatusColor(approvalStatus)}40`
+                                }}>
+                                  {getApprovalStatusText(approvalStatus)}
+                                </span>
+                                {item.approval_notes && (
+                                  <span style={{
+                                    fontSize: '0.625rem',
+                                    color: '#6b7280',
+                                    fontStyle: 'italic',
+                                    backgroundColor: '#f3f4f6',
+                                    padding: '0.25rem 0.375rem',
+                                    borderRadius: '0.25rem',
+                                    border: '1px solid #e5e7eb'
+                                  }}>
+                                    Note: {item.approval_notes}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
 
@@ -4611,7 +4819,7 @@ const CustomerPortal = () => {
                 alignItems: 'center',
                 gap: '0.5rem'
               }}>
-                <i className="fa-solid fa-star" style={{ color: '#fbbf24' }}></i>
+                <i className="fa-solid fa-star" style={{ color: portalAccentLight }}></i>
                 Your Points
               </h3>
               <div style={{
@@ -5713,11 +5921,11 @@ const CustomerPortal = () => {
                 disabled={!customer || cartItems.length === 0}
                 style={{
                   width: '100%',
-                  display: 'flex',
+                  display: 'none',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '0.5rem',
-                  backgroundColor: cartItems.length > 0 ? '#059669' : '#9ca3af',
+                  backgroundColor: '#9ca3af',
                   color: 'white',
                   border: 'none',
                   borderRadius: '0.75rem',
@@ -5870,12 +6078,12 @@ const CustomerPortal = () => {
                   borderRadius: '0.75rem',
                   border: 'none',
                   cursor: cartItemCount === 0 || cartSubmissionStatus === 'loading' ? 'not-allowed' : 'pointer',
-                  background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                  background: '#9ca3af',
                   color: '#ffffff',
                   fontWeight: 600,
                   fontSize: '0.95rem',
                   opacity: cartItemCount === 0 ? 0.45 : 1,
-                  boxShadow: cartItemCount === 0 ? 'none' : '0 14px 28px -16px rgba(37, 99, 235, 0.65)',
+                  boxShadow: 'none',
                   transition: 'box-shadow 0.2s ease'
                 }}
               >

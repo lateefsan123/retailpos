@@ -42,3 +42,5 @@ ALTER TABLE public.customer_shopping_lists
 CREATE INDEX idx_payment_gateways_business_id ON public.payment_gateways(business_id);
 CREATE INDEX idx_sales_payment_transaction_id ON public.sales(payment_transaction_id);
 CREATE INDEX idx_customer_shopping_lists_payment_status ON public.customer_shopping_lists(payment_status);
+
+

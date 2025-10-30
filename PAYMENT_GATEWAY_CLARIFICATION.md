@@ -93,3 +93,5 @@ The payment gateway integration is a **separate system** specifically for click 
 3. **Manage both** payment types independently
 
 This provides the best of both worlds - traditional in-store payments for walk-in customers, and modern online payments for click & collect convenience.
+
+

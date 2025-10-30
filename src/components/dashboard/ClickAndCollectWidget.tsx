@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, User, Package, Eye, CheckCircle, Settings } from 'lucide-react';
+import { ShoppingCart, User, Package, Eye, CheckCircle, Settings, ThumbsUp, ThumbsDown, Clock, AlertCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { useBusinessId } from '../../hooks/useBusinessId';
 import { useBranch } from '../../contexts/BranchContext';
@@ -39,6 +39,11 @@ const ClickAndCollectWidget: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<CustomerOrder | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [markingAsCollected, setMarkingAsCollected] = useState(false);
+  const [approvingOrder, setApprovingOrder] = useState<number | null>(null);
+  const [rejectingOrder, setRejectingOrder] = useState<number | null>(null);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [approvalAction, setApprovalAction] = useState<'approve' | 'reject' | null>(null);
+  const [approvalNotes, setApprovalNotes] = useState('');
 
   useEffect(() => {
     if (!businessLoading && businessId) {
@@ -308,6 +313,82 @@ const ClickAndCollectWidget: React.FC = () => {
     setSelectedOrder(null);
   };
 
+  const handleApprovalAction = (customerId: number, action: 'approve' | 'reject') => {
+    setSelectedOrder(orders.find(o => o.customer_id === customerId) || null);
+    setApprovalAction(action);
+    setApprovalNotes('');
+    setShowApprovalModal(true);
+  };
+
+  const handleConfirmApproval = async () => {
+    if (!selectedOrder || !approvalAction) return;
+
+    try {
+      const status = approvalAction === 'approve' ? 'approved' : 'rejected';
+      const timestamp = new Date().toISOString();
+      
+      // Get current user ID (you might need to adjust this based on your auth system)
+      const { data: { user } } = await supabase.auth.getUser();
+      const approvedBy = user?.id ? parseInt(user.id) : null;
+
+      // Update all items in the order
+      const itemIds = selectedOrder.items.map(item => item.list_item_id);
+      
+      const { error } = await supabase
+        .from('customer_shopping_lists')
+        .update({
+          approval_status: status,
+          approval_notes: approvalNotes.trim() || null,
+          approval_timestamp: timestamp,
+          approved_by: approvedBy
+        })
+        .in('list_item_id', itemIds);
+
+      if (error) {
+        throw error;
+      }
+
+      // Refresh orders
+      await fetchPendingOrders();
+      
+      // Close modal
+      setShowApprovalModal(false);
+      setSelectedOrder(null);
+      setApprovalAction(null);
+      setApprovalNotes('');
+      
+    } catch (err) {
+      console.error('Error updating approval status:', err);
+      setError(`Failed to ${approvalAction} order. Please try again.`);
+    }
+  };
+
+  const handleMarkAsReady = async (customerId: number) => {
+    try {
+      const order = orders.find(o => o.customer_id === customerId);
+      if (!order) return;
+
+      const itemIds = order.items.map(item => item.list_item_id);
+      
+      const { error } = await supabase
+        .from('customer_shopping_lists')
+        .update({
+          approval_status: 'ready_for_pickup',
+          approval_timestamp: new Date().toISOString()
+        })
+        .in('list_item_id', itemIds);
+
+      if (error) {
+        throw error;
+      }
+
+      await fetchPendingOrders();
+    } catch (err) {
+      console.error('Error marking as ready:', err);
+      setError('Failed to mark order as ready. Please try again.');
+    }
+  };
+
   // Check if Click & Collect is enabled
   if (!currentBusiness?.click_and_collect_enabled) {
     return (
@@ -456,112 +537,216 @@ const ClickAndCollectWidget: React.FC = () => {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {orders.map((order) => (
-            <div
-              key={order.customer_id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                padding: '0.75rem',
-                backgroundColor: 'var(--bg-card)',
-                borderRadius: '0.5rem',
-                border: 'var(--border-subtle)'
-              }}
-            >
-              {/* Customer Icon */}
-              <div style={{
-                width: '2.5rem',
-                height: '2.5rem',
-                borderRadius: '50%',
-                backgroundColor: 'var(--bg-subtle)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#ffffff',
-                fontSize: '0.875rem',
-                fontWeight: '600',
-                flexShrink: 0,
-                overflow: 'hidden'
-              }}>
-                {order.customer_icon ? (
-                  <img
-                    src={order.customer_icon}
-                    alt={order.customer_name}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      borderRadius: '50%',
-                      objectFit: 'cover'
-                    }}
-                  />
-                ) : (
-                  <User style={{ width: '1.25rem', height: '1.25rem' }} />
-                )}
-              </div>
+          {orders.map((order) => {
+            const approvalStatus = order.items[0]?.approval_status || 'pending';
+            const getStatusColor = (status: string) => {
+              switch (status) {
+                case 'pending': return '#f59e0b';
+                case 'approved': return '#10b981';
+                case 'rejected': return '#ef4444';
+                case 'ready_for_pickup': return '#3b82f6';
+                case 'collected': return '#6b7280';
+                default: return '#6b7280';
+              }
+            };
 
-              {/* Customer Info */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <h4 style={{
-                  fontSize: '0.875rem',
-                  fontWeight: '600',
-                  color: 'var(--text-primary)',
-                  margin: '0 0 0.25rem 0',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis'
-                }}>
-                  {order.customer_name}
-                </h4>
-                <p style={{
-                  fontSize: '0.75rem',
-                  color: 'var(--text-secondary)',
-                  margin: 0,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis'
-                }}>
-                  {order.customer_phone}
-                </p>
-              </div>
+            const getStatusIcon = (status: string) => {
+              switch (status) {
+                case 'pending': return <Clock style={{ width: '0.75rem', height: '0.75rem' }} />;
+                case 'approved': return <ThumbsUp style={{ width: '0.75rem', height: '0.75rem' }} />;
+                case 'rejected': return <ThumbsDown style={{ width: '0.75rem', height: '0.75rem' }} />;
+                case 'ready_for_pickup': return <Package style={{ width: '0.75rem', height: '0.75rem' }} />;
+                case 'collected': return <CheckCircle style={{ width: '0.75rem', height: '0.75rem' }} />;
+                default: return <AlertCircle style={{ width: '0.75rem', height: '0.75rem' }} />;
+              }
+            };
 
-              {/* Item Count Badge */}
-              <div style={{
-                backgroundColor: 'var(--secondary-bg)',
-                color: 'var(--text-secondary)',
-                fontSize: '0.75rem',
-                fontWeight: '600',
-                padding: '0.25rem 0.5rem',
-                borderRadius: '999px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.25rem',
-                flexShrink: 0
-              }}>
-                <Package style={{ width: '0.75rem', height: '0.75rem' }} />
-                {order.total_items}
-              </div>
-
-              {/* View Order Button */}
-              <button
-                onClick={() => handleViewOrder(order)}
+            return (
+              <div
+                key={order.customer_id}
                 style={{
-                  padding: '0.5rem',
-                  border: 'none',
-                  borderRadius: '0.375rem',
-                  backgroundColor: '#3b82f6',
-                  color: '#ffffff',
-                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.75rem',
+                  backgroundColor: 'var(--bg-card)',
+                  borderRadius: '0.5rem',
+                  border: 'var(--border-subtle)'
+                }}
+              >
+                {/* Customer Icon */}
+                <div style={{
+                  width: '2.5rem',
+                  height: '2.5rem',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--bg-subtle)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  color: '#ffffff',
+                  fontSize: '0.875rem',
+                  fontWeight: '600',
+                  flexShrink: 0,
+                  overflow: 'hidden'
+                }}>
+                  {order.customer_icon ? (
+                    <img
+                      src={order.customer_icon}
+                      alt={order.customer_name}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        borderRadius: '50%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  ) : (
+                    <User style={{ width: '1.25rem', height: '1.25rem' }} />
+                  )}
+                </div>
+
+                {/* Customer Info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h4 style={{
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                    color: 'var(--text-primary)',
+                    margin: '0 0 0.25rem 0',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
+                    {order.customer_name}
+                  </h4>
+                  <p style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--text-secondary)',
+                    margin: 0,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
+                    {order.customer_phone}
+                  </p>
+                </div>
+
+                {/* Status Badge */}
+                <div style={{
+                  backgroundColor: getStatusColor(approvalStatus),
+                  color: '#ffffff',
+                  fontSize: '0.75rem',
+                  fontWeight: '600',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '999px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
                   flexShrink: 0
-                }}
-              >
-                <Eye style={{ width: '1rem', height: '1rem' }} />
-              </button>
-            </div>
-          ))}
+                }}>
+                  {getStatusIcon(approvalStatus)}
+                  {approvalStatus.replace('_', ' ').toUpperCase()}
+                </div>
+
+                {/* Item Count Badge */}
+                <div style={{
+                  backgroundColor: 'var(--secondary-bg)',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.75rem',
+                  fontWeight: '600',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '999px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  flexShrink: 0
+                }}>
+                  <Package style={{ width: '0.75rem', height: '0.75rem' }} />
+                  {order.total_items}
+                </div>
+
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                  {approvalStatus === 'pending' && (
+                    <>
+                      <button
+                        onClick={() => handleApprovalAction(order.customer_id, 'approve')}
+                        disabled={approvingOrder === order.customer_id}
+                        style={{
+                          padding: '0.5rem',
+                          border: 'none',
+                          borderRadius: '0.375rem',
+                          backgroundColor: '#10b981',
+                          color: '#ffffff',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          opacity: approvingOrder === order.customer_id ? 0.6 : 1
+                        }}
+                      >
+                        <ThumbsUp style={{ width: '1rem', height: '1rem' }} />
+                      </button>
+                      <button
+                        onClick={() => handleApprovalAction(order.customer_id, 'reject')}
+                        disabled={rejectingOrder === order.customer_id}
+                        style={{
+                          padding: '0.5rem',
+                          border: 'none',
+                          borderRadius: '0.375rem',
+                          backgroundColor: '#ef4444',
+                          color: '#ffffff',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          opacity: rejectingOrder === order.customer_id ? 0.6 : 1
+                        }}
+                      >
+                        <ThumbsDown style={{ width: '1rem', height: '1rem' }} />
+                      </button>
+                    </>
+                  )}
+                  
+                  {approvalStatus === 'approved' && (
+                    <button
+                      onClick={() => handleMarkAsReady(order.customer_id)}
+                      style={{
+                        padding: '0.5rem',
+                        border: 'none',
+                        borderRadius: '0.375rem',
+                        backgroundColor: '#3b82f6',
+                        color: '#ffffff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <Package style={{ width: '1rem', height: '1rem' }} />
+                    </button>
+                  )}
+
+                  {/* View Order Button */}
+                  <button
+                    onClick={() => handleViewOrder(order)}
+                    style={{
+                      padding: '0.5rem',
+                      border: 'none',
+                      borderRadius: '0.375rem',
+                      backgroundColor: '#6b7280',
+                      color: '#ffffff',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <Eye style={{ width: '1rem', height: '1rem' }} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -573,6 +758,125 @@ const ClickAndCollectWidget: React.FC = () => {
         onMarkAsCollected={handleMarkAsCollected}
         loading={markingAsCollected}
       />
+
+      {/* Approval Modal */}
+      {showApprovalModal && selectedOrder && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'var(--bg-card)',
+            borderRadius: '0.5rem',
+            padding: '1.5rem',
+            maxWidth: '400px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto'
+          }}>
+            <h3 style={{
+              fontSize: '1.125rem',
+              fontWeight: '600',
+              margin: '0 0 1rem 0',
+              color: 'var(--text-primary)'
+            }}>
+              {approvalAction === 'approve' ? 'Approve Order' : 'Reject Order'}
+            </h3>
+            
+            <div style={{ marginBottom: '1rem' }}>
+              <p style={{
+                fontSize: '0.875rem',
+                color: 'var(--text-secondary)',
+                margin: '0 0 0.5rem 0'
+              }}>
+                Customer: {selectedOrder.customer_name}
+              </p>
+              <p style={{
+                fontSize: '0.875rem',
+                color: 'var(--text-secondary)',
+                margin: '0 0 1rem 0'
+              }}>
+                Items: {selectedOrder.total_items}
+              </p>
+            </div>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: 'var(--text-primary)',
+                marginBottom: '0.5rem'
+              }}>
+                Notes (optional):
+              </label>
+              <textarea
+                value={approvalNotes}
+                onChange={(e) => setApprovalNotes(e.target.value)}
+                placeholder={`Add a note for the customer...`}
+                style={{
+                  width: '100%',
+                  minHeight: '80px',
+                  padding: '0.75rem',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.875rem',
+                  resize: 'vertical',
+                  fontFamily: 'inherit'
+                }}
+              />
+            </div>
+
+            <div style={{
+              display: 'flex',
+              gap: '0.75rem',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                onClick={() => {
+                  setShowApprovalModal(false);
+                  setSelectedOrder(null);
+                  setApprovalAction(null);
+                  setApprovalNotes('');
+                }}
+                style={{
+                  padding: '0.5rem 1rem',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '0.375rem',
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmApproval}
+                style={{
+                  padding: '0.5rem 1rem',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  backgroundColor: approvalAction === 'approve' ? '#10b981' : '#ef4444',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+              >
+                {approvalAction === 'approve' ? 'Approve' : 'Reject'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

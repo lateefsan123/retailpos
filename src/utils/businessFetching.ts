@@ -6,6 +6,8 @@ import { BusinessInfo } from '../types/multitenant';
 
 export const fetchBusinessBySubdomain = async (subdomain: string): Promise<BusinessInfo | null> => {
   try {
+    console.log('🔍 fetchBusinessBySubdomain called with:', subdomain);
+    
     const { data, error } = await supabase
       .from('business_info')
       .select('*')
@@ -13,14 +15,17 @@ export const fetchBusinessBySubdomain = async (subdomain: string): Promise<Busin
       .eq('customer_portal_enabled', true)
       .single();
 
+    console.log('🔍 Supabase query result:', { data, error });
+
     if (error) {
-      console.error('Error fetching business by subdomain:', error);
+      console.error('❌ Error fetching business by subdomain:', error);
       return null;
     }
 
+    console.log('✅ Business found:', data);
     return data;
   } catch (err) {
-    console.error('Exception fetching business:', err);
+    console.error('❌ Exception fetching business:', err);
     return null;
   }
 };
