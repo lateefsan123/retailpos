@@ -203,6 +203,7 @@ const Admin = () => {
         .from('branches')
         .select('*')
         .eq('business_id', businessId)
+        .eq('is_archived', false)
         .order('branch_id', { ascending: false })
 
       if (error) {
@@ -842,6 +843,26 @@ const Admin = () => {
 
       if (error) {
         console.error('Error deleting branch:', error)
+        // Surface a clearer message for FK/constraint conflicts (Supabase returns 409)
+        const errAny = error as any
+        const isConflict = errAny?.code === '409' || errAny?.code === '23503' || /foreign key|constraint/i.test(errAny?.message || '')
+        if (isConflict) {
+          // Fallback: archive instead of delete
+          try {
+            const { error: archiveError } = await supabase
+              .from('branches')
+              .update({ is_archived: true })
+              .eq('branch_id', branchId)
+            if (archiveError) throw archiveError
+            setError('Branch had related data, so it was archived instead of deleted.')
+            fetchBranches()
+            return
+          } catch (archiveErr) {
+            console.error('Error archiving after delete conflict:', archiveErr)
+            setError('Cannot delete this branch due to related data. Try archiving it instead.')
+            return
+          }
+        }
         throw error
       }
 
@@ -1461,6 +1482,23 @@ const Admin = () => {
                             label: 'Edit',
                             icon: 'fa-solid fa-pen-to-square',
                             onClick: () => startEditBranch(branch)
+                          },
+                          {
+                            label: 'Archive',
+                            icon: 'fa-solid fa-box-archive',
+                            onClick: async () => {
+                              try {
+                                const { error } = await supabase
+                                  .from('branches')
+                                  .update({ is_archived: true })
+                                  .eq('branch_id', branch.branch_id)
+                                if (error) throw error
+                                fetchBranches()
+                              } catch (err) {
+                                console.error('Error archiving branch:', err)
+                                setError('Failed to archive branch')
+                              }
+                            }
                           },
                           {
                             label: 'Delete',
